@@ -163,6 +163,7 @@
     {"key": "keybinds.clipboard", "type": "keybind", "default": "SUPER + SHIFT + V", "title": "Clipboard history", "description": "Show the last copies to paste them again", "page": "keybinds", "section": "Shell", "icon": "󰅍"},
     {"key": "keybinds.overview", "type": "keybind", "default": "SUPER + Tab", "title": "Window overview", "description": "Show all workspaces with their windows", "page": "keybinds", "section": "Shell", "icon": "󰕰"},
     {"key": "keybinds.cheatsheet", "type": "keybind", "default": "SUPER + F1", "title": "Shortcut cheatsheet", "description": "Show all keyboard shortcuts", "page": "keybinds", "section": "Shell", "icon": "󰌌"},
+    {"key": "keybinds.missa_chat", "type": "keybind", "default": "SUPER + I", "title": "Missa chat", "description": "Chat with Missa (only when Missa is switched on)", "page": "keybinds", "section": "Missa", "icon": "󰚩"},
     {"key": "keybinds.lock", "type": "keybind", "default": "SUPER + L", "title": "Lock", "description": "Lock the screen", "page": "keybinds", "section": "Shell", "icon": "󰌾"},
     {"key": "keybinds.exit", "type": "keybind", "default": "SUPER + M", "title": "Log out", "description": "Leave Hyprland", "page": "keybinds", "section": "Shell", "icon": "󰐥"},
     {"key": "keybinds.screenshot_region", "type": "keybind", "default": "Print", "title": "Screenshot of a region", "description": "Select a region; saved and copied", "page": "keybinds", "section": "Shell", "icon": "󰋩"},

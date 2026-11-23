@@ -436,6 +436,45 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target desktop'; then
     else echo "  FEHLER: Widgets nehmen Klicks an"; edit_ok=0; fi
 fi
 
+# ---- Missa (aus: kein Panel, kein IPC-Ziel; an: Chat gegen den lokalen Testserver, Karte im Dashboard)
+missa_ok=1
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target missa'; then
+    echo "  FEHLER: Missa-Panel geladen, obwohl Missa aus ist"; missa_ok=0
+else
+    echo "  ok: Missa aus: kein Panel, kein IPC-Ziel"
+fi
+if command -v python3 >/dev/null 2>&1; then
+    echo "---- Missa-Chat (Testserver) ----"
+    mport=$(( 22000 + RANDOM % 20000 ))
+    python3 "$REPO/tests/daten/missa-testserver.py" "$mport" "$T/missa.log" 2>/dev/null &
+    pids+=("$!")
+    sleep 1
+    jq --arg u "http://127.0.0.1:$mport" '.missa.enabled = true | .missa.url = $u' "$HOME/.config/hypr-shell/settings.json" > "$T/s.json" \
+        && mv "$T/s.json" "$HOME/.config/hypr-shell/settings.json"
+    echo test-key | "$HOME/.local/bin/shell-secrets" set MISSA_API_KEY
+    KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload 2>/dev/null
+    sleep 2.5
+    if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target missa'; then
+        ipc missa send "Was habe ich morgen?"; sleep 4.5; bild missa-chat
+        letzt="$("$qs" -p "$cfg" ipc call missa lastText 2>/dev/null)"
+        if [[ "$letzt" == "assistant: Hallo! Morgen"*"Zahnarzt"* ]]; then echo "  ok: Frage beantwortet (Antwort lief ein)"
+        else echo "  FEHLER: Antwort: $letzt"; missa_ok=0; fi
+        if [ "$("$qs" -p "$cfg" ipc call missa asking 2>/dev/null)" = false ]; then echo "  ok: ohne Rückfrage keine Knöpfe Yes/No"; else echo "  FEHLER: Yes/No ohne Rückfrage"; missa_ok=0; fi
+        ipc missa send "eine rückfrage"; sleep 3.5; bild missa-rueckfrage
+        if [ "$("$qs" -p "$cfg" ipc call missa asking 2>/dev/null)" = true ]; then echo "  ok: nach einer Rückfrage erscheinen Yes und No"; else echo "  FEHLER: keine Knöpfe nach der Rückfrage"; missa_ok=0; fi
+        ipc missa send "langsam bitte"; sleep 1.2
+        if [ "$("$qs" -p "$cfg" ipc call missa busy 2>/dev/null)" = true ]; then ipc missa cancel; sleep 0.5; fi
+        if [ "$("$qs" -p "$cfg" ipc call missa busy 2>/dev/null)" = false ] && "$qs" -p "$cfg" ipc call missa lastText 2>/dev/null | grep -q "cancelled"; then
+            echo "  ok: Antwort lässt sich abbrechen"
+        else echo "  FEHLER: Abbrechen"; missa_ok=0; fi
+        ipc missa close; sleep 1
+        ipc dashboard open dashboard; sleep 3; bild dashboard-missa; ipc dashboard close; sleep 1
+        missa_vorher="$("$qs" -p "$cfg" ipc call missa lastText 2>/dev/null)"
+    else
+        echo "  FEHLER: Missa eingeschaltet, aber kein Panel"; missa_ok=0
+    fi
+fi
+
 echo "---- Bilder und Symbole ----"
 bereich dashboard-dashboard dashboard-avatar "Profilbild im Dashboard"
 bereich dashboard-wallpaper wallpaper-card "erste Wallpaper-Karte"
@@ -443,6 +482,7 @@ bereich dashboard-wallpaper wallpaper-card "erste Wallpaper-Karte"
 bereich panel panel-avatar "Profilbild im Panel"
 bereich panel app-icon "erstes App-Symbol im Panel"
 bereich launcher launcher-first "erstes App-Symbol im Starter"
+[ -f "$T/log-dashboard-missa" ] && bereich dashboard-missa missa-card "Missa-Karte im Dashboard"
 if command -v cliphist >/dev/null 2>&1 && [ -n "$im" ]; then bereich zwischenablage clipboard-image "Bild-Vorschau in der Zwischenablage"; fi
 
 # ohne ~/.face: Anfangsbuchstabe statt Bild
@@ -454,6 +494,13 @@ if [ -n "$im" ]; then
     ipc panel open; sleep 2; bild panel-ohne-face
     ipc panel close; sleep 1
     bereich panel-ohne-face panel-avatar "Anfangsbuchstabe ohne ~/.face"
+    # nach dem Neustart (wie nach einer Neuanmeldung) läuft dieselbe Missa-Sitzung weiter
+    if [ -f "$T/missa.log" ]; then
+        if [ -n "${missa_vorher:-}" ] && [ "$("$qs" -p "$cfg" ipc call missa lastText 2>/dev/null)" = "$missa_vorher" ] \
+            && [ "$(jq -r 'select(.session) | .session' "$T/missa.log" | sort -u | wc -l)" = 1 ]; then
+            echo "  ok: nach dem Neustart: gleicher Verlauf und dieselbe Sitzung ($(jq -r 'select(.session) | .session' "$T/missa.log" | head -n1))"
+        else echo "  FEHLER: Missa-Sitzung nach dem Neustart"; missa_ok=0; fi
+    fi
     # nach dem Neustart (wie nach einer Neuanmeldung) steht die Uhr am gespeicherten Platz
     if [ "$edit_ok" -eq 1 ] && [ "$(wert .desktop.clock.x)" = 0.3 ]; then
         cx="$(grep -o "hypr-shell-probe desktop-clock .*" "$T/qs.log" | tail -n1 | awk '{print $3}')"
@@ -486,6 +533,7 @@ echo "------------------------"
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 [ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
+[ "$missa_ok" -eq 1 ] || { echo "FEHLER: Missa (siehe oben)"; exit 1; }
 [ "$spick_ok" -eq 1 ] || { echo "FEHLER: Kürzel-Spickzettel (siehe oben)"; exit 1; }
 [ "$seiten_ok" -eq 1 ] || { echo "FEHLER: Unterseiten im Panel (siehe oben)"; exit 1; }
 [ "$uebersicht_ok" -eq 1 ] || { echo "FEHLER: Fenster-Übersicht (siehe oben)"; exit 1; }

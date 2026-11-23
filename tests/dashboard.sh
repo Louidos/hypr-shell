@@ -52,7 +52,7 @@ else
 fi
 
 echo "== Raster (col, row, cs, rs) wie im Auftrag"
-raster() { grep -oE 'col: [0-9]+; row: [0-9]+; cs: [0-9]+; rs: [0-9]+' "$1" | tr -d ' ' | sort | tr '\n' ' '; }
+raster() { grep -oE 'col: [0-9]+; row: [0-9]+; cs: [0-9]+; rs: [0-9]+' "$1" | tr -d ' ' | sort -u | tr '\n' ' '; }
 pruefe '[ "$(raster quickshell/dashboard/HomeTab.qml)" = "col:0;row:0;cs:4;rs:1 col:0;row:1;cs:2;rs:2 col:2;row:1;cs:5;rs:2 col:4;row:0;cs:5;rs:1 col:7;row:1;cs:2;rs:2 col:9;row:0;cs:3;rs:3 " ]' "Tab Dashboard"
 pruefe '[ "$(raster quickshell/dashboard/PerfTab.qml)" = "col:1;row:0;cs:5;rs:1 col:1;row:1;cs:4;rs:1 col:5;row:1;cs:4;rs:1 col:6;row:0;cs:5;rs:1 col:9;row:1;cs:2;rs:1 " ]' "Tab Performance"
 

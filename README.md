@@ -83,6 +83,7 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 | `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
 | `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
 | `SUPER + F1` | Kürzel-Spickzettel |
+| `SUPER + I` | Chat mit Missa (nur mit `missa.enabled`, sonst tut das Kürzel nichts) |
 | `SUPER + M` | abmelden (Hyprland beenden) |
 | `SUPER + L` | sperren |
 | `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |
@@ -305,6 +306,14 @@ oder Homelab benutzt, sieht nichts davon. Einschalten in der Einstellungs-App au
 `~/Missa` mit `Eingang/` und `Ausgabe/`, beide mit Lesezeichen in der Seitenleiste des Dateimanagers.
 Alles Weitere steht in [docs/anbindungen.md](docs/anbindungen.md).
 
+**Missa-Chat** (mit `missa.enabled`): `SUPER + I` öffnet von der rechten Kante ein Chatfenster. Enter
+sendet, SHIFT+Enter macht eine neue Zeile; Missas Antwort läuft Wort für Wort ein („Missa is working …“,
+während sie ein Werkzeug benutzt), der Knopf unten rechts bricht ab. Stellt Missa eine Rückfrage,
+erscheinen **Yes** und **No**. Dateien lassen sich ins Eingabefeld ziehen (der Pfad geht mit), Dateien
+aus `~/Missa/Eingang` stehen als Knöpfe darüber. Die Sitzung heisst `hypr-shell-<Rechnername>` und läuft
+nach einem Neustart weiter. Im Dashboard zeigt die Karte **Missa** die Kurzfassung des Lagebilds und die
+nächsten Erinnerungen; ein Klick öffnet den Chat.
+
 ## Laptop
 
 Auf ASUS-ROG-Laptops (z. B. Zephyrus M16) steuert hypr-shell über `asusctl` und `supergfxctl`
@@ -354,6 +363,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
 | `shell-games list\|launch <id>` | Spiele für den Tab Games |
 | `shell-laptop status\|profile\|gfx\|charge\|kbd …` | Laptop-Funktionen (asusctl, supergfxctl, power-profiles-daemon) |
+| `shell-missa health\|chat\|get …` | Verbindung zu Missa-Core (Chat, Status, Lagebild) |
 | `shell-mount nextcloud\|missa up\|down\|status` | Ordner der Anbindungen einhängen / aufräumen |
 | `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |

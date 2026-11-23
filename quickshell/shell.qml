@@ -11,6 +11,8 @@ import "power"
 import "clipboard"
 import "overview"
 import "cheatsheet"
+import "missa"
+import "common"
 
 // hypr-shell: Quickshell-Oberfläche (gestartet von ~/.local/bin/shell-quickshell, das das
 // Symbolthema aus settings.json – theme.icons – über QS_ICON_THEME setzt)
@@ -27,4 +29,6 @@ ShellRoot {
     Clipboard { }
     Overview { }
     Cheatsheet { }
+    // Missa nur, wenn missa.enabled an ist (sonst kein Panel, kein IPC-Ziel, keine Netzanfrage)
+    LazyLoader { active: Integrations.missa; MissaChat { } }
 }

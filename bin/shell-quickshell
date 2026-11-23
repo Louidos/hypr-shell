@@ -33,8 +33,18 @@ benachrichtigungen() {
     fi
     if [ "$an" = true ]; then pkill -x swaync 2>/dev/null || true; fi
 }
-start() { laeuft || { benachrichtigungen; setsid -f "$qs" -p "$cfg" >/dev/null 2>&1; }; }
-stop() { pkill -f -- "-p $cfg" 2>/dev/null || true; }
+# Start über shell-waechter: stürzt die Oberfläche ab, startet sie von selbst neu (ohne Endlosschleife)
+waechter="$(dirname "$(readlink -f "$0")")/shell-waechter"
+start() {
+    laeuft && return 0
+    benachrichtigungen
+    if [ -x "$waechter" ]; then setsid -f "$waechter" quickshell -- "$qs" -p "$cfg" >/dev/null 2>&1
+    else setsid -f "$qs" -p "$cfg" >/dev/null 2>&1; fi
+}
+stop() {
+    [ -x "$waechter" ] && "$waechter" stop quickshell
+    pkill -f -- "-p $cfg" 2>/dev/null || true
+}
 
 case "${1:-start}" in
     start) start ;;

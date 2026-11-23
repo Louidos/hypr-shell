@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Hält ein Programm der Oberfläche am Laufen: stürzt es ab (Leiste, Quickshell), startet es von
+# selbst neu – ohne Endlosschleife.
+#
+#   shell-waechter <name> -- <befehl> [argumente …]
+#   shell-waechter stop <name>                     beenden (Programm und Wächter, kein Neustart)
+#
+# Neustart nur nach einem Absturz (Rückgabe ungleich 0 oder Signal wie SIGSEGV), mit wachsender
+# Pause (1, 2, 4 … höchstens 30 s). Mehr als 5 Abstürze innert 2 Minuten: Schluss, mit einer
+# Benachrichtigung. Beendet sich das Programm sauber (Rückgabe 0) oder wurde es mit
+# "shell-waechter stop", SIGTERM oder SIGINT beendet, startet es nicht neu. Läuft für <name> schon ein
+# Wächter, tut ein zweiter Aufruf nichts. Keine Abfrage im Takt: der Wächter wartet auf das Ende.
+set -uo pipefail
+
+RUN="${XDG_RUNTIME_DIR:-/tmp}/hypr-shell"
+mkdir -p "$RUN"
+
+if [ "${1:-}" = stop ]; then
+    name="${2:-}"
+    [ -n "$name" ] || { echo "shell-waechter: Name fehlt" >&2; exit 2; }
+    touch "$RUN/waechter-$name.stop"
+    if [ -f "$RUN/waechter-$name.pid" ]; then kill "$(cat "$RUN/waechter-$name.pid")" 2>/dev/null || true; fi
+    exit 0
+fi
+
+name="${1:-}"
+[ -n "$name" ] && [[ "$name" =~ ^[a-z0-9-]+$ ]] || { echo "shell-waechter: Name fehlt oder ungültig (a-z, 0-9, -)" >&2; exit 2; }
+shift
+[ "${1:-}" = -- ] && shift
+[ $# -gt 0 ] || { echo "shell-waechter: Befehl fehlt (shell-waechter $name -- <befehl>)" >&2; exit 2; }
+command -v "$1" >/dev/null 2>&1 || { echo "shell-waechter: $1 fehlt" >&2; exit 1; }
+
+# nur ein Wächter je Name
+exec 8> "$RUN/waechter-$name.lock"
+if command -v flock >/dev/null 2>&1; then flock -n 8 || exit 0; fi
+rm -f "$RUN/waechter-$name.stop"
+echo "$$" > "$RUN/waechter-$name.pid"
+
+kind=0
+beenden() { [ "$kind" -gt 0 ] && kill "$kind" 2>/dev/null; rm -f "$RUN/waechter-$name.pid"; exit 0; }
+trap beenden TERM INT HUP
+
+pause="${SHELL_WAECHTER_PAUSE:-1}"   # erste Pause in Sekunden (Tests: 0)
+abstuerze=()
+while :; do
+    "$@" &
+    kind=$!
+    wait "$kind"
+    rc=$?
+    kind=0
+    [ -f "$RUN/waechter-$name.stop" ] && { rm -f "$RUN/waechter-$name.stop"; break; }
+    # sauber beendet oder absichtlich (SIGTERM/SIGINT, z. B. pkill): kein Neustart
+    [ "$rc" -eq 0 ] || [ "$rc" -eq 143 ] || [ "$rc" -eq 130 ] && break
+    jetzt="$(date +%s)"
+    neu=()
+    for t in "${abstuerze[@]}"; do [ $((jetzt - t)) -lt 120 ] && neu+=("$t"); done
+    abstuerze=("${neu[@]}" "$jetzt")
+    if [ "${#abstuerze[@]}" -gt 5 ]; then
+        msg="$name ist 6-mal in 2 Minuten abgestürzt und wird nicht mehr neu gestartet. Von Hand: shell-waechter $name -- $*"
+        echo "shell-waechter: $msg" >&2
+        command -v notify-send >/dev/null 2>&1 && notify-send -a hypr-shell "hypr-shell: $name" "$msg" 2>/dev/null
+        break
+    fi
+    echo "shell-waechter: $name beendet mit $rc – Neustart in ${pause} s" >&2
+    sleep "$pause"
+    pause=$((pause * 2 > 30 ? 30 : pause * 2))
+done
+rm -f "$RUN/waechter-$name.pid"

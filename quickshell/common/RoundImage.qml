@@ -50,7 +50,6 @@ Item {
                 asynchronous: true
                 cache: true
                 visible: status === Image.Ready
-                opacity: 0   // GEGENPROBE, wird zurückgenommen
                 onStatusChanged: r.status = status
                 Component.onCompleted: r.status = status
                 Probe { name: r.probe }
@@ -66,7 +65,6 @@ Item {
             asynchronous: true
             cache: true
             visible: status === Image.Ready
-            opacity: 0   // GEGENPROBE, wird zurückgenommen
             onStatusChanged: r.status = status
             Component.onCompleted: r.status = status
             Probe { name: r.probe }

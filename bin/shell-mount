@@ -1,0 +1,258 @@
+#!/usr/bin/env bash
+# Ordner der Anbindungen im Dateimanager (alles nur, wenn die Anbindung eingeschaltet ist).
+#   shell-mount nextcloud up|down|status   Nextcloud per WebDAV (rclone) als ~/Nextcloud einbinden / aushängen
+#   shell-mount nextcloud run              (für den Dienst shell-mount-nextcloud.service) rclone mount im Vordergrund
+#   shell-mount nextcloud check            Zugang zum Server prüfen (ohne Einbinden)
+#   shell-mount nextcloud unmount          nur aushängen (nach dem Stoppen des Dienstes)
+#   shell-mount missa up|down|status       ~/Missa mit Eingang/ und Ausgabe/ anlegen / Lesezeichen entfernen
+#   shell-mount sync                       alles nach den Einstellungen richten (beim Anmelden und nach Änderungen)
+#   shell-mount status                     Zustand aller Ordner als JSON
+# status: {"state": "off"|"ready"|"error"|"missing"|"setup", "text": "…"}
+# Das App-Passwort (NEXTCLOUD_APP_PASSWORD in secrets.env) bekommt rclone nur über die Umgebung
+# (verschleiert, RCLONE_WEBDAV_PASS) – nie in einer Konfigurationsdatei, einem Log oder der Befehlszeile.
+# Pfade aus den Einstellungen dürfen mit ~ beginnen (pfad() setzt $HOME ein):
+# shellcheck disable=SC2088
+set -uo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+EFF="$DATA/settings.effective.json"
+HIER="$(dirname "$(readlink -f "$0")")"
+SECRETS="$HIER/shell-secrets"
+MARKEN="$DATA/bookmarks.txt"       # von hypr-shell angelegte Lesezeichen (nur diese werden entfernt)
+ANGELEGT="$DATA/created-dirs.txt"  # von hypr-shell angelegte Ordner (nur diese werden, wenn leer, wieder gelöscht)
+DIENST="shell-mount-nextcloud.service"
+hat() { command -v "$1" >/dev/null 2>&1; }
+wert() {
+    local v=""
+    if hat jq && [ -f "$EFF" ]; then v="$(jq -r "($1) | if . == null then empty else . end" "$EFF" 2>/dev/null || true)"; fi
+    printf '%s\n' "${v:-$2}"
+}
+pfad() { local p; p="$(wert "$1" "$2")"; case "$p" in "~") p="$HOME" ;; "~/"*) p="$HOME/${p#\~/}" ;; esac; printf '%s\n' "$p"; }
+status_json() { jq -cn --arg s "$1" --arg t "$2" '{state: $s, text: $t}'; }
+systemd_da() { [ "${HYPR_SHELL_NO_SYSTEMD:-0}" != 1 ] && hat systemctl && systemctl --user show-environment >/dev/null 2>&1; }
+
+# ---------------------------------------------------------------- Lesezeichen
+
+gtk_dateien() { printf '%s\n' "$HOME/.config/gtk-3.0/bookmarks" "$HOME/.config/gtk-4.0/bookmarks"; }
+url_von() { # pfad -> file:// mit %-Kodierung der Leerzeichen
+    printf 'file://%s' "$(printf '%s' "$1" | sed 's/%/%25/g; s/ /%20/g')"
+}
+lesezeichen_an() { # name pfad
+    local name="$1" p="$2" zeile f
+    zeile="$(url_von "$p") $name"
+    mkdir -p "$DATA"
+    while IFS= read -r f; do
+        mkdir -p "$(dirname "$f")"
+        touch "$f"
+        grep -qxF "$zeile" "$f" || printf '%s\n' "$zeile" >> "$f"
+    done < <(gtk_dateien)
+    grep -qxF "gtk	$zeile" "$MARKEN" 2>/dev/null || printf 'gtk\t%s\n' "$zeile" >> "$MARKEN"
+    # Dolphin (KDE): Orteliste, nur wenn Dolphin installiert ist; Eintrag mit eigener Kennung
+    local x="$HOME/.local/share/user-places.xbel" id="hypr-shell-${name,,}"
+    if hat dolphin && [ -f "$x" ] && ! grep -q "<ID>$id</ID>" "$x"; then
+        local tmp
+        tmp="$(mktemp "$x.XXXXXX")"
+        awk -v href="$(url_von "$p")" -v t="$name" -v id="$id" '
+            /<\/xbel>/ {
+                print " <bookmark href=\"" href "\">"
+                print "  <title>" t "</title>"
+                print "  <info><metadata owner=\"http://freedesktop.org\"><bookmark:icon name=\"folder-cloud\"/></metadata>"
+                print "   <metadata owner=\"http://www.kde.org\"><ID>" id "</ID></metadata></info>"
+                print " </bookmark>"
+            }
+            { print }' "$x" > "$tmp" && mv -f "$tmp" "$x"
+        printf 'dolphin\t%s\n' "$id" >> "$MARKEN"
+    fi
+}
+lesezeichen_aus() { # name pfad
+    local name="$1" p="$2" zeile f tmp
+    zeile="$(url_von "$p") $name"
+    if grep -qxF "gtk	$zeile" "$MARKEN" 2>/dev/null; then
+        while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            tmp="$(mktemp "$f.XXXXXX")"
+            grep -vxF "$zeile" "$f" > "$tmp" || true
+            mv -f "$tmp" "$f"
+        done < <(gtk_dateien)
+    fi
+    local x="$HOME/.local/share/user-places.xbel" id="hypr-shell-${name,,}"
+    if grep -qxF "dolphin	$id" "$MARKEN" 2>/dev/null && [ -f "$x" ]; then
+        tmp="$(mktemp "$x.XXXXXX")"
+        # den ganzen <bookmark>…</bookmark>-Block mit unserer Kennung entfernen
+        awk -v id="$id" '
+            /<bookmark / { puffer = $0; inb = 1; next }
+            inb { puffer = puffer "\n" $0; if (/<\/bookmark>/) { inb = 0; if (index(puffer, "<ID>" id "</ID>") == 0) print puffer } ; next }
+            { print }' "$x" > "$tmp" && mv -f "$tmp" "$x"
+    fi
+    if [ -f "$MARKEN" ]; then
+        tmp="$(mktemp "$MARKEN.XXXXXX")"
+        grep -vxF -e "gtk	$zeile" -e "dolphin	$id" "$MARKEN" > "$tmp" || true
+        mv -f "$tmp" "$MARKEN"
+    fi
+}
+
+anlegen() { # ordner…: anlegen und merken, wenn es ihn noch nicht gab
+    local d
+    mkdir -p "$DATA"
+    for d in "$@"; do
+        if [ ! -e "$d" ]; then mkdir -p "$d" && printf '%s\n' "$d" >> "$ANGELEGT"; fi
+    done
+}
+loeschen_wenn_leer() { # ordner…: nur von hypr-shell angelegte und leere Ordner
+    local d tmp
+    for d in "$@"; do
+        grep -qxF "$d" "$ANGELEGT" 2>/dev/null || continue
+        rmdir "$d" 2>/dev/null || continue
+        tmp="$(mktemp "$ANGELEGT.XXXXXX")"; grep -vxF "$d" "$ANGELEGT" > "$tmp" || true; mv -f "$tmp" "$ANGELEGT"
+    done
+}
+
+# ---------------------------------------------------------------- Nextcloud
+
+nc_url() { wert '.nextcloud.url' ""; }
+nc_user() { wert '.nextcloud.user' ""; }
+nc_pfad() { pfad '.nextcloud.mount_path' "~/Nextcloud"; }
+nc_an() { [ "$(wert '.nextcloud.enabled' false)" = true ]; }
+fuse_da() { hat fusermount3 || hat fusermount; }
+eingehaengt() { grep -qs " $1 fuse" /proc/mounts || mountpoint -q "$1" 2>/dev/null; }
+aushaengen() {
+    local p="$1"
+    eingehaengt "$p" || return 0
+    if hat fusermount3; then fusermount3 -u "$p" 2>/dev/null || fusermount3 -uz "$p" 2>/dev/null
+    else fusermount -u "$p" 2>/dev/null || fusermount -uz "$p" 2>/dev/null; fi
+}
+
+# Umgebung für rclone: alles über Variablen, das Passwort verschleiert (rclone obscure liest stdin)
+nc_umgebung() {
+    local base user pw ca
+    base="$(nc_url)"; base="${base%/}"; user="$(nc_user)"
+    pw="$("$SECRETS" get NEXTCLOUD_APP_PASSWORD)"
+    export RCLONE_WEBDAV_URL="$base/remote.php/dav/files/$user/"
+    export RCLONE_WEBDAV_VENDOR=nextcloud
+    export RCLONE_WEBDAV_USER="$user"
+    RCLONE_WEBDAV_PASS="$(printf '%s\n' "$pw" | rclone obscure -)"
+    export RCLONE_WEBDAV_PASS
+    ca="$(pfad '.integrations.ca_file' "")"
+    [ -n "$ca" ] && [ -f "$ca" ] && export RCLONE_CA_CERT="$ca"
+    export RCLONE_CONFIG=/dev/null
+}
+
+# was fehlt? (leer = nichts)
+nc_fehlt() {
+    hat rclone || { echo "missing|rclone missing – install the package rclone"; return; }
+    fuse_da || { echo "missing|FUSE missing – install the package fuse3"; return; }
+    if [ -z "$(nc_url)" ] || [ -z "$(nc_user)" ]; then echo "setup|Enter the Nextcloud address and user name"; return; fi
+    "$SECRETS" has NEXTCLOUD_APP_PASSWORD || { echo "setup|Enter an app password (Nextcloud → Settings → Security → App passwords)"; return; }
+}
+
+nc_check() {
+    local f out
+    f="$(nc_fehlt)"
+    [ -z "$f" ] || { status_json "${f%%|*}" "${f#*|}"; return 1; }
+    nc_umgebung
+    if out="$(rclone lsf --max-depth 1 --contimeout 5s --timeout 10s --low-level-retries 1 --retries 1 :webdav: 2>&1 >/dev/null)"; then
+        status_json ready "Connected"
+    else
+        case "$out" in
+            *401*|*Unauthorized*|*"login fail"*) status_json error "Wrong user name or app password" ;;
+            *certificate*|*x509*) status_json error "Certificate not trusted – set integrations.ca_file" ;;
+            *) status_json error "Server not reachable" ;;
+        esac
+        return 1
+    fi
+}
+
+nc_run() {
+    nc_an || { echo "shell-mount: nextcloud.enabled ist aus" >&2; exit 0; }
+    local f p args=()
+    f="$(nc_fehlt)"; [ -z "$f" ] || { echo "shell-mount: ${f#*|}" >&2; exit 1; }
+    p="$(nc_pfad)"
+    anlegen "$p"
+    nc_umgebung
+    args=(--vfs-cache-mode writes --vfs-cache-max-size "$(wert '.nextcloud.cache_mb' 1024)M" --vfs-write-back 2s
+          --dir-cache-time 30s --contimeout 5s --timeout 30s --low-level-retries 2 --retries 2)
+    [ "$(wert '.nextcloud.read_only' false)" = true ] && args+=(--read-only)
+    exec rclone mount :webdav: "$p" "${args[@]}"
+}
+
+nc_up() {
+    nc_an || return 0
+    local p
+    p="$(nc_pfad)"
+    [ -z "$(nc_fehlt)" ] || return 0
+    anlegen "$p"
+    if systemd_da; then
+        systemctl --user daemon-reload >/dev/null 2>&1 || true
+        systemctl --user start "$DIENST" >/dev/null 2>&1 || true
+    elif ! eingehaengt "$p"; then
+        setsid -f "$HIER/shell-mount" nextcloud run >/dev/null 2>&1
+    fi
+    lesezeichen_an Nextcloud "$p"
+}
+
+nc_down() {
+    local p
+    p="$(nc_pfad)"
+    if systemd_da; then systemctl --user stop "$DIENST" >/dev/null 2>&1 || true; fi
+    pkill -f "rclone mount :webdav: $p" 2>/dev/null || true
+    sleep 0.3
+    aushaengen "$p"
+    lesezeichen_aus Nextcloud "$p"
+    # nur einen leeren, von hypr-shell angelegten Einhängeordner löschen
+    if [ -d "$p" ] && ! eingehaengt "$p"; then loeschen_wenn_leer "$p"; fi
+}
+
+nc_status() {
+    nc_an || { status_json off "Off"; return; }
+    local f p
+    f="$(nc_fehlt)"; [ -z "$f" ] || { status_json "${f%%|*}" "${f#*|}"; return; }
+    p="$(nc_pfad)"
+    if eingehaengt "$p"; then status_json ready "Mounted at ${p/#$HOME/\~}"
+    else nc_check || true; fi
+}
+
+# ---------------------------------------------------------------- Missa-Ordner (lokal)
+
+missa_an() { [ "$(wert '.missa.enabled' false)" = true ]; }
+missa_pfad() { pfad '.missa.folder' "~/Missa"; }
+missa_up() {
+    missa_an || return 0
+    local p
+    p="$(missa_pfad)"
+    anlegen "$p" "$p/Eingang" "$p/Ausgabe"
+    lesezeichen_an Missa "$p"
+}
+missa_down() {
+    local p
+    p="$(missa_pfad)"
+    lesezeichen_aus Missa "$p"
+    # Inhalte bleiben; nur leere Ordner, die hypr-shell angelegt hat, verschwinden
+    loeschen_wenn_leer "$p/Eingang" "$p/Ausgabe" "$p"
+}
+missa_status() {
+    missa_an || { status_json off "Off"; return; }
+    local p
+    p="$(missa_pfad)"
+    status_json ready "Folder ${p/#$HOME/\~}"
+}
+
+sync() {
+    if nc_an; then nc_up; else nc_down; fi
+    if missa_an; then missa_up; else missa_down; fi
+}
+
+case "${1:-} ${2:-}" in
+    "nextcloud up") nc_up ;;
+    "nextcloud down") nc_down ;;
+    "nextcloud status") nc_status ;;
+    "nextcloud check") nc_check ;;
+    "nextcloud run") nc_run ;;
+    "nextcloud unmount") aushaengen "$(nc_pfad)" ;;
+    "missa up") missa_up ;;
+    "missa down") missa_down ;;
+    "missa status") missa_status ;;
+    "sync "*) sync ;;
+    "status "*) jq -cn --argjson n "$(nc_status)" --argjson m "$(missa_status)" '{nextcloud: $n, missa: $m}' ;;
+    *) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac
+exit 0

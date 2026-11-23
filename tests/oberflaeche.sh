@@ -366,7 +366,7 @@ warte_auf() { # jq-ausdruck erwartet [versuche à 0.25 s]
 test_ipc() { [ "$("$qs" -p "$cfg" ipc call test "$@" 2>/dev/null)" = true ]; }
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     echo "---- Einstellungs-App ----"
-    for seite in home bar look theme desktop dashboard panel system laptop lock input monitors apps keybinds about; do
+    for seite in home bar look theme desktop dashboard panel system integrations laptop lock input monitors apps keybinds about; do
         ipc settings open "$seite"; sleep 2; bild "settings-$seite"
     done
     for q in blur clock battery; do

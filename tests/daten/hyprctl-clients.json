@@ -1,0 +1,6 @@
+[
+  {"address": "0x55d3c0a1b2c0", "mapped": true, "hidden": false, "at": [12, 42], "size": [940, 1026], "workspace": {"id": 1, "name": "1"}, "floating": false, "monitor": 0, "class": "kitty", "title": "Terminal – htop", "fullscreen": 0},
+  {"address": "0x55d3c0a1b3d0", "mapped": true, "hidden": false, "at": [968, 42], "size": [940, 1026], "workspace": {"id": 1, "name": "1"}, "floating": false, "monitor": 0, "class": "firefox", "title": "Mozilla Firefox", "fullscreen": 0},
+  {"address": "0x55d3c0a1b4e0", "mapped": true, "hidden": false, "at": [12, 42], "size": [1896, 1026], "workspace": {"id": 3, "name": "3"}, "floating": false, "monitor": 0, "class": "org.gnome.Nautilus", "title": "Files – Downloads", "fullscreen": 0},
+  {"address": "0x55d3c0a1b5f0", "mapped": false, "hidden": true, "at": [0, 0], "size": [10, 10], "workspace": {"id": 3, "name": "3"}, "floating": true, "monitor": 0, "class": "hidden", "title": "unsichtbar", "fullscreen": 0}
+]

@@ -9,6 +9,7 @@ import "notifications"
 import "osd"
 import "power"
 import "clipboard"
+import "overview"
 
 // hypr-shell: Quickshell-Oberfläche (gestartet von ~/.local/bin/shell-quickshell, das das
 // Symbolthema aus settings.json – theme.icons – über QS_ICON_THEME setzt)
@@ -22,4 +23,5 @@ ShellRoot {
     Osd { }
     PowerMenu { }
     Clipboard { }
+    Overview { }
 }

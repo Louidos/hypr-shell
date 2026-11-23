@@ -210,6 +210,7 @@
     "settings": "SUPER + U",
     "power": "SUPER + Escape",
     "clipboard": "SUPER + SHIFT + V",
+    "overview": "SUPER + Tab",
     "lock": "SUPER + L",
     "exit": "SUPER + M",
     "screenshot_region": "Print",

@@ -127,7 +127,9 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 | `CTRL + SUPER + Escape` | Notfall: Tastatur zurück (siehe [Tastatur geht nicht](docs/tastenkuerzel.md#tastatur-geht-nicht)) |
 | `SUPER + I` | Chat mit Missa (nur mit `missa.enabled`, sonst tut das Kürzel nichts) |
 | `SUPER + SHIFT + I` | mit Missa sprechen; nochmal drücken beendet (nur mit `missa.voice_enabled` und whisper.cpp) |
-| `SUPER + M` | abmelden (Hyprland beenden) |
+| `SUPER + M` | Fenster minimieren (liegt dann abgedunkelt im Dock) |
+| `SUPER + SHIFT + M` | zuletzt minimiertes Fenster zurückholen |
+| `CTRL + SUPER + M` | abmelden (Hyprland beenden; bis 1.9 `SUPER + M`) |
 | `SUPER + L` | sperren |
 | `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |
 | `SUPER + left` / `SUPER + right` / `SUPER + up` / `SUPER + down` | Fokus in diese Richtung |
@@ -287,6 +289,24 @@ nach 5 Minuten und geht nach 15 Minuten in den Standby (vorher wird gesperrt); d
 in `lock.after`, `lock.screen_off` und `lock.suspend`.
 
 ![Sperrbildschirm](docs/screenshots/lockscreen.png)
+
+### Fenster-Knöpfe
+
+Jedes normale Fenster hat oben eine schmale Glas-Titelleiste mit Titel und drei Knöpfen:
+**Minimieren**, **Maximieren/Wiederherstellen** und **Schliessen** – im Windows-Stil rechts
+(Standard) oder als rote, gelbe und grüne Punkte links im macOS-Stil (`fenster.knoepfe.stil`,
+`fenster.knoepfe.seite`; wirkt sofort). Doppelklick auf die Leiste maximiert, Ziehen verschiebt.
+Maximieren füllt die Fläche zwischen Leiste und Dock (kein echtes Vollbild; `SUPER + F` bleibt
+Vollbild). Minimierte Fenster verschwinden, liegen abgedunkelt im Dock und kommen per Klick an ihre
+alte Stelle auf der aktuellen Arbeitsfläche zurück (`SUPER + M` / `SUPER + SHIFT + M`,
+`shell-window minimize|restore`). Programme mit eigener Titelleiste (GNOME-Programme wie der
+Dateimanager, Browser) bekommen keine zweite – ihre eigenen Knöpfe zeigen dieselben drei Knöpfe auf
+derselben Seite, ihr Minimieren geht ebenfalls ins Dock. Keine Titelleiste bei Vollbild, Dialogen,
+Spielen und Videos (`fenster.titelleiste_ausnahmen`; `fenster.titelleiste` = an | aus |
+nur-schwebend). Die Titelleiste kommt vom offiziellen Plugin **hyprbars**; der Installer richtet es
+ein (Paket, sonst `hyprpm`), beim Start lädt `shell-window titlebar` es. Fehlt es (z. B. nach einem
+Hyprland-Update), läuft alles ohne Knöpfe weiter und eine Meldung nennt die Lösung
+(`hyprpm update && hyprpm enable hyprbars`).
 
 ### Glas-Look
 
@@ -521,6 +541,7 @@ automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelte
 | `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
+| `shell-window minimize\|restore\|list` | Fenster minimieren, zurückholen, minimierte zeigen |
 | `shell-look presets\|preset <name>` | Voreinstellungen für das Aussehen: glass, minimal, gaming |
 | `shell-diag tastatur\|freigeben` | wer hat die Tastatur? bzw. Tastatur zurück (wie `CTRL + SUPER + Escape`) |
 | `shell-waechter <name> -- <befehl>` | hält Leiste und Oberfläche am Laufen: nach einem Absturz Neustart (höchstens 5-mal in 2 Minuten, dann Benachrichtigung); `shell-waechter stop <name>` beendet ohne Neustart |

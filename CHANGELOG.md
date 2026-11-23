@@ -6,8 +6,12 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Hinzugefügt
+- Fenster haben oben rechts Knöpfe zum Minimieren, Maximieren und Schliessen (umstellbar auf macOS-Stil); minimierte Fenster liegen im Dock und kommen per Klick an ihre alte Stelle zurück (SUPER+M, SUPER+SHIFT+M) (#120)
+
 ### Geändert
 - Einheitlicher Glas-Look: grau durchsichtig, feiner weisser Rand und runde Ecken (14 px) überall – Leiste (jetzt schwebend), Dock, Panels, Menüs, Benachrichtigungen, rofi – auch an den Programmfenstern (leicht durchsichtig, Spiele, Videos und Bildbearbeitung undurchsichtig); bei hellem Hintergrundbild wird das Glas automatisch dunkler; Voreinstellungen glass, minimal und gaming mit Live-Vorschau (#119)
+- Abmelden liegt jetzt auf CTRL+SUPER+M (vorher SUPER+M, das jetzt minimiert); selbst gesetzte Kürzel bleiben (#120)
 
 ## 1.9.2 – 2026-11-24
 

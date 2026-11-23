@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../common"
+import "monitore.js" as M
 
 // Seite Monitors: die echten Bildschirme aus Hyprland (hyprctl monitors -j, nur solange die Seite
 // offen ist). Eine neue Auflösung, Skalierung oder Position wird sofort gesetzt und muss innerhalb
@@ -55,18 +56,8 @@ Column {
         interval: 1000; repeat: true; running: mp.countdown > 0
         onTriggered: { mp.countdown--; if (mp.countdown <= 0) mp.revert() }
     }
-    // Modi wie "2560x1600@165.00Hz" -> einmalige Auflösungen mit der höchsten Bildrate
-    function modes(m) {
-        const r = {}
-        for (const s of (m.availableModes || [])) {
-            const x = s.match(/^(\d+x\d+)@([\d.]+)Hz$/)
-            if (!x) continue
-            const hz = Math.round(Number(x[2]))
-            if (!r[x[1]] || r[x[1]] < hz) r[x[1]] = hz
-        }
-        return Object.keys(r).map(k => ({ res: k, hz: r[k], px: Number(k.split("x")[0]) * Number(k.split("x")[1]) }))
-            .sort((a, b) => b.px - a.px).slice(0, 6)
-    }
+    // Auflösungen zum Wählen (die grössten sechs, dazu immer die laufende und die eingestellte)
+    function modes(m) { return M.modes(m, entry(m.name).resolution, 6) }
 
     // ---- Bestätigung
     GlassCard {
@@ -133,7 +124,7 @@ Column {
                         model: mp.modes(card.modelData)
                         delegate: Pill {
                             required property var modelData
-                            text: modelData.res + " @ " + modelData.hz + " Hz"
+                            text: M.label(modelData)
                             active: card.e.resolution === modelData.res
                             onClicked: mp.change(card.modelData.name, { resolution: modelData.res, refresh: modelData.hz })
                         }

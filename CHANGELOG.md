@@ -13,6 +13,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Sensor-Kachel heisst ohne Anbindung wie in den Einstellungen „Air quality“ statt „Sensor“; das Dock zeigt die Standard-Einträge auch, bevor das Schema gelesen ist (#110)
 - Ist der unter Desktop → Screen eingestellte Bildschirm abgesteckt, erscheinen Widgets und Panels auf dem ersten Bildschirm und wechseln zurück, sobald er wieder da ist; ein Hinweis steht im Log (#110)
 - Dashboard, Einstellungen, Spickzettel, Übersicht, Dock und Widgets rechnen ohne bekannten Bildschirm mit dem echten ersten Bildschirm statt mit fest 1920×1080 (#110)
+- Einstellungen → Monitors zeigt die laufende und die eingestellte Auflösung immer zur Auswahl an, auch wenn sie nicht zu den sechs grössten gehört; ohne bekannte Bildrate steht kein „@ 0 Hz“ mehr da (#110)
 
 ## 1.8.0 – 2026-11-23
 

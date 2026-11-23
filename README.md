@@ -65,6 +65,23 @@ Das Wetter kommt ohne API-Schlüssel von open-meteo.com; den Ort einmal in
 Systemwerte werden nur abgefragt, solange das Dashboard offen ist; eine schlafende
 NVIDIA-Karte wird dafür nicht geweckt.
 
+## Hot-Corner-Panel
+
+Berührt die Maus die Ecke unten rechts (oder **SUPER+A**), wächst ein schmales
+Glas-Panel heraus; es schliesst, sobald die Maus es verlässt.
+
+- **Kopf**: Profilbild (`~/.face`), „Good evening, <Benutzer>“, Datum, Uhrzeit
+- **Keep Awake**: verhindert Sperren und Standby (über `systemd-inhibit`, hypridle hält sich daran)
+- **Apps**: Suchfeld (Enter startet den ersten Treffer), „All“ öffnet rofi, Raster mit
+  den Apps aus `panel.apps` – nicht installierte fallen weg
+- **Now playing**: Titel oder „Nothing playing“, zurück / Play / weiter
+- **Screenshot**: Screen, Region, Ordner (`~/Pictures/Screenshots`, zusätzlich in der Zwischenablage)
+- **Quick Toggles**: WLAN, Bluetooth, Nicht stören, Gaming-Modus (Blur, Animationen und
+  Schatten aus – bleibt auch nach `hyprctl reload`), Einstellungen (öffnet `settings.json`)
+
+Reihenfolge und Sichtbarkeit der Karten (`panel.sections`), App-Liste (`panel.apps`) und
+Schalter (`panel.toggles`) stehen in `settings.json` und wirken sofort.
+
 ## Aufbau
 
 | Ordner | Inhalt |

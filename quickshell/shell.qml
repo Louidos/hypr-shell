@@ -3,9 +3,11 @@ import Quickshell
 import QtQuick
 import "desktop"
 import "dashboard"
+import "panel"
 
 // hypr-shell: Quickshell-Oberfläche (gestartet von ~/.local/bin/shell-quickshell)
 ShellRoot {
     Desktop { }
     Dashboard { }
+    HotCorner { }
 }

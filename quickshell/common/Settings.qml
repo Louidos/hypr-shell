@@ -18,7 +18,13 @@ Singleton {
             clock: { enabled: true, x: 0.02, y: 0.045, scale: 1.0 },
             resources: { enabled: true, x: 0.015, y: 0.56, scale: 1.0 }
         },
-        dashboard: { width: 1000, edge: true, opacity: 0.42 }
+        dashboard: { width: 1000, edge: true, opacity: 0.42 },
+        panel: {
+            enabled: true, corner: "bottom-right", trigger: 6, width: 420, radius: 26, opacity: 0.44,
+            sections: ["awake", "apps", "media", "shot", "toggles"],
+            apps: ["kitty", "org.gnome.Nautilus", "firefox", "spotify", "discord", "steam"],
+            toggles: ["wifi", "bluetooth", "dnd", "gaming", "settings"]
+        }
     })
     property var data: defaults
 

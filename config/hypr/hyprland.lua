@@ -215,10 +215,12 @@ hl.bind(mod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- Oberfläche (Quickshell): Dashboard; SUPER + W öffnet direkt den Tab Wallpaper
+-- Oberfläche (Quickshell): Dashboard und Panel; SUPER + W öffnet direkt den Tab Wallpaper
 local ui = bin .. "shell-quickshell ipc "
 hl.bind(mod .. " + ALT + D", hl.dsp.exec_cmd(ui .. "dashboard toggle"))
 hl.bind(mod .. " + W",       hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"))
+-- Hot-Corner-Panel (auch: Maus in die Ecke unten rechts)
+hl.bind(mod .. " + A",       hl.dsp.exec_cmd(ui .. "panel toggle"))
 
 -- Screenshots: speichern und in die Zwischenablage
 hl.bind("Print",         hl.dsp.exec_cmd(bin .. "shell-screenshot region"))

@@ -88,8 +88,18 @@ optional("hypr-shell-env")
 ------------------
 
 -- jeder Bildschirm mit seiner bevorzugten Auflösung, automatisch angeordnet (monitors.scale);
--- Einträge in monitors.outputs gelten für einzelne Bildschirme
+-- Einträge in monitors.outputs gelten für einzelne Bildschirme. Gibt es einen Bildschirm nicht,
+-- bleibt sein Eintrag ohne Wirkung.
 local function leer(v) return v == nil or v == "" or v == "auto" end
+-- Drehung (monitors.outputs[].transform) → Zahl für Hyprland (wl_output_transform 0–7):
+-- normal 0, 90 1, 180 2, 270 3, flipped 4, flipped-90 5, flipped-180 6, flipped-270 7.
+-- Ein Eintrag ohne Drehung (vor 1.9) gilt als normal.
+local DREHUNG = { normal = 0, ["90"] = 1, ["180"] = 2, ["270"] = 3,
+    flipped = 4, ["flipped-90"] = 5, ["flipped-180"] = 6, ["flipped-270"] = 7 }
+local function drehung(v)
+    if type(v) == "number" and v >= 0 and v <= 7 and v == math.floor(v) then return math.floor(v) end
+    return DREHUNG[tostring(v or "normal")] or 0
+end
 hl.monitor({
     output   = "",
     mode     = "preferred",
@@ -108,7 +118,44 @@ for _, m in ipairs(S.monitors.outputs or {}) do
             mode     = mode,
             position = leer(m.position) and "auto" or m.position,
             scale    = (m.scale == nil or m.scale == "") and tostring(S.monitors.scale or "auto") or tostring(m.scale),
+            transform = drehung(m.transform),
         })
+    end
+end
+
+-- Touchscreen und Stift drehen mit dem gedrehten Bildschirm mit (der eingebaute zuerst). Nur, wenn
+-- es ein solches Gerät gibt: direkt auf dem Bildschirm bediente Geräte (INPUT_PROP_DIRECT) in
+-- /proc/bus/input/devices; Namen mit Pen, Stylus oder Wacom gelten als Stift. Sonst nichts.
+local function direkte_geraete()
+    local f = io.open(os.getenv("HYPR_SHELL_INPUT_DEVICES") or "/proc/bus/input/devices", "r")
+    if not f then return false, false end
+    local touch, stift, name = false, false, ""
+    for zeile in f:lines() do
+        local n = zeile:match('^N: Name="(.*)"')
+        if n then name = n:lower() end
+        local p = zeile:match("^B: PROP=(%x+)")
+        if p and ((tonumber(p, 16) or 0) & 2) ~= 0 then
+            if name:find("pen", 1, true) or name:find("stylus", 1, true) or name:find("wacom", 1, true) then stift = true
+            else touch = true end
+        end
+    end
+    f:close()
+    return touch, stift
+end
+do
+    local gedreht
+    for _, m in ipairs(S.monitors.outputs or {}) do
+        if type(m) == "table" and type(m.name) == "string" and m.name ~= "" and drehung(m.transform) ~= 0 then
+            local eingebaut = m.name:match("^eDP") or m.name:match("^LVDS") or m.name:match("^DSI")
+            if not gedreht or (eingebaut and not gedreht.eingebaut) then gedreht = { name = m.name, t = drehung(m.transform), eingebaut = eingebaut } end
+        end
+    end
+    if gedreht then
+        local touch, stift = direkte_geraete()
+        local input = {}
+        if touch then input.touchdevice = { transform = gedreht.t, output = gedreht.name } end
+        if stift then input.tablet = { transform = gedreht.t, output = gedreht.name } end
+        if next(input) then hl.config({ input = input }) end
     end
 end
 

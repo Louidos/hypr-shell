@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.5.0 – 2026-11-23
+
 ### Hinzugefügt
 - Homelab-Übersicht über Missa (Tab Lab), Kalendertermine (CalDAV) und Sensor-Kachel im Dashboard, einschaltbar in den Einstellungen (#64)
 - Missa kann am Rechner Dateien finden und öffnen, Programme und Fenster steuern und nach Bestätigung Befehle ausführen; sichtbar in der Leiste, sofort trennbar im Panel, jede Aktion im Verlauf, einschaltbar in den Einstellungen (#63)

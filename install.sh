@@ -235,6 +235,7 @@ echter_ordner() { # pfad
         mkdir -p "$d"
         # bisherigen Inhalt übernehmen (als Kopie, der Dotfiles-Ordner bleibt unberührt)
         cp -a "$(readlink -f "$BACKUP/links/$rel")/." "$d/" 2>/dev/null || true
+        chmod -R u+w "$d"
     fi
 }
 

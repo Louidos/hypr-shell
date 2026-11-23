@@ -38,7 +38,7 @@ PAKETE=(
     grim slurp wl-clipboard libnotify jq playerctl brightnessctl pamixer swayosd
     power-profiles-daemon networkmanager bluez bluez-utils nautilus xdg-user-dirs imagemagick
     papirus-icon-theme bibata-cursor-theme-bin
-    ttf-jetbrains-mono-nerd inter-font ttf-bebas-neue noto-fonts noto-fonts-emoji
+    ttf-jetbrains-mono-nerd inter-font noto-fonts noto-fonts-emoji
 )
 # Ausweichnamen, falls ein Paket anders heisst
 declare -A ALTERNATIVEN=(
@@ -49,7 +49,6 @@ declare -A ALTERNATIVEN=(
     [swayosd]="swayosd-git"
     [bibata-cursor-theme-bin]="bibata-cursor-theme"
     [inter-font]="ttf-inter"
-    [ttf-bebas-neue]="ttf-bebas-neue-pro"
 )
 # Programme, die am Ende da sein müssen (Programm:Paket)
 PROGRAMME=(
@@ -390,6 +389,8 @@ installieren() {
         installiere_baum "$REPO/quickshell" "$QS_DIR"
     fi
     installiere_baum "$REPO/bin" "$BIN" 755
+    # mitgelieferte Schriften (Bebas Neue, SIL Open Font License)
+    installiere_baum "$REPO/quickshell/common/fonts" "$HOME/.local/share/fonts/hypr-shell"
     installiere_baum "$REPO/wallpapers" "$DATA/wallpapers"
     installiere_datei "$REPO/VERSION" "$DATA/VERSION"
     if [ -f "$REPO/settings/settings.example.json" ]; then
@@ -408,6 +409,9 @@ installieren() {
 
     erzeuge_lokal
     erzeuge_env
+    if [ "$DRY" -eq 0 ] && command -v fc-cache >/dev/null 2>&1; then
+        fc-cache -f "$HOME/.local/share/fonts/hypr-shell" >/dev/null 2>&1 || true
+    fi
 
     if [ "$DRY" -eq 0 ]; then
         # Manifest: alle Dateien, die zu hypr-shell gehören (für --uninstall)

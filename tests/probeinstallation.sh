@@ -33,6 +33,7 @@ while IFS= read -r -d '' f; do erwartet+=(".local/share/hypr-shell/wallpapers/$(
 if [ -n "$(find quickshell -name '*.qml' -print -quit)" ]; then
     while IFS= read -r -d '' f; do erwartet+=(".config/quickshell/hypr-shell/${f#quickshell/}"); done < <(find quickshell -type f ! -name .gitkeep -print0)
 fi
+while IFS= read -r -d '' f; do erwartet+=(".local/share/fonts/hypr-shell/$(basename "$f")"); done < <(find quickshell/common/fonts -type f -print0)
 erwartet+=(".local/share/hypr-shell/VERSION" ".config/hypr/hypr-shell-local.lua" ".config/hypr-shell/settings.json")
 
 echo "== 1. alte Datei anlegen"

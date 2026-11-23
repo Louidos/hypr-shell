@@ -135,3 +135,157 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | Ein neuer Schlüssel ohne neu erzeugte Doku macht die CI rot | automatisch (`tests/doku.sh` prüft das mit einem zusätzlichen Test-Schlüssel) |
 | Das README erklärt die drei Wege in wenigen Zeilen | automatisch (Stichworte und Link); Lesbarkeit von Hand |
 | About: „Open settings.json“ und „Open docs“ | von Hand (öffnen Terminal bzw. Browser) |
+
+## Neue Panels, Laptop, Missa, Anbindungen und Optik (Version 1.3.0 bis 1.6.0)
+
+Zur Prüfung auf dem echten Rechner (ROG Zephyrus M16). Was die CI nicht kann: echtes
+Hyprland mit Maus und Tastatur, Blur, asusctl/supergfxctl, Mikrofon und Lautsprecher,
+echtes WLAN und Bluetooth, FUSE-Einhängen, echte Server (Missa-Core, Nextcloud, CalDAV,
+Sensor) und der echte SDDM-Anmeldebildschirm.
+
+### Gruppe 1: Gemeinsame Panel-Grundlage
+
+| Punkt | Prüfung |
+| --- | --- |
+| Dashboard bei offenem Panel öffnen schliesst das Panel | automatisch (`tests/oberflaeche.sh`, IPC) |
+| Dashboard und Panel sehen aus und reagieren wie vorher | Screenshots automatisch (CI-Branch `ci/screenshots`); Blur und Animationen von Hand |
+| Alle bestehenden Tests grün | automatisch |
+
+### Gruppe 2: Starter
+
+| Punkt | Prüfung |
+| --- | --- |
+| SUPER+R und SUPER+Space öffnen den Starter, Tippen und Enter startet | Belegung und Suche automatisch; Start einer App von Hand |
+| `=12*8` zeigt 96 | automatisch |
+| Mit eigenem Befehl (`apps.launcher`) startet wieder rofi | automatisch (Belegung) |
+
+### Gruppe 3: Benachrichtigungen
+
+| Punkt | Prüfung |
+| --- | --- |
+| `notify-send Test` zeigt eine Karte und steht danach im Verlauf | automatisch (D-Bus im Test) |
+| Mit Nicht stören keine Karte, Verlauf füllt sich | automatisch |
+| Nach Neuanmeldung genau ein Benachrichtigungsdienst (kein swaync mehr) | von Hand (`busctl --user list \| grep Notifications`) |
+
+### Gruppe 4: Lautstärke-Anzeige und Power-Menü
+
+| Punkt | Prüfung |
+| --- | --- |
+| Lautstärketasten zeigen nur die neue Anzeige | Anzeige automatisch (`tests/osd.sh`); Tasten und „kein swayosd“ von Hand |
+| SUPER+Escape öffnet das Menü, Shutdown braucht eine Bestätigung | automatisch (Probelauf ohne echtes Herunterfahren) |
+
+### Gruppe 5: Zwischenablage
+
+| Punkt | Prüfung |
+| --- | --- |
+| Drei Texte in richtiger Reihenfolge, Enter fügt ein | Reihenfolge automatisch (`tests/zwischenablage.sh`); Einfügen in ein Fenster von Hand |
+| Bild mit Vorschau | automatisch |
+| „Clear all“ leert den Verlauf | automatisch |
+
+### Gruppe 6: Fenster-Übersicht
+
+| Punkt | Prüfung |
+| --- | --- |
+| SUPER+Tab zeigt alle Fenster an der richtigen Arbeitsfläche | Daten automatisch (`tests/uebersicht.sh`); Vorschaubilder von Hand |
+| Klick springt hin, Ziehen verschiebt | Befehle automatisch; Maus von Hand |
+
+### Gruppe 7: Unterseiten und Schalter im Panel
+
+| Punkt | Prüfung |
+| --- | --- |
+| Neues WLAN nur im Panel verbinden | Ablauf mit nmcli-Attrappe automatisch; echtes WLAN von Hand |
+| Ausgabegerät wechseln wirkt sofort | von Hand |
+| Ohne Bluetooth-Adapter fehlt der Schalter ohne Fehler | automatisch |
+
+### Gruppe 8: Kürzel-Spickzettel
+
+| Punkt | Prüfung |
+| --- | --- |
+| SUPER+F1 zeigt jedes Kürzel (ohne ausgeschaltete Anbindungen) | automatisch (Belegungen aus hyprland.lua mit Beschreibung) |
+| Geändertes Kürzel steht nach `hyprctl reload` richtig drin | von Hand |
+
+### Gruppe 9: ROG-Laptop
+
+| Punkt | Prüfung |
+| --- | --- |
+| Profilwechsel im Panel stimmt mit `asusctl profile get` überein | Attrappe automatisch (`tests/laptop.sh`); echtes asusctl von Hand |
+| Ladegrenze bleibt nach einem Neustart | von Hand (wird bei jeder Anmeldung von `shell-laptop apply` gesetzt) |
+| Ohne asusctl erscheint nichts davon | automatisch |
+
+### Gruppe 10: Spiele
+
+| Punkt | Prüfung |
+| --- | --- |
+| Tab zeigt die letzten Spiele mit Cover, Klick startet | Liste automatisch (`tests/spiele.sh`); Start von Hand |
+| Beim Spielstart Blur und Animationen aus, danach wieder an | Ereignisse automatisch; im echten Spiel von Hand |
+
+### Gruppe 11: Ordner und Schalter für Anbindungen
+
+| Punkt | Prüfung |
+| --- | --- |
+| Frische Installation: alle Anbindungen aus, kein Dienst, Ordner, Lesezeichen, Netzverkehr | automatisch (`tests/anbindungen.sh`) |
+| `~/Nextcloud` im Dateimanager, Datei öffnen und anlegen, liegt auf dem Server | automatisch gegen lokalen WebDAV-Testserver, wenn FUSE geht (in der CI nicht); echte Nextcloud von Hand |
+| Ausschalten hängt aus, entfernt Lesezeichen, stoppt Dienst, Zugangsdaten bleiben | automatisch |
+| `~/Missa` mit Eingang und Ausgabe nur bei eingeschaltetem Missa | automatisch |
+| Ohne rclone ein Hinweis statt Fehler | automatisch |
+| Kein Passwort in `git grep` und settings.json | automatisch |
+
+### Gruppe 12: Missa-Chat
+
+| Punkt | Prüfung |
+| --- | --- |
+| Antwort läuft sichtbar ein und lässt sich abbrechen | automatisch gegen den lokalen Testserver (`tests/missa-chat.sh`, Oberflächentest) |
+| Nach Neustart der Oberfläche dieselbe Sitzung | automatisch |
+| Falscher Schlüssel: klare Meldung, Schlüssel in keinem Log | automatisch |
+| Yes und No nur nach einer Rückfrage | automatisch |
+| Missa aus: SUPER+I tut nichts, keine Netzanfrage | automatisch |
+| Echter Missa-Core | von Hand (Adresse, Schlüssel und Gerätename eintragen) |
+
+### Gruppe 13: Mit Missa sprechen
+
+| Punkt | Prüfung |
+| --- | --- |
+| Gesprochener Satz steht im Chat und wird beantwortet | Ablauf mit Attrappen automatisch (`tests/sprache.sh`); echtes Mikrofon und whisper.cpp von Hand |
+| Antwort wird vorgelesen, Esc stoppt | Attrappe automatisch; Ton von Hand |
+| Ohne whisper.cpp und piper kein Fehler und kein Mikrofon-Knopf | automatisch |
+| Schalter aus: nichts nimmt auf, Taste tut nichts | automatisch |
+| Keine Audiodatei bleibt liegen | automatisch |
+
+### Gruppe 14: Missa bedient den Rechner
+
+| Punkt | Prüfung |
+| --- | --- |
+| „Öffne meine letzte PDF im Download-Ordner“ öffnet die Datei | automatisch (Aufträge vom Testserver, `tests/missa-agent.sh`) |
+| `rechner_befehl` in `ask` erst nach Klick, in `read` gar nicht | automatisch |
+| Lesen in `~/.ssh` in jeder Stufe abgelehnt | automatisch |
+| Schalter im Panel trennt sofort, Symbol verschwindet | automatisch (Agent und Leistenzustand); Leiste von Hand |
+| Jede Aktion im Verlauf | automatisch |
+| Frische Installation: kein Agent, kein Symbol, kein Schalter | automatisch |
+| Gegen den echten Missa-Core (Geräte-Anschluss v1) | von Hand |
+
+### Gruppe 15: Homelab, Kalender, Sensor
+
+| Punkt | Prüfung |
+| --- | --- |
+| Schalter aus: kein Tab, keine Termine, keine Kachel, keine Netzanfrage | automatisch (`tests/anbindungen-dashboard.sh`) |
+| Eingeschaltet ohne Einträge: Tab „Lab“ zeigt eine Anleitung | automatisch |
+| Server nicht erreichbar: Dashboard bleibt flüssig | automatisch (3 s Zeitlimit, Zwischenspeicher) |
+| Kein Token in `git grep` und settings.json | automatisch |
+
+### Gruppe 16: Apps mitfärben
+
+| Punkt | Prüfung |
+| --- | --- |
+| Nach einem Bildwechsel hat der Dateimanager die neuen Farben | Dateien automatisch (`tests/apps-farben.sh`); Nautilus neu öffnen und ansehen von Hand |
+| Abschalten bringt das ursprüngliche Aussehen zurück | automatisch (jede Datei Byte für Byte, auch Links) |
+| Nicht installierte Programme tauchen nicht auf | automatisch (Einstellungen und `shell-appcolors caps`) |
+| Firefox, Vesktop, Spotify im echten Programm | von Hand (Firefox und Spotify brauchen einen Neustart) |
+
+### Gruppe 17: Login-Bildschirm
+
+| Punkt | Prüfung |
+| --- | --- |
+| Normale Installation fasst den Anmeldemanager nicht an | automatisch (`tests/login-bildschirm.sh`) |
+| `--login-theme-remove` stellt den vorherigen Zustand her | automatisch in einer Wurzel-Attrappe |
+| Thema startet im Testmodus ohne Fehler | automatisch (`sddm-greeter-qt6 --test-mode` in der CI) |
+| Anmelden mit dem neuen Bildschirm, Sitzung „Hyprland“ wählbar | von Hand |

@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Hinzugefügt
+- Leiste, Abstände, Blur, Animationen, Farben, Schriften, Eingabe, Bildschirme, Sperrzeiten und Standard-Programme sind in settings.json einstellbar und wirken sofort; ein falscher Wert oder kaputtes JSON legt nichts lahm, eine Benachrichtigung nennt Schlüssel und Grund (#31)
+
 ## 1.1.0 – 2026-11-23
 
 ### Hinzugefügt

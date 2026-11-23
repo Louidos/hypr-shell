@@ -8,31 +8,67 @@ local bin  = home .. "/.local/bin/"
 
 -- optionale Teildateien: fehlt eine, wird sie übersprungen statt die Konfiguration zu brechen
 local function optional(name)
+    package.loaded[name] = nil
     local ok, err = pcall(require, name)
     if not ok and not tostring(err):find("not found", 1, true) then
         print("hypr-shell: " .. name .. ": " .. tostring(err))
     end
 end
 
+-- Teildatei frisch laden (auch nach "hyprctl reload" den neuen Stand, nicht den zwischengespeicherten)
+local function frisch(name)
+    package.loaded[name] = nil
+    return pcall(require, name)
+end
+
 -- Farben aus dem Hintergrundbild (matugen schreibt hypr-shell-colors.lua)
 local colors = { accent = "rgba(d4d4d4ee)", inactive = "rgba(59595966)" }
 do
-    local ok, c = pcall(require, "hypr-shell-colors")
+    local ok, c = frisch("hypr-shell-colors")
     if ok and type(c) == "table" then colors = c end
 end
 
--- Tastaturlayout, Skalierung, Touchpad und alte Umgebungsvariablen (von install.sh erzeugt).
--- Fehlt ein Wert in hypr-shell-local.lua (ältere Datei), gilt der Standard von hier.
-local localcfg = { kb_layout = "us", kb_variant = "", scale = "auto", natural_scroll = false, tap_to_click = true }
-do
-    local ok, c = pcall(require, "hypr-shell-local")
-    if ok and type(c) == "table" then
-        for k, v in pairs(c) do localcfg[k] = v end
+-- Einstellungen: Standardwerte (gleich wie settings/schema.json), darunter die alte
+-- hypr-shell-local.lua (v1.1), darüber hypr-shell-settings.lua (von shell-apply aus
+-- ~/.config/hypr-shell/settings.json erzeugt). Fehlt eine Datei, gelten die Werte darunter.
+local S = {
+    look = {
+        gaps = { inner = 6, outer = 12 },
+        border = 1,
+        rounding = 12,
+        blur = { enabled = true, size = 10, passes = 3 },
+        shadow = true,
+        opacity = { inactive = 1.0 },
+        animations = { enabled = true, speed = "normal" },
+    },
+    theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 } },
+    input = {
+        layout = "us", variant = "", sensitivity = 0,
+        touchpad = { natural_scroll = false, tap_to_click = true },
+    },
+    monitors = { scale = "auto", outputs = {} },
+    apps = { terminal = "kitty", files = "nautilus", browser = "firefox", launcher = "rofi -show drun" },
+}
+local function merge(a, b)
+    for k, v in pairs(b) do
+        if type(v) == "table" and type(a[k]) == "table" and #v == 0 and next(v) ~= nil then merge(a[k], v)
+        else a[k] = v end
     end
+    return a
 end
-local function bool(v, standard)
-    if type(v) == "boolean" then return v end
-    return standard
+do
+    local ok, c = frisch("hypr-shell-local")
+    if ok and type(c) == "table" then
+        merge(S, {
+            input = {
+                layout = c.kb_layout, variant = c.kb_variant,
+                touchpad = { natural_scroll = c.natural_scroll, tap_to_click = c.tap_to_click },
+            },
+            monitors = { scale = c.scale ~= nil and tostring(c.scale) or nil },
+        })
+    end
+    local ok2, s = frisch("hypr-shell-settings")
+    if ok2 and type(s) == "table" then merge(S, s) end
 end
 optional("hypr-shell-env")
 
@@ -40,13 +76,30 @@ optional("hypr-shell-env")
 ---- MONITORE ----
 ------------------
 
--- jeder Bildschirm mit seiner bevorzugten Auflösung, automatisch angeordnet
+-- jeder Bildschirm mit seiner bevorzugten Auflösung, automatisch angeordnet (monitors.scale);
+-- Einträge in monitors.outputs gelten für einzelne Bildschirme
+local function leer(v) return v == nil or v == "" or v == "auto" end
 hl.monitor({
     output   = "",
     mode     = "preferred",
     position = "auto",
-    scale    = tostring(localcfg.scale or "auto"),   -- "auto" oder z. B. 1.25 in hypr-shell-local.lua
+    scale    = tostring(S.monitors.scale or "auto"),
 })
+for _, m in ipairs(S.monitors.outputs or {}) do
+    if type(m) == "table" and type(m.name) == "string" and m.name ~= "" then
+        local mode = "preferred"
+        if not leer(m.resolution) then
+            mode = m.resolution
+            if tonumber(m.refresh) and tonumber(m.refresh) > 0 then mode = mode .. "@" .. tostring(m.refresh) end
+        end
+        hl.monitor({
+            output   = m.name,
+            mode     = mode,
+            position = leer(m.position) and "auto" or m.position,
+            scale    = (m.scale == nil or m.scale == "") and tostring(S.monitors.scale or "auto") or tostring(m.scale),
+        })
+    end
+end
 
 -------------------
 ---- AUTOSTART ----
@@ -67,10 +120,12 @@ end)
 ---- UMGEBUNGSVARIABLEN ----
 ------------------------------
 
-hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
-hl.env("XCURSOR_SIZE", "24")
-hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
-hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", S.theme.cursor.name)
+hl.env("XCURSOR_SIZE", tostring(S.theme.cursor.size))
+hl.env("HYPRCURSOR_THEME", S.theme.cursor.name)
+hl.env("HYPRCURSOR_SIZE", tostring(S.theme.cursor.size))
+-- Standard-Browser für Programme, die $BROWSER lesen (apps.browser)
+hl.env("BROWSER", S.apps.browser)
 
 ------------------
 ---- AUSSEHEN ----
@@ -78,9 +133,9 @@ hl.env("HYPRCURSOR_SIZE", "24")
 
 hl.config({
     general = {
-        gaps_in     = 6,
-        gaps_out    = 12,
-        border_size = 1,
+        gaps_in     = S.look.gaps.inner,
+        gaps_out    = S.look.gaps.outer,
+        border_size = S.look.border,
         col = {
             active_border   = colors.accent,
             inactive_border = colors.inactive,
@@ -91,22 +146,22 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 12,
+        rounding       = S.look.rounding,
         rounding_power = 2,
         active_opacity   = 1.0,
-        inactive_opacity = 1.0,
+        inactive_opacity = S.look.opacity.inactive,
 
         shadow = {
-            enabled      = true,
+            enabled      = S.look.shadow,
             range        = 14,
             render_power = 3,
             color        = 0x661a1a1a,
         },
 
         blur = {
-            enabled  = true,
-            size     = 10,
-            passes   = 3,
+            enabled  = S.look.blur.enabled,
+            size     = S.look.blur.size,
+            passes   = S.look.blur.passes,
             noise    = 0.02,
             vibrancy = 0.17,
             popups   = true,
@@ -114,7 +169,7 @@ hl.config({
     },
 
     animations = {
-        enabled = true,
+        enabled = S.look.animations.enabled,
     },
 
     dwindle = {
@@ -127,13 +182,13 @@ hl.config({
     },
 
     input = {
-        kb_layout    = localcfg.kb_layout or "us",
-        kb_variant   = localcfg.kb_variant or "",
+        kb_layout    = S.input.layout,
+        kb_variant   = S.input.variant,
         follow_mouse = 1,
-        sensitivity  = 0,
+        sensitivity  = S.input.sensitivity,
         touchpad = {
-            natural_scroll = bool(localcfg.natural_scroll, false),
-            tap_to_click   = bool(localcfg.tap_to_click, true),
+            natural_scroll = S.input.touchpad.natural_scroll == true,
+            tap_to_click   = S.input.touchpad.tap_to_click ~= false,
         },
     },
 
@@ -149,13 +204,18 @@ hl.curve("smooth", { type = "bezier", points = { { 0.22, 1 }, { 0.36, 1 } } })
 hl.curve("quick",  { type = "bezier", points = { { 0.15, 0.85 }, { 0.25, 1.0 } } })
 hl.curve("linear", { type = "bezier", points = { { 0.0, 0.0 }, { 1.0, 1.0 } } })
 
-hl.animation({ leaf = "windows",      enabled = true, speed = 4, bezier = "smooth", style = "popin 90%" })
-hl.animation({ leaf = "windowsOut",   enabled = true, speed = 3, bezier = "quick",  style = "popin 90%" })
-hl.animation({ leaf = "windowsMove",  enabled = true, speed = 3, bezier = "smooth" })
-hl.animation({ leaf = "border",       enabled = true, speed = 6, bezier = "linear" })
-hl.animation({ leaf = "fade",         enabled = true, speed = 4, bezier = "smooth" })
-hl.animation({ leaf = "layers",       enabled = true, speed = 3, bezier = "quick",  style = "fade" })
-hl.animation({ leaf = "workspaces",   enabled = true, speed = 5, bezier = "smooth", style = "slidefade 15%" })
+-- Tempo aus look.animations.speed: slow / normal / fast (Hyprland: grössere Zahl = langsamer)
+local tempo = ({ slow = 1.6, normal = 1.0, fast = 0.6 })[S.look.animations.speed] or 1.0
+local function anim(leaf, speed, bezier, style)
+    hl.animation({ leaf = leaf, enabled = true, speed = math.floor(speed * tempo * 10 + 0.5) / 10, bezier = bezier, style = style })
+end
+anim("windows",     4, "smooth", "popin 90%")
+anim("windowsOut",  3, "quick",  "popin 90%")
+anim("windowsMove", 3, "smooth")
+anim("border",      6, "linear")
+anim("fade",        4, "smooth")
+anim("layers",      3, "quick",  "fade")
+anim("workspaces",  5, "smooth", "slidefade 15%")
 
 -- Wischen mit drei Fingern wechselt die Arbeitsfläche
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
@@ -197,9 +257,9 @@ hl.window_rule({
 ------------------------
 
 local mod = "SUPER"
-local terminal    = "kitty"
-local fileManager = "nautilus"
-local launcher    = "rofi -show drun"
+local terminal    = S.apps.terminal
+local fileManager = S.apps.files
+local launcher    = S.apps.launcher
 
 hl.bind(mod .. " + Q", hl.dsp.exec_cmd(terminal))
 hl.bind(mod .. " + C", hl.dsp.window.close())

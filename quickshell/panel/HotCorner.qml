@@ -119,7 +119,12 @@ Scope {
             }
         }
         // ohne Mausbesuch nach dem Öffnen (SUPER+A) erst nach einer Weile schliessen
-        Timer { id: leaveTimer; interval: hc.entered ? 400 : 4000; onTriggered: if (!hov.hovered && !content.typing) hc.hide() }
+        // panel.close_on_leave / panel.close_delay aus settings.json
+        Timer {
+            id: leaveTimer
+            interval: hc.entered ? Settings.get("panel.close_delay", 400) : 4000
+            onTriggered: if (!hov.hovered && !content.typing && Settings.get("panel.close_on_leave", true)) hc.hide()
+        }
         Connections {
             target: hc
             function onOpenChanged() { if (hc.open) leaveTimer.restart(); else leaveTimer.stop() }

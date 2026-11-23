@@ -2,10 +2,8 @@
 configuration {
     modi:               "drun,run,window";
     show-icons:         true;
-    icon-theme:         "Papirus-Dark";
     display-drun:       "";
     drun-display-format: "{name}";
-    font:               "Inter 11";
 }
 
 @import "colors.rasi"
@@ -49,3 +47,6 @@ element selected.normal {
     text-color:       #121214;
 }
 element-text selected { text-color: #121214; }
+
+/* Schrift, Symbolthema und Glas aus settings.json (von shell-apply erzeugt) */
+@import "hypr-shell-settings.rasi"

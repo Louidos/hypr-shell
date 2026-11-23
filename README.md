@@ -23,7 +23,8 @@ Der Installer
 - installiert die nötigen Pakete (pacman, den Rest mit paru) und prüft die Namen vorher,
 - kopiert die Dateien nach `~/.config`, `~/.local/bin`, `~/.local/share` und `~/Pictures/Wallpapers`,
 - sichert **jede** ersetzte Datei vorher nach `~/.config/hypr-shell-backup-<Zeit>/`,
-- übernimmt das Tastaturlayout aus `localectl` und Umgebungsvariablen der alten
+- legt `~/.config/hypr-shell/settings.json` an (nur wenn sie fehlt) und trägt dort das
+  Tastaturlayout aus `localectl` ein, übernimmt Umgebungsvariablen der alten
   Hyprland-Konfiguration (z. B. für NVIDIA), damit Spiele wie vorher starten,
 - läuft nie als root; sudo wird nur für pacman verwendet,
 - listet am Ende auf, falls noch ein Programm fehlt, und sagt, was als Nächstes zu tun ist
@@ -142,7 +143,8 @@ Animationen und Schatten aus) und Einstellungen.
 Bildschirm unscharf und abgedunkelt, links Profilbild über der grossen Uhr, Datum,
 Begrüssung, Passwort als Linie und Knöpfe für Standby, Neustart und Herunterfahren; unten
 links CPU- und RAM-Auslastung. hypridle sperrt
-nach 5 Minuten und geht nach 15 Minuten in den Standby (vorher wird gesperrt).
+nach 5 Minuten und geht nach 15 Minuten in den Standby (vorher wird gesperrt); die Zeiten stehen
+in `lock.after`, `lock.screen_off` und `lock.suspend`.
 
 ![Sperrbildschirm](docs/screenshots/lockscreen.png)
 
@@ -163,75 +165,151 @@ App-Symbole kommen aus Papirus-Dark, dann aus hicolor, dann aus dem Pfad in der
 
 ## Anpassen
 
-Alles Einstellbare steht in `~/.config/hypr-shell/settings.json` (Vorlage:
-[`settings/settings.example.json`](settings/settings.example.json)). Änderungen wirken
-sofort, ohne Neustart. Das Zahnrad im Panel öffnet die Datei in kitty mit dem Editor aus
-`$EDITOR` (sonst nano).
+Alles Einstellbare steht in **einer** Datei: `~/.config/hypr-shell/settings.json` (Vorlage:
+[`settings/settings.example.json`](settings/settings.example.json), Beschreibung jedes Werts:
+[`settings/schema.json`](settings/schema.json)). Änderungen wirken sofort, ohne Abmelden:
+Quickshell bemerkt die Änderung und ruft `shell-apply` auf. Das prüft jeden Wert, erzeugt die
+Dateien für Hyprland, Waybar, hypridle, hyprlock und rofi (oben steht jeweils „erzeugt von
+hypr-shell – nicht von Hand ändern“) und lädt nur den betroffenen Teil neu. Von Hand geht das mit
+`shell-apply`.
+
+- **Falscher Wert** (z. B. `"height": "abc"`, Zahl ausserhalb des Bereichs, unbekannter Name): der
+  Standardwert gilt, eine Benachrichtigung nennt Schlüssel und Grund. `shell-apply --check` zeigt
+  alle Probleme.
+- **Kaputtes JSON** (z. B. ein fehlendes Komma): der letzte gültige Stand bleibt aktiv, eine
+  Benachrichtigung nennt die Zeile.
+- Fehlt ein Wert, gilt sein Standard. Eine `settings.json` aus Version 1.0 oder 1.1 funktioniert
+  unverändert; Werte aus der alten `~/.config/hypr/hypr-shell-local.lua` (Tastatur, Skalierung,
+  Touchpad) wandern beim ersten Start einmalig in `settings.json`.
+
+Das Zahnrad im Panel öffnet die Datei in kitty mit dem Editor aus `$EDITOR` (sonst nano).
 
 | Wert | Standard | Bedeutung |
 | --- | --- | --- |
-| `weather.location` | `""` | Ort für das Wetter, z. B. `"Zürich"` – **einmal eintragen** |
-| `weather.units` | `"metric"` | `"metric"` (°C) oder `"imperial"` (°F) |
-| `desktop.screen` | `""` | Bildschirm für Widgets, Dashboard und Panel (Name aus `hyprctl monitors`); leer = erster |
-| `desktop.clock.enabled` | `true` | grosse Uhr an/aus |
-| `desktop.clock.x` | `0.02` | Abstand von links als Anteil der Bildschirmbreite |
-| `desktop.clock.y` | `0.045` | Abstand von oben als Anteil der Bildschirmhöhe |
-| `desktop.clock.scale` | `1.0` | Grösse |
-| `desktop.resources.enabled` | `true` | Kacheln CPU/RAM/GPU an/aus |
-| `desktop.resources.x` | `0.015` | Abstand von links (Anteil) |
-| `desktop.resources.y` | `0.56` | Abstand von oben (Anteil) |
-| `desktop.resources.scale` | `1.0` | Grösse |
-| `dashboard.width` | `1000` | Breite des Dashboards in Pixeln |
-| `dashboard.edge` | `true` | Öffnen über die Mitte der unteren Kante |
-| `dashboard.opacity` | `0.42` | Deckkraft der Glasfläche |
-| `panel.enabled` | `true` | Öffnen über die Ecke |
-| `panel.corner` | `"bottom-right"` | Ecke: `bottom-right`, `bottom-left`, `top-right`, `top-left` |
-| `panel.trigger` | `6` | Grösse des Auslösebereichs in Pixeln |
-| `panel.width` | `420` | Breite des Panels |
-| `panel.radius` | `26` | Eckenradius |
-| `panel.opacity` | `0.44` | Deckkraft der Glasfläche |
-| `panel.sections` | `["awake", "apps", "media", "shot", "toggles"]` | Karten und ihre Reihenfolge; weglassen = ausblenden |
-| `panel.apps` | `["kitty", "org.gnome.Nautilus", "firefox", "spotify", "discord", "steam"]` | Apps im Raster (Name der `.desktop`-Datei); nicht installierte fallen weg |
-| `panel.toggles` | `["wifi", "bluetooth", "dnd", "gaming", "settings"]` | Schnellschalter; zusätzlich möglich: `awake` |
+| `bar.position` | `"top"` | Edge of the screen the bar sits on – erlaubt: `top`, `bottom` |
+| `bar.height` | `30` | Height of the bar in pixels (20–60 px) |
+| `bar.opacity` | `0.25` | Opacity of the bar background (0–1) |
+| `bar.modules.left` | `["distro", "workspaces", "media"]` | Modules on the left, in this order – erlaubt: `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `power` |
+| `bar.modules.center` | `[]` | Modules in the middle, in this order – erlaubt: `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `power` |
+| `bar.modules.right` | `["volume", "battery", "clock", "bluetooth", "network", "recording", "power"]` | Modules on the right, in this order – erlaubt: `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `power` |
+| `bar.workspaces` | `4` | Workspaces that are always shown (0 = only used ones) (0–10) |
+| `bar.clock` | `"24h"` | 24-hour or 12-hour clock in the bar – erlaubt: `24h`, `12h` |
+| `bar.battery` | `true` | Show the battery (only on devices with a battery) |
+| `look.gaps.inner` | `6` | Space between windows (0–40 px) |
+| `look.gaps.outer` | `12` | Space between windows and the screen edge (0–60 px) |
+| `look.border` | `1` | Width of the window border (0–8 px) |
+| `look.rounding` | `12` | Corner radius of windows (0–30 px) |
+| `look.blur.enabled` | `true` | Blur behind transparent windows, the bar and the glass panels |
+| `look.blur.size` | `10` | Radius of the blur (1–20) |
+| `look.blur.passes` | `3` | More passes give a softer blur but cost more (1–6) |
+| `look.shadow` | `true` | Soft shadow under windows |
+| `look.opacity.inactive` | `1.0` | Opacity of windows without focus (0.5–1) |
+| `look.animations.enabled` | `true` | Animate windows, workspaces and layers |
+| `look.animations.speed` | `"normal"` | How fast animations play – erlaubt: `slow`, `normal`, `fast` |
+| `theme.colors` | `"auto"` | auto = colors from the wallpaper, grey = grey and white, custom = your accent color – erlaubt: `auto`, `grey`, `custom` |
+| `theme.accent` | `"#8ab4f8"` | Accent color for the custom color mode |
+| `theme.glass` | `0.44` | Opacity of the desktop tiles and the settings window (0.1–0.95) |
+| `theme.radius.panel` | `26` | Corner radius of glass panels (0–40 px) |
+| `theme.radius.card` | `18` | Corner radius of cards inside panels (0–30 px) |
+| `theme.font.ui` | `"Inter"` | Font for text in the bar, dashboard, panel and lock screen |
+| `theme.font.mono` | `"JetBrainsMono Nerd Font"` | Font for symbols and numbers (needs Nerd Font symbols) |
+| `theme.font.clock` | `"JetBrainsMono Nerd Font"` | Font of the big clock on the desktop |
+| `theme.font.display` | `"Bebas Neue"` | Font of the clocks in the dashboard and on the lock screen |
+| `theme.font.scale` | `1.0` | Factor for all font sizes (0.8–1.5) |
+| `theme.cursor.name` | `"Bibata-Modern-Ice"` | Name of the mouse cursor theme |
+| `theme.cursor.size` | `24` | Size of the mouse cursor (16–64 px) |
+| `theme.icons` | `"Papirus-Dark"` | Icon theme for apps in the panel and the launcher |
+| `input.layout` | `"us"` | Layout code like us, de or ch |
+| `input.variant` | `""` | Variant like de or fr for ch (empty = standard) |
+| `input.sensitivity` | `0` | -1 = slow, 0 = normal, 1 = fast (-1–1) |
+| `input.touchpad.natural_scroll` | `false` | Touchpad content follows your fingers |
+| `input.touchpad.tap_to_click` | `true` | Tapping the touchpad clicks |
+| `monitors.scale` | `"auto"` | Scale for screens without their own entry: auto or a number like 1.25, 1.5, 2 |
+| `monitors.outputs` | `[]` | Settings for single screens; empty values mean automatic |
+| `desktop.screen` | `""` | Screen for widgets, dashboard and panel (name from hyprctl monitors, empty = first) |
+| `desktop.clock.enabled` | `true` | Big stacked clock on the desktop |
+| `desktop.clock.format` | `"24h"` | 24-hour or 12-hour clock – erlaubt: `24h`, `12h` |
+| `desktop.clock.x` | `0.02` | Distance from the left as a share of the screen width (0–1) |
+| `desktop.clock.y` | `0.045` | Distance from the top as a share of the screen height (0–1) |
+| `desktop.clock.scale` | `1.0` | Size factor of the clock (0.3–3) |
+| `desktop.resources.enabled` | `true` | Usage tiles on the desktop |
+| `desktop.resources.tiles` | `["cpu", "ram", "gpu"]` | Tiles and their order – erlaubt: `cpu`, `ram`, `gpu`, `disk` |
+| `desktop.resources.x` | `0.015` | Distance from the left as a share of the screen width (0–1) |
+| `desktop.resources.y` | `0.56` | Distance from the top as a share of the screen height (0–1) |
+| `desktop.resources.scale` | `1.0` | Size factor of the tiles (0.3–3) |
+| `dashboard.width` | `1000` | Width of the dashboard in pixels (600–2400 px) |
+| `dashboard.opacity` | `0.42` | Opacity of the glass (0.1–0.95) |
+| `dashboard.edge` | `true` | Open when the mouse touches the middle of the bottom edge |
+| `dashboard.close_on_leave` | `true` | Close when the mouse leaves the dashboard |
+| `dashboard.tabs` | `["dashboard", "wallpaper", "performance", "about"]` | Tabs and their order – erlaubt: `dashboard`, `wallpaper`, `performance`, `about` |
+| `dashboard.start` | `"dashboard"` | Tab shown when the dashboard opens – erlaubt: `dashboard`, `wallpaper`, `performance`, `about` |
+| `dashboard.cards` | `["weather", "profile", "media", "clock", "calendar", "rings"]` | Cards on the Dashboard tab – erlaubt: `weather`, `profile`, `media`, `clock`, `calendar`, `rings` |
+| `weather.location` | `""` | Place for the weather, e.g. Zürich |
+| `weather.units` | `"metric"` | metric = °C, imperial = °F – erlaubt: `metric`, `imperial` |
+| `panel.enabled` | `true` | Open the panel when the mouse touches the corner |
+| `panel.corner` | `"bottom-right"` | Screen corner of the panel – erlaubt: `bottom-right`, `bottom-left`, `top-right`, `top-left` |
+| `panel.trigger` | `6` | Size of the corner area in pixels (1–40 px) |
+| `panel.close_on_leave` | `true` | Close when the mouse leaves the panel |
+| `panel.close_delay` | `400` | Wait time before closing after the mouse left (100–10000 ms) |
+| `panel.width` | `420` | Width of the panel (320–800 px) |
+| `panel.radius` | `26` | Corner radius of the panel (0–40 px) |
+| `panel.opacity` | `0.44` | Opacity of the glass (0.1–0.95) |
+| `panel.sections` | `["awake", "apps", "media", "shot", "toggles"]` | Cards and their order – erlaubt: `awake`, `apps`, `media`, `shot`, `toggles` |
+| `panel.apps` | `["kitty", "org.gnome.Nautilus", "firefox", "spotify", "discord", "steam"]` | Apps in the grid (name of the .desktop file); missing ones are skipped |
+| `panel.toggles` | `["wifi", "bluetooth", "dnd", "gaming", "settings"]` | Quick toggles and their order – erlaubt: `wifi`, `bluetooth`, `dnd`, `gaming`, `awake`, `settings` |
+| `lock.after` | `5` | Lock the screen after this many idle minutes (0 = never) (0–120 min) |
+| `lock.screen_off` | `0` | Turn the screen off after this many idle minutes (0 = never) (0–120 min) |
+| `lock.suspend` | `15` | Go to standby after this many idle minutes (0 = never) (0–240 min) |
+| `lock.blur` | `3` | Blur passes of the lock screen background (0 = none) (0–6) |
+| `lock.dim` | `0.5` | How much darker the background gets (0–0.9) |
+| `lock.avatar` | `true` | Show ~/.face (or your initial) above the clock |
+| `lock.clock` | `"24h"` | 24-hour or 12-hour clock – erlaubt: `24h`, `12h` |
+| `apps.terminal` | `"kitty"` | Command for the terminal |
+| `apps.files` | `"nautilus"` | Command for the file manager |
+| `apps.browser` | `"firefox"` | Command for the web browser |
+| `apps.launcher` | `"rofi -show drun"` | Command for the app launcher |
 
-Eigene Hyprland-Einstellungen (Monitore, Tastenkürzel, Fensterregeln) gehören nach
-`~/.config/hypr/user.lua` – diese Datei überschreibt der Installer nie. Das Tastaturlayout
-steht in `~/.config/hypr/hypr-shell-local.lua`.
+Ein Beispiel – Leiste unten und etwas höher, grössere Abstände, nach 10 Minuten sperren:
 
-## Laptop
-
-In `~/.config/hypr/hypr-shell-local.lua` (legt der Installer an, wird nie überschrieben)
-stehen neben dem Tastaturlayout drei Werte für Laptops. Nach einer Änderung
-`hyprctl reload` ausführen.
-
-| Wert | Standard | Bedeutung |
-| --- | --- | --- |
-| `scale` | `"auto"` | Skalierung des Bildschirms: `"auto"` oder eine Zahl wie `1.25`, `1.5`, `2` |
-| `natural_scroll` | `false` | Touchpad: `true` = Inhalt folgt den Fingern (wie am Handy) |
-| `tap_to_click` | `true` | Touchpad: Tippen löst einen Klick aus |
-
-```lua
-return {
-    kb_layout      = "ch",
-    kb_variant     = "de",
-    scale          = 1.5,
-    natural_scroll = true,
-    tap_to_click   = true,
+```json
+{
+  "bar": { "position": "bottom", "height": 36 },
+  "look": { "gaps": { "inner": 10, "outer": 20 } },
+  "lock": { "after": 10 }
 }
 ```
 
-Fehlt ein Wert (z. B. in einer Datei aus einer älteren Version), gilt der Standard.
+Eigene Hyprland-Zeilen (Fensterregeln, weitere Tastenkürzel) gehören nach
+`~/.config/hypr/user.lua` – diese Datei überschreibt der Installer nie, und sie gilt zuletzt.
+
+## Laptop
+
+Für Laptops sind vor allem diese Werte gedacht: `monitors.scale` (Skalierung, `"auto"` oder eine
+Zahl wie `"1.5"`), `input.touchpad.natural_scroll` und `input.touchpad.tap_to_click`. Ein Bildschirm
+lässt sich auch einzeln einstellen:
+
+```json
+{
+  "monitors": {
+    "scale": "auto",
+    "outputs": [ { "name": "eDP-1", "resolution": "2560x1600", "refresh": 165, "scale": "1.6" } ]
+  },
+  "input": { "touchpad": { "natural_scroll": true } }
+}
+```
 
 XWayland-Programme wie Steam, Battle.net oder GOG-Spiele werden bei einer Skalierung über 1
 nicht hochgerechnet (`xwayland.force_zero_scaling`): Sie bleiben scharf, erscheinen dafür in
 ihrer eigenen Grösse. Ein Akku erscheint in der Leiste rechts vor der Uhr (Symbol und Prozent,
-unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen Akku hat.
+unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen Akku hat
+(abschalten mit `bar.battery`).
 
 ## Hilfsprogramme
 
 | Befehl | Wirkung |
 | --- | --- |
-| `shell-wallpaper <bild>` | Hintergrundbild setzen und Farben erzeugen |
+| `shell-apply` | Einstellungen prüfen und anwenden (`--check` nur prüfen) |
+| `shell-wallpaper <bild>` | Hintergrundbild setzen und Farben erzeugen (Farbmodus aus `theme.colors`) |
 | `shell-screenshot region\|screen\|folder` | Screenshot bzw. Ordner öffnen |
 | `shell-toggle <wifi\|bluetooth\|dnd\|gaming\|awake> [on\|off]` | Schnellschalter, `shell-toggle status` zeigt alle |
 | `shell-quickshell restart` | Oberfläche neu starten |
@@ -245,7 +323,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `quickshell/` | QML-Oberfläche: `desktop/`, `dashboard/`, `panel/`, `common/` |
 | `bin/` | Hilfsskripte für `~/.local/bin` |
 | `wallpapers/` | mitgelieferte Hintergrundbilder |
-| `settings/` | `settings.example.json` mit allen einstellbaren Werten |
+| `settings/` | `schema.json` (Beschreibung aller Werte) und `settings.example.json` (Standardwerte) |
 | `tests/` | Prüfskripte (`tests/lint.sh`, `tests/probeinstallation.sh`, …) |
 | `docs/` | Doku und Screenshots |
 

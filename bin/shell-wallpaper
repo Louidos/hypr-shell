@@ -5,6 +5,10 @@
 #   shell-wallpaper <bild>     Bild setzen und Farben erzeugen
 #   shell-wallpaper --restore  zuletzt gewähltes Bild (oder das Startbild) wieder setzen
 #   shell-wallpaper --current  Pfad des aktuellen Bildes ausgeben
+#   shell-wallpaper --colors   Farben neu erzeugen (nach einer Änderung von theme.colors / theme.accent)
+#
+# Farbmodus aus settings.json (theme.colors): auto = aus dem Bild, grey = grau/weiss,
+# custom = aus der eigenen Akzentfarbe (theme.accent).
 set -euo pipefail
 
 DATA="$HOME/.local/share/hypr-shell"
@@ -45,14 +49,34 @@ schema() {
     echo scheme-tonal-spot
 }
 
+# Farbmodus und Akzentfarbe aus den gültigen Einstellungen (von shell-apply)
+farbmodus() {
+    local eff="$DATA/settings.effective.json" m="" a=""
+    if command -v jq >/dev/null 2>&1 && [ -f "$eff" ]; then
+        m="$(jq -r '.theme.colors // empty' "$eff" 2>/dev/null || true)"
+        a="$(jq -r '.theme.accent // empty' "$eff" 2>/dev/null || true)"
+    fi
+    case "$m" in grey|custom) ;; *) m=auto ;; esac
+    [[ "$a" =~ ^#[0-9a-fA-F]{6}$ ]] || a="#8ab4f8"
+    printf '%s %s\n' "$m" "$a"
+}
+
+# Kennung der Farben: Bild, Modus und Akzentfarbe
+kennung() { printf '%s|%s\n' "$1" "$(farbmodus)"; }
+
 farben() {
-    local bild="$1" args
+    local bild="$1" args modus akzent
     command -v matugen >/dev/null 2>&1 || { echo "matugen fehlt, Farben bleiben" >&2; return 0; }
-    args=(image "$bild" --mode dark --type "$(schema "$bild")")
+    read -r modus akzent < <(farbmodus)
+    case "$modus" in
+        grey)   args=(image "$bild" --mode dark --type scheme-monochrome) ;;
+        custom) args=(color hex "$akzent" --mode dark --type scheme-tonal-spot) ;;
+        *)      args=(image "$bild" --mode dark --type "$(schema "$bild")") ;;
+    esac
     # neuere matugen-Versionen fragen sonst nach der Grundfarbe
-    if matugen --help 2>&1 | grep -q -- '--source-color-index'; then args+=(--source-color-index 0); fi
+    if [ "$modus" != custom ] && matugen --help 2>&1 | grep -q -- '--source-color-index'; then args+=(--source-color-index 0); fi
     matugen "${args[@]}" >/dev/null
-    printf '%s\n' "$bild" > "$FARBEN_FUER"
+    kennung "$bild" > "$FARBEN_FUER"
 }
 
 neu_laden() {
@@ -78,7 +102,7 @@ setzen() {
     fi
     printf '%s\n' "$bild" > "$STATE"
     # beim Anmelden nur dann neu rechnen, wenn die Farben nicht schon zu diesem Bild passen
-    if [ "$nur_wiederherstellen" = 1 ] && [ -f "$FARBEN_FUER" ] && [ "$(cat "$FARBEN_FUER")" = "$bild" ]; then
+    if [ "$nur_wiederherstellen" = 1 ] && [ -f "$FARBEN_FUER" ] && [ "$(cat "$FARBEN_FUER")" = "$(kennung "$bild")" ]; then
         return 0
     fi
     farben "$bild"
@@ -89,6 +113,7 @@ setzen() {
 case "${1:-}" in
     --restore) setzen "$(aktuelles)" 1 ;;
     --current) aktuelles ;;
-    -h|--help|"") sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//' ;;
+    --colors) b="$(aktuelles)"; [ -f "$b" ] || exit 0; mkdir -p "$DATA"; farben "$b"; neu_laden ;;
+    -h|--help|"") sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
     *) setzen "$1" ;;
 esac

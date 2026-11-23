@@ -1,0 +1,11 @@
+/* erzeugt von hypr-shell – nicht von Hand ändern (Quelle: ~/.config/hypr-shell/settings.json) */
+/* wird am Ende von config.rasi eingebunden und überschreibt dort Schrift, Symbole und Glas */
+configuration {
+    icon-theme:         "Papirus-Dark";
+    font:               "Inter 11";
+}
+
+window {
+    border-radius:    18px;
+    background-color: rgba(12, 12, 14, 0.44);
+}

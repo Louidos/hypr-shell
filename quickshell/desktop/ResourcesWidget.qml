@@ -28,7 +28,16 @@ PanelWindow {
     implicitHeight: Math.ceil(col.implicitHeight)
     mask: Region { }
 
-    Usage { id: usage; running: w.visible; withDisk: false }
+    // Kacheln und Reihenfolge aus settings.json (desktop.resources.tiles: cpu, ram, gpu, disk)
+    readonly property var tiles: Settings.get("desktop.resources.tiles", ["cpu", "ram", "gpu"])
+    readonly property var tileInfo: ({
+        cpu: { label: "CPU", icon: "", value: () => usage.cpu },
+        ram: { label: "RAM", icon: "󰍛", value: () => usage.mem },
+        gpu: { label: "GPU", icon: "", value: () => w.gpuUtil },
+        disk: { label: "Disk", icon: "󰋊", value: () => usage.disk }
+    })
+
+    Usage { id: usage; running: w.visible; withDisk: w.tiles.indexOf("disk") >= 0 }
 
     Process {
         id: gpuProc
@@ -37,7 +46,7 @@ PanelWindow {
     }
     Timer {
         interval: 3000
-        running: w.visible
+        running: w.visible && w.tiles.indexOf("gpu") >= 0
         repeat: true
         triggeredOnStart: true
         onTriggered: if (!gpuProc.running) gpuProc.running = true
@@ -58,7 +67,7 @@ PanelWindow {
                 readonly property real v: modelData.value()
                 width: 160 * w.k
                 height: 118 * w.k
-                radius: 26 * w.k
+                radius: Theme.panelRadius * w.k
                 Ring {
                     id: ring
                     width: 52 * w.k

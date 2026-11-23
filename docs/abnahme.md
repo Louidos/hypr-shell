@@ -73,7 +73,18 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | Punkt | Prüfung |
 | --- | --- |
 | Akkustand in der Leiste stimmt mit `upower -i $(upower -e \| grep BAT)` | von Hand |
-| `scale`, `natural_scroll`, `tap_to_click` wirken nach `hyprctl reload` | Werte an Hyprland automatisch (`tests/hyprland-lua.sh`); Wirkung von Hand |
+| `monitors.scale`, `input.touchpad.natural_scroll`, `input.touchpad.tap_to_click` wirken sofort | Werte an Hyprland automatisch (`tests/hyprland-lua.sh`); Wirkung von Hand |
 | XWayland-Fenster (Steam) bei Skalierung über 1 scharf | von Hand |
 | GPU-Kachel zeigt „–“, solange die NVIDIA-Karte schläft, und weckt sie nicht | automatisch mit nachgebauter Karte (`tests/dashboard.sh`); echte Karte von Hand: `cat /sys/bus/pci/devices/*/power/runtime_status` |
 | Zahnrad im Panel öffnet settings.json im Terminal | von Hand |
+
+## Einstellungen in settings.json (Schema, shell-apply)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Abstand, Leisten-Höhe oder Sperrzeit in settings.json ändern wirkt innerhalb von zwei Sekunden ohne Abmelden | Erzeugte Dateien automatisch (`tests/einstellungen.sh`); Wirkung (Quickshell → `shell-apply` → `hyprctl reload`, Waybar, hypridle) von Hand |
+| Tippfehler in settings.json: Benachrichtigung, Desktop läuft weiter | Standardwert bzw. letzter gültiger Stand automatisch; Benachrichtigung von Hand |
+| settings.json von v1.0.0 funktioniert unverändert | automatisch |
+| Kein einstellbarer Wert steht mehr fest in config/ oder Theme.qml | automatisch: Standardwerte ergeben genau die Dateien in `config/`, jeder Schlüssel wird gelesen |
+| Farbmodus `grey` / `custom` färbt alles um | von Hand (matugen im Test-Compositor nur mit `auto`) |
+| Symbolthema (`theme.icons`) wechselt nach dem automatischen Neustart der Oberfläche | von Hand |

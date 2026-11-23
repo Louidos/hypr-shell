@@ -3,30 +3,26 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Liest ~/.config/hypr-shell/settings.json und übernimmt Änderungen sofort (ohne Neustart).
-// Fehlende Werte kommen aus den Standardwerten unten (gleich wie settings/settings.example.json).
+// Einstellungen von hypr-shell. Eine Quelle: ~/.config/hypr-shell/settings.json.
+// - Ändert sich die Datei, ruft dieser Teil (entprellt) shell-apply auf. shell-apply prüft jeden
+//   Wert gegen das Schema, erzeugt die Dateien für Hyprland, Waybar, hypridle, hyprlock und rofi und
+//   schreibt die gültigen Werte nach ~/.local/share/hypr-shell/settings.effective.json.
+// - Die Oberfläche liest diese gültigen Werte (ein falscher Wert oder kaputtes JSON bricht also nichts).
+// - Fehlen sie (shell-apply lief noch nie), gilt settings.json über den Standardwerten des Schemas.
 Singleton {
     id: s
 
     readonly property string home: Quickshell.env("HOME")
     readonly property string user: Quickshell.env("USER")
+    readonly property string dataDir: home + "/.local/share/hypr-shell"
+    readonly property string file: home + "/.config/hypr-shell/settings.json"
+    readonly property string bin: home + "/.local/bin/"
 
-    readonly property var defaults: ({
-        weather: { location: "", units: "metric" },
-        desktop: {
-            screen: "",
-            clock: { enabled: true, x: 0.02, y: 0.045, scale: 1.0 },
-            resources: { enabled: true, x: 0.015, y: 0.56, scale: 1.0 }
-        },
-        dashboard: { width: 1000, edge: true, opacity: 0.42 },
-        panel: {
-            enabled: true, corner: "bottom-right", trigger: 6, width: 420, radius: 26, opacity: 0.44,
-            sections: ["awake", "apps", "media", "shot", "toggles"],
-            apps: ["kitty", "org.gnome.Nautilus", "firefox", "spotify", "discord", "steam"],
-            toggles: ["wifi", "bluetooth", "dnd", "gaming", "settings"]
-        }
-    })
-    property var data: defaults
+    property var schema: ({ pages: [], keys: [] })
+    property var defaults: ({})
+    property var raw: ({})
+    property var effective: null
+    readonly property var data: merge(defaults, effective !== null ? effective : raw)
 
     function merge(a, b) {
         if (b === undefined || b === null) return a
@@ -35,15 +31,26 @@ Singleton {
         for (const k in b) r[k] = merge(a[k], b[k])
         return r
     }
-    // get("desktop.clock.x", 0.02)
-    function get(path, fallback) {
-        let v = data
+    function lookup(obj, path) {
+        let v = obj
         const parts = path.split(".")
         for (let i = 0; i < parts.length; i++) {
-            if (v === undefined || v === null) break
+            if (v === undefined || v === null || typeof v !== "object") return undefined
             v = v[parts[i]]
         }
+        return v
+    }
+    // get("desktop.clock.x", 0.02)
+    function get(path, fallback) {
+        const v = lookup(data, path)
         return v === undefined || v === null ? fallback : v
+    }
+    // Wert direkt aus settings.json (undefined = nicht gesetzt, es gilt der Standard)
+    function rawValue(path) { return lookup(raw, path) }
+    function schemaKey(key) {
+        const l = schema.keys || []
+        for (let i = 0; i < l.length; i++) if (l[i].key === key) return l[i]
+        return null
     }
 
     // Bildschirm aus den Einstellungen (Name), sonst der erste
@@ -53,15 +60,57 @@ Singleton {
         return list.length > 0 ? list[0] : null
     }
 
+    // shell-apply anstossen (entprellt; läuft er schon, folgt genau ein weiterer Lauf)
+    property bool applyAgain: false
+    function apply() { applyTimer.restart() }
+    Timer {
+        id: applyTimer
+        interval: 250
+        onTriggered: {
+            if (applyProc.running) s.applyAgain = true
+            else applyProc.running = true
+        }
+    }
+    Process {
+        id: applyProc
+        command: [s.bin + "shell-apply"]
+        onExited: if (s.applyAgain) { s.applyAgain = false; applyProc.running = true }
+    }
+    Component.onCompleted: apply()
+
     FileView {
-        id: file
-        path: s.home + "/.config/hypr-shell/settings.json"
+        path: s.dataDir + "/schema.json"
         watchChanges: true
         onFileChanged: reload()
         onLoaded: {
-            try { s.data = s.merge(s.defaults, JSON.parse(text())) }
-            catch (e) { console.warn("hypr-shell: settings.json ist kein gültiges JSON – Standardwerte bleiben") }
+            try {
+                const sc = JSON.parse(text())
+                const d = {}
+                for (let i = 0; i < sc.keys.length; i++) {
+                    const p = sc.keys[i].key.split(".")
+                    let o = d
+                    for (let j = 0; j < p.length - 1; j++) { if (typeof o[p[j]] !== "object") o[p[j]] = {}; o = o[p[j]] }
+                    o[p[p.length - 1]] = sc.keys[i].default
+                }
+                s.schema = sc
+                s.defaults = d
+            } catch (e) { console.warn("hypr-shell: schema.json kann nicht gelesen werden") }
         }
-        onLoadFailed: s.data = s.defaults
+    }
+    FileView {
+        path: s.file
+        watchChanges: true
+        onFileChanged: { reload(); s.apply() }
+        onLoaded: {
+            try { const r = JSON.parse(text()); if (typeof r === "object" && r !== null && !Array.isArray(r)) s.raw = r }
+            catch (e) { /* kaputtes JSON: shell-apply meldet das, der letzte gültige Stand bleibt */ }
+        }
+        onLoadFailed: s.raw = ({})
+    }
+    FileView {
+        path: s.dataDir + "/settings.effective.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { try { s.effective = JSON.parse(text()) } catch (e) { } }
     }
 }

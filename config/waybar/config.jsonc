@@ -1,4 +1,4 @@
-// hypr-shell: flache Leiste im Glas-Look (Blur über die Hyprland-Layer-Regel "waybar")
+// erzeugt von hypr-shell – nicht von Hand ändern (Quelle: ~/.config/hypr-shell/settings.json)
 {
   "layer": "top",
   "position": "top",
@@ -6,35 +6,57 @@
   "spacing": 2,
   "exclusive": true,
   "reload_style_on_change": true,
-
-  "modules-left": ["custom/distro", "hyprland/workspaces", "mpris"],
+  "modules-left": [
+    "custom/distro",
+    "hyprland/workspaces",
+    "mpris"
+  ],
   "modules-center": [],
-  "modules-right": ["pulseaudio", "battery", "clock", "bluetooth", "network", "custom/recording", "custom/power"],
-
+  "modules-right": [
+    "pulseaudio",
+    "battery",
+    "clock",
+    "bluetooth",
+    "network",
+    "custom/recording",
+    "custom/power"
+  ],
   "custom/distro": {
     "exec": "$HOME/.local/bin/shell-distro icon",
     "interval": "once",
     "tooltip": false,
     "on-click": "rofi -show drun"
   },
-
   "hyprland/workspaces": {
     "format": "{name}",
-    "persistent-workspaces": { "*": [1, 2, 3, 4] },
+    "persistent-workspaces": {
+      "*": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
     "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
     "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'",
     "sort-by-number": true
   },
-
+  "hyprland/window": {
+    "format": "{title}",
+    "max-length": 50,
+    "separate-outputs": true
+  },
   "mpris": {
     "format": "{status_icon}  {title}",
     "format-paused": "{status_icon}  {title}",
-    "status-icons": { "playing": "󰎈", "paused": "󰏤" },
+    "status-icons": {
+      "playing": "󰎈",
+      "paused": "󰏤"
+    },
     "title-len": 40,
     "tooltip-format": "{artist} – {title}",
     "on-click": "playerctl play-pause"
   },
-
   "pulseaudio": {
     "format": "󰕾  {volume}%",
     "format-muted": "󰝟  muted",
@@ -42,25 +64,37 @@
     "on-click": "pamixer -t",
     "tooltip-format": "{desc}"
   },
-
-  // Akku: erscheint nur, wenn einer da ist (Waybar blendet das Modul ohne Akku aus);
-  // unter 15 % Warnfarbe (Klasse "critical"), am Netz das Ladesymbol
   "battery": {
     "interval": 30,
-    "states": { "critical": 14 },
+    "states": {
+      "critical": 14
+    },
     "format": "{icon}  {capacity}%",
     "format-charging": "󰂄  {capacity}%",
     "format-plugged": "󰂄  {capacity}%",
-    "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+    "format-icons": [
+      "󰁺",
+      "󰁻",
+      "󰁼",
+      "󰁽",
+      "󰁾",
+      "󰁿",
+      "󰂀",
+      "󰂁",
+      "󰂂",
+      "󰁹"
+    ],
     "tooltip-format": "{timeTo} · {power} W"
   },
-
   "clock": {
     "format": "{:%H:%M}",
     "tooltip-format": "<big>{:%A, %d %B %Y}</big>\n<tt>{calendar}</tt>",
-    "calendar": { "mode": "month", "weeks-pos": "", "on-scroll": 1 }
+    "calendar": {
+      "mode": "month",
+      "weeks-pos": "",
+      "on-scroll": 1
+    }
   },
-
   "bluetooth": {
     "format": "󰂯",
     "format-off": "󰂲",
@@ -71,7 +105,6 @@
     "tooltip-format-enumerate-connected": "{device_alias}",
     "on-click": "kitty --class hypr-shell-tui -e bluetoothctl"
   },
-
   "network": {
     "format-wifi": "󰤨",
     "format-ethernet": "󰈀",
@@ -82,14 +115,16 @@
     "tooltip-format-disconnected": "offline",
     "on-click": "kitty --class hypr-shell-tui -e nmtui"
   },
-
+  "tray": {
+    "icon-size": 16,
+    "spacing": 8
+  },
   "custom/recording": {
     "exec": "$HOME/.local/bin/shell-recording status",
     "return-type": "json",
     "interval": 2,
     "tooltip": true
   },
-
   "custom/power": {
     "format": "⏻",
     "tooltip": false,

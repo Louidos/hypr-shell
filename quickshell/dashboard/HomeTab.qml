@@ -9,6 +9,9 @@ Grid12 {
     property var about: ({})
     property var weather: ({ ok: false, reason: "loading" })
     rows: 3
+    // Karten an/aus aus settings.json (dashboard.cards)
+    readonly property var cards: Settings.get("dashboard.cards", ["weather", "profile", "media", "clock", "calendar", "rings"])
+    function shown(name) { return cards.indexOf(name) >= 0 }
 
     SystemClock { id: clock; precision: SystemClock.Minutes }
     Usage { id: usage; running: true; interval: 2000 }
@@ -26,7 +29,7 @@ Grid12 {
     Process {
         id: weatherProc
         command: [Settings.home + "/.local/bin/shell-weather"]
-        running: true
+        running: home.shown("weather")
         stdout: StdioCollector { onStreamFinished: { try { home.weather = JSON.parse(text) } catch (e) { home.weather = { ok: false, reason: "offline" } } } }
     }
     Timer { interval: 15 * 60 * 1000; running: true; repeat: true; onTriggered: if (!weatherProc.running) weatherProc.running = true }
@@ -34,6 +37,7 @@ Grid12 {
     // ---- Wetter (4×1 bei 0,0)
     Cell {
         col: 0; row: 0; cs: 4; rs: 1
+        visible: home.shown("weather")
         Row {
             anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
             spacing: 14
@@ -66,6 +70,7 @@ Grid12 {
     // ---- Profil (5×1 bei 4,0)
     Cell {
         col: 4; row: 0; cs: 5; rs: 1
+        visible: home.shown("profile")
         RoundImage {
             id: avatar
             width: 62; height: 62; radius: 31
@@ -94,12 +99,14 @@ Grid12 {
     // ---- Musik (3×3 bei 9,0)
     Cell {
         col: 9; row: 0; cs: 3; rs: 3
+        visible: home.shown("media")
         MediaCard { anchors.fill: parent; anchors.margins: 14 }
     }
 
     // ---- Uhr (2×2 bei 0,1)
     Cell {
         col: 0; row: 1; cs: 2; rs: 2
+        visible: home.shown("clock")
         Column {
             anchors.centerIn: parent
             spacing: -14
@@ -129,6 +136,7 @@ Grid12 {
     // ---- Kalender (5×2 bei 2,1)
     Cell {
         col: 2; row: 1; cs: 5; rs: 2
+        visible: home.shown("calendar")
         Calendar { anchors.fill: parent; anchors.margins: 14; today: clock.date }
     }
 
@@ -136,6 +144,7 @@ Grid12 {
     Cell {
         id: rings
         col: 7; row: 1; cs: 2; rs: 2
+        visible: home.shown("rings")
         readonly property bool tall: height >= width
         readonly property real s: tall ? Math.min(width - 20, (height - 32) / 3) : Math.min(height - 30, (width - 50) / 3)
         Grid {

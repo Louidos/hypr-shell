@@ -1,0 +1,745 @@
+#!/usr/bin/env bash
+# Wendet ~/.config/hypr-shell/settings.json an: prüft jeden Wert gegen das Schema
+# (settings/schema.json), erzeugt die Dateien für Hyprland, Waybar, hypridle, hyprlock und rofi
+# und lädt nur die Teile neu, deren Datei sich geändert hat.
+#
+#   shell-apply                  prüfen, Dateien erzeugen, betroffene Teile neu laden
+#   shell-apply --no-reload      nur prüfen und Dateien erzeugen (z. B. im Installer)
+#   shell-apply --check [DATEI]  nur prüfen: "schlüssel: grund" je Fehler, Rückgabe 1 bei Fehlern
+#   shell-apply --effective      gültige Werte (Datei + Standardwerte) als JSON ausgeben
+#   shell-apply --example        Beispiel-settings.json aus den Standardwerten des Schemas
+#   shell-apply --schema         Pfad des verwendeten Schemas ausgeben
+#
+# Falsche Werte: der Standardwert gilt, eine Benachrichtigung nennt Schlüssel und Grund.
+# Kaputtes JSON: der letzte gültige Stand (~/.local/share/hypr-shell/settings.last-good.json)
+# bleibt aktiv. Jede erzeugte Datei wird über eine temporäre Datei geschrieben und umbenannt.
+set -euo pipefail
+
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}"
+DATA="$HOME/.local/share/hypr-shell"
+SETTINGS="${HYPR_SHELL_SETTINGS:-$CONF/hypr-shell/settings.json}"
+LAST_GOOD="$DATA/settings.last-good.json"
+EFFECTIVE="$DATA/settings.effective.json"
+ERRORS="$DATA/settings.errors"
+APPLIED="$DATA/settings.applied.json"
+LOCAL_LUA="$CONF/hypr/hypr-shell-local.lua"
+MIGRATED="$DATA/local-migrated"
+HEADER="erzeugt von hypr-shell – nicht von Hand ändern (Quelle: ~/.config/hypr-shell/settings.json)"
+
+command -v jq >/dev/null 2>&1 || { echo "shell-apply: jq fehlt" >&2; exit 1; }
+
+# Schema: im Repo neben bin/, sonst die installierte Kopie
+schema_pfad() {
+    local hier
+    hier="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -n "${HYPR_SHELL_SCHEMA:-}" ]; then printf '%s\n' "$HYPR_SHELL_SCHEMA"
+    elif [ -f "$hier/../settings/schema.json" ]; then printf '%s\n' "$hier/../settings/schema.json"
+    else printf '%s\n' "$DATA/schema.json"; fi
+}
+SCHEMA="$(schema_pfad)"
+[ -f "$SCHEMA" ] || { echo "shell-apply: Schema fehlt ($SCHEMA)" >&2; exit 1; }
+
+# ---------------------------------------------------------------- Prüfung (jq)
+
+# Gemeinsame jq-Funktionen: problem($s; $v) liefert den Grund als Text oder null.
+# shellcheck disable=SC2016
+JQ_LIB='
+def range_text($s):
+  if $s.min != null and $s.max != null then " between \($s.min) and \($s.max)"
+  elif $s.min != null then " of at least \($s.min)"
+  elif $s.max != null then " of at most \($s.max)"
+  else "" end;
+def allowed($s): $s.values | map(tostring) | join(", ");
+def problem($s; $v):
+  if $s.type == "bool" then
+    (if ($v | type) == "boolean" then null else "expected true or false" end)
+  elif $s.type == "int" or $s.type == "number" then
+    if ($v | type) != "number" then "expected a \(if $s.type == "int" then "whole number" else "number" end)\(range_text($s))"
+    elif $s.type == "int" and ($v | floor) != $v then "expected a whole number\(range_text($s))"
+    elif ($s.min != null and $v < $s.min) or ($s.max != null and $v > $s.max) then "out of range, allowed is a number\(range_text($s))"
+    else null end
+  elif $s.type == "string" then
+    if ($v | type) != "string" then "expected text"
+    elif ($v | test("[\u0000-\u001f]")) then "text must not contain line breaks or control characters"
+    elif $s.pattern != null and ($v | test($s.pattern) | not) then "invalid format (\($s.description))"
+    else null end
+  elif $s.type == "enum" then
+    (if any($s.values[]; . == $v) then null else "expected one of: \(allowed($s))" end)
+  elif $s.type == "color" then
+    (if ($v | type) == "string" and ($v | test("^#[0-9a-fA-F]{6}$")) then null else "expected a color like #8ab4f8" end)
+  elif $s.type == "list" then
+    if ($v | type) != "array" then "expected a list of: \(allowed($s))"
+    elif any($v[]; . as $x | ($s.values | index([$x])) == null) then "unknown entry, allowed are: \(allowed($s))"
+    elif ($v | unique | length) != ($v | length) then "entries must not repeat"
+    else null end
+  elif $s.type == "stringlist" then
+    if ($v | type) != "array" or any($v[]; type != "string") then "expected a list of text"
+    elif $s.pattern != null and any($v[]; test($s.pattern) | not) then "invalid entry (\($s.description))"
+    else null end
+  elif $s.type == "keybind" then
+    if ($v | type) != "string" then "expected a key combination like SUPER + Q (empty = no key)"
+    elif ($v | test("^$|^((SUPER|SHIFT|CTRL|ALT|CONTROL|MOD[1-5]) \\+ )*[A-Za-z0-9_:.+-]+$") | not) then "expected a key combination like SUPER + Q (empty = no key)"
+    elif $s.required == true and $v == "" then "this shortcut must not be empty"
+    else null end
+  elif $s.type == "objectlist" then
+    if ($v | type) != "array" or any($v[]; type != "object") then "expected a list of entries"
+    else
+      first(
+        ($v | to_entries[]) as $e
+        | ( ($e.value | keys[]) as $f
+            | select(any($s.fields[]; .key == $f) | not)
+            | "entry \($e.key + 1): unknown field \($f)" ),
+          ( $s.fields[] as $fs
+            | ($e.value[$fs.key]) as $fv
+            | if $fv == null then (if $fs.required == true then "entry \($e.key + 1): \($fs.key) is missing" else empty end)
+              else (problem($fs; $fv) // empty) as $p | "entry \($e.key + 1), \($fs.key): \($p)" end )
+      ) // null
+    end
+  else "unknown type \($s.type) in the schema" end;
+def num: if type == "number" then . + 0 else . end;
+def norm($s; $v):
+  if $s.type == "objectlist" then
+    [ $v[] | . as $o | reduce $s.fields[] as $fs ({}; .[$fs.key] = (($o[$fs.key] // $fs.default) | num)) ]
+  else ($v | num) end;
+# Eingabe: rohe Einstellungen. Ausgabe: {eff, err}
+def evaluate($schema):
+  . as $raw
+  | reduce $schema.keys[] as $s ({eff: {}, err: []};
+      ($s.key | split(".")) as $p
+      | ($raw | try getpath($p) catch "\u0000not-an-object") as $v
+      | if $v == null then .eff |= setpath($p; $s.default | num)
+        elif $v == "\u0000not-an-object" then .eff |= setpath($p; $s.default | num)
+        else problem($s; $v) as $why
+          | if $why == null then .eff |= setpath($p; norm($s; $v))
+            else .eff |= setpath($p; $s.default | num) | .err += [{key: $s.key, reason: $why}] end
+        end)
+  | .err += [ $raw | paths(type != "object") | map(tostring) | join(".") as $k
+              | select(($k | startswith("_")) or ($k | test("\\._")) | not)
+              | select(any($schema.keys[]; .key as $sk | $k == $sk or ($k | startswith($sk + "."))) | not)
+              | if any($schema.keys[]; .key | startswith($k + ".")) then {key: $k, reason: "expected a group of settings, not a single value"}
+                else {key: $k, reason: "unknown setting"} end ]
+  | .err |= unique_by(.key);
+'
+
+# rohe Einstellungen + Ebene aus hypr-shell-local.lua -> {eff, err}
+auswerten() { # datei-mit-rohen-einstellungen
+    jq --slurpfile schema "$SCHEMA" "$JQ_LIB evaluate(\$schema[0])" "$1"
+}
+
+# ---------------------------------------------------------------- hypr-shell-local.lua (v1.1)
+
+# Werte aus der alten hypr-shell-local.lua als JSON (nur die bekannten Schlüssel)
+local_json() {
+    [ -f "$LOCAL_LUA" ] || { echo '{}'; return 0; }
+    local zeile name wert args=()
+    while IFS= read -r zeile; do
+        zeile="${zeile%%--*}"
+        [[ "$zeile" =~ ^[[:space:]]*([a-z_]+)[[:space:]]*=[[:space:]]*(\"[^\"]*\"|true|false|[0-9]+(\.[0-9]+)?)[[:space:]]*,?[[:space:]]*$ ]] || continue
+        name="${BASH_REMATCH[1]}"; wert="${BASH_REMATCH[2]}"
+        case "$name" in
+            kb_layout)      args+=(--argjson input_layout "$wert") ;;
+            kb_variant)     args+=(--argjson input_variant "$wert") ;;
+            scale)          args+=(--argjson monitors_scale "$wert") ;;
+            natural_scroll) args+=(--argjson natural_scroll "$wert") ;;
+            tap_to_click)   args+=(--argjson tap_to_click "$wert") ;;
+        esac
+    done < "$LOCAL_LUA"
+    jq -n "${args[@]}" '
+        ($ARGS.named) as $a
+        | {}
+        | if $a.input_layout != null then .input.layout = $a.input_layout else . end
+        | if $a.input_variant != null then .input.variant = $a.input_variant else . end
+        | if $a.monitors_scale != null then .monitors.scale = ($a.monitors_scale | tostring) else . end
+        | if $a.natural_scroll != null then .input.touchpad.natural_scroll = $a.natural_scroll else . end
+        | if $a.tap_to_click != null then .input.touchpad.tap_to_click = $a.tap_to_click else . end'
+}
+
+# ---------------------------------------------------------------- Hilfen
+
+meldung() { # titel text
+    [ "${KEINE_MELDUNG:-0}" = 1 ] && return 0
+    command -v notify-send >/dev/null 2>&1 && notify-send -a hypr-shell -u normal -t 8000 "$1" "$2" 2>/dev/null || true
+}
+
+gleich() {
+    [ -f "$1" ] && [ -f "$2" ] || return 1
+    if command -v cmp >/dev/null 2>&1; then cmp -s "$1" "$2"; return; fi
+    [ "$(sha256sum < "$1")" = "$(sha256sum < "$2")" ]
+}
+
+# schreibe ZIEL: Inhalt von stdin atomar nach ZIEL; Rückgabe 0 = geändert, 1 = gleich geblieben
+schreibe() {
+    local ziel="$1" tmp
+    mkdir -p "$(dirname "$ziel")"
+    tmp="$(mktemp "$ziel.XXXXXX.tmp")"
+    cat > "$tmp"
+    if gleich "$tmp" "$ziel"; then rm -f "$tmp"; return 1; fi
+    chmod 644 "$tmp"
+    mv -f "$tmp" "$ziel"
+    return 0
+}
+
+# ---------------------------------------------------------------- Erzeuger
+
+# JSON -> Lua-Tabelle
+# shellcheck disable=SC2016
+JQ_LUA='
+def lua:
+  if type == "object" then
+    if length == 0 then "{}" else
+      "{\n" + ([to_entries[] | "  [" + (.key | tojson) + "] = " + (.value | lua | gsub("\n"; "\n  "))] | join(",\n")) + ",\n}" end
+  elif type == "array" then
+    if length == 0 then "{}" else "{ " + (map(lua) | join(", ")) + " }" end
+  elif type == "string" then gsub("[\u0000-\u001f]"; "") | tojson
+  elif type == "null" then "nil"
+  else tostring end;
+'
+
+erzeuge_lua() { # eff
+    printf -- '-- %s\n' "$HEADER"
+    printf 'return '
+    jq -r "$JQ_LUA lua" <<<"$1"
+}
+
+# shellcheck disable=SC2016
+erzeuge_waybar() { # eff
+    printf '// %s\n' "$HEADER"
+    jq --indent 2 '
+    def mod: {distro: "custom/distro", workspaces: "hyprland/workspaces", window: "hyprland/window", media: "mpris",
+              volume: "pulseaudio", battery: "battery", clock: "clock", bluetooth: "bluetooth", network: "network",
+              tray: "tray", recording: "custom/recording", power: "custom/power"}[.];
+    . as $e
+    | def mods($l): [$l[] | select(. != "battery" or $e.bar.battery) | mod];
+      def tui($c): ($e.apps.terminal | split(" ")[0]) as $t
+                   | if $t == "kitty" then "kitty --class hypr-shell-tui -e " + $c else $e.apps.terminal + " -e " + $c end;
+    {
+      layer: "top",
+      position: $e.bar.position,
+      height: $e.bar.height,
+      spacing: 2,
+      exclusive: true,
+      reload_style_on_change: true,
+      "modules-left": mods($e.bar.modules.left),
+      "modules-center": mods($e.bar.modules.center),
+      "modules-right": mods($e.bar.modules.right),
+      "custom/distro": {exec: "$HOME/.local/bin/shell-distro icon", interval: "once", tooltip: false, "on-click": $e.apps.launcher},
+      "hyprland/workspaces": ({format: "{name}"}
+        + (if $e.bar.workspaces > 0 then {"persistent-workspaces": {"*": [range(1; $e.bar.workspaces + 1)]}} else {} end)
+        + {"on-scroll-up": "hyprctl dispatch '"'"'hl.dsp.focus({ workspace = \"e-1\" })'"'"'",
+           "on-scroll-down": "hyprctl dispatch '"'"'hl.dsp.focus({ workspace = \"e+1\" })'"'"'",
+           "sort-by-number": true}),
+      "hyprland/window": {format: "{title}", "max-length": 50, "separate-outputs": true},
+      mpris: {format: "{status_icon}  {title}", "format-paused": "{status_icon}  {title}",
+              "status-icons": {playing: "󰎈", paused: "󰏤"}, "title-len": 40,
+              "tooltip-format": "{artist} – {title}", "on-click": "playerctl play-pause"},
+      pulseaudio: {format: "󰕾  {volume}%", "format-muted": "󰝟  muted", "scroll-step": 5,
+                   "on-click": "pamixer -t", "tooltip-format": "{desc}"},
+      battery: {interval: 30, states: {critical: 14}, format: "{icon}  {capacity}%",
+                "format-charging": "󰂄  {capacity}%", "format-plugged": "󰂄  {capacity}%",
+                "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+                "tooltip-format": "{timeTo} · {power} W"},
+      clock: {format: (if $e.bar.clock == "12h" then "{:%I:%M %p}" else "{:%H:%M}" end),
+              "tooltip-format": "<big>{:%A, %d %B %Y}</big>\n<tt>{calendar}</tt>",
+              calendar: {mode: "month", "weeks-pos": "", "on-scroll": 1}},
+      bluetooth: {format: "󰂯", "format-off": "󰂲", "format-disabled": "󰂲", "format-connected": "󰂱",
+                  "tooltip-format": "{controller_alias}: {status}", "tooltip-format-connected": "{device_enumerate}",
+                  "tooltip-format-enumerate-connected": "{device_alias}", "on-click": tui("bluetoothctl")},
+      network: {"format-wifi": "󰤨", "format-ethernet": "󰈀", "format-linked": "󰈀", "format-disconnected": "󰤭",
+                "tooltip-format-wifi": "{essid} · {signalStrength}%", "tooltip-format-ethernet": "{ifname} · {ipaddr}",
+                "tooltip-format-disconnected": "offline", "on-click": tui("nmtui")},
+      tray: {"icon-size": 16, spacing: 8},
+      "custom/recording": {exec: "$HOME/.local/bin/shell-recording status", "return-type": "json", interval: 2, tooltip: true},
+      "custom/power": {format: "⏻", tooltip: false, "on-click": "$HOME/.local/bin/shell-powermenu"}
+    }' <<<"$1"
+}
+
+px() { awk -v a="$1" -v k="$2" 'BEGIN { printf "%d", a * k + 0.5 }'; }
+
+erzeuge_waybar_style() {
+    local fs="$S_theme_font_scale"
+    cat <<CSS
+/* $HEADER */
+/* hypr-shell: Leiste im Glas-Look. Farben aus dem Hintergrundbild (colors.css von matugen). */
+@import "colors.css";
+
+* {
+  font-family: "$S_theme_font_ui", "$S_theme_font_mono", sans-serif;
+  font-size: $(px 13 "$fs")px;
+  font-weight: 600;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+window#waybar {
+  background: rgba(10, 10, 12, $S_bar_opacity);
+  color: @text;
+}
+
+tooltip {
+  background: rgba(12, 12, 14, 0.80);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 12px;
+}
+tooltip label { color: @text; font-weight: 500; }
+
+#custom-distro,
+#workspaces button,
+#window,
+#mpris,
+#pulseaudio,
+#battery,
+#clock,
+#bluetooth,
+#network,
+#tray,
+#custom-recording,
+#custom-power {
+  padding: 0 8px;
+  color: @text;
+  background: transparent;
+}
+
+#custom-distro {
+  font-family: "$S_theme_font_mono";
+  font-size: $(px 15 "$fs")px;
+  padding: 0 10px 0 12px;
+}
+
+#workspaces button {
+  padding: 0 6px;
+  color: alpha(@text, 0.45);
+  box-shadow: none;
+  transition: color 150ms ease;
+}
+#workspaces button.active { color: @text; }
+#workspaces button.empty { color: alpha(@text, 0.30); }
+#workspaces button.urgent { color: @error; }
+#workspaces button:hover { color: @accent; background: transparent; }
+
+#mpris, #window { color: @subtext; font-weight: 500; }
+
+/* Akku: Warnfarbe unter 15 %, solange nicht geladen wird */
+#battery.critical:not(.charging):not(.plugged) { color: @error; }
+
+#bluetooth,
+#network,
+#custom-power {
+  font-family: "$S_theme_font_mono";
+  font-size: $(px 14 "$fs")px;
+}
+#bluetooth.off, #bluetooth.disabled, #network.disconnected { color: alpha(@text, 0.45); }
+
+#custom-recording { color: #ff4d4d; font-size: $(px 12 "$fs")px; }
+
+#custom-power { padding: 0 12px 0 8px; }
+#custom-power:hover, #custom-distro:hover { color: @accent; }
+CSS
+}
+
+erzeuge_hypridle() {
+    cat <<CONF
+# $HEADER
+# hypr-shell: automatisch sperren, Bildschirm aus und Standby (Zeiten aus settings.json: lock.*).
+# Keep Awake im Panel (shell-toggle awake) setzt das über systemd-inhibit aus.
+
+general {
+    lock_cmd = pidof hyprlock || hyprlock
+    before_sleep_cmd = loginctl lock-session
+    after_sleep_cmd = hyprctl dispatch 'hl.dsp.dpms({ action = "enable" })'
+    ignore_dbus_inhibit = false
+    ignore_systemd_inhibit = false
+}
+CONF
+    if [ "$S_lock_after" -gt 0 ]; then
+        cat <<CONF
+
+# nach $S_lock_after Minuten sperren
+listener {
+    timeout = $((S_lock_after * 60))
+    on-timeout = loginctl lock-session
+}
+CONF
+    fi
+    if [ "$S_lock_screen_off" -gt 0 ]; then
+        cat <<CONF
+
+# nach $S_lock_screen_off Minuten Bildschirm aus
+listener {
+    timeout = $((S_lock_screen_off * 60))
+    on-timeout = hyprctl dispatch 'hl.dsp.dpms({ action = "disable" })'
+    on-resume = hyprctl dispatch 'hl.dsp.dpms({ action = "enable" })'
+}
+CONF
+    fi
+    if [ "$S_lock_suspend" -gt 0 ]; then
+        cat <<CONF
+
+# nach $S_lock_suspend Minuten Standby (vorher wird über before_sleep_cmd gesperrt)
+listener {
+    timeout = $((S_lock_suspend * 60))
+    on-timeout = systemctl suspend
+}
+CONF
+    fi
+}
+
+erzeuge_hyprlock() {
+    local fs="$S_theme_font_scale" hour="%H" hell bild=""
+    [ "$S_lock_clock" = 12h ] && hour="%I"
+    hell="$(awk -v d="$S_lock_dim" 'BEGIN { v = 1 - d; s = sprintf("%.2f", v); sub(/0+$/, "", s); sub(/\.$/, "", s); print s }')"
+    if [ "$S_lock_avatar" = true ]; then
+        bild="
+# Profilbild: unten der Ersatz mit dem Anfangsbuchstaben (von install.sh, nur wenn ~/.face
+# fehlt), darüber ~/.face – fehlt eine der Dateien, bleibt sie einfach leer
+image {
+    monitor =
+    path = ~/.local/share/hypr-shell/face.png
+    size = 96
+    rounding = -1
+    border_size = 2
+    border_color = \$text_dim
+    position = 110, 380
+    halign = left
+    valign = center
+}
+image {
+    monitor =
+    path = ~/.face
+    size = 96
+    rounding = -1
+    border_size = 2
+    border_color = \$text_dim
+    position = 110, 380
+    halign = left
+    valign = center
+}
+"
+    fi
+    cat <<CONF
+# $HEADER
+# hypr-shell: Sperrbildschirm im Stil des Desktops.
+# Hintergrund = aktueller Bildschirm, unscharf und abgedunkelt; Inhalt links.
+# Farben aus dem Hintergrundbild (hyprlock-colors.conf, von matugen geschrieben).
+
+# Standardfarben (grau), danach die Farben aus dem Hintergrundbild
+\$accent = rgba(d4d4d4ff)
+\$text = rgba(e6e6e6f2)
+\$text_dim = rgba(e6e6e68c)
+\$subtext = rgba(c8c8c8e6)
+\$error = rgba(dc5050ff)
+source = ~/.config/hypr/hyprlock-colors.conf
+
+general {
+    hide_cursor = false
+    ignore_empty_input = true
+}
+
+animations {
+    enabled = $S_look_animations_enabled
+}
+
+background {
+    monitor =
+    path = screenshot
+    blur_passes = $S_lock_blur
+    blur_size = 7
+    brightness = $hell
+    contrast = 0.9
+    vibrancy = 0.1
+    color = rgba(18, 18, 20, 1.0)
+}
+$bild
+# grosse gestapelte Uhr, ${S_lock_clock/h/ Stunden}
+label {
+    monitor =
+    text = cmd[update:1000] date +$hour
+    color = \$text
+    font_size = $(px 130 "$fs")
+    font_family = $S_theme_font_display
+    position = 106, 230
+    halign = left
+    valign = center
+}
+label {
+    monitor =
+    text = cmd[update:1000] date +%M
+    color = \$text_dim
+    font_size = $(px 130 "$fs")
+    font_family = $S_theme_font_display
+    position = 106, 90
+    halign = left
+    valign = center
+}
+
+# Datum und Begrüssung
+label {
+    monitor =
+    text = cmd[update:60000] LC_TIME=C date '+%A, %d %B'
+    color = \$subtext
+    font_size = $(px 17 "$fs")
+    font_family = $S_theme_font_ui
+    position = 110, -10
+    halign = left
+    valign = center
+}
+label {
+    monitor =
+    text = cmd[update:60000] ~/.local/bin/shell-greeting
+    color = \$text
+    font_size = $(px 15 "$fs")
+    font_family = $S_theme_font_ui SemiBold
+    position = 110, -44
+    halign = left
+    valign = center
+}
+
+# Passwortfeld als schlichte Linie
+input-field {
+    monitor =
+    size = 300, 46
+    outline_thickness = 0
+    rounding = 0
+    inner_color = rgba(00000000)
+    font_color = \$text
+    font_family = $S_theme_font_mono
+    dots_size = 0.22
+    dots_spacing = 0.35
+    dots_center = false
+    fade_on_empty = false
+    placeholder_text = <span foreground="##ffffff88">Password</span>
+    fail_text = <span foreground="##ff8080">\$FAIL</span>
+    check_color = \$accent
+    fail_color = \$error
+    position = 110, -118
+    halign = left
+    valign = center
+}
+shape {
+    monitor =
+    size = 300, 2
+    color = \$text_dim
+    rounding = 0
+    border_size = 0
+    position = 110, -144
+    halign = left
+    valign = center
+}
+
+# Standby, Neustart, Herunterfahren
+label {
+    monitor =
+    text = 󰤄
+    color = \$text_dim
+    font_size = 24
+    font_family = $S_theme_font_mono
+    onclick = systemctl suspend
+    position = 110, -210
+    halign = left
+    valign = center
+}
+label {
+    monitor =
+    text = 󰜉
+    color = \$text_dim
+    font_size = 24
+    font_family = $S_theme_font_mono
+    onclick = systemctl reboot
+    position = 180, -210
+    halign = left
+    valign = center
+}
+label {
+    monitor =
+    text = 󰐥
+    color = \$text_dim
+    font_size = 24
+    font_family = $S_theme_font_mono
+    onclick = systemctl poweroff
+    position = 250, -210
+    halign = left
+    valign = center
+}
+
+# unten links: kleine Angaben zu CPU und RAM (wie die Vorlage)
+label {
+    monitor =
+    text = cmd[update:3000] ~/.local/bin/shell-sysinfo lock
+    color = \$subtext
+    font_size = $(px 13 "$fs")
+    font_family = $S_theme_font_mono
+    position = 110, 40
+    halign = left
+    valign = bottom
+}
+CONF
+}
+
+erzeuge_rofi() {
+    cat <<RASI
+/* $HEADER */
+/* wird am Ende von config.rasi eingebunden und überschreibt dort Schrift, Symbole und Glas */
+configuration {
+    icon-theme:         "$S_theme_icons";
+    font:               "$S_theme_font_ui $(px 11 "$S_theme_font_scale")";
+}
+
+window {
+    border-radius:    $(( S_theme_radius_card ))px;
+    background-color: rgba(12, 12, 14, $S_theme_glass);
+}
+RASI
+}
+
+# ---------------------------------------------------------------- Ablauf
+
+MODE=apply
+RELOAD=1
+MIGRATE=1
+CHECK_FILE=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --no-reload) RELOAD=0 ;;
+        --no-migrate) MIGRATE=0 ;;
+        --check) MODE=check; if [ $# -gt 1 ] && [ "${2#-}" = "$2" ]; then CHECK_FILE="$2"; shift; fi ;;
+        --effective) MODE=effective ;;
+        --example) MODE=example ;;
+        --schema) printf '%s\n' "$SCHEMA"; exit 0 ;;
+        -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "shell-apply: unbekannte Option $1" >&2; exit 2 ;;
+    esac
+    shift
+done
+
+if [ "$MODE" = example ]; then
+    jq --indent 2 'reduce .keys[] as $s ({}; setpath($s.key | split("."); $s.default))' "$SCHEMA"
+    exit 0
+fi
+
+T="$(mktemp -d)"
+trap 'rm -rf "$T"' EXIT
+
+# rohe Einstellungen lesen: gültiges JSON-Objekt? Fehlertext in $T/parse
+roh_lesen() { # datei -> $T/raw.json, Rückgabe 1 bei kaputtem JSON
+    local f="$1"
+    if [ ! -e "$f" ]; then echo '{}' > "$T/raw.json"; return 0; fi
+    if ! jq -e 'if type == "object" then . else error("settings.json must contain an object { … }") end' "$f" > "$T/raw.json" 2> "$T/parse"; then
+        return 1
+    fi
+}
+
+if [ "$MODE" = check ]; then
+    f="${CHECK_FILE:-$SETTINGS}"
+    if ! roh_lesen "$f"; then
+        printf 'JSON: %s\n' "$(sed 's/^jq: error[^:]*: //' "$T/parse" | head -n1)"
+        exit 1
+    fi
+    auswerten "$T/raw.json" | jq -r '.err[] | "\(.key): \(.reason)"' > "$T/err"
+    cat "$T/err"
+    [ -s "$T/err" ] && exit 1
+    exit 0
+fi
+
+mkdir -p "$DATA"
+# Nie zwei Läufe gleichzeitig (Quickshell, shell-set und der Installer können gleichzeitig anstossen)
+if command -v flock >/dev/null 2>&1 && [ "$MODE" = apply ]; then
+    exec 9> "$DATA/.apply.lock"
+    flock -w 10 9 || true
+fi
+
+kaputt=""
+if ! roh_lesen "$SETTINGS"; then
+    kaputt="$(sed 's/^jq: error[^:]*: //' "$T/parse" | head -n1)"
+    if [ -f "$LAST_GOOD" ] && jq -e 'type == "object"' "$LAST_GOOD" > /dev/null 2>&1; then
+        cp "$LAST_GOOD" "$T/raw.json"
+    else
+        echo '{}' > "$T/raw.json"
+    fi
+elif [ "$MODE" = apply ] && [ -e "$SETTINGS" ]; then
+    cp "$T/raw.json" "$T/good" && schreibe "$LAST_GOOD" < "$T/good" || true
+fi
+
+# Ebene aus hypr-shell-local.lua (v1.1) unter settings.json
+local_json > "$T/local.json"
+jq -s '.[0] * .[1]' "$T/local.json" "$T/raw.json" > "$T/merged.json"
+
+# einmaliger Umzug: Werte aus hypr-shell-local.lua, die in settings.json fehlen, dort eintragen
+if [ "$MODE" = apply ] && [ "$MIGRATE" -eq 1 ] && [ -z "$kaputt" ] && [ -f "$LOCAL_LUA" ] && [ ! -e "$MIGRATED" ] \
+   && [ "$(jq -c . "$T/local.json")" != "{}" ]; then
+    if ! jq -e --slurpfile raw "$T/raw.json" '. * $raw[0] == $raw[0]' "$T/local.json" > /dev/null; then
+        jq --indent 2 . "$T/merged.json" | schreibe "$SETTINGS" || true
+        meldung "Settings moved" "Values from hypr-shell-local.lua are now in settings.json"
+    fi
+    date '+%F %T' > "$MIGRATED"
+fi
+
+auswerten "$T/merged.json" > "$T/result.json"
+jq '.eff' "$T/result.json" > "$T/eff.json"
+
+if [ "$MODE" = effective ]; then
+    cat "$T/eff.json"
+    exit 0
+fi
+
+# Fehler melden (nur wenn sie sich seit dem letzten Lauf geändert haben)
+{
+    [ -n "$kaputt" ] && printf 'settings.json is not valid JSON (%s) – the last good settings stay active\n' "$kaputt"
+    jq -r '.err[] | "\(.key): \(.reason) – using the default"' "$T/result.json"
+} > "$T/errors" || true
+if [ -s "$T/errors" ]; then sed 's/^/shell-apply: /' "$T/errors" >&2; fi
+if schreibe "$ERRORS" < "$T/errors" && [ -s "$T/errors" ] && [ "$RELOAD" -eq 1 ]; then
+    meldung "Settings: $(wc -l < "$T/errors" | tr -d ' ') problem(s)" "$(head -n 4 "$T/errors")"
+fi
+
+# Werte als Shell-Variablen: S_bar_height=30, S_theme_font_ui='Inter', Listen als JSON
+# shellcheck disable=SC2016
+eval "$(jq -r --slurpfile schema "$SCHEMA" '. as $e | $schema[0].keys[] | .key as $k
+    | ($e | getpath($k | split("."))) as $v
+    | "S_" + ($k | gsub("[.-]"; "_")) + "=" + (if ($v | type) == "array" or ($v | type) == "object" then ($v | tojson) else ($v | tostring) end | @sh)' "$T/eff.json")"
+
+EFF="$(cat "$T/eff.json")"
+geaendert=()
+erzeuge() { # name ziel funktion
+    local name="$1" ziel="$2"; shift 2
+    "$@" > "$T/neu" || { echo "shell-apply: $name konnte nicht erzeugt werden" >&2; return 0; }
+    if schreibe "$ziel" < "$T/neu"; then geaendert+=("$name"); fi
+}
+erzeuge effective "$EFFECTIVE"                          cat "$T/eff.json"
+erzeuge hypr      "$CONF/hypr/hypr-shell-settings.lua"   erzeuge_lua "$EFF"
+erzeuge waybar    "$CONF/waybar/config.jsonc"            erzeuge_waybar "$EFF"
+erzeuge waybar    "$CONF/waybar/style.css"               erzeuge_waybar_style
+erzeuge hypridle  "$CONF/hypr/hypridle.conf"             erzeuge_hypridle
+erzeuge hyprlock  "$CONF/hypr/hyprlock.conf"             erzeuge_hyprlock
+erzeuge rofi      "$CONF/rofi/hypr-shell-settings.rasi"  erzeuge_rofi
+
+# Dinge, die keine eigene Datei haben: Farbmodus, Mauszeiger, Symbolthema
+jq -c '{colors: [.theme.colors, .theme.accent], cursor: [.theme.cursor.name, .theme.cursor.size], icons: .theme.icons}' "$T/eff.json" > "$T/applied"
+alt='{}'
+[ -f "$APPLIED" ] && alt="$(cat "$APPLIED")"
+anders() { [ "$(jq -c ".$1" <<<"$alt")" != "$(jq -c ".$1" "$T/applied")" ]; }
+anders colors && geaendert+=(colors)
+anders cursor && geaendert+=(cursor)
+anders icons && geaendert+=(icons)
+schreibe "$APPLIED" < "$T/applied" || true
+
+[ "${#geaendert[@]}" -gt 0 ] && [ "${SHELL_APPLY_VERBOSE:-0}" = 1 ] && echo "geändert: ${geaendert[*]}"
+[ "$RELOAD" -eq 1 ] || exit 0
+
+hat() { printf '%s\n' "${geaendert[@]}" | grep -qx "$1"; }
+hypr_laeuft() { [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl >/dev/null 2>&1; }
+BIN="$HOME/.local/bin"
+
+if hat hypr && hypr_laeuft; then hyprctl reload >/dev/null 2>&1 || true; fi
+if hat cursor && hypr_laeuft; then hyprctl setcursor "$S_theme_cursor_name" "$S_theme_cursor_size" >/dev/null 2>&1 || true; fi
+if hat waybar; then pkill -SIGUSR2 -x waybar 2>/dev/null || true; fi
+if hat hypridle && pgrep -x hypridle >/dev/null 2>&1; then
+    pkill -x hypridle 2>/dev/null || true
+    (sleep 0.3; setsid -f hypridle >/dev/null 2>&1) &
+fi
+if hat colors && [ -x "$BIN/shell-wallpaper" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    setsid -f "$BIN/shell-wallpaper" --colors >/dev/null 2>&1 || true
+fi
+if hat icons && [ -x "$BIN/shell-quickshell" ] && pgrep -f -- "-p $CONF/quickshell/hypr-shell" >/dev/null 2>&1; then
+    setsid -f "$BIN/shell-quickshell" restart >/dev/null 2>&1 || true
+fi
+exit 0

@@ -18,8 +18,9 @@ Singleton {
     readonly property color subtext: c.subtext
     readonly property color error: c.error
 
-    // Glas: dunkle, halbtransparente Fläche über dem Blur von Hyprland
-    function glass(opacity) { return Qt.rgba(0.055, 0.055, 0.065, opacity === undefined ? 0.44 : opacity) }
+    // Glas: dunkle, halbtransparente Fläche über dem Blur von Hyprland (theme.glass)
+    readonly property real glassOpacity: Settings.get("theme.glass", 0.44)
+    function glass(opacity) { return Qt.rgba(0.055, 0.055, 0.065, opacity === undefined ? glassOpacity : opacity) }
     readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.09)
     // Karten innen: Weiss mit 5 % Deckkraft und feiner heller Kontur
     readonly property color card: Qt.rgba(1, 1, 1, 0.05)
@@ -39,12 +40,18 @@ Singleton {
         return Qt.rgba(x.r * (1 - k) + y.r * k, x.g * (1 - k) + y.g * k, x.b * (1 - k) + y.b * k, al === undefined ? 1 : al)
     }
 
-    readonly property int panelRadius: 26
-    readonly property int cardRadius: 18
+    // Radien und Schriften aus settings.json (theme.radius.*, theme.font.*)
+    readonly property int panelRadius: Settings.get("theme.radius.panel", 26)
+    readonly property int cardRadius: Settings.get("theme.radius.card", 18)
 
-    readonly property string sans: "Inter"
-    readonly property string mono: "JetBrainsMono Nerd Font"
-    readonly property string display: bebas.status === FontLoader.Ready ? bebas.name : "Bebas Neue"
+    readonly property string sans: Settings.get("theme.font.ui", "Inter")
+    readonly property string mono: Settings.get("theme.font.mono", "JetBrainsMono Nerd Font")
+    readonly property string clock: Settings.get("theme.font.clock", "JetBrainsMono Nerd Font")
+    readonly property string displayName: Settings.get("theme.font.display", "Bebas Neue")
+    // mitgelieferte Bebas Neue, solange die Standardschrift gewählt ist
+    readonly property string display: displayName === "Bebas Neue" && bebas.status === FontLoader.Ready ? bebas.name : displayName
+    // Faktor für alle Schriftgrössen
+    readonly property real fontScale: Settings.get("theme.font.scale", 1.0)
 
     FontLoader { id: bebas; source: Qt.resolvedUrl("fonts/BebasNeue-Regular.ttf") }
 

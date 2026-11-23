@@ -14,7 +14,16 @@ Scope {
     property string tab: "dashboard"
     property bool entered: false
     property var about: ({})
-    readonly property var tabs: ["dashboard", "wallpaper", "performance", "about"]
+    // Tabs, Reihenfolge und Start-Tab aus settings.json (dashboard.tabs, dashboard.start)
+    readonly property var allTabs: ["dashboard", "wallpaper", "performance", "about"]
+    readonly property var tabs: {
+        const l = Settings.get("dashboard.tabs", allTabs).filter(t => allTabs.indexOf(t) >= 0)
+        return l.length > 0 ? l : ["dashboard"]
+    }
+    readonly property string startTab: {
+        const t = Settings.get("dashboard.start", "dashboard")
+        return tabs.indexOf(t) >= 0 ? t : tabs[0]
+    }
     readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", about: "About" })
     readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", about: "󰋽" })
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
@@ -26,7 +35,7 @@ Scope {
     readonly property real panelH: headH + 4 + pageH + pad
 
     function show(t) {
-        if (tabs.indexOf(t) >= 0) tab = t
+        tab = tabs.indexOf(t) >= 0 ? t : startTab
         entered = false
         if (!aboutProc.running) aboutProc.running = true
         open = true
@@ -103,7 +112,7 @@ Scope {
                     else if (dash.open && dash.entered) leaveTimer.restart()
                 }
             }
-            Timer { id: leaveTimer; interval: 350; onTriggered: if (!hov.hovered) dash.hide() }
+            Timer { id: leaveTimer; interval: 350; onTriggered: if (!hov.hovered && Settings.get("dashboard.close_on_leave", true)) dash.hide() }
 
             Item {
                 id: keys
@@ -113,7 +122,7 @@ Scope {
                 Keys.onTabPressed: dash.tab = dash.tabs[(dash.tabs.indexOf(dash.tab) + 1) % dash.tabs.length]
             }
 
-            // Tab-Leiste: vier gleich breite Tabs über die ganze Breite, Symbol über dem Text,
+            // Tab-Leiste: gleich breite Tabs über die ganze Breite, Symbol über dem Text,
             // der aktive Tab als weisse Pille, die zum gewählten Tab gleitet
             Item {
                 id: tabBar

@@ -12,6 +12,9 @@ GlassCard {
     readonly property var rawv: Settings.rawValue(key)
     readonly property bool changed: rawv !== undefined && JSON.stringify(rawv) !== JSON.stringify(spec.default)
     readonly property bool wide: spec.type === "list" || spec.type === "stringlist" || spec.type === "objectlist"
+    // hängt von einem anderen Schalter ab (z. B. der Agent von missa.enabled): grau mit Hinweis
+    readonly property bool blocked: spec.depends ? Settings.get(spec.depends, false) !== true : false
+    readonly property var dependsSpec: spec.depends ? Settings.schemaKey(spec.depends) : null
     // zuletzt gesetzter Wert, bis settings.json ihn bestätigt (damit Schalter sofort umspringen)
     property var pending: undefined
     readonly property var shown: pending !== undefined ? pending : value
@@ -57,6 +60,14 @@ GlassCard {
             spacing: 2
             Txt { width: parent.width; text: row.spec.title || row.key; size: 14; weight: Font.DemiBold }
             Txt { width: parent.width; text: row.spec.description || ""; size: 12; sub: true; wrapMode: Text.WordWrap; elide: Text.ElideNone }
+            Txt {
+                visible: row.blocked
+                width: parent.width
+                text: "Needs \"" + (row.dependsSpec ? row.dependsSpec.title : row.spec.depends) + "\" switched on first"
+                size: 11
+                color: Theme.warn
+                wrapMode: Text.WordWrap
+            }
         }
         Row {
             id: controls
@@ -75,6 +86,8 @@ GlassCard {
             Loader {
                 id: control
                 anchors.verticalCenter: parent.verticalCenter
+                enabled: !row.blocked
+                opacity: row.blocked ? 0.4 : 1
                 sourceComponent: row.spec.type === "bool" ? toggleC
                                : row.spec.type === "int" || row.spec.type === "number" ? sliderC
                                : row.spec.type === "enum" ? choiceC

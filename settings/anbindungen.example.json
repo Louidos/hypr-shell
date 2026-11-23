@@ -1,0 +1,36 @@
+{
+  "_comment": "hypr-shell: Beispielprofil – alle persönlichen Anbindungen eingeschaltet. Kopieren nach ~/.config/hypr-shell/profiles/anbindungen.json und mit 'shell-set profile load anbindungen' laden (oder: shell-set import settings/anbindungen.example.json). Adressen und Benutzer selbst eintragen; Passwörter und Schlüssel nur über die Einstellungs-App (Seite Integrations) bzw. shell-secrets.",
+  "nextcloud": {
+    "enabled": true,
+    "url": "https://cloud.example.org",
+    "user": "ich"
+  },
+  "missa": {
+    "enabled": true,
+    "url": "https://missa.example.org",
+    "agent_enabled": true,
+    "voice_enabled": true
+  },
+  "lab": {
+    "enabled": true
+  },
+  "calendar": {
+    "enabled": true,
+    "url": "https://cloud.example.org/remote.php/dav/calendars/ich/personal/",
+    "user": "ich"
+  },
+  "sensor": {
+    "enabled": true,
+    "url": "https://sensor.example.org/api/luft.json"
+  },
+  "games": {
+    "custom_enabled": true,
+    "custom": [
+      {
+        "name": "Battle.net",
+        "command": "lutris lutris:rungame/battlenet",
+        "image": ""
+      }
+    ]
+  }
+}

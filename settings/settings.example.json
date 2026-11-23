@@ -209,6 +209,36 @@
     "kbd_light": "unchanged",
     "kbd_follow_wallpaper": false
   },
+  "nextcloud": {
+    "enabled": false,
+    "url": "",
+    "user": "",
+    "mount_path": "~/Nextcloud",
+    "cache_mb": 1024,
+    "read_only": false
+  },
+  "missa": {
+    "enabled": false,
+    "url": "",
+    "folder": "~/Missa",
+    "agent_enabled": false,
+    "voice_enabled": false
+  },
+  "lab": {
+    "enabled": false
+  },
+  "calendar": {
+    "enabled": false,
+    "url": "",
+    "user": ""
+  },
+  "sensor": {
+    "enabled": false,
+    "url": ""
+  },
+  "integrations": {
+    "ca_file": ""
+  },
   "keybinds": {
     "terminal": "SUPER + Q",
     "files": "SUPER + E",

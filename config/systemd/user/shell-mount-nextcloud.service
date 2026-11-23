@@ -1,0 +1,14 @@
+# hypr-shell: Nextcloud als Ordner (WebDAV über rclone). Wird nur von "shell-mount nextcloud up" gestartet,
+# wenn nextcloud.enabled an ist, und von "shell-mount nextcloud down" gestoppt – nie von selbst.
+# Das App-Passwort liest shell-mount aus ~/.config/hypr-shell/secrets.env und gibt es rclone nur über
+# die Umgebung (verschleiert) – nie über diese Datei, eine rclone-Konfiguration oder die Befehlszeile.
+[Unit]
+Description=hypr-shell: Nextcloud-Ordner (rclone mount)
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/shell-mount nextcloud run
+ExecStopPost=-%h/.local/bin/shell-mount nextcloud unmount
+Restart=on-failure
+RestartSec=30

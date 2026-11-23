@@ -765,7 +765,8 @@ erzeuge rofi      "$CONF/rofi/hypr-shell-settings.rasi"  erzeuge_rofi
 # Dinge, die keine eigene Datei haben: Farbmodus, Mauszeiger, Symbolthema
 jq -c '{colors: [.theme.colors, .theme.accent], cursor: [.theme.cursor.name, .theme.cursor.size], icons: .theme.icons,
         clipboard: [.clipboard.enabled, .clipboard.max],
-        laptop: [.laptop.charge_limit, .laptop.kbd_light, .laptop.kbd_follow_wallpaper]}' "$T/eff.json" > "$T/applied"
+        laptop: [.laptop.charge_limit, .laptop.kbd_light, .laptop.kbd_follow_wallpaper],
+        ordner: [.nextcloud, .missa.enabled, .missa.folder]}' "$T/eff.json" > "$T/applied"
 alt='{}'
 [ -f "$APPLIED" ] && alt="$(cat "$APPLIED")"
 anders() { [ "$(jq -c ".$1" <<<"$alt")" != "$(jq -c ".$1" "$T/applied")" ]; }
@@ -774,6 +775,7 @@ anders cursor && geaendert+=(cursor)
 anders icons && geaendert+=(icons)
 anders clipboard && geaendert+=(clipboard)
 anders laptop && geaendert+=(laptop)
+anders ordner && geaendert+=(ordner)
 schreibe "$APPLIED" < "$T/applied" || true
 
 [ "${#geaendert[@]}" -gt 0 ] && [ "${SHELL_APPLY_VERBOSE:-0}" = 1 ] && echo "geändert: ${geaendert[*]}"
@@ -792,6 +794,10 @@ if hat hypridle && pgrep -x hypridle >/dev/null 2>&1; then
 fi
 if hat colors && [ -x "$BIN/shell-wallpaper" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
     setsid -f "$BIN/shell-wallpaper" --colors >/dev/null 2>&1 || true
+fi
+# Anbindungen mit Ordnern (Nextcloud, Missa): einhängen bzw. aufräumen
+if hat ordner && [ -x "$BIN/shell-mount" ]; then
+    setsid -f "$BIN/shell-mount" sync >/dev/null 2>&1 || true
 fi
 # Laptop: Ladegrenze, Tastaturlicht (nur was eingestellt ist, über shell-laptop)
 if hat laptop && [ -x "$BIN/shell-laptop" ]; then

@@ -126,6 +126,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(bin .. "shell-clipboard daemon")
     -- Laptop: eingestellte Ladegrenze und Tastaturlicht anwenden (Standard: nichts ändern)
     hl.exec_cmd(bin .. "shell-laptop apply")
+    -- Ordner der Anbindungen (Nextcloud, Missa) nach den Einstellungen; alles aus = nichts passiert
+    hl.exec_cmd(bin .. "shell-mount sync")
 end)
 
 ------------------------------

@@ -7,6 +7,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Homelab-Übersicht über Missa (Tab Lab), Kalendertermine (CalDAV) und Sensor-Kachel im Dashboard, einschaltbar in den Einstellungen (#64)
 - Missa kann am Rechner Dateien finden und öffnen, Programme und Fenster steuern und nach Bestätigung Befehle ausführen; sichtbar in der Leiste, sofort trennbar im Panel, jede Aktion im Verlauf, einschaltbar in den Einstellungen (#63)
 - Mit Missa sprechen und Antworten vorlesen lassen (SUPER+SHIFT+I), lokal mit whisper.cpp und piper, einschaltbar in den Einstellungen (#62)
 - Chat mit Missa direkt am Desktop (SUPER+I) und Missa-Karte im Dashboard, einschaltbar in den Einstellungen (#61)

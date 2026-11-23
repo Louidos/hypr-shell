@@ -491,8 +491,17 @@ if command -v python3 >/dev/null 2>&1; then
         if [[ ",$("$qs" -p "$cfg" ipc call panel toggles 2>/dev/null)," == *",missa,"* ]]; then echo "  ok: Schalter Missa access im Panel (Agent eingeschaltet)"
         else echo "  FEHLER: Schalter Missa access fehlt"; missa_ok=0; fi
         ipc panel close; sleep 1
+        # Homelab, Kalender, Sensor (über denselben Testserver)
+        jq --arg u "http://127.0.0.1:$mport" '.lab.enabled = true | .calendar.enabled = true | .calendar.url = ($u + "/caldav/") | .calendar.user = "kal"
+            | .sensor.enabled = true | .sensor.url = ($u + "/sensor.json") | .sensor.field = "luft.co2" | .sensor.title = "CO2"' \
+            "$HOME/.config/hypr-shell/settings.json" > "$T/s.json" && mv "$T/s.json" "$HOME/.config/hypr-shell/settings.json"
+        echo kal-pw | "$HOME/.local/bin/shell-secrets" set CALDAV_PASSWORD
+        KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload 2>/dev/null; sleep 2
+        ipc dashboard open lab; sleep 3; bild dashboard-lab
         ipc dashboard open dashboard; sleep 3; bild dashboard-missa; ipc dashboard close; sleep 1
         missa_vorher="$("$qs" -p "$cfg" ipc call missa lastText 2>/dev/null)"
+        if grep -q '"/api/homelab"' "$T/missa.log" && grep -q '"caldav"' "$T/missa.log"; then echo "  ok: Lab und Kalender lesen erst, wenn eingeschaltet und das Dashboard offen ist"
+        else echo "  FEHLER: keine Abfrage für Lab/Kalender"; missa_ok=0; fi
     else
         echo "  FEHLER: Missa eingeschaltet, aber kein Panel"; missa_ok=0
     fi
@@ -506,6 +515,8 @@ bereich panel panel-avatar "Profilbild im Panel"
 bereich panel app-icon "erstes App-Symbol im Panel"
 bereich launcher launcher-first "erstes App-Symbol im Starter"
 [ -f "$T/log-dashboard-missa" ] && bereich dashboard-missa missa-card "Missa-Karte im Dashboard"
+[ -f "$T/log-dashboard-lab" ] && bereich dashboard-lab lab-vms "VMs im Tab Lab"
+[ -f "$T/log-dashboard-missa" ] && bereich dashboard-missa calendar-event "Termin unter dem Kalender"
 if command -v cliphist >/dev/null 2>&1 && [ -n "$im" ]; then bereich zwischenablage clipboard-image "Bild-Vorschau in der Zwischenablage"; fi
 
 # ohne ~/.face: Anfangsbuchstabe statt Bild

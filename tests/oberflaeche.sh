@@ -90,7 +90,7 @@ if command -v hyprlock >/dev/null 2>&1; then
     kill "$lockpid" 2>/dev/null || true
     echo "---- hyprlock-Log ----"
     cat "$T/hyprlock.log"
-    if grep -iE "config error|error in config|unknown|invalid" "$T/hyprlock.log"; then
+    if grep -iE "config error|error in config|config has errors|\.conf.*(error|invalid)" "$T/hyprlock.log"; then
         echo "FEHLER: hyprlock meldet Konfigurationsfehler"
         exit 1
     fi

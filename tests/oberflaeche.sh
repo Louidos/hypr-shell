@@ -384,7 +384,7 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     mon="$(grep -o 'hypr-shell-probe monitor-rotate-[A-Za-z0-9_.:-]*-90 ' "$T/qs.log" | tail -n1 | sed -E 's/.*monitor-rotate-(.*)-90 /\1/')"
     if [ -n "$mon" ] && test_ipc click "monitor-rotate-$mon-90" && warte_auf ".monitors.outputs[0].transform" '"90"'; then
         echo "  ok: Monitors: $mon auf 90° gedreht"
-        bild settings-monitors-gedreht
+        sleep 1.5; bild settings-monitors-gedreht   # die App liest den neuen Stand (settings.effective.json)
         if test_ipc click "monitor-mirror-$mon" && warte_auf ".monitors.outputs[0].transform" '"flipped-90"'; then echo "  ok: Mirrored: flipped-90"
         else echo "  FEHLER: Mirrored ($(wert .monitors))"; app_ok=0; fi
         if warte_auf ".monitors.outputs" '[]' 80; then echo "  ok: ohne Keep nach 15 s zurück"

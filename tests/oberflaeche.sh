@@ -127,7 +127,7 @@ cfg="$HOME/.config/quickshell/hypr-shell"
 starte_qs() {
     # Quickshell sieht eine hyprctl-Attrappe mit Beispielfenstern (tests/daten), Aufrufe landen in $T/hyprctl.log
     mkdir -p "$T/fake"
-    for p in hyprctl nmcli bluetoothctl asusctl supergfxctl; do ln -sf "$REPO/tests/daten/$p" "$T/fake/$p"; done
+    for p in hyprctl nmcli bluetoothctl asusctl supergfxctl rec whisper-cli piper-tts aplay; do ln -sf "$REPO/tests/daten/$p" "$T/fake/$p"; done
     PATH="$T/fake:$PATH" ASUS_STATE="$T/asus" HYPRCTL_LOG="$T/hyprctl.log" HYPRCTL_BINDS="$T/binds.json" HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
     qspid="$!"
     pids+=("$qspid")
@@ -449,7 +449,9 @@ if command -v python3 >/dev/null 2>&1; then
     python3 "$REPO/tests/daten/missa-testserver.py" "$mport" "$T/missa.log" 2>/dev/null &
     pids+=("$!")
     sleep 1
-    jq --arg u "http://127.0.0.1:$mport" '.missa.enabled = true | .missa.url = $u' "$HOME/.config/hypr-shell/settings.json" > "$T/s.json" \
+    mkdir -p "$HOME/.local/share/hypr-shell/whisper" "$HOME/.local/share/hypr-shell/piper"
+    touch "$HOME/.local/share/hypr-shell/whisper/ggml-base.bin" "$HOME/.local/share/hypr-shell/piper/de_DE-thorsten-medium.onnx"
+    jq --arg u "http://127.0.0.1:$mport" '.missa.enabled = true | .missa.voice_enabled = true | .missa.url = $u' "$HOME/.config/hypr-shell/settings.json" > "$T/s.json" \
         && mv "$T/s.json" "$HOME/.config/hypr-shell/settings.json"
     echo test-key | "$HOME/.local/bin/shell-secrets" set MISSA_API_KEY
     KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload 2>/dev/null
@@ -468,6 +470,14 @@ if command -v python3 >/dev/null 2>&1; then
             echo "  ok: Antwort lässt sich abbrechen"
         else echo "  FEHLER: Abbrechen"; missa_ok=0; fi
         ipc missa close; sleep 1
+        # mit Missa sprechen (Attrappen für Aufnahme, whisper.cpp und piper)
+        ipc missa voice; sleep 0.4; bild missa-sprechen
+        zustand="$("$qs" -p "$cfg" ipc call missa voiceState 2>/dev/null)"
+        for _ in $(seq 1 30); do [ "$("$qs" -p "$cfg" ipc call missa voiceState 2>/dev/null)" = "" ] && break; sleep 0.3; done
+        if [ "$zustand" = listening ] && jq -e 'select(.chat == "Was habe ich morgen vor?" and .modus == "sprache")' "$T/missa.log" >/dev/null 2>&1; then
+            echo "  ok: gesprochener Satz steht im Chat und wird beantwortet (Sprechmodus)"
+        else echo "  FEHLER: Sprechen: Zustand $zustand, Log: $(tail -n 2 "$T/missa.log")"; missa_ok=0; fi
+        if [ -z "$(find "$XDG_RUNTIME_DIR" "$HOME" -name 'hypr-shell-voice-*.wav' 2>/dev/null)" ]; then echo "  ok: keine Audiodatei bleibt liegen"; else echo "  FEHLER: Audiodatei liegt noch"; missa_ok=0; fi
         ipc dashboard open dashboard; sleep 3; bild dashboard-missa; ipc dashboard close; sleep 1
         missa_vorher="$("$qs" -p "$cfg" ipc call missa lastText 2>/dev/null)"
     else

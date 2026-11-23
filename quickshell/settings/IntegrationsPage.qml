@@ -20,7 +20,7 @@ Column {
           secret: "MISSA_API_KEY", secretTitle: "API key", howto: "Enter the address of Missa-Core and the API key from its configuration." },
         { id: "agent", title: "Missa on this computer", icon: "󰍹", keys: ["missa.agent_enabled"],
           secret: "MISSA_DEVICE_TOKEN", secretTitle: "Device token", howto: "Create a device token in Missa-Core (devices) and enter it here." },
-        { id: "voice", title: "Talk to Missa", icon: "󰍬", keys: ["missa.voice_enabled"], secret: "", howto: "" },
+        { id: "voice", title: "Talk to Missa", icon: "󰍬", keys: ["missa.voice_enabled", "missa.voice_language", "missa.voice_model", "missa.voice_voice", "missa.voice_speed"], secret: "", howto: "" },
         { id: "lab", title: "Homelab", icon: "󰒋", keys: ["lab.enabled"], secret: "", howto: "" },
         { id: "calendar", title: "Calendar", icon: "󰃭", keys: ["calendar.enabled", "calendar.url", "calendar.user"],
           secret: "CALDAV_PASSWORD", secretTitle: "Password", howto: "Enter the CalDAV address, user name and an (app) password." },

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Attrappe von whisper-cli: prüft die Argumente und "erkennt" einen festen Satz
+args="$*"; [[ "$args" == *"-nt"* && "$args" == *"-np"* && "$args" == *"-l "* ]] || { echo "falsche Argumente: $args" >&2; exit 2; }
+f=""; while [ $# -gt 0 ]; do [ "$1" = -f ] && f="$2"; shift; done
+[ -s "$f" ] || exit 1
+echo "${WHISPER_LOG:+$(echo "$args" >> "$WHISPER_LOG")}" >/dev/null
+echo " Was habe ich morgen vor?"

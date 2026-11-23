@@ -7,6 +7,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Mit Missa sprechen und Antworten vorlesen lassen (SUPER+SHIFT+I), lokal mit whisper.cpp und piper, einschaltbar in den Einstellungen (#62)
 - Chat mit Missa direkt am Desktop (SUPER+I) und Missa-Karte im Dashboard, einschaltbar in den Einstellungen (#61)
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)
 - Spiele-Tab im Dashboard (zuletzt gespielte Steam-Spiele mit Cover, eigene Einträge einschaltbar) und automatischer Gaming-Modus, solange ein Spiel im Vollbild läuft (#57)

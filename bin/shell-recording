@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Zeigt in der Leiste einen roten Punkt, solange eine Bildschirmaufnahme läuft.
+# Zeigt in der Leiste einen roten Punkt, solange eine Bildschirmaufnahme läuft, und ein Mikrofon,
+# solange shell-voice für Missa aufnimmt.
 #   shell-recording status   JSON für Waybar ({"text": "●"} oder leer)
 set -euo pipefail
 
@@ -10,7 +11,9 @@ aufnahme() {
 
 case "${1:-status}" in
     status)
-        if aufnahme; then
+        if [ "$(cat "${XDG_RUNTIME_DIR:-/tmp}/hypr-shell-voice.state" 2>/dev/null)" = listening ]; then
+            printf '{"text": "󰍬", "tooltip": "Listening for Missa", "class": "recording"}\n'
+        elif aufnahme; then
             printf '{"text": "●", "tooltip": "Recording", "class": "recording"}\n'
         else
             printf '{"text": ""}\n'

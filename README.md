@@ -127,6 +127,8 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 | `CTRL + SUPER + Escape` | Notfall: Tastatur zurück (siehe [Tastatur geht nicht](docs/tastenkuerzel.md#tastatur-geht-nicht)) |
 | `SUPER + I` | Chat mit Missa (nur mit `missa.enabled`, sonst tut das Kürzel nichts) |
 | `SUPER + SHIFT + I` | mit Missa sprechen; nochmal drücken beendet (nur mit `missa.voice_enabled` und whisper.cpp) |
+| `ALT + Tab` | zwischen Fenstern wechseln (ALT halten, Tab wählt weiter, loslassen wechselt; Esc bricht ab, Q/Entf schliesst) |
+| `ALT + SHIFT + Tab` | dasselbe rückwärts |
 | `SUPER + M` | Fenster minimieren (liegt dann abgedunkelt im Dock) |
 | `SUPER + SHIFT + M` | zuletzt minimiertes Fenster zurückholen |
 | `CTRL + SUPER + M` | abmelden (Hyprland beenden; bis 1.9 `SUPER + M`) |
@@ -289,6 +291,18 @@ nach 5 Minuten und geht nach 15 Minuten in den Standby (vorher wird gesperrt); d
 in `lock.after`, `lock.screen_off` und `lock.suspend`.
 
 ![Sperrbildschirm](docs/screenshots/lockscreen.png)
+
+### Fenster wechseln (ALT + Tab)
+
+ALT gedrückt halten und Tab drücken: In der Mitte des Bildschirms mit dem Mauszeiger erscheint eine
+Glas-Leiste mit Vorschaubildern aller offenen Fenster – zuletzt benutzte zuerst, ein kurzes
+ALT + Tab springt also zum vorherigen Fenster. Weiter Tab (oder Pfeile, Maus) wählt, ALT loslassen
+wechselt, Escape bricht ab, Q oder Entf schliesst das gewählte Fenster. Fenster anderer
+Arbeitsflächen und Bildschirme tragen eine kleine Nummer, minimierte den Hinweis „minimized“ –
+Wechseln holt die Arbeitsfläche bzw. das Fenster zurück. Die Tasten laufen über eine Submap von
+Hyprland; die Leiste nimmt nie die Tastatur und schliesst sich nach 5 s ohne Taste von selbst.
+Einstellungen → System → Window switcher (`switcher.*`: an/aus, alle Fenster oder nur die
+Arbeitsfläche, Vorschau an/aus, Grösse); `SUPER + Tab` (Übersicht) bleibt.
 
 ### Fenster-Knöpfe
 
@@ -541,6 +555,7 @@ automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelte
 | `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
+| `shell-switcher next\|prev\|commit\|cancel\|close` | ALT + Tab (von den Kürzeln aufgerufen) |
 | `shell-window minimize\|restore\|list` | Fenster minimieren, zurückholen, minimierte zeigen |
 | `shell-look presets\|preset <name>` | Voreinstellungen für das Aussehen: glass, minimal, gaming |
 | `shell-diag tastatur\|freigeben` | wer hat die Tastatur? bzw. Tastatur zurück (wie `CTRL + SUPER + Escape`) |

@@ -27,6 +27,7 @@ Maustaste verschiebt bzw. vergrössert Fenster, `SUPER + V` schaltet schwebend/g
 
 | Funktion | vorher | jetzt |
 | --- | --- | --- |
+| Fenster wechseln mit Vorschau | – | `ALT + Tab`, rückwärts `ALT + SHIFT + Tab` |
 | Fenster minimieren | – | `SUPER + M` |
 | Minimiertes Fenster zurückholen | – | `SUPER + SHIFT + M` |
 | Abmelden | `SUPER + M` | `CTRL + SUPER + M` |

@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.6.0 – 2026-11-23
+
 ### Hinzugefügt
 - Passender Login-Bildschirm (SDDM) im Stil des Sperrbildschirms, installierbar mit `./install.sh --login-theme`, zurück mit `--login-theme-remove`; ohne SDDM wird nichts geändert (#71)
 - Dateimanager und weitere Programme übernehmen die Farben des Hintergrundbilds: GTK und Qt standardmässig, Firefox, Discord (Vesktop) und Spotify (spicetify) einzeln einschaltbar, wenn installiert; Abschalten legt die gesicherten Dateien zurück (#70)

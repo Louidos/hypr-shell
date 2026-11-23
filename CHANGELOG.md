@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.3.0 – 2026-11-23
+
 ### Hinzugefügt
 - Übersicht aller Tastenkürzel (SUPER+F1): in Gruppen, mit Suche, immer aus den aktuellen Belegungen; eigene Kürzel unter „Custom“ (#53)
 - WLAN, Bluetooth und Ton direkt im Panel (Unterseiten über einen Pfeil am Schalter oder Klick auf das Symbol in der Leiste), dazu Schalter für Leistungsprofil und Nachtlicht mit Zeitplan; fehlende Geräte blenden ihren Schalter aus (#52)

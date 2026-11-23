@@ -3,7 +3,8 @@
 #   1. jeder Schlüssel im Schema hat Typ, Standard, Titel, Erklärung, Seite und Abschnitt;
 #      Standardwerte sind selbst gültig, kein Schlüssel ist Teil eines anderen
 #   2. settings/settings.example.json passt zum Schema (= shell-apply --example)
-#   3. jeder Schlüssel wird irgendwo gelesen (Quickshell, hyprland.lua oder shell-apply)
+#   3. jeder Schlüssel wird irgendwo gelesen (Quickshell, hyprland.lua oder shell-apply); jeder
+#      Schlüssel, den die Oberfläche liest, steht im Schema, mit gleichem Standard als Rückfall
 #   4. shell-apply erzeugt in einem leeren HOME mit den Standardwerten genau die Dateien aus config/
 #      (gleiches Aussehen wie vorher) und für drei Beispiel-Einstellungen die erwarteten Dateien
 #   5. ein falscher Wert und kaputtes JSON brechen nichts (Standardwert bzw. letzter gültiger Stand)
@@ -59,6 +60,44 @@ while IFS= read -r k; do
         || grep -rqF "'.$k " bin || grep -rqF "'.$k'" bin; then :; else tot+=("$k"); fi
 done < <(jq -r '.keys[].key' $SCHEMA)
 pruefe '[ "${#tot[@]}" -eq 0 ]' "kein Wert ohne Wirkung (${tot[*]:-})"
+
+echo "== 3b. Schema und Oberfläche stimmen überein"
+# Jedes Settings.get("schlüssel", rückfall) (und num("schlüssel", rückfall, …) im Dock) nennt einen
+# Schlüssel aus dem Schema; ein fester Rückfallwert ist genau der Standard aus dem Schema.
+# Rückfälle aus Ausdrücken (z. B. Theme.panelRadius) prüft das nicht.
+if command -v python3 >/dev/null; then
+    abweichung="$(python3 - "$SCHEMA" quickshell <<'PY'
+import json, os, re, sys
+keys = {k["key"]: k for k in json.load(open(sys.argv[1]))["keys"]}
+muster = re.compile(r'(?:Settings\.get|\bnum)\(\s*"([^"]+)"\s*(?:,\s*((?:[^()]|\([^()]*\))*?))?\s*(?:\)|,)')
+for wurzel, _, dateien in os.walk(sys.argv[2]):
+    for f in sorted(dateien):
+        if not f.endswith((".qml", ".js")):
+            continue
+        p = os.path.join(wurzel, f)
+        s = open(p, encoding="utf-8").read()
+        for m in muster.finditer(s):
+            k, d = m.group(1), m.group(2)
+            ort = "%s:%d" % (p, s[:m.start()].count("\n") + 1)
+            if k not in keys:
+                if not any(x.startswith(k + ".") for x in keys):
+                    print("%s: %s fehlt im Schema" % (ort, k))
+                continue
+            if d is None:
+                continue
+            try:
+                wert = json.loads(d)
+            except ValueError:
+                continue
+            if wert != keys[k]["default"]:
+                print("%s: %s Rückfall %s, Schema %s" % (ort, k, d.strip(), json.dumps(keys[k]["default"])))
+PY
+)"
+    pruefe '[ -z "$abweichung" ]' "jeder Settings.get-Schlüssel steht im Schema, Rückfall = Standard${abweichung:+:
+$abweichung}"
+else
+    echo "  Hinweis: python3 fehlt, Abgleich übersprungen"
+fi
 
 echo "== 4. erzeugte Dateien"
 h="$(neues_home std "$(cat settings/settings.example.json)")"

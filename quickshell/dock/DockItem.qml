@@ -177,6 +177,7 @@ Item {
                 radius: Math.min(width, height) / 2
                 color: dock.indicatorColor
                 opacity: di.active ? 1 : 0.55
+                Behavior on color { ColorAnimation { duration: 400 } }
             }
         }
     }

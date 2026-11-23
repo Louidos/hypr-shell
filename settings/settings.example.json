@@ -219,6 +219,8 @@
     "autohide": "smart",
     "show_delay_ms": 150,
     "hide_delay_ms": 400,
+    "hide_on_fullscreen": true,
+    "avoid_bar": true,
     "items": [
       {
         "type": "app",

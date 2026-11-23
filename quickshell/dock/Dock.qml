@@ -58,6 +58,10 @@ Scope {
     readonly property var monoEffect: { const c = Qt.createComponent("DockIconMono.qml"); return c.status === Component.Ready ? c : null }
     readonly property var themeEffect: { const c = Qt.createComponent("DockIconTheme.qml"); return c.status === Component.Ready ? c : null }
     readonly property var iconEffect: iconStyle === "mono" ? monoEffect : iconStyle === "theme" ? themeEffect : null
+    readonly property bool hideOnFullscreen: Settings.get("dock.hide_on_fullscreen", true) === true
+    // Leiste auf derselben Kante (Waybar: bar.position top/bottom)
+    readonly property bool avoidBar: Settings.get("dock.avoid_bar", true) === true
+    readonly property bool barSameEdge: String(Settings.get("bar.position", "top")) === position
     readonly property bool launcherButton: Settings.get("dock.launcher_button", false) === true
     readonly property bool badges: Settings.get("dock.badges", true) === true
     readonly property bool previews: Settings.get("dock.previews", true) === true
@@ -480,6 +484,12 @@ Scope {
         // für Tests: Logik von smart mit nachgestellten Flächen: {"dock": {...}, "windows": [...]}
         function smartTest(json: string): bool { try { const o = JSON.parse(json); return V.ueberdeckt(o.dock, o.windows) } catch (e) { return false } }
         function animMs(): int { return dock.animMs }
+        // für Tests: wie das erste Dock zu Leiste und Vollbild steht
+        function state(): string {
+            const w = dock.windows.length > 0 ? dock.windows[0] : null
+            return w ? JSON.stringify({ exclusion: w.exclusionText, zone: w.exclusiveZone, fullscreen: w.fullscreenHere, input: w.inputOn, hidden: w.hidden,
+                                        glass: String(dock.glassColor), shown: w.visible }) : "{}"
+        }
         // für Tests: Maus n-mal über das erste Dock führen (Vergrösserung), Dauer in ms
         function sweep(n: int): int { return dock.windows.length > 0 ? dock.windows[0].sweep(n) : -1 }
         function badge(index: int): int { const m = dock.model(dock.screens[0] || null); return index < m.length ? dock.badgeFor(m[index]) : 0 }

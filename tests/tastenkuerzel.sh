@@ -68,6 +68,8 @@ SUPER + R
 SUPER + Return
 SUPER + SHIFT + M
 SUPER + SHIFT + V
+SUPER + Super_L
+SUPER + Super_R
 SUPER + Tab
 SUPER + Space
 SUPER + U
@@ -103,7 +105,7 @@ SUPER + $i
 SUPER + SHIFT + $i"; done
 erwartet="$(sort <<<"$erwartet")"
 std="$(binds '{}' | cut -f1)"
-pruefe '[ "$std" = "$erwartet" ]' "genau die bisherigen $(wc -l <<<"$erwartet") Kürzel (mit Notfall-Kürzel, Minimieren, ALT + Tab und Andocken)"
+pruefe '[ "$std" = "$erwartet" ]' "genau die bisherigen $(wc -l <<<"$erwartet") Kürzel (mit Notfall-Kürzel, Minimieren, ALT + Tab, Andocken und SUPER antippen)"
 [ "$std" = "$erwartet" ] || diff <(echo "$erwartet") <(echo "$std") | head
 pruefe '[ "$(binds "{\"weather\": {\"location\": \"Bern\"}}" | cut -f1)" = "$erwartet" ]' "settings.json ohne keybinds (v1.1): gleiche Kürzel"
 std_binds="$(binds "{}")"

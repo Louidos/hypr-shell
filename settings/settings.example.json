@@ -266,6 +266,7 @@
     "clipboard": "SUPER + SHIFT + V",
     "overview": "SUPER + Tab",
     "cheatsheet": "SUPER + F1",
+    "missa_chat": "SUPER + I",
     "lock": "SUPER + L",
     "exit": "SUPER + M",
     "screenshot_region": "Print",

@@ -277,6 +277,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.clipboard` | `SUPER + SHIFT + V` | Tasten wie `SUPER + Q`, leer = keine Taste | Show the last copies to paste them again | `shell-set keybinds.clipboard "SUPER + B"` |
 | `keybinds.overview` | `SUPER + Tab` | Tasten wie `SUPER + Q`, leer = keine Taste | Show all workspaces with their windows | `shell-set keybinds.overview "SUPER + B"` |
 | `keybinds.cheatsheet` | `SUPER + F1` | Tasten wie `SUPER + Q`, leer = keine Taste | Show all keyboard shortcuts | `shell-set keybinds.cheatsheet "SUPER + B"` |
+| `keybinds.missa_chat` | `SUPER + I` | Tasten wie `SUPER + Q`, leer = keine Taste | Chat with Missa (only when Missa is switched on) | `shell-set keybinds.missa_chat "SUPER + B"` |
 | `keybinds.lock` | `SUPER + L` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock the screen | `shell-set keybinds.lock "SUPER + B"` |
 | `keybinds.exit` | `SUPER + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Leave Hyprland | `shell-set keybinds.exit "SUPER + B"` |
 | `keybinds.screenshot_region` | `Print` | Tasten wie `SUPER + Q`, leer = keine Taste | Select a region; saved and copied | `shell-set keybinds.screenshot_region "SUPER + B"` |

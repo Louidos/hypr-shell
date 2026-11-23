@@ -55,6 +55,17 @@ hypr-shell legt nur eigene Lesezeichen an („Nextcloud“, „Missa“) – in 
 dessen Orteliste. Welche es angelegt hat, merkt es sich in `~/.local/share/hypr-shell/bookmarks.txt`;
 nur diese werden wieder entfernt, fremde Lesezeichen bleiben unberührt.
 
+## Missa-Chat
+
+`SUPER + I` (nur mit `missa.enabled`) öffnet den Chat. hypr-shell schickt jede Nachricht an
+`<missa.url>/v1/chat/completions` (Modell `missa`, Streaming) mit dem Header
+`X-Missa-Session: hypr-shell-<Rechnername>` und nur die neue Nachricht – den Verlauf führt Missa-Core.
+Der Statuspunkt kommt aus `GET /health`. Fehler stehen verständlich im Chat: falscher Schlüssel (401),
+gesperrt nach zu vielen Fehlversuchen (429, mit Wartezeit), Sprachmodell nicht erreichbar (502/503), kein
+Netz. **New conversation** leert die Anzeige; danach schickt hypr-shell seinen eigenen Verlauf mit
+(einen System-Hinweis „Neues Gespräch“ und die Nachrichten seither), damit Missa-Core die ältere
+Unterhaltung dieser Sitzung nicht wieder einfügt.
+
 ## Missa-Ordner
 
 Mit `missa.enabled` entsteht `~/Missa` (`missa.folder`) als gewöhnlicher lokaler Ordner: in `Eingang/`

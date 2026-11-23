@@ -81,7 +81,8 @@ PopupWindow {
                         Rectangle { anchors.fill: parent; radius: 6; color: Theme.card }
                         Loader {
                             anchors.fill: parent
-                            active: pop.visible && pop.previews && !!row.modelData.toplevel
+                            // nur für Fenster, die es noch gibt (Vorschau eines geschlossenen Fensters = Absturzgefahr)
+                            active: pop.visible && pop.previews && !!row.modelData.toplevel && !!pop.dock && pop.dock.alive(row.modelData.toplevel)
                             sourceComponent: ScreencopyView {
                                 captureSource: row.modelData.toplevel
                                 live: false

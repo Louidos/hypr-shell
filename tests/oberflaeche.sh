@@ -593,6 +593,48 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
     for _ in $(seq 1 30); do dk items | grep -q '\*1' || break; sleep 0.3; done
     if ! dk items | grep -q '\*1'; then echo "  ok: geschlossenes Fenster verschwindet wieder"
     else echo "  FEHLER: geschlossenes Fenster bleibt"; dock_ok=0; fi
+    # ---- Bedienung: Menü, Ziehen, Lösen, Tastatur, Zähler, kaputte Liste
+    m="$(dk menu 2)"
+    if [ "$m" = "New window|New Private Window|Remove from Dock" ]; then echo "  ok: Rechtsklick-Menü mit den Desktop-Aktionen ($m)"
+    else echo "  FEHLER: Menü: $m"; dock_ok=0; fi
+    dk drag 0 2 >/dev/null
+    for _ in $(seq 1 30); do [ "$(wert '.dock.items[0].desktop_id')" = '"kitty"' ] && break; sleep 0.3; done
+    if [ "$(wert '[.dock.items[].desktop_id] | .[0:3]')" = '["kitty","firefox","org.gnome.Nautilus"]' ]; then echo "  ok: Ziehen sortiert um und speichert dock.items"
+    else echo "  FEHLER: Umsortieren: $(wert '.dock.items')"; dock_ok=0; fi
+    sleep 1
+    "$HOME/.local/bin/shell-quickshell" restart >/dev/null 2>&1 || true
+    for _ in $(seq 1 40); do [ "$(dk count)" = 1 ] && break; sleep 0.3; done
+    qspid="$(pgrep -f -- "-p $cfg" | head -n1)"
+    if [[ "$(dk items)" == app:kitty,app:firefox,app:org.gnome.Nautilus* ]]; then echo "  ok: Reihenfolge bleibt nach dem Neustart"
+    else echo "  FEHLER: nach dem Neustart: $(dk items)"; dock_ok=0; fi
+    dk dragOut 1 >/dev/null
+    for _ in $(seq 1 30); do [[ "$(dk items)" != *app:firefox* ]] && break; sleep 0.3; done
+    if [[ "$(dk items)" != *app:firefox* ]] && [ "$(wert '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 0 ]; then echo "  ok: Herausziehen löst Firefox"
+    else echo "  FEHLER: Lösen: $(dk items)"; dock_ok=0; fi
+    rmdir "$HOME/Downloads"; dk refresh; sleep 1
+    if [[ "$(dk items)" != *folder:* ]]; then echo "  ok: fehlender Ordner erscheint nicht"; else echo "  FEHLER: Ordner trotz Fehlen: $(dk items)"; dock_ok=0; fi
+    mkdir -p "$HOME/Downloads"; dk refresh; sleep 1
+    k0="$(dk key "")"; dk focus >/dev/null; sleep 0.5
+    k1="$(dk key "")"; k2="$(dk key Right)"; k3="$(dk key ShiftF10)"; k4="$(dk key Escape)"; k5="$(dk key Escape)"
+    echo "  Tastatur: $k0 → focus $k1 → Right $k2 → SHIFT+F10 $k3 → Esc $k4 → Esc $k5"
+    if [ "$k0" = off ] && [ "$k1" = on:app:kitty ] && [ "$k2" = on:app:org.gnome.Nautilus ] && [[ "$k3" == *:menu ]] \
+        && [ "$k4" = on:app:org.gnome.Nautilus ] && [ "$k5" = off ]; then
+        echo "  ok: Tastatur: Pfeile wählen, SHIFT+F10 öffnet das Menü, Esc verlässt"
+    else echo "  FEHLER: Tastatur"; dock_ok=0; fi
+    # was auch passiert: die Tastatur gehört danach nicht mehr dem Dock
+    dk key Escape >/dev/null; dk key Escape >/dev/null
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send -a kitty "Build" "fertig" 2>/dev/null; sleep 1.5
+        if [ "$(dk badge 0)" = 1 ]; then echo "  ok: Zähler für eine Meldung von kitty"; else echo "  FEHLER: Zähler $(dk badge 0)"; dock_ok=0; fi
+    fi
+    jq '.dock.items = "kaputt"' "$HOME/.config/hypr-shell/settings.json" > "$T/s.json" && cp "$T/s.json" "$HOME/.config/hypr-shell/settings.json"
+    "$HOME/.local/bin/shell-apply" >/dev/null 2>&1 || true
+    sleep 2
+    if [[ "$(dk items)" == app:org.gnome.Nautilus,app:kitty,app:firefox* ]] && kill -0 "$qspid" 2>/dev/null; then echo "  ok: kaputte dock.items: Standardliste, kein Absturz"
+    else echo "  FEHLER: kaputte dock.items: $(dk items)"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-set" reset dock.items >/dev/null 2>&1 || true
+    sleep 1
+
     # CPU in Ruhe: Quickshell 10 s messen, mit und ohne Dock
     cpu() { local a b; a=$(awk '{print $14+$15}' "/proc/$qspid/stat"); sleep 10; b=$(awk '{print $14+$15}' "/proc/$qspid/stat"); awk -v d=$((b - a)) -v hz="$(getconf CLK_TCK)" 'BEGIN { printf "%.2f", d / hz / 10 * 100 }'; }
     mit="$(cpu)"

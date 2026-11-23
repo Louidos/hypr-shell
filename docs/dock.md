@@ -55,6 +55,33 @@ Platz.
   sich das Dock mit dem Mausrad verschieben. Länger als `dock.max_length` wird es nie.
 - Klicks neben dem Dock gehen an die Fenster darunter (die Eingabefläche ist genau das Glas).
 
+## Menü, Ziehen und Tastatur
+
+| Aktion | Wirkung |
+| --- | --- |
+| Mittelklick | neues Fenster (Desktop-Aktion „new-window“, sonst die App noch einmal starten) |
+| Rechtsklick | Glas-Menü: New window, die Desktop-Aktionen der App (z. B. „New Private Window“), Keep in Dock / Remove from Dock, Close all |
+| Ziehen im Dock | umsortieren (die anderen rücken zur Seite); gespeichert sofort in `dock.items` |
+| Herausziehen (über 50 px weg) | löst den Eintrag; ein laufendes Programm bleibt offen |
+| Laufendes Programm ins Dock ziehen | heftet es an dieser Stelle an |
+| Maus ruht auf einer App mit mehreren Fenstern | Liste der Fenster, mit Vorschau bei `dock.previews` |
+| Mausrad über einem Symbol | zwischen den Fenstern der App wechseln |
+| Klick und Halten auf einem Ordner | die 10 neuesten Dateien |
+| Rechtsklick auf den Papierkorb | „Empty trash“ – leert erst nach einem zweiten Klick |
+| `SUPER + B` | Tastatur: Pfeile wählen, Enter startet oder holt nach vorn, Menütaste oder `SHIFT + F10` öffnet das Menü, Esc verlässt das Dock |
+
+„Close all“ schliesst die Fenster wie ein Klick aufs X und beendet nie Prozesse.
+
+**Zähler**: Hat der Benachrichtigungsdienst von hypr-shell ungelesene Meldungen einer App
+(`dock.badges`), steht eine kleine Zahl am Symbol; ein Klick auf das Symbol gilt als gelesen.
+Ohne Dienst (`notifications.enabled` aus) gibt es keine Zähler.
+
+**Vorschläge**: Ist Nextcloud oder Missa eingeschaltet, bietet das Menü eines Ordners bzw. des
+Papierkorbs „Add Nextcloud folder“ bzw. „Add Missa folder“ an – angeheftet wird nichts von selbst.
+
+Starter und Fenster-Übersicht bieten kein Ziehen an; Programme kommen dort deshalb über
+„Keep in Dock“ ins Dock.
+
 ## Werte
 
 | Name | Standard | Bereich / Werte | Wirkung |
@@ -84,6 +111,9 @@ Platz.
 | `dock.indicator_color` | `auto` | auto, Farbe | Farbe der Anzeige |
 | `dock.show_running` | `true` | bool | Nicht angeheftete laufende Apps zeigen |
 | `dock.trash` | `true` | bool | Papierkorb rechts |
+| `dock.launcher_button` | `false` | bool | Startknopf links (öffnet den Starter) |
+| `dock.badges` | `true` | bool | Zähler für Benachrichtigungen |
+| `dock.previews` | `true` | bool | Fenstervorschau in der Fensterliste |
 | `dock.items` | Standardliste | Liste | Reihenfolge und Art der Einträge |
 
 Zahlen ausserhalb des Bereichs werden auf die Grenze gesetzt (mit Hinweis), statt verworfen.

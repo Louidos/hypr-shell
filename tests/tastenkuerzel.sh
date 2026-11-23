@@ -43,6 +43,7 @@ SHIFT + Print
 SUPER + A
 SUPER + ALT + D
 SUPER + ALT + W
+SUPER + B
 SUPER + C
 SUPER + D
 SUPER + E

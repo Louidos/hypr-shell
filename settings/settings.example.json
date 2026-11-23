@@ -206,6 +206,9 @@
     "indicator_color": "auto",
     "show_running": true,
     "trash": true,
+    "launcher_button": false,
+    "badges": true,
+    "previews": true,
     "items": [
       {
         "type": "app",
@@ -361,6 +364,7 @@
     "clipboard": "SUPER + SHIFT + V",
     "overview": "SUPER + Tab",
     "cheatsheet": "SUPER + F1",
+    "dock_focus": "SUPER + B",
     "missa_chat": "SUPER + I",
     "missa_voice": "SUPER + SHIFT + I",
     "lock": "SUPER + L",

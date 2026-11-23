@@ -28,6 +28,10 @@ Singleton {
     // "requires" im Schema erscheinen nur, wenn die Fähigkeit da ist
     property var caps: ({})
     function can(req) { return !req || caps[req] === true }
+    // ungelesene Benachrichtigungen je App (Kleinschreibung: App-Name und Desktop-Eintrag), vom
+    // Benachrichtigungsdienst von hypr-shell gepflegt; ohne Dienst leer (dann keine Zähler im Dock)
+    property var notifCounts: ({})
+    signal notificationsRead(var keys)
     property string settingsPage: "home"
     // Schlüssel, zu dem die App nach dem Öffnen springen soll (Suche)
     property string settingsFocus: ""

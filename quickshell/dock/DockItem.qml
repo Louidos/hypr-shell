@@ -10,6 +10,10 @@ Item {
     property var dock
     property var win
     property real size: 48
+    property bool selected: false          // Tastatur (SUPER+B)
+    property bool dragging: false
+    property Item iconItem: iconBox
+    readonly property int badge: dock.badgeFor(item)
 
     readonly property string kind: item ? item.kind : "separator"
     readonly property bool separator: kind === "separator"
@@ -65,6 +69,36 @@ Item {
                 color: Theme.containerText
             }
         }
+        opacity: di.dragging ? 0.35 : 1
+        // Tastatur: sichtbarer Rahmen um das gewählte Symbol
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -3
+            radius: width * 0.26
+            color: "transparent"
+            border.width: 2
+            border.color: Theme.accent
+            visible: di.selected
+        }
+        // Zähler für Benachrichtigungen (dock.badges)
+        Rectangle {
+            visible: di.badge > 0
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: -2
+            height: Math.max(16, di.size * 0.34)
+            width: Math.max(height, badgeText.implicitWidth + 8)
+            radius: height / 2
+            color: Theme.error
+            Txt {
+                id: badgeText
+                anchors.centerIn: parent
+                text: di.badge > 99 ? "99+" : String(di.badge)
+                size: Math.max(9, di.size * 0.2)
+                weight: Font.DemiBold
+                color: "white"
+            }
+        }
         // gedrückt: kurz dunkler
         Rectangle {
             anchors.fill: parent
@@ -117,13 +151,47 @@ Item {
         anchors.fill: parent
         enabled: !di.separator
         hoverEnabled: true
-        acceptedButtons: Qt.LeftButton
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
-        onClicked: dock.activate(di.item)
-        onContainsMouseChanged: {
-            if (containsMouse) { win.hoverItem = iconBox; win.hoverText = di.name }
-            else if (win.hoverItem === iconBox) { win.hoverItem = null; win.hoverText = "" }
+        preventStealing: true
+        property point start: Qt.point(0, 0)
+        property bool dragged: false
+        property bool held: false
+        onPressed: event => {
+            start = Qt.point(event.x, event.y); dragged = false; held = false
+            if (event.button === Qt.LeftButton && di.kind === "folder") holdTimer.restart()
         }
+        onPositionChanged: event => {
+            if (!(pressedButtons & Qt.LeftButton) || held) return
+            if (!dragged && Math.abs(event.x - start.x) + Math.abs(event.y - start.y) > 10) { dragged = true; holdTimer.stop(); win.closePopup() }
+            if (dragged) win.dragMove(di.item.key, mapToItem(win.contentItem, event.x, event.y))
+        }
+        onReleased: event => {
+            holdTimer.stop()
+            if (dragged) { win.dragEnd(); dragged = false }
+        }
+        onClicked: event => {
+            if (dragged || held) return
+            if (event.button === Qt.RightButton) { win.menu(di.item, iconBox); return }
+            win.closePopup()
+            if (event.button === Qt.MiddleButton) dock.newWindow(di.item)
+            else dock.activate(di.item)
+        }
+        onWheel: event => dock.cycle(di.item, event.angleDelta.y > 0 ? -1 : 1)
+        onContainsMouseChanged: {
+            win.hoverAny = containsMouse
+            if (containsMouse) {
+                win.hoverItem = iconBox; win.hoverText = win.popupOpen ? "" : di.name
+                if (di.windows.length > 1) listTimer.restart()
+            } else {
+                listTimer.stop()
+                if (win.hoverItem === iconBox) { win.hoverItem = null; win.hoverText = "" }
+            }
+        }
+        // Klick und Halten auf einem Ordner: die neuesten Dateien
+        Timer { id: holdTimer; interval: 500; onTriggered: { mouse.held = true; win.recentFiles(di.item, iconBox) } }
+        // Maus ruht auf einer App mit mehreren Fenstern: Fensterliste
+        Timer { id: listTimer; interval: 450; onTriggered: if (mouse.containsMouse && !win.popupOpen) { win.hoverText = ""; win.windowList(di.item, iconBox) } }
     }
     Component.onDestruction: if (win && win.hoverItem === iconBox) { win.hoverItem = null; win.hoverText = "" }
 }

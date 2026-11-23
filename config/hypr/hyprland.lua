@@ -54,7 +54,7 @@ local S = {
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
-        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1", missa_chat = "SUPER + I", missa_voice = "SUPER + SHIFT + I",
+        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1", missa_chat = "SUPER + I", missa_voice = "SUPER + SHIFT + I", dock_focus = "SUPER + B",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
     },
@@ -365,6 +365,11 @@ end
 
 -- Kürzel-Spickzettel
 bind(K.cheatsheet, hl.dsp.exec_cmd(ui .. "cheatsheet toggle"), "Panels: Keyboard shortcuts")
+
+-- Dock mit der Tastatur bedienen (nur wenn das Dock an ist)
+if S.dock == nil or S.dock.enabled ~= false then
+    bind(K.dock_focus, hl.dsp.exec_cmd(ui .. "dock focus"), "Panels: Focus the dock")
+end
 
 -- Fenster-Übersicht aller Arbeitsflächen
 bind(K.overview, hl.dsp.exec_cmd(ui .. "overview toggle"), "Panels: Window overview")

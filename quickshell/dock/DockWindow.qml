@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Io
 import "../common"
 
 // Ein Dock auf einem Bildschirm: Layer-Shell-Fenster an der Kante (dock.position), das Glas mittig
@@ -65,8 +66,186 @@ PanelWindow {
     exclusiveZone: d.reserve ? d.margin + thickness : 0
     WlrLayershell.layer: d.topLayer ? WlrLayer.Top : WlrLayer.Bottom
     WlrLayershell.namespace: "hypr-shell-dock"
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: keyboard ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     mask: Region { item: body }
+
+    // ---- Ziehen: Vorschau der neuen Reihenfolge, beim Loslassen speichern bzw. lösen
+    property string dragKey: ""
+    property int dragTo: -1
+    property bool dragOut: false
+    property point dragPos: Qt.point(0, 0)
+    readonly property var shownKeys: {
+        if (dragKey === "" || dragTo < 0 || dragOut) return keys
+        const l = keys.filter(k => k !== dragKey)
+        l.splice(Math.min(dragTo, l.length), 0, dragKey)
+        return l
+    }
+    // Index in der Liste ohne den gezogenen Eintrag für einen Punkt im Fenster
+    function dropIndex(p) {
+        const local = row.mapFromItem(win.contentItem, p.x, p.y)
+        const ks = keys.filter(k => k !== dragKey)
+        let n = 0
+        for (let i = 0; i < row.children.length; i++) {
+            const c = row.children[i]
+            if (!c.item || c.item.key === dragKey) continue
+            const mid = vertical ? c.y + c.height / 2 : c.x + c.width / 2
+            if ((vertical ? local.y : local.x) > mid) n++
+        }
+        return Math.min(n, ks.length)
+    }
+    function dragMove(key, p) {
+        dragKey = key
+        dragPos = p
+        const b = body.mapToItem(win.contentItem, 0, 0)
+        const away = pos === "bottom" ? b.y - p.y : pos === "top" ? p.y - (b.y + body.height)
+                   : pos === "left" ? p.x - (b.x + body.width) : b.x - p.x
+        const side = vertical ? Math.max(b.y - p.y, p.y - (b.y + body.height)) : Math.max(b.x - p.x, p.x - (b.x + body.width))
+        dragOut = away > 50 || side > 50
+        dragTo = dropIndex(p)
+    }
+    function dragEnd() {
+        const it = byKey[dragKey]
+        if (it) {
+            if (dragOut) { if (it.pinned) d.unpin(it) }
+            else {
+                const order = shownKeys
+                const i = order.indexOf(dragKey)
+                const old = keys.indexOf(dragKey)
+                if (i >= 0 && i !== old) {
+                    // vor den Nachfolger bzw. hinter den Vorgänger in der neuen Reihenfolge
+                    if (i + 1 < order.length) d.move(it, byKey[order[i + 1]], false)
+                    else d.move(it, byKey[order[i - 1]], true)
+                }
+            }
+        }
+        dragKey = ""; dragTo = -1; dragOut = false
+    }
+    // Symbol am Mauszeiger beim Ziehen
+    AppIcon {
+        visible: win.dragKey !== ""
+        z: 10
+        size: win.icon
+        width: win.icon; height: win.icon
+        x: win.dragPos.x - win.icon / 2
+        y: win.dragPos.y - win.icon / 2
+        icon: win.byKey[win.dragKey] ? win.byKey[win.dragKey].icon : ""
+        opacity: win.dragOut ? 0.45 : 0.9
+    }
+
+    // ---- Popups: Menü, Fensterliste, neueste Dateien
+    property Item popupTarget: null
+    property var popupRows: []
+    property string popupMode: ""
+    readonly property bool popupOpen: popupMode !== ""
+    function openPopup(target, mode, rows) {
+        if (!rows || rows.length === 0) { closePopup(); return }
+        popupTarget = target; popupRows = rows; popupMode = mode
+        popup.selected = keyboard && mode === "menu" ? 0 : -1
+    }
+    function closePopup() { popupMode = ""; popupRows = []; popupTarget = null }
+    DockPopup {
+        id: popup
+        // eigener Name: im Popup heissen die Eigenschaften selbst "win" und "dock"
+        dock: dockWindow.d
+        win: dockWindow
+        target: dockWindow.popupTarget
+        rows: dockWindow.popupRows
+        mode: dockWindow.popupMode
+        visible: dockWindow.popupOpen && dockWindow.popupTarget !== null && dockWindow.visible
+        onDone: dockWindow.closePopup()
+    }
+    // Fensterliste schliesst, wenn die Maus weder auf dem Symbol noch auf der Liste ist
+    property bool hoverAny: false
+    Timer {
+        id: popupLeave
+        interval: 350
+        running: win.popupMode === "windows" && !win.hoverAny && !popup.hovered
+        onTriggered: win.closePopup()
+    }
+    function menu(item, target) {
+        openPopup(target, "menu", d.menuFor(item))
+    }
+    function windowList(item, target) {
+        const w = item ? (item.windows || []) : []
+        if (w.length < 2) return
+        openPopup(target, "windows", w.map(t => ({ text: t.title || item.name, appIcon: item.icon, toplevel: t, run: () => t.activate() })))
+    }
+    property var filesFor: null
+    Process {
+        id: recentProc
+        property Item target: null
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let l = []
+                try { l = JSON.parse(text) } catch (e) { }
+                win.openPopup(recentProc.target, "files", l.map(f => ({ text: f.name, icon: "󰈔",
+                    run: () => Quickshell.execDetached([Settings.bin + "shell-dock", "file", f.path]) })))
+            }
+        }
+    }
+    function recentFiles(item, target) {
+        recentProc.target = target
+        recentProc.command = [Settings.bin + "shell-dock", "recent", item.path]
+        recentProc.running = true
+    }
+
+    // ---- Tastatur (SUPER+B): Pfeile wählen, Enter startet, Menü/SHIFT+F10 öffnet das Menü, Esc verlässt
+    property bool keyboard: false
+    property string selectedKey: ""
+    readonly property var selectable: keys.filter(k => byKey[k] && byKey[k].kind !== "separator")
+    function startKeyboard() {
+        keyboard = true
+        if (selectable.indexOf(selectedKey) < 0) selectedKey = selectable.length > 0 ? selectable[0] : ""
+        keys0.forceActiveFocus()
+    }
+    function stopKeyboard() { keyboard = false; closePopup() }
+    function itemFor(key) {
+        for (let i = 0; i < row.children.length; i++) if (row.children[i].item && row.children[i].item.key === key) return row.children[i]
+        return null
+    }
+    function handleKey(k, shift) {
+        if (!keyboard) return false
+        const back = vertical ? "Up" : "Left", fwd = vertical ? "Down" : "Right"
+        if (popupMode === "menu") {
+            if (k === "Up" || k === back) popup.selected = Math.max(0, popup.selected - 1)
+            else if (k === "Down" || k === fwd) popup.selected = Math.min(popupRows.length - 1, popup.selected + 1)
+            else if (k === "Return" || k === "Enter" || k === "Space") popup.run(popup.selected)
+            else if (k === "Escape") closePopup()
+            else return false
+            return true
+        }
+        const i = selectable.indexOf(selectedKey)
+        if (k === back) selectedKey = selectable[Math.max(0, i - 1)] || selectedKey
+        else if (k === fwd) selectedKey = selectable[Math.min(selectable.length - 1, i + 1)] || selectedKey
+        else if (k === "Home") selectedKey = selectable[0] || ""
+        else if (k === "End") selectedKey = selectable[selectable.length - 1] || ""
+        else if (k === "Return" || k === "Enter" || k === "Space") { d.activate(byKey[selectedKey]); d.leaveFocus() }
+        else if (k === "Menu" || (k === "F10" && shift)) { const t = itemFor(selectedKey); if (t) menu(byKey[selectedKey], t.iconItem) }
+        else if (k === "Escape") d.leaveFocus()
+        else return false
+        return true
+    }
+    // für Tests: Taste wie von der Tastatur
+    function testKey(name) {
+        if (name !== "") handleKey(name === "ShiftF10" ? "F10" : name, name === "ShiftF10")
+        if (!keyboard) return "off"
+        const it = byKey[selectedKey]
+        const shown = it && it.desktopId ? "app:" + it.desktopId : selectedKey
+        return "on:" + shown + (popupMode !== "" ? ":" + popupMode : "")
+    }
+    Item {
+        id: keys0
+        focus: win.keyboard
+        Keys.onPressed: event => {
+            const names = {}
+            names[Qt.Key_Left] = "Left"; names[Qt.Key_Right] = "Right"; names[Qt.Key_Up] = "Up"; names[Qt.Key_Down] = "Down"
+            names[Qt.Key_Return] = "Return"; names[Qt.Key_Enter] = "Enter"; names[Qt.Key_Space] = "Space"
+            names[Qt.Key_Menu] = "Menu"; names[Qt.Key_F10] = "F10"; names[Qt.Key_Escape] = "Escape"
+            names[Qt.Key_Home] = "Home"; names[Qt.Key_End] = "End"
+            const n = names[event.key]
+            if (n && win.handleKey(n, (event.modifiers & Qt.ShiftModifier) !== 0)) event.accepted = true
+        }
+    }
 
     // Name des Symbols unter der Maus (dock.labels = hover), ausserhalb des Glases
     property var hoverItem: null
@@ -115,6 +294,9 @@ PanelWindow {
             }
         }
 
+        // Maus kommt aufs Dock: Ordner und Papierkorb neu prüfen (statt im Takt)
+        HoverHandler { onHoveredChanged: if (hovered) win.d.refreshFiles() }
+
         Rectangle {
             id: glass
             anchors.fill: parent
@@ -146,20 +328,25 @@ PanelWindow {
 
             Grid {
                 id: row
+                // Platzhalter-Animation beim Umsortieren
+                move: Transition { NumberAnimation { properties: "x,y"; duration: win.d.animMs; easing.type: Easing.OutCubic } }
                 x: win.d.padding
                 y: win.d.padding
                 columns: win.vertical ? 1 : Math.max(1, win.keys.length)
                 rows: win.vertical ? Math.max(1, win.keys.length) : 1
                 spacing: win.d.spacing
                 Repeater {
-                    model: ScriptModel { values: win.keys }
+                    model: ScriptModel { values: win.shownKeys }
                     DockItem {
                         required property var modelData
+                        required property int index
                         // eigener Name: im Symbol heissen die Eigenschaften selbst "win" und "dock"
                         item: dockWindow.byKey[modelData] || null
                         dock: dockWindow.d
                         win: dockWindow
                         size: dockWindow.icon
+                        selected: dockWindow.keyboard && dockWindow.selectedKey === modelData
+                        dragging: dockWindow.dragKey === modelData
                     }
                 }
             }

@@ -150,26 +150,17 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target panel'; then
     ipc panel close; sleep 1
 fi
 
-# ---- Einstellungs-App: jede Seite, Suche, Klicks wie mit der Maus (sway-Zeiger)
+# ---- Einstellungs-App: jede Seite, Suche, Bedienung. Im unsichtbaren Compositor gibt es kein
+# Zeigegerät; "ipc call test …" löst deshalb die Signale der Bedienelemente aus (toggled/clicked,
+# beim Regler moved … released) – derselbe Weg wie ein Mausklick.
 app_ok=1
-SWAYSOCK="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'sway-ipc.*.sock' -print -quit)"
-export SWAYSOCK
-lage() { # probe -> "x y w h" aus dem neuesten Log-Eintrag
-    grep -o "hypr-shell-probe $1 .*" "$T/qs.log" | tail -n1 | awk '{print $3, $4, $5, $6}'
-}
-klick() { # probe [anteil-x]: Mitte (bzw. Anteil der Breite) anklicken
-    local x y w h
-    read -r x y w h < <(lage "$1") || true
-    [ -n "${h:-}" ] || { echo "  FEHLER: $1 nicht sichtbar"; app_ok=0; return 1; }
-    swaymsg -q "seat seat0 cursor set $((x + w * ${2:-50} / 100)) $((y + h / 2))" \
-        && swaymsg -q "seat seat0 cursor press button1" && sleep 0.15 && swaymsg -q "seat seat0 cursor release button1"
-}
 wert() { jq -c "$1" "$HOME/.config/hypr-shell/settings.json"; }
-warte_auf() { # jq-ausdruck erwartet [sekunden]
+warte_auf() { # jq-ausdruck erwartet [versuche à 0.25 s]
     local _
-    for _ in $(seq 1 "${3:-20}"); do [ "$(wert "$1")" = "$2" ] && return 0; sleep 0.25; done
+    for _ in $(seq 1 "${3:-24}"); do [ "$(wert "$1")" = "$2" ] && return 0; sleep 0.25; done
     return 1
 }
+test_ipc() { [ "$("$qs" -p "$cfg" ipc call test "$@" 2>/dev/null)" = true ]; }
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     echo "---- Einstellungs-App ----"
     for seite in home bar look theme desktop dashboard panel lock input monitors apps keybinds about; do
@@ -183,37 +174,40 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
         else echo "  FEHLER: Suche findet \"$q\" nicht"; app_ok=0; fi
     done
     ipc settings close; sleep 0.5
-    if [ -n "$SWAYSOCK" ] && command -v swaymsg >/dev/null 2>&1; then
-        ipc settings open look; sleep 2
-        # Schalter: Blur aus
-        klick setting-look.blur.enabled && if warte_auf .look.blur.enabled false; then echo "  ok: Klick auf einen Schalter landet in settings.json"
-            else echo "  FEHLER: Schalter-Klick kam nicht in settings.json an ($(wert .look))"; app_ok=0; fi
-        # Regler ziehen: Rundung von links nach rechts; schon während des Ziehens wirkt der Wert
-        sleep 2.5
-        read -r x y w h < <(lage setting-look.rounding) || true
-        if [ -n "${h:-}" ]; then
-            swaymsg -q "seat seat0 cursor set $((x + 2)) $((y + h / 2))"; swaymsg -q "seat seat0 cursor press button1"
-            for f in 25 50 75; do swaymsg -q "seat seat0 cursor set $((x + w * f / 100)) $((y + h / 2))"; sleep 0.6; done
-            r="$(grep -o '\["rounding"\] = [0-9]*' "$HOME/.config/hypr/hypr-shell-settings.lua" | grep -o '[0-9]*$')"
-            if [ "${r:-12}" -gt 12 ]; then echo "  ok: Regler wirkt schon beim Ziehen (Hyprland-Rundung jetzt $r)"
-            else echo "  FEHLER: Regler wirkt beim Ziehen nicht"; app_ok=0; fi
-            swaymsg -q "seat seat0 cursor set $((x + w + 20)) $((y + h / 2))"; sleep 0.3; swaymsg -q "seat seat0 cursor release button1"
-            if warte_auf .look.rounding 30; then echo "  ok: Regler losgelassen: look.rounding = 30"
-            else echo "  FEHLER: Regler-Wert $(wert .look.rounding)"; app_ok=0; fi
-        else
-            echo "  FEHLER: Regler look.rounding nicht sichtbar"; app_ok=0
-        fi
-        sleep 2.5; bild settings-look-geaendert
-        # Undo stellt den Regler zurück, Reset page alles auf der Seite
-        klick settings-undo && if warte_auf .look.rounding null; then echo "  ok: Undo nimmt das Ziehen in einem Schritt zurück"
-            else echo "  FEHLER: Undo: $(wert .look)"; app_ok=0; fi
-        sleep 2.5
-        klick reset-page && if warte_auf .look null; then echo "  ok: Reset page setzt die Seite zurück"
-            else echo "  FEHLER: Reset page: $(wert .look)"; app_ok=0; fi
-        ipc settings close; sleep 0.5
+    ipc settings open look; sleep 2
+    # Schalter: Blur aus
+    if test_ipc click setting-look.blur.enabled && warte_auf .look.blur.enabled false; then echo "  ok: Schalter in der App landet in settings.json"
+    else echo "  FEHLER: Schalter kam nicht in settings.json an ($(wert .look))"; app_ok=0; fi
+    sleep 1
+    # Regler ziehen: schon während des Ziehens wirkt der Wert
+    if test_ipc dragStart setting-look.rounding 0.8; then
+        sleep 2
+        r="$(grep -o '\["rounding"\] = [0-9]*' "$HOME/.config/hypr/hypr-shell-settings.lua" | grep -o '[0-9]*$')"
+        if [ "${r:-12}" -eq 24 ]; then echo "  ok: Regler wirkt schon beim Ziehen (Hyprland-Rundung jetzt $r)"
+        else echo "  FEHLER: Regler wirkt beim Ziehen nicht (Rundung ${r:-?})"; app_ok=0; fi
     else
-        echo "  Hinweis: swaymsg fehlt, Klicks nicht geprüft"
+        echo "  FEHLER: Regler look.rounding nicht gefunden"; app_ok=0
     fi
+    if test_ipc drag setting-look.rounding 1 && warte_auf .look.rounding 30; then echo "  ok: Regler losgelassen: look.rounding = 30"
+    else echo "  FEHLER: Regler-Wert $(wert .look.rounding)"; app_ok=0; fi
+    sleep 2.5; bild settings-look-geaendert
+    # Undo nimmt das ganze Ziehen in einem Schritt zurück, Reset page die ganze Seite
+    if test_ipc click settings-undo && warte_auf .look.rounding null; then echo "  ok: Undo nimmt das Ziehen in einem Schritt zurück"
+    else echo "  FEHLER: Undo: $(wert .look)"; app_ok=0; fi
+    sleep 2.5
+    if test_ipc click reset-page && warte_auf .look null; then echo "  ok: Reset page setzt die Seite zurück"
+    else echo "  FEHLER: Reset page: $(wert .look)"; app_ok=0; fi
+    sleep 1
+    # Reset neben einem Wert
+    ipc settings open bar; sleep 1.5
+    if test_ipc click "setting-bar.position=bottom" && warte_auf .bar.position '"bottom"'; then
+        sleep 2.5
+        if test_ipc click reset-bar.position && warte_auf .bar.position null; then echo "  ok: Auswahl und Reset neben dem Wert"
+        else echo "  FEHLER: Reset neben dem Wert: $(wert .bar)"; app_ok=0; fi
+    else
+        echo "  FEHLER: Auswahl bar.position: $(wert .bar)"; app_ok=0
+    fi
+    ipc settings close; sleep 0.5
 fi
 
 echo "---- Bilder und Symbole ----"
@@ -249,8 +243,8 @@ if command -v hyprlock >/dev/null 2>&1; then
     fi
 fi
 
-echo "---- Quickshell-Log ----"
-cat "$T/qs.log"
+echo "---- Quickshell-Log (ohne Lage-Meldungen) ----"
+grep -v "hypr-shell-probe" "$T/qs.log" || true
 echo "------------------------"
 [ "$farben_ok" -eq 1 ] || { echo "FEHLER: Farben aus dem Hintergrundbild"; exit 1; }
 [ "$bereiche_ok" -eq 1 ] || { echo "FEHLER: Bilder oder Symbole fehlen (siehe oben)"; exit 1; }

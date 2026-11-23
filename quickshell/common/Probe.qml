@@ -21,6 +21,10 @@ Item {
         console.log("hypr-shell-probe " + p.name + " " + Math.round(wx + g.x) + " " + Math.round(wy + g.y)
                     + " " + Math.round(it.width) + " " + Math.round(it.height))
     }
+    // im Test anmelden, damit "ipc call test click|drag <name>" das Bedienelement auslösen kann
+    Component.onCompleted: if (aktiv) Ui.probes[name] = p
+    Component.onDestruction: if (aktiv && Ui.probes[name] === p) delete Ui.probes[name]
+    onNameChanged: if (aktiv) Ui.probes[name] = p
     Timer {
         running: p.aktiv
         interval: 700

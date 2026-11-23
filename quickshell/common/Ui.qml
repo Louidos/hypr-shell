@@ -45,6 +45,38 @@ Singleton {
     function undo() { run(["undo"]) }
     function redo() { run(["redo"]) }
 
+    // ---- nur im Oberflächentest (HYPR_SHELL_TEST=1): Bedienelemente über ihre Signale auslösen –
+    // derselbe Weg wie ein Mausklick (im unsichtbaren Test-Compositor gibt es kein Zeigegerät)
+    property var probes: ({})
+    IpcHandler {
+        target: "test"
+        function click(name: string): bool {
+            const p = ui.probes[name]
+            if (!p || !p.parent) return false
+            const t = p.parent
+            if (typeof t.toggled === "function") t.toggled()
+            else if (typeof t.clicked === "function") t.clicked()
+            else return false
+            return true
+        }
+        // Regler ziehen: Zwischenwerte (moved) bis zum Anteil frac, dann loslassen (released)
+        function drag(name: string, frac: real): bool {
+            const p = ui.probes[name]
+            if (!p || !p.parent || typeof p.parent.released !== "function") return false
+            const s = p.parent
+            for (let i = 1; i <= 4; i++) s.moved(s.snap(s.from + (s.to - s.from) * frac * i / 4))
+            s.released(s.snap(s.from + (s.to - s.from) * frac))
+            return true
+        }
+        function dragStart(name: string, frac: real): bool {
+            const p = ui.probes[name]
+            if (!p || !p.parent || typeof p.parent.moved !== "function") return false
+            const s = p.parent
+            s.moved(s.snap(s.from + (s.to - s.from) * frac))
+            return true
+        }
+    }
+
     function next() {
         if (proc.running) return
         let args = null

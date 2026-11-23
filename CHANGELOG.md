@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.7.0 – 2026-11-23
+
 ### Hinzugefügt
 - Dock bis ins Detail einstellbar (Einstellungs-App → Dock) mit Live-Vorschau, fünf Voreinstellungen (mac, minimal, compact, island, full) sowie Export und Import (#80)
 - Dock mit Vergrösserung beim Darüberfahren, Hüpfen beim Start und automatischem Verstecken (smart: nur wenn ein Fenster es überdeckt) (#79)

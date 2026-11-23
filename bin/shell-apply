@@ -14,7 +14,7 @@
 # Kaputtes JSON: der letzte gültige Stand (~/.local/share/hypr-shell/settings.last-good.json)
 # bleibt aktiv. Jede erzeugte Datei wird über eine temporäre Datei geschrieben und umbenannt.
 # Die Werte S_… setzt ein eval aus den gültigen Einstellungen:
-# shellcheck disable=SC2154
+# shellcheck disable=SC2154,SC2329
 set -euo pipefail
 
 CONF="${XDG_CONFIG_HOME:-$HOME/.config}"

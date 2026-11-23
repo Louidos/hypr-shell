@@ -9,7 +9,7 @@
 #   5. ein falscher Wert und kaputtes JSON brechen nichts (Standardwert bzw. letzter gültiger Stand)
 #   6. eine settings.json von v1.0.0 funktioniert unverändert; Werte aus hypr-shell-local.lua wandern
 #      einmalig in settings.json
-# shellcheck disable=SC2016,SC2034
+# shellcheck disable=SC2016,SC2034,SC2329
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
 REPO="$(pwd)"
@@ -24,6 +24,7 @@ fehler=0
 pruefe() { if eval "$1"; then echo "  ok: $2"; else echo "  FEHLER: $2"; fehler=1; fi; }
 SCHEMA=settings/schema.json
 apply() { HOME="$1" "$REPO/bin/shell-apply" "${@:2}"; }
+gleich() { [ -f "$1" ] && [ -f "$2" ] && [ "$(sha256sum < "$1")" = "$(sha256sum < "$2")" ]; }   # cmp fehlt manchmal
 neues_home() { local h="$T/$1"; rm -rf "$h"; mkdir -p "$h/.config/hypr-shell"; printf '%s\n' "${2:-{\}}" > "$h/.config/hypr-shell/settings.json"; echo "$h"; }
 
 echo "== 1. Schema"
@@ -61,7 +62,7 @@ echo "== 4. erzeugte Dateien"
 h="$(neues_home std "$(cat settings/settings.example.json)")"
 apply "$h" --no-reload
 for f in waybar/config.jsonc waybar/style.css hypr/hypridle.conf hypr/hyprlock.conf rofi/hypr-shell-settings.rasi; do
-    pruefe 'cmp -s "config/$f" "$h/.config/$f"' "Standardwerte ergeben genau config/$f"
+    pruefe 'gleich "config/$f" "$h/.config/$f"' "Standardwerte ergeben genau config/$f"
 done
 pruefe 'head -n1 "$h/.config/hypr/hypr-shell-settings.lua" | grep -q "erzeugt von hypr-shell – nicht von Hand ändern"' "erzeugte Dateien tragen den Hinweis oben"
 pruefe 'jq -e ".bar.height == 30 and .look.gaps.inner == 6" "$h/.local/share/hypr-shell/settings.effective.json" >/dev/null' "gültige Werte für Quickshell"

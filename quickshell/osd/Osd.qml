@@ -5,7 +5,7 @@ import Quickshell.Wayland
 import "../common"
 
 // Anzeige für Lautstärke, Stumm, Mikrofon, Bildschirm- und Tastaturhelligkeit: kleine Glas-Pille
-// unten in der Mitte, erscheint von selbst (shell-osd ruft "ipc osd show" auf) und verschwindet nach
+// unten in der Mitte, erscheint von selbst (shell-osd ruft "ipc osd display" auf) und verschwindet nach
 // 1,5 Sekunden. Nimmt keine Klicks an und ist kein Panel (schliesst also kein offenes Panel).
 Scope {
     id: osd
@@ -34,7 +34,7 @@ Scope {
 
     IpcHandler {
         target: "osd"
-        function show(kind: string, value: int, muted: bool): void { osd.show(kind, value, muted) }
+        function display(kind: string, value: int, muted: bool): void { osd.show(kind, value, muted) }
         // was gerade angezeigt wird ("" wenn nichts) – für Tests
         function current(): string { return ov.open ? osd.kind + " " + osd.value + (osd.muted ? " muted" : "") : "" }
     }

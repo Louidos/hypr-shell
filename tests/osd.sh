@@ -48,23 +48,23 @@ letzte() { tail -n1 "$T/anzeige"; }
 
 echo "== Lautstärke"
 osd volume up
-pruefe '[ "$(cat "$T/vol")" = 0.55 ] && [ "$(letzte)" = "ipc osd show volume 55 false" ]' "Lauter: +5 %, Anzeige zeigt 55 %"
+pruefe '[ "$(cat "$T/vol")" = 0.55 ] && [ "$(letzte)" = "ipc osd display volume 55 false" ]' "Lauter: +5 %, Anzeige zeigt 55 %"
 for _ in 1 2 3 4 5 6 7 8 9 10 11; do osd volume up; done
-pruefe '[ "$(cat "$T/vol")" = 1.00 ] && [ "$(letzte)" = "ipc osd show volume 100 false" ]' "nie über 100 %"
+pruefe '[ "$(cat "$T/vol")" = 1.00 ] && [ "$(letzte)" = "ipc osd display volume 100 false" ]' "nie über 100 %"
 osd volume down
-pruefe '[ "$(letzte)" = "ipc osd show volume 95 false" ]' "Leiser: −5 %"
+pruefe '[ "$(letzte)" = "ipc osd display volume 95 false" ]' "Leiser: −5 %"
 osd volume mute
-pruefe '[ "$(letzte)" = "ipc osd show volume 95 true" ]' "Stumm wird angezeigt"
+pruefe '[ "$(letzte)" = "ipc osd display volume 95 true" ]' "Stumm wird angezeigt"
 osd volume up
 pruefe '[ "$(cat "$T/mute")" = no ]' "Lauter hebt Stumm auf"
 osd mic mute
-pruefe '[ "$(letzte)" = "ipc osd show mic 80 true" ]' "Mikrofon stumm"
+pruefe '[ "$(letzte)" = "ipc osd display mic 80 true" ]' "Mikrofon stumm"
 
 echo "== Helligkeit"
 osd brightness up
-pruefe '[ "$(letzte)" = "ipc osd show brightness 55 false" ]' "Bildschirm heller"
+pruefe '[ "$(letzte)" = "ipc osd display brightness 55 false" ]' "Bildschirm heller"
 osd kbd down
-pruefe '[ "$(tail -n1 "$T/geraete")" = "*::kbd_backlight" ] && grep -q "ipc osd show kbd" "$T/anzeige"' "Tastaturlicht über das kbd_backlight-Gerät"
+pruefe '[ "$(tail -n1 "$T/geraete")" = "*::kbd_backlight" ] && grep -q "ipc osd display kbd" "$T/anzeige"' "Tastaturlicht über das kbd_backlight-Gerät"
 
 echo "== ohne Programme kein Fehler"
 mkdir -p "$T/nix"

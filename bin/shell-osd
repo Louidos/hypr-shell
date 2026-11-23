@@ -7,7 +7,7 @@
 #   shell-osd kbd up|down              Tastaturbeleuchtung ±33 %
 #   shell-osd show                     nur anzeigen (aktuelle Lautstärke)
 # Ton über wpctl (PipeWire), sonst pamixer; Helligkeit über brightnessctl. Fehlt ein Programm, passiert
-# nichts (kein Fehler). Die Anzeige: shell-quickshell ipc osd show <art> <prozent> <stumm>.
+# nichts (kein Fehler). Die Anzeige: shell-quickshell ipc osd display <art> <prozent> <stumm>.
 set -uo pipefail
 
 BIN="${HYPR_SHELL_BIN:-$HOME/.local/bin}"
@@ -17,7 +17,7 @@ SOURCE=@DEFAULT_AUDIO_SOURCE@
 
 zeige() { # art prozent stumm
     [ -x "$BIN/shell-quickshell" ] || return 0
-    "$BIN/shell-quickshell" ipc osd show "$1" "$2" "$3" >/dev/null 2>&1 || true
+    "$BIN/shell-quickshell" ipc osd display "$1" "$2" "$3" >/dev/null 2>&1 || true
 }
 
 # wpctl get-volume: "Volume: 0.45" oder "Volume: 0.45 [MUTED]"

@@ -203,11 +203,11 @@ fi
 power_ok=1
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target power'; then
     echo "---- Anzeige und Power-Menü ----"
-    ipc osd show volume 42 false; sleep 0.8; bild osd
+    ipc osd display volume 42 false; sleep 0.8; bild osd
     if [ "$("$qs" -p "$cfg" ipc call osd current 2>/dev/null)" = "volume 42" ]; then echo "  ok: Lautstärke-Anzeige erscheint"
     else
         echo "  FEHLER: Anzeige: \"$("$qs" -p "$cfg" ipc call osd current 2>&1)\" – IPC: $("$qs" -p "$cfg" ipc show 2>&1 | grep -A4 'target osd' | tr '\n' ' ')"
-        echo "  FEHLER: (Anzeige) direkter Aufruf: $("$qs" -p "$cfg" ipc call osd show volume 42 false 2>&1 | head -c 300)"
+        echo "  FEHLER: (Anzeige) direkter Aufruf: $("$qs" -p "$cfg" ipc call osd display volume 42 false 2>&1 | head -c 300)"
         power_ok=0
     fi
     sleep 2

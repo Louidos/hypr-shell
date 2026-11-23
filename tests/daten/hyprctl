@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Attrappe von hyprctl für Tests: -j clients|workspaces|monitors|activeworkspace|binds aus tests/daten,
+# dispatch und alles andere wird nach $HYPRCTL_LOG geschrieben.
+d="$(dirname "$(readlink -f "$0")")"
+if [ "${1:-}" = -j ]; then
+    case "$2" in
+        clients) cat "$d/hyprctl-clients.json" ;;
+        workspaces) cat "$d/hyprctl-workspaces.json" ;;
+        monitors) cat "$d/hyprctl-monitors.json" ;;
+        activeworkspace) echo '{"id": 1, "name": "1"}' ;;
+        binds) cat "${HYPRCTL_BINDS:-$d/hyprctl-binds.json}" 2>/dev/null || echo '[]' ;;
+        *) echo '{}' ;;
+    esac
+    exit 0
+fi
+echo "$*" >> "${HYPRCTL_LOG:-/dev/null}"

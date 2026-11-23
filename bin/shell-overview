@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Daten und Aktionen für die Fenster-Übersicht (SUPER+Tab), über hyprctl (Hyprland ab 0.55, Lua).
+#   shell-overview data                 {"clients": […], "workspaces": […], "monitors": […], "active": n}
+#   shell-overview focus <adresse>      zum Fenster wechseln (adresse wie 0x55d3c0a1b2c0)
+#   shell-overview move <adresse> <n>   Fenster auf Arbeitsfläche n verschieben, ohne ihm zu folgen
+# Ohne Hyprland liefert data leere Listen.
+set -uo pipefail
+
+hat() { command -v "$1" >/dev/null 2>&1; }
+adresse() { # 0x… (nur Hex-Ziffern), sonst Abbruch
+    local a="${1#0x}"
+    [[ "$a" =~ ^[0-9a-fA-F]+$ ]] || { echo "shell-overview: ungültige Adresse $1" >&2; exit 2; }
+    printf '0x%s' "$a"
+}
+json() { local v; v="$(hyprctl -j "$1" 2>/dev/null)"; jq -e . >/dev/null 2>&1 <<<"$v" && printf '%s' "$v" || printf '%s' "$2"; }
+
+case "${1:-}" in
+    data)
+        if ! hat hyprctl || ! hat jq || { [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && [ "${HYPR_SHELL_TEST:-0}" != 1 ]; }; then
+            echo '{"clients": [], "workspaces": [], "monitors": [], "active": 1}'; exit 0
+        fi
+        jq -cn --argjson c "$(json clients '[]')" --argjson w "$(json workspaces '[]')" \
+            --argjson m "$(json monitors '[]')" --argjson a "$(json activeworkspace '{"id": 1}')" \
+            '{clients: [$c[] | select(.mapped != false and .hidden != true)], workspaces: $w, monitors: $m, active: ($a.id // 1)}'
+        ;;
+    focus)
+        a="$(adresse "${2:?adresse fehlt}")" || exit 2
+        hyprctl dispatch "hl.dsp.focus({ window = \"address:$a\" })" >/dev/null
+        ;;
+    move)
+        a="$(adresse "${2:?adresse fehlt}")" || exit 2
+        n="${3:?arbeitsfläche fehlt}"
+        [[ "$n" =~ ^[0-9]+$ ]] || { echo "shell-overview: ungültige Arbeitsfläche $n" >&2; exit 2; }
+        hyprctl dispatch "hl.dsp.window.move({ window = \"address:$a\", workspace = $n, follow = false })" >/dev/null
+        ;;
+    *) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

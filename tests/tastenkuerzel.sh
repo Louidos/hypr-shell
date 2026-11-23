@@ -53,6 +53,7 @@ SUPER + N
 SUPER + Q
 SUPER + R
 SUPER + SHIFT + V
+SUPER + Tab
 SUPER + Space
 SUPER + U
 SUPER + V

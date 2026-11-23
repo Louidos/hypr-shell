@@ -77,6 +77,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `SUPER + R` / `SUPER + Space` / `ALT + Space` | Starter (Suche nach Apps, `=` rechnet) |
 | `SUPER + V` | Fenster schwebend / gekachelt |
 | `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
+| `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
 | `SUPER + M` | abmelden (Hyprland beenden) |
 | `SUPER + L` | sperren |
 | `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |
@@ -177,6 +178,12 @@ Mitte eine kleine Glas-Pille mit Symbol und Balken, die nach 1,5 Sekunden versch
 abschalten mit `shell-set osd.enabled false`). Das Power-Menü (`SUPER + Escape` oder ⏻ in der Leiste)
 zeigt in der Mitte fünf grosse Knöpfe: **Lock**, **Sleep**, **Logout**, **Restart**, **Shutdown**.
 Pfeiltasten wählen, Enter löst aus, Esc schliesst; Restart und Shutdown verlangen einen zweiten Druck.
+
+### Fenster-Übersicht
+
+`SUPER + Tab` zeigt alle Arbeitsflächen als Raster mit ihren Fenstern an der richtigen Stelle – mit
+Vorschaubild, sonst App-Symbol und Titel. Klick wechselt zum Fenster, Ziehen auf eine andere
+Arbeitsfläche verschiebt es dorthin, Tippen filtert nach Titel (Enter springt zum ersten Treffer).
 
 ### Zwischenablage
 

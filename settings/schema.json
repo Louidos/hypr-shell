@@ -130,6 +130,7 @@
     {"key": "keybinds.settings", "type": "keybind", "default": "SUPER + U", "title": "Settings", "description": "Open or close this settings app (cannot be empty)", "page": "keybinds", "section": "Shell", "icon": "󰒓", "required": true},
     {"key": "keybinds.power", "type": "keybind", "default": "SUPER + Escape", "title": "Power menu", "description": "Lock, sleep, log out, restart or shut down", "page": "keybinds", "section": "Shell", "icon": "󰐥"},
     {"key": "keybinds.clipboard", "type": "keybind", "default": "SUPER + SHIFT + V", "title": "Clipboard history", "description": "Show the last copies to paste them again", "page": "keybinds", "section": "Shell", "icon": "󰅍"},
+    {"key": "keybinds.overview", "type": "keybind", "default": "SUPER + Tab", "title": "Window overview", "description": "Show all workspaces with their windows", "page": "keybinds", "section": "Shell", "icon": "󰕰"},
     {"key": "keybinds.lock", "type": "keybind", "default": "SUPER + L", "title": "Lock", "description": "Lock the screen", "page": "keybinds", "section": "Shell", "icon": "󰌾"},
     {"key": "keybinds.exit", "type": "keybind", "default": "SUPER + M", "title": "Log out", "description": "Leave Hyprland", "page": "keybinds", "section": "Shell", "icon": "󰐥"},
     {"key": "keybinds.screenshot_region", "type": "keybind", "default": "Print", "title": "Screenshot of a region", "description": "Select a region; saved and copied", "page": "keybinds", "section": "Shell", "icon": "󰋩"},

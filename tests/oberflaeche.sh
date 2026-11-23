@@ -119,7 +119,9 @@ fi
 
 cfg="$HOME/.config/quickshell/hypr-shell"
 starte_qs() {
-    HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
+    # Quickshell sieht eine hyprctl-Attrappe mit Beispielfenstern (tests/daten), Aufrufe landen in $T/hyprctl.log
+    mkdir -p "$T/fake"; ln -sf "$REPO/tests/daten/hyprctl" "$T/fake/hyprctl"
+    PATH="$T/fake:$PATH" HYPRCTL_LOG="$T/hyprctl.log" HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
     qspid="$!"
     pids+=("$qspid")
     sleep 6
@@ -244,6 +246,26 @@ if command -v cliphist >/dev/null 2>&1 && "$qs" -p "$cfg" ipc show 2>/dev/null |
     ipc clipboard close; sleep 0.5
 else
     echo "  Hinweis: cliphist fehlt, Zwischenablage nicht geprüft"
+fi
+
+# ---- Fenster-Übersicht (SUPER+Tab) mit Beispielfenstern aus der hyprctl-Attrappe
+uebersicht_ok=1
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target overview'; then
+    echo "---- Fenster-Übersicht ----"
+    ipc overview open; sleep 2; bild uebersicht
+    fenster="$("$qs" -p "$cfg" ipc call overview windows 2>/dev/null | tr '\n' '|')"
+    if [ "$fenster" = "1:Terminal – htop|1:Mozilla Firefox|3:Files – Downloads|" ]; then echo "  ok: alle offenen Fenster an der richtigen Arbeitsfläche"
+    else echo "  FEHLER: Fenster: $fenster"; uebersicht_ok=0; fi
+    if [ "$("$qs" -p "$cfg" ipc call overview filter fire 2>/dev/null)" = 1 ]; then echo "  ok: Tippen filtert nach Titel"; else echo "  FEHLER: Filter"; uebersicht_ok=0; fi
+    sleep 0.5; bild uebersicht-filter
+    ipc overview moveFirst 2; sleep 0.8
+    if grep -qF 'hl.dsp.window.move({ window = "address:0x55d3c0a1b2c0", workspace = 2, follow = false })' "$T/hyprctl.log" 2>/dev/null; then echo "  ok: Ziehen verschiebt das Fenster"
+    else echo "  FEHLER: kein move ($(cat "$T/hyprctl.log" 2>/dev/null))"; uebersicht_ok=0; fi
+    ipc overview focusFirst; sleep 0.8
+    if grep -qF 'hl.dsp.focus({ window = "address:0x55d3c0a1b3d0" })' "$T/hyprctl.log" 2>/dev/null && [ -z "$(offen)" ]; then echo "  ok: Klick springt zum Fenster und schliesst die Übersicht"
+    else echo "  FEHLER: kein focus ($(cat "$T/hyprctl.log" 2>/dev/null)), offen: $(offen)"; uebersicht_ok=0; fi
+else
+    echo "FEHLER: IPC-Ziel overview fehlt"; uebersicht_ok=0
 fi
 
 # ---- Starter (SUPER+R): Suche, Rechner
@@ -412,6 +434,7 @@ echo "------------------------"
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 [ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
+[ "$uebersicht_ok" -eq 1 ] || { echo "FEHLER: Fenster-Übersicht (siehe oben)"; exit 1; }
 [ "$clip_ok" -eq 1 ] || { echo "FEHLER: Zwischenablage (siehe oben)"; exit 1; }
 [ "$power_ok" -eq 1 ] || { echo "FEHLER: Anzeige oder Power-Menü (siehe oben)"; exit 1; }
 [ "$note_ok" -eq 1 ] || { echo "FEHLER: Benachrichtigungen (siehe oben)"; exit 1; }

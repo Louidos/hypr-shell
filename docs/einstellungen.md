@@ -219,6 +219,10 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `missa.folder` | `~/Missa` | Text (Format geprüft) | Local folder with Eingang (files for Missa) and Ausgabe (files from Missa) | `shell-set missa.folder ~/Missa` |
 | `missa.agent_enabled` | `false` | `true`, `false` | Missa can find and open files, control apps and windows and, after confirmation, run commands | `shell-set missa.agent_enabled true` |
 | `missa.voice_enabled` | `false` | `true`, `false` | Speak with Missa (SUPER+SHIFT+I) and hear her answers, locally with whisper.cpp and piper | `shell-set missa.voice_enabled true` |
+| `missa.voice_language` | `de` | Text (Format geprüft) | Language for recognition (whisper.cpp), e.g. de, en or auto | `shell-set missa.voice_language de` |
+| `missa.voice_model` | `~/.local/share/hypr-shell/whisper/ggml-base.bin` | Text (Format geprüft) | whisper.cpp model file (bigger = better, slower: tiny, base, small …) | `shell-set missa.voice_model ~/.local/share/hypr-shell/whisper/ggml-base.bin` |
+| `missa.voice_voice` | `~/.local/share/hypr-shell/piper/de_DE-thorsten-medium.onnx` | Text (Format geprüft) | piper voice file (.onnx, with its .onnx.json next to it) | `shell-set missa.voice_voice ~/.local/share/hypr-shell/piper/de_DE-thorsten-medium.onnx` |
+| `missa.voice_speed` | `1.0` | Zahl 0.5 … 2.0, Schritt 0.05 | How fast Missa reads her answers | `shell-set missa.voice_speed 1.05` |
 
 ## lab – lab
 
@@ -278,6 +282,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.overview` | `SUPER + Tab` | Tasten wie `SUPER + Q`, leer = keine Taste | Show all workspaces with their windows | `shell-set keybinds.overview "SUPER + B"` |
 | `keybinds.cheatsheet` | `SUPER + F1` | Tasten wie `SUPER + Q`, leer = keine Taste | Show all keyboard shortcuts | `shell-set keybinds.cheatsheet "SUPER + B"` |
 | `keybinds.missa_chat` | `SUPER + I` | Tasten wie `SUPER + Q`, leer = keine Taste | Chat with Missa (only when Missa is switched on) | `shell-set keybinds.missa_chat "SUPER + B"` |
+| `keybinds.missa_voice` | `SUPER + SHIFT + I` | Tasten wie `SUPER + Q`, leer = keine Taste | Speak with Missa; press again to stop (only when Missa and talking are switched on) | `shell-set keybinds.missa_voice "SUPER + B"` |
 | `keybinds.lock` | `SUPER + L` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock the screen | `shell-set keybinds.lock "SUPER + B"` |
 | `keybinds.exit` | `SUPER + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Leave Hyprland | `shell-set keybinds.exit "SUPER + B"` |
 | `keybinds.screenshot_region` | `Print` | Tasten wie `SUPER + Q`, leer = keine Taste | Select a region; saved and copied | `shell-set keybinds.screenshot_region "SUPER + B"` |

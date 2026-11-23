@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Attrappe von aplay: liest das Audio und wartet etwas (zum Testen von Stoppen)
+cat > /dev/null; sleep "${APLAY_SLEEP:-0}"

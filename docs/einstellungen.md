@@ -26,7 +26,8 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `bar.position` | `top` | `top`, `bottom` | Edge of the screen the bar sits on | `shell-set bar.position bottom` |
 | `bar.height` | `30` | ganze Zahl 20 … 60 px | Height of the bar in pixels | `shell-set bar.height 31` |
-| `bar.opacity` | `0.25` | Zahl 0 … 1, Schritt 0.05 | Opacity of the bar background | `shell-set bar.opacity 0.3` |
+| `bar.opacity` | `-1` | Zahl -1 … 1, Schritt 0.05 | Opacity of the bar background; -1 = same as all glass (Theme → Glass opacity) | `shell-set bar.opacity -0.95` |
+| `bar.floating` | `true` | `true`, `false` | Rounded glass bar with a small gap to the screen edge; off = full width along the edge | `shell-set bar.floating false` |
 | `bar.modules.left` | `["distro","workspaces","media"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the left, in this order | `shell-set bar.modules.left distro,workspaces` |
 | `bar.modules.center` | `[]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules in the middle, in this order | `shell-set bar.modules.center distro,workspaces` |
 | `bar.modules.right` | `["volume","battery","clock","bluetooth","network","recording","notifications","missa","power"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the right, in this order | `shell-set bar.modules.right distro,workspaces` |
@@ -38,15 +39,19 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
 | --- | --- | --- | --- | --- |
+| `look.preset` | `glass` | `glass`, `minimal`, `gaming` | Last chosen look (choose with the buttons above): glass, minimal or gaming; changes only look and glass values | `shell-set look.preset minimal` |
 | `look.gaps.inner` | `6` | ganze Zahl 0 … 40 px | Space between windows | `shell-set look.gaps.inner 7` |
 | `look.gaps.outer` | `12` | ganze Zahl 0 … 60 px | Space between windows and the screen edge | `shell-set look.gaps.outer 13` |
 | `look.border` | `1` | ganze Zahl 0 … 8 px | Width of the window border | `shell-set look.border 2` |
-| `look.rounding` | `12` | ganze Zahl 0 … 30 px | Corner radius of windows | `shell-set look.rounding 13` |
+| `look.rounding` | `14` | ganze Zahl 0 … 30 px | Corner radius of windows | `shell-set look.rounding 15` |
 | `look.blur.enabled` | `true` | `true`, `false` | Blur behind transparent windows, the bar and the glass panels | `shell-set look.blur.enabled false` |
 | `look.blur.size` | `10` | ganze Zahl 1 … 20 | Radius of the blur | `shell-set look.blur.size 11` |
 | `look.blur.passes` | `3` | ganze Zahl 1 … 6 | More passes give a softer blur but cost more | `shell-set look.blur.passes 4` |
 | `look.shadow` | `true` | `true`, `false` | Soft shadow under windows | `shell-set look.shadow false` |
-| `look.opacity.inactive` | `1.0` | Zahl 0.5 … 1, Schritt 0.05 | Opacity of windows without focus | `shell-set look.opacity.inactive 0.95` |
+| `look.opacity.inactive` | `0.88` | Zahl 0.5 … 1, Schritt 0.05 | Opacity of windows without focus (games, videos, image editors and fullscreen stay opaque) | `shell-set look.opacity.inactive 0.93` |
+| `look.opacity.active` | `0.95` | Zahl 0.5 … 1, Schritt 0.01 | Opacity of the window with focus (games, videos, image editors and fullscreen stay opaque) | `shell-set look.opacity.active 0.96` |
+| `look.opacity.exceptions` | `["steam_app_[0-9]+","gamescope","steam","battle.net.exe","heroic","lutris","mpv","vlc","celluloid","org.gnome.Totem","gimp","krita","inkscape","darktable","org.kde.kdenlive","blender"]` | Liste von Texten | Window classes (regular expressions) that never become transparent: games, video players, image editors | `shell-set look.opacity.exceptions steam_app_[0-9]+,gamescope,steam,battle.net.exe,heroic,lutris,mpv,vlc,celluloid,org.gnome.Totem,gimp,krita,inkscape,darktable,org.kde.kdenlive,blender,code` |
+| `look.border_color` | `white` | `white`, `accent` | white = fine white glass edge (Theme → Border), accent = color of the wallpaper | `shell-set look.border_color accent` |
 | `look.animations.enabled` | `true` | `true`, `false` | Animate windows, workspaces and layers | `shell-set look.animations.enabled false` |
 | `look.animations.speed` | `normal` | `slow`, `normal`, `fast` | How fast animations play | `shell-set look.animations.speed slow` |
 
@@ -56,9 +61,14 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `theme.colors` | `auto` | `auto`, `grey`, `custom` | auto = colors from the wallpaper, grey = grey and white, custom = your accent color | `shell-set theme.colors grey` |
 | `theme.accent` | `#8ab4f8` | Farbe `#rrggbb` | Accent color for the custom color mode | `shell-set theme.accent "#a6e3a1"` |
-| `theme.glass` | `0.44` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the desktop tiles and the settings window | `shell-set theme.glass 0.45` |
-| `theme.radius.panel` | `26` | ganze Zahl 0 … 40 px | Corner radius of glass panels | `shell-set theme.radius.panel 27` |
-| `theme.radius.card` | `18` | ganze Zahl 0 … 30 px | Corner radius of cards inside panels | `shell-set theme.radius.card 19` |
+| `theme.glass` | `0.55` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of all glass surfaces: bar, dock, panels, menus, notifications, launcher and settings (darker automatically when text would be hard to read) | `shell-set theme.glass 0.56` |
+| `theme.glass_color` | `#2a2a2f` | Farbe `#rrggbb` | Tint of all glass surfaces (neutral gray) | `shell-set theme.glass_color "#a6e3a1"` |
+| `theme.border.color` | `#ffffff` | Farbe `#rrggbb` | Fine edge of glass surfaces and windows | `shell-set theme.border.color "#a6e3a1"` |
+| `theme.border.opacity` | `0.35` | Zahl 0 … 1, Schritt 0.01 | Edge of the active window and of glass surfaces | `shell-set theme.border.opacity 0.36` |
+| `theme.border.opacity_inactive` | `0.15` | Zahl 0 … 1, Schritt 0.01 | Edge of windows without focus | `shell-set theme.border.opacity_inactive 0.16` |
+| `theme.border.width` | `1` | ganze Zahl 0 … 4 px | Width of the edge of glass surfaces | `shell-set theme.border.width 2` |
+| `theme.radius.panel` | `14` | ganze Zahl 0 … 40 px | Corner radius of glass panels | `shell-set theme.radius.panel 15` |
+| `theme.radius.card` | `10` | ganze Zahl 0 … 30 px | Corner radius of cards inside panels | `shell-set theme.radius.card 11` |
 | `theme.font.ui` | `Inter` | Text (Format geprüft) | Font for text in the bar, dashboard, panel and lock screen | `shell-set theme.font.ui "Noto Sans"` |
 | `theme.font.mono` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font for symbols and numbers (needs Nerd Font symbols) | `shell-set theme.font.mono "Noto Sans"` |
 | `theme.font.clock` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font of the big clock on the desktop | `shell-set theme.font.clock "Noto Sans"` |
@@ -111,7 +121,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
 | --- | --- | --- | --- | --- |
 | `dashboard.width` | `1000` | ganze Zahl 600 … 2400 px | Width of the dashboard in pixels | `shell-set dashboard.width 1010` |
-| `dashboard.opacity` | `0.42` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the glass | `shell-set dashboard.opacity 0.43` |
+| `dashboard.opacity` | `-1` | Zahl -1 … 0.95, Schritt 0.01 | Opacity of the glass; -1 = same as all glass (Theme → Glass opacity) | `shell-set dashboard.opacity -0.99` |
 | `dashboard.edge` | `true` | `true`, `false` | Open when the mouse touches the middle of the bottom edge | `shell-set dashboard.edge false` |
 | `dashboard.close_on_leave` | `true` | `true`, `false` | Close when the mouse leaves the dashboard | `shell-set dashboard.close_on_leave false` |
 | `dashboard.tabs` | `["dashboard","wallpaper","performance","games","lab","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `games`, `lab`, `about` | Tabs in this order (Games only with Steam games or own entries, Lab only with lab.enabled) | `shell-set dashboard.tabs dashboard,wallpaper` |
@@ -144,8 +154,8 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `panel.close_on_leave` | `true` | `true`, `false` | Close when the mouse leaves the panel | `shell-set panel.close_on_leave false` |
 | `panel.close_delay` | `400` | ganze Zahl 100 … 10000 ms | Wait time before closing after the mouse left | `shell-set panel.close_delay 450` |
 | `panel.width` | `420` | ganze Zahl 320 … 800 px | Width of the panel | `shell-set panel.width 430` |
-| `panel.radius` | `26` | ganze Zahl 0 … 40 px | Corner radius of the panel | `shell-set panel.radius 27` |
-| `panel.opacity` | `0.44` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the glass | `shell-set panel.opacity 0.45` |
+| `panel.radius` | `14` | ganze Zahl 0 … 40 px | Corner radius of the panel | `shell-set panel.radius 15` |
+| `panel.opacity` | `-1` | Zahl -1 … 0.95, Schritt 0.01 | Opacity of the glass; -1 = same as all glass (Theme → Glass opacity) | `shell-set panel.opacity -0.99` |
 | `panel.sections` | `["awake","apps","media","shot","toggles"]` | Liste aus `awake`, `apps`, `media`, `shot`, `toggles` | Cards and their order | `shell-set panel.sections awake,apps` |
 | `panel.apps` | `["kitty","org.gnome.Nautilus","firefox","spotify","discord","steam"]` | Liste von Texten | Apps in the grid (name of the .desktop file); missing ones are skipped | `shell-set panel.apps kitty,org.gnome.Nautilus,firefox,spotify,discord,steam,code` |
 | `panel.toggles` | `["wifi","bluetooth","audio","dnd","gaming","profile","nightlight","settings"]` | Liste aus `wifi`, `bluetooth`, `audio`, `dnd`, `gaming`, `awake`, `profile`, `nightlight`, `settings` | Quick toggles in the panel, in this order (toggles the computer cannot use are hidden) | `shell-set panel.toggles wifi,bluetooth` |
@@ -173,7 +183,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dock.border_width` | `1` | ganze Zahl 0 … 6 px | Width of the glass border | `shell-set dock.border_width 2` |
 | `dock.border_color` | `auto` | Farbe `#rrggbb` | auto = like the panels, or a color like #8ab4f8 | `shell-set dock.border_color "#a6e3a1"` |
 | `dock.shadow` | `medium` | `none`, `soft`, `medium`, `strong` | Shadow below the dock | `shell-set dock.shadow none` |
-| `dock.color_mode` | `wallpaper` | `wallpaper`, `dark`, `light`, `custom` | wallpaper = tinted like the wallpaper colors, dark, light, or custom (your own color) | `shell-set dock.color_mode dark` |
+| `dock.color_mode` | `glass` | `glass`, `wallpaper`, `dark`, `light`, `custom` | glass = like all glass surfaces (Theme → Glass), wallpaper = tinted like the wallpaper colors, dark, light, or custom (your own color) | `shell-set dock.color_mode wallpaper` |
 | `dock.custom_color` | `#1e1e2e` | Farbe `#rrggbb` | Glass color for the color mode custom | `shell-set dock.custom_color "#a6e3a1"` |
 | `dock.labels` | `hover` | `never`, `hover`, `always` | never, when the mouse is on an icon (hover), or always | `shell-set dock.labels never` |
 | `dock.indicator` | `dot` | `dot`, `line`, `none` | Dot or line below running apps (two for several windows), or none | `shell-set dock.indicator line` |

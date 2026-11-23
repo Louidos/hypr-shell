@@ -367,3 +367,21 @@ Sensor) und der echte SDDM-Anmeldebildschirm.
 | **Tastatur am echten Laptop** | von Hand: SUPER+B, dann einen Buchstaben → sofort in kitty tippen; SUPER+B, dann in kitty klicken → tippen; SUPER+B, dann SUPER+A (Panel) und zu → tippen; Vollbild an/aus; `hyprctl layers` zeigt ohne offenes Panel keine hypr-shell-Fläche mit Tastatur; CTRL+SUPER+Escape bei offenem Panel und bei offenem Dock-Tastatur-Modus |
 | Lokal ohne Quickshell/Hyprland | nicht lokal getestet, CI entscheidet |
 
+## Glas-Look (#119)
+
+Prüfliste aller Flächen: Glas (graue Fläche aus `theme.glass_color`/`theme.glass`), weisser Rand
+(`theme.border.*`) und derselbe Radius (`theme.radius.panel`).
+
+| Fläche | Woher | Prüfung |
+| --- | --- | --- |
+| Leiste (Waybar) | `shell-apply` → `style.css` | automatisch (`tests/glas.sh`); Blur von Hand |
+| Dock | `Dock.qml` (`dock.color_mode = glass`) | automatisch (Standard gleich dem gemeinsamen Glas, `tests/oberflaeche.sh`) |
+| Dashboard, Hot-Corner-Panel, Starter, Spickzettel, Zwischenablage, Übersicht, Power-Menü, OSD, Benachrichtigungs-Verlauf, Missa | `Overlay.qml` | gemeinsamer Baustein; Screenshots der CI |
+| Einstellungs-App, Desktop-Kacheln | `GlassPanel.qml` | gemeinsamer Baustein |
+| Benachrichtigungskarten | `NotificationCard.qml` (`Theme.glass`) | Screenshot der CI |
+| Menüs/Fensterliste im Dock, Namen am Dock | `DockPopup.qml`, `DockWindow.qml` | gemeinsamer Rand und Radius |
+| rofi | `shell-apply` → `hypr-shell-settings.rasi` | automatisch (`tests/glas.sh`) |
+| Programmfenster | `hyprland.lua` (Rand, Rundung, Transparenz, Ausnahmen) | Werte automatisch (`tests/glas.sh`), echtes Hyprland nimmt die Regeln an (`tests/hyprland-echt.sh`); Aussehen von Hand |
+| **Am echten Laptop** | | von Hand: Blur hinter allen Flächen sichtbar, weisser Rand, gleiche Ecken; helles und dunkles Hintergrundbild – Text bleibt lesbar; Steam-Spiel, mpv und GIMP undurchsichtig; `shell-look preset gaming` schaltet Blur und Transparenz ab, `shell-look preset glass` zurück |
+| Lokal ohne Quickshell/Hyprland | | nicht lokal getestet, CI entscheidet |
+

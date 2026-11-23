@@ -281,7 +281,10 @@ PanelWindow {
         }
         if (keyboard && selectable.indexOf(selectedKey) < 0) selectedKey = selectable.length > 0 ? selectable[0] : ""
     }
-    onEntriesChanged: pruneClosed()
+    // nach jeder Änderung der Fenster (ToplevelManager) – erst wenn alle Bindungen den neuen Stand
+    // haben (Qt.callLater), sonst prüfte die Bereinigung noch die alte Liste
+    onEntriesChanged: Qt.callLater(win.pruneClosed)
+    Connections { target: win.d; function onToplevelsChanged() { Qt.callLater(win.pruneClosed) } }
     onPopupTargetChanged: if (popupOpen && popupTarget === null) closePopup()
     // für Tests: Verweise auf Fenster, die es nicht mehr gibt (muss immer 0 sein)
     function staleRefs() {

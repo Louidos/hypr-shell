@@ -62,6 +62,11 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `theme.cursor.name` | `Bibata-Modern-Ice` | Text | Name of the mouse cursor theme | `shell-set theme.cursor.name Adwaita` |
 | `theme.cursor.size` | `24` | ganze Zahl 16 … 64 px | Size of the mouse cursor | `shell-set theme.cursor.size 26` |
 | `theme.icons` | `Papirus-Dark` | Text | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |
+| `theme.apps.gtk` | `true` | `true`, `false` | Files (Nautilus), dialogs and other GTK 3/4 apps take the wallpaper colors; off restores your own gtk.css. Open windows change after reopening | `shell-set theme.apps.gtk false` |
+| `theme.apps.qt` | `true` | `true`, `false` | Qt apps take the wallpaper colors through qt5ct/qt6ct; off restores your qt5ct/qt6ct settings | `shell-set theme.apps.qt false` |
+| `theme.apps.firefox` | `false` | `true`, `false` | Toolbar and tabs in the wallpaper colors (userChrome.css, backed up first); takes effect after restarting Firefox | `shell-set theme.apps.firefox true` |
+| `theme.apps.vesktop` | `false` | `true`, `false` | Vesktop theme in the wallpaper colors (settings backed up first) | `shell-set theme.apps.vesktop true` |
+| `theme.apps.spotify` | `false` | `true`, `false` | Spotify colors through spicetify (config backed up first, off restores it and runs spicetify apply) | `shell-set theme.apps.spotify true` |
 
 ## input – Eingabe
 

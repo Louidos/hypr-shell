@@ -43,7 +43,7 @@ PAKETE=(
     quickshell waybar rofi awww matugen kitty cava
     grim slurp wl-clipboard cliphist libnotify jq playerctl brightnessctl pamixer wireplumber
     power-profiles-daemon networkmanager bluez bluez-utils nautilus xdg-user-dirs imagemagick
-    papirus-icon-theme bibata-cursor-theme-bin
+    papirus-icon-theme bibata-cursor-theme-bin qt6ct
     ttf-jetbrains-mono-nerd inter-font noto-fonts noto-fonts-emoji
 )
 # Ausweichnamen, falls ein Paket anders heisst
@@ -61,7 +61,7 @@ PROGRAMME=(
     grim:grim slurp:slurp wl-copy:wl-clipboard cliphist:cliphist notify-send:libnotify jq:jq playerctl:playerctl
     brightnessctl:brightnessctl pamixer:pamixer wpctl:wireplumber
     powerprofilesctl:power-profiles-daemon nmcli:networkmanager bluetoothctl:bluez-utils
-    nautilus:nautilus
+    nautilus:nautilus qt6ct:qt6ct
 )
 # Dateien, die nur angelegt werden, wenn sie fehlen (vom Benutzer oder von matugen erzeugt)
 NUR_WENN_FEHLT=(
@@ -746,6 +746,9 @@ entfernen() {
     [ -f "$MANIFEST" ] || fehler "hypr-shell ist nicht installiert ($MANIFEST fehlt)."
     [ "$DRY" -eq 1 ] && info "Probelauf: es wird nichts verändert"
     ja_nein "Alle Dateien von hypr-shell entfernen und den Zustand vor der ersten Installation zurückholen?" || { echo "Abgebrochen."; exit 1; }
+    # mitgefärbte Programme (GTK, Qt, Firefox, …) zuerst auf ihren eigenen Stand zurück
+    if [ "$DRY" -eq 1 ]; then probe "Programme mitfärben: Sicherungen zurücklegen"
+    elif [ -x "$BIN/shell-appcolors" ]; then "$BIN/shell-appcolors" restore || true; fi
     info "Dateien von hypr-shell entfernen"
     local f
     while IFS= read -r f; do

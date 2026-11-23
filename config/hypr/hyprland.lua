@@ -352,6 +352,12 @@ if missa_an then
     end
 end
 
+-- Qt-Programme mit den Farben des Hintergrundbilds (theme.apps.qt, über qt6ct); wer selbst schon ein
+-- Plattform-Thema gesetzt hat, behält es
+if S.theme.apps ~= nil and S.theme.apps.qt == true and os.getenv("QT_QPA_PLATFORMTHEME") == nil and programm("qt6ct") then
+    hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+end
+
 -- Kürzel-Spickzettel
 bind(K.cheatsheet, hl.dsp.exec_cmd(ui .. "cheatsheet toggle"), "Panels: Keyboard shortcuts")
 

@@ -9,7 +9,7 @@ Column {
     id: ed
     spacing: 10
     readonly property var items: {
-        const v = Settings.get("dock.items", [])
+        const v = Settings.get("dock.items", [{"type": "app", "desktop_id": "org.gnome.Nautilus", "path": ""}, {"type": "app", "desktop_id": "kitty", "path": ""}, {"type": "app", "desktop_id": "firefox", "path": ""}, {"type": "separator", "desktop_id": "", "path": ""}, {"type": "folder", "desktop_id": "", "path": "~/Downloads"}, {"type": "separator", "desktop_id": "", "path": ""}, {"type": "trash", "desktop_id": "", "path": ""}])
         return Array.isArray(v) ? v : []
     }
     function save(l) { Ui.set("dock.items", l) }

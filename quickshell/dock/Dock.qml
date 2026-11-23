@@ -126,7 +126,8 @@ Scope {
 
     // ---- Ordner und Papierkorb: nur bei Änderung der Liste abgefragt
     readonly property var items: {
-        const v = Settings.get("dock.items", [])
+        // Rückfall = Standard aus dem Schema (gilt nur, solange schema.json noch nicht gelesen ist)
+        const v = Settings.get("dock.items", [{"type": "app", "desktop_id": "org.gnome.Nautilus", "path": ""}, {"type": "app", "desktop_id": "kitty", "path": ""}, {"type": "app", "desktop_id": "firefox", "path": ""}, {"type": "separator", "desktop_id": "", "path": ""}, {"type": "folder", "desktop_id": "", "path": "~/Downloads"}, {"type": "separator", "desktop_id": "", "path": ""}, {"type": "trash", "desktop_id": "", "path": ""}])
         return Array.isArray(v) ? v.filter(i => i && typeof i === "object") : []
     }
     readonly property var folderPaths: items.filter(i => i.type === "folder" && i.path).map(i => String(i.path))

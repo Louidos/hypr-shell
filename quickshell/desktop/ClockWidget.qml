@@ -8,7 +8,7 @@ import "../common"
 // Position als Anteil der Bildschirmgrösse aus settings.json (desktop.clock.x / .y).
 PanelWindow {
     id: w
-    readonly property real k: (screen ? screen.height : 1080) / 1080 * Ui.widget("clock", "scale", 1.0)
+    readonly property real k: Settings.screenHeight(screen) / 1080 * Ui.widget("clock", "scale", 1.0)
     readonly property real size: 150 * k
     readonly property bool h12: Settings.get("desktop.clock.format", "24h") === "12h"
     function hours(d) {
@@ -23,8 +23,8 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     anchors { top: true; left: true }
     margins {
-        left: Math.round(Ui.widget("clock", "x", 0.02) * (screen ? screen.width : 1920))
-        top: Math.round(Ui.widget("clock", "y", 0.045) * (screen ? screen.height : 1080))
+        left: Math.round(Ui.widget("clock", "x", 0.02) * Settings.screenWidth(screen))
+        top: Math.round(Ui.widget("clock", "y", 0.045) * Settings.screenHeight(screen))
     }
     implicitWidth: Math.ceil(stack.implicitWidth) + 4
     implicitHeight: Math.ceil(stack.implicitHeight)

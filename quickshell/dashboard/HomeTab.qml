@@ -62,7 +62,7 @@ Grid12 {
                     Probe { name: "sensor-tile" }
                 }
                 Txt {
-                    text: (home.sensor.data ? home.sensor.data.title : Settings.get("sensor.title", "Sensor"))
+                    text: (home.sensor.data ? home.sensor.data.title : Settings.get("sensor.title", "Air quality"))
                           + (home.sensor.ok === false && home.sensor.error === "not reachable" ? " · not reachable" : home.sensor.error === "setup" ? " · set the address" : "")
                     size: 11
                     sub: true
@@ -114,7 +114,8 @@ Grid12 {
             id: avatar
             width: 62; height: 62; radius: 31
             anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
-            source: "file://" + Settings.home + "/.face"
+            source: Settings.face
+            Component.onCompleted: Settings.checkFace()
             fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
             probe: "dashboard-avatar"
         }

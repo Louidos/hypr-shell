@@ -28,7 +28,7 @@ PanelWindow {
     // ---- Masse
     readonly property bool vertical: d.vertical
     readonly property string pos: d.position
-    readonly property real screenLen: vertical ? (screen ? screen.height : 1080) : (screen ? screen.width : 1920)
+    readonly property real screenLen: vertical ? Settings.screenHeight(screen) : Settings.screenWidth(screen)
     readonly property int nIcons: entries.filter(o => o.kind !== "separator").length
     readonly property int nSeps: entries.length - nIcons
     readonly property int sepW: 1 + d.spacing
@@ -141,7 +141,7 @@ PanelWindow {
     // Fläche des Docks auf dem Bildschirm (für smart)
     readonly property var screenRect: {
         const sx = screen ? screen.x : 0, sy = screen ? screen.y : 0
-        const sw = screen ? screen.width : 1920, sh = screen ? screen.height : 1080
+        const sw = Settings.screenWidth(screen), sh = Settings.screenHeight(screen)
         const wx = pos === "left" ? 0 : pos === "right" ? sw - width : (sw - width) / 2
         const wy = pos === "top" ? 0 : pos === "bottom" ? sh - height : (sh - height) / 2
         return { x: sx + wx + body.x, y: sy + wy + body.y, width: body.width, height: body.height }

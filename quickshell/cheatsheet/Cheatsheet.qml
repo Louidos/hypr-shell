@@ -88,8 +88,8 @@ Scope {
         ipc: false
         place: "center"
         margin: 0
-        panelWidth: Math.min(1120, (screen ? screen.width : 1920) - 80)
-        panelHeight: Math.min(760, (screen ? screen.height : 1080) - 80)
+        panelWidth: Math.min(1120, Settings.screenWidth(screen) - 80)
+        panelHeight: Math.min(760, Settings.screenHeight(screen) - 80)
         keyboardFocus: WlrKeyboardFocus.Exclusive
         onOpened: { cs.query = ""; bindsProc.running = true }
 

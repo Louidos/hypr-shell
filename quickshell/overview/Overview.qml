@@ -23,8 +23,8 @@ Scope {
     readonly property int cols: wsIds.length <= 4 ? wsIds.length : Math.ceil(wsIds.length / 2)
     readonly property int rows: Math.ceil(wsIds.length / cols)
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
-    readonly property real sw: screen ? screen.width : 1920
-    readonly property real sh: screen ? screen.height : 1080
+    readonly property real sw: Settings.screenWidth(screen)
+    readonly property real sh: Settings.screenHeight(screen)
     readonly property real cellW: Math.min(360, (sw - 160 - (cols - 1) * 14) / cols)
     readonly property real cellH: cellW * sh / sw
 

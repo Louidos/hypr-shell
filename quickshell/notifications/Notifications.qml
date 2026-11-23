@@ -121,12 +121,13 @@ Scope {
     FileView {
         id: dndFile
         path: Settings.dataDir + "/dnd"
+        printErrors: false
         watchChanges: true
         onFileChanged: reload()
         // auch über shell-toggle dnd: mit Nicht stören verschwinden offene Karten sofort
         onLoaded: { const on = text().trim() === "true"; if (on !== nc.dnd) { nc.dnd = on; if (on) nc.popups = []; nc.writeBar() } }
     }
-    FileView { id: barFile; path: Settings.dataDir + "/notifications-bar.json" }
+    FileView { id: barFile; path: Settings.dataDir + "/notifications-bar.json"; printErrors: false }
     Component.onCompleted: writeBar()
 
     IpcHandler {
@@ -181,7 +182,7 @@ Scope {
         ipc: false
         place: "top-right"
         panelWidth: 420
-        panelHeight: Math.min(item ? item.implicitHeight : 200, (screen ? screen.height : 1080) - 80)
+        panelHeight: Math.min(item ? item.implicitHeight : 200, Settings.screenHeight(screen) - 80)
         keyboardFocus: WlrKeyboardFocus.OnDemand
         content: Component { NotificationPanel { center: nc } }
     }

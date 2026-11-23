@@ -78,7 +78,8 @@ FocusScope {
                 id: avatar
                 width: 42; height: 42; radius: 21
                 anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
-                source: "file://" + Settings.home + "/.face"
+                source: Settings.face
+                Component.onCompleted: Settings.checkFace()
                 fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
                 probe: "panel-avatar"
             }

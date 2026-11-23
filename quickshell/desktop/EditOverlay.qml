@@ -11,13 +11,16 @@ PanelWindow {
     id: ov
     property var clockWin
     property var tilesWin
-    readonly property real sw: screen ? screen.width : 1920
-    readonly property real sh: screen ? screen.height : 1080
+    // gibt es den Bildschirm? (von Desktop.qml gesetzt; "screen" selbst hier abzufragen ergäbe eine
+    // Bindungsschleife, weil Quickshell screen beim Ein- und Ausblenden neu meldet)
+    property bool hasScreen: true
+    readonly property real sw: Settings.screenWidth(screen)
+    readonly property real sh: Settings.screenHeight(screen)
     readonly property real snap: 10
     // aktive Hilfslinien (beim Ziehen): Liste von {v: true/false, pos}
     property var guides: []
 
-    visible: Ui.editDesktop && screen !== null
+    visible: Ui.editDesktop && ov.hasScreen
     anchors { top: true; bottom: true; left: true; right: true }
     color: Qt.rgba(0, 0, 0, 0.28)
     exclusionMode: ExclusionMode.Ignore

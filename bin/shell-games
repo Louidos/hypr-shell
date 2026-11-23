@@ -9,6 +9,8 @@
 #                                          ein Spiel im Vollbild schaltet den Gaming-Modus an, danach wieder aus
 #                                          (games.auto_gaming; ein von Hand eingeschalteter Modus bleibt)
 set -uo pipefail
+# fehlendes Argument: klare Meldung und Ende (statt "Zeile N: 2: … fehlt" oder still weiter)
+fehlt() { echo "shell-games: $1" >&2; exit 2; }
 
 DATA="$HOME/.local/share/hypr-shell"
 EFF="$DATA/settings.effective.json"
@@ -130,7 +132,7 @@ auto() {
 
 case "${1:-}" in
     list) liste ;;
-    launch) starten "${2:?Spiel fehlt}" ;;
+    launch) [ -n "${2:-}" ] || fehlt "Spiel fehlt"; starten "${2}" ;;
     auto) shift; auto "$@" ;;
     *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

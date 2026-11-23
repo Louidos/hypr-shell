@@ -74,6 +74,7 @@ Scope {
     FileView {
         id: store
         path: Settings.dataDir + "/launcher-recent.json"
+        printErrors: false
         onLoaded: { try { const r = JSON.parse(text()); if (r && typeof r === "object") la.recent = r } catch (e) { } }
         onLoadFailed: la.recent = ({})
     }

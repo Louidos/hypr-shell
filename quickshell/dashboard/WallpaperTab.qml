@@ -15,6 +15,7 @@ Item {
 
     FileView {
         path: Settings.home + "/.local/share/hypr-shell/wallpaper"
+        printErrors: false
         watchChanges: true
         onFileChanged: reload()
         onLoaded: wt.current = text().trim()

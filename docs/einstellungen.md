@@ -313,14 +313,17 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
 | --- | --- | --- | --- | --- |
-| `keybinds.terminal` | `SUPER + Q` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the terminal (apps.terminal) | `shell-set keybinds.terminal "SUPER + B"` |
+| `keybinds.terminal` | `SUPER + Return` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the terminal (apps.terminal) | `shell-set keybinds.terminal "SUPER + B"` |
 | `keybinds.files` | `SUPER + E` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the file manager (apps.files) | `shell-set keybinds.files "SUPER + B"` |
 | `keybinds.browser` | `""` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the browser (apps.browser); empty = no key | `shell-set keybinds.browser "SUPER + B"` |
 | `keybinds.launcher` | `SUPER + R` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the app launcher (apps.launcher) | `shell-set keybinds.launcher "SUPER + B"` |
 | `keybinds.launcher_alt` | `ALT + Space` | Tasten wie `SUPER + Q`, leer = keine Taste | Another key for the app launcher | `shell-set keybinds.launcher_alt "SUPER + B"` |
 | `keybinds.launcher_space` | `SUPER + Space` | Tasten wie `SUPER + Q`, leer = keine Taste | Third shortcut for the launcher | `shell-set keybinds.launcher_space "SUPER + B"` |
-| `keybinds.close` | `SUPER + C` | Tasten wie `SUPER + Q`, leer = keine Taste | Close the focused window | `shell-set keybinds.close "SUPER + B"` |
+| `keybinds.launcher_search` | `CTRL + SUPER + Return` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the app launcher to search apps | `shell-set keybinds.launcher_search "SUPER + B"` |
+| `keybinds.close` | `SUPER + Q` | Tasten wie `SUPER + Q`, leer = keine Taste | Close the focused window (like clicking its X) | `shell-set keybinds.close "SUPER + B"` |
+| `keybinds.close_alt` | `SUPER + C` | Tasten wie `SUPER + Q`, leer = keine Taste | Second key to close the focused window | `shell-set keybinds.close_alt "SUPER + B"` |
 | `keybinds.float` | `SUPER + V` | Tasten wie `SUPER + Q`, leer = keine Taste | Switch the focused window between floating and tiled | `shell-set keybinds.float "SUPER + B"` |
+| `keybinds.fullscreen` | `SUPER + F` | Tasten wie `SUPER + Q`, leer = keine Taste | Fullscreen on/off for the focused window | `shell-set keybinds.fullscreen "SUPER + B"` |
 | `keybinds.focus_left` | `SUPER + left` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the left | `shell-set keybinds.focus_left "SUPER + B"` |
 | `keybinds.focus_right` | `SUPER + right` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the right | `shell-set keybinds.focus_right "SUPER + B"` |
 | `keybinds.focus_up` | `SUPER + up` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window above | `shell-set keybinds.focus_up "SUPER + B"` |

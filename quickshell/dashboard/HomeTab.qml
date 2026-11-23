@@ -62,7 +62,7 @@ Grid12 {
                     Probe { name: "sensor-tile" }
                 }
                 Txt {
-                    text: (home.sensor.data ? home.sensor.data.title : Settings.get("sensor.title", "Sensor"))
+                    text: (home.sensor.data ? home.sensor.data.title : Settings.get("sensor.title", "Air quality"))
                           + (home.sensor.ok === false && home.sensor.error === "not reachable" ? " · not reachable" : home.sensor.error === "setup" ? " · set the address" : "")
                     size: 11
                     sub: true

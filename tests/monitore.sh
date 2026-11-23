@@ -19,3 +19,5 @@ if ! timeout 60 "$qml" tests/daten/monitore-test.qml > "$T/log" 2>&1; then
 fi
 sed 's/^qml: //' "$T/log"
 if grep -qE "FEHLER|Error|error:|TypeError|ReferenceError" "$T/log"; then echo "FEHLER: monitore.js"; exit 1; fi
+# ohne eine einzige Prüfung (z. B. Ausgabe verschluckt) gilt der Test nicht als bestanden
+grep -q "ok:" "$T/log" || { echo "FEHLER: monitore.js – keine Ausgabe vom qml-Werkzeug"; exit 1; }

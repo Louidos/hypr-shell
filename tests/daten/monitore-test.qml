@@ -5,7 +5,7 @@ import "../../quickshell/settings/monitore.js" as M
 // tests/monitore.sh mit dem qml-Werkzeug von Qt. Gibt "ok: …" bzw. "FEHLER: …" aus.
 Item {
     property int fehler: 0
-    function pruefe(bed, text) { console.log((bed ? "  ok: " : "  FEHLER: ") + text); if (!bed) fehler++ }
+    function pruefe(bed, text) { console.warn((bed ? "  ok: " : "  FEHLER: ") + text); if (!bed) fehler++ }
     function aufl(l) { return l.map(m => m.res).join(",") }
 
     Component.onCompleted: {

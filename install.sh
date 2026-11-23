@@ -604,6 +604,8 @@ installieren() {
     installiere_datei "$REPO/VERSION" "$DATA/VERSION"
     installiere_datei "$REPO/settings/settings.example.json" "$DATA/settings.example.json"
     installiere_datei "$REPO/settings/schema.json" "$DATA/schema.json"
+    # Voreinstellungen (Dock)
+    installiere_baum "$REPO/settings/presets" "$DATA/presets"
     # Tab-Vervollständigung für shell-set (bash, fish); ein verlinkter Ordner wird nicht angefasst
     vervollstaendigung "$REPO/settings/completions/shell-set.bash" "$HOME/.local/share/bash-completion/completions/shell-set"
     vervollstaendigung "$REPO/settings/completions/shell-set.fish" "$CONF/fish/completions/shell-set.fish"

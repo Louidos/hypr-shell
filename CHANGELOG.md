@@ -7,6 +7,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Dock bis ins Detail einstellbar (Einstellungs-App → Dock) mit Live-Vorschau, fünf Voreinstellungen (mac, minimal, compact, island, full) sowie Export und Import (#80)
 - Dock mit Vergrösserung beim Darüberfahren, Hüpfen beim Start und automatischem Verstecken (smart: nur wenn ein Fenster es überdeckt) (#79)
 - Dock mit Menü per Rechtsklick, Sortieren per Ziehen, Ordnern, Papierkorb, Fensterliste mit Vorschau, Zählern für Benachrichtigungen und Tastaturbedienung (SUPER+B) (#78)
 - Schwebendes Dock in der Mitte unten mit angehefteten und laufenden Programmen; Klick startet oder holt das Fenster nach vorn, abschaltbar mit `dock.enabled` (#77)

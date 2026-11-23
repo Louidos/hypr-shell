@@ -150,6 +150,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
 | --- | --- | --- | --- | --- |
 | `dock.enabled` | `true` | `true`, `false` | Floating dock with pinned and running apps at the edge of the screen; off = no dock window at all | `shell-set dock.enabled false` |
+| `dock.preset` | `mac` | `mac`, `minimal`, `compact`, `island`, `full` | Last chosen preset (choose one with the buttons above; it changes only dock values, never the items) | `shell-set dock.preset minimal` |
 | `dock.position` | `bottom` | `bottom`, `left`, `right`, `top` | Screen edge of the dock | `shell-set dock.position left` |
 | `dock.monitor` | `all` | Text (Format geprüft) | all = every screen, primary = the first screen, or the name of a screen (e.g. eDP-1) | `shell-set dock.monitor all` |
 | `dock.running_per_monitor` | `false` | `true`, `false` | Each dock shows only the running apps with a window on its own screen | `shell-set dock.running_per_monitor true` |
@@ -165,13 +166,14 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dock.glass_opacity` | `-1` | Zahl -1 … 1, Schritt 0.01 | Opacity of the glass; -1 = same as the panels (Theme → Glass opacity) | `shell-set dock.glass_opacity -0.99` |
 | `dock.blur` | `true` | `true`, `false` | Blur behind the dock glass | `shell-set dock.blur false` |
 | `dock.border_width` | `1` | ganze Zahl 0 … 6 px | Width of the glass border | `shell-set dock.border_width 2` |
-| `dock.border_color` | `auto` | Text (Format geprüft) | auto = like the panels, or a color like #8ab4f8 | `shell-set dock.border_color auto` |
+| `dock.border_color` | `auto` | Farbe `#rrggbb` | auto = like the panels, or a color like #8ab4f8 | `shell-set dock.border_color "#a6e3a1"` |
 | `dock.shadow` | `medium` | `none`, `soft`, `medium`, `strong` | Shadow below the dock | `shell-set dock.shadow none` |
 | `dock.color_mode` | `wallpaper` | `wallpaper`, `dark`, `light`, `custom` | wallpaper = tinted like the wallpaper colors, dark, light, or custom (your own color) | `shell-set dock.color_mode dark` |
 | `dock.custom_color` | `#1e1e2e` | Farbe `#rrggbb` | Glass color for the color mode custom | `shell-set dock.custom_color "#a6e3a1"` |
 | `dock.labels` | `hover` | `never`, `hover`, `always` | never, when the mouse is on an icon (hover), or always | `shell-set dock.labels never` |
 | `dock.indicator` | `dot` | `dot`, `line`, `none` | Dot or line below running apps (two for several windows), or none | `shell-set dock.indicator line` |
-| `dock.indicator_color` | `auto` | Text (Format geprüft) | auto = accent color of the wallpaper, or a color like #8ab4f8 | `shell-set dock.indicator_color auto` |
+| `dock.indicator_color` | `auto` | Farbe `#rrggbb` | auto = accent color of the wallpaper, or a color like #8ab4f8 | `shell-set dock.indicator_color "#a6e3a1"` |
+| `dock.icon_style` | `original` | `original`, `mono`, `theme` | original colors, mono (grey) or theme (tinted in the wallpaper color) | `shell-set dock.icon_style mono` |
 | `dock.show_running` | `true` | `true`, `false` | Also show running apps that are not pinned | `shell-set dock.show_running false` |
 | `dock.trash` | `true` | `true`, `false` | Show the trash entry from the item list | `shell-set dock.trash false` |
 | `dock.launcher_button` | `false` | `true`, `false` | Button at the start of the dock that opens the launcher | `shell-set dock.launcher_button true` |

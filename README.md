@@ -259,8 +259,8 @@ Ton-Symbol in der Leiste öffnet direkt die passende Unterseite (Rechtsklick auf
 Ein schwebendes Glas-Dock mittig unten mit angehefteten und laufenden Programmen: Klick startet
 oder holt das Fenster nach vorn, Punkte zeigen laufende Programme. Rechtsklick öffnet ein Menü,
 Ziehen sortiert um, Herausziehen löst an, `SUPER + B` bedient das Dock mit der Tastatur. Abschaltbar mit
-`shell-set dock.enabled false`. Alle Werte und die Zuordnung der Symbole stehen in
-[docs/dock.md](docs/dock.md).
+`shell-set dock.enabled false`. Jeder Wert ist in der Einstellungs-App (Seite **Dock**, mit
+fünf Voreinstellungen, Export und Import) einstellbar; alle Werte stehen in [docs/dock.md](docs/dock.md).
 
 ### Sperrbildschirm
 

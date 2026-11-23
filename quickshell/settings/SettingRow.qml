@@ -148,14 +148,44 @@ GlassCard {
                 onReleased: v => row.write(v)
                 Probe { name: "setting-" + row.key }
             }
-            Txt {
+            // Zahlenfeld: Klick und Eintippen setzt den Wert genau (wird auf den Bereich begrenzt)
+            Item {
                 width: 70
+                height: 24
                 anchors.verticalCenter: parent.verticalCenter
-                horizontalAlignment: Text.AlignRight
-                text: row.fmt(sl.shown)
-                size: 13
-                weight: Font.DemiBold
-                font.family: Theme.mono
+                Txt {
+                    anchors.fill: parent
+                    visible: !numIn.activeFocus
+                    horizontalAlignment: Text.AlignRight
+                    verticalAlignment: Text.AlignVCenter
+                    text: row.fmt(sl.shown)
+                    size: 13
+                    weight: Font.DemiBold
+                    font.family: Theme.mono
+                }
+                TextInput {
+                    id: numIn
+                    anchors.fill: parent
+                    opacity: activeFocus ? 1 : 0
+                    horizontalAlignment: TextInput.AlignRight
+                    verticalAlignment: TextInput.AlignVCenter
+                    color: Theme.text
+                    selectionColor: Theme.accent
+                    font.family: Theme.mono
+                    font.pixelSize: 13 * Theme.fontScale
+                    validator: DoubleValidator { }
+                    onActiveFocusChanged: if (activeFocus) { text = String(typeof row.shown === "number" ? row.shown : row.spec.default); selectAll() }
+                    onAccepted: {
+                        let v = Number(text)
+                        if (!isNaN(v)) {
+                            v = Math.max(row.spec.min, Math.min(row.spec.max, v))
+                            if (row.spec.type === "int") v = Math.round(v)
+                            row.write(v)
+                        }
+                        focus = false
+                    }
+                    Keys.onEscapePressed: focus = false
+                }
             }
         }
     }
@@ -193,6 +223,16 @@ GlassCard {
         Row {
             spacing: 8
             readonly property var presets: ["#8ab4f8", "#a6e3a1", "#f9e2af", "#fab387", "#f38ba8", "#cba6f7", "#94e2d5", "#d4d4d4"]
+            // Farben mit "auto" (z. B. dock.border_color): automatisch wie die Oberfläche
+            Pill {
+                visible: row.spec.auto === true
+                implicitHeight: 26
+                fontSize: 12
+                text: "Auto"
+                active: row.shown === "auto"
+                onClicked: row.write("auto")
+                Probe { name: "setting-" + row.key + "=auto" }
+            }
             Repeater {
                 model: parent.presets
                 delegate: Rectangle {

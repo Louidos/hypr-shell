@@ -53,6 +53,11 @@ Scope {
     readonly property string autohide: ["never", "always", "smart"].indexOf(Settings.get("dock.autohide", "smart")) >= 0 ? Settings.get("dock.autohide", "smart") : "smart"
     readonly property int showDelay: num("dock.show_delay_ms", 150, 0, 2000)
     readonly property int hideDelay: num("dock.hide_delay_ms", 400, 0, 5000)
+    // Symbolstil: original, mono, theme (Effekt nur, wenn Qt ihn kann)
+    readonly property string iconStyle: Settings.get("dock.icon_style", "original")
+    readonly property var monoEffect: { const c = Qt.createComponent("DockIconMono.qml"); return c.status === Component.Ready ? c : null }
+    readonly property var themeEffect: { const c = Qt.createComponent("DockIconTheme.qml"); return c.status === Component.Ready ? c : null }
+    readonly property var iconEffect: iconStyle === "mono" ? monoEffect : iconStyle === "theme" ? themeEffect : null
     readonly property bool launcherButton: Settings.get("dock.launcher_button", false) === true
     readonly property bool badges: Settings.get("dock.badges", true) === true
     readonly property bool previews: Settings.get("dock.previews", true) === true

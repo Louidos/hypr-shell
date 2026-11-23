@@ -102,12 +102,23 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kürzel stehen dort unter
 „Custom“.
 
+**Die wichtigsten Kürzel**
+
 | Kürzel | Wirkung |
 | --- | --- |
-| `SUPER + Q` | Terminal (kitty) |
-| `SUPER + C` | Fenster schliessen |
+| `SUPER + Enter` | Terminal öffnen |
+| `CTRL + SUPER + Enter` | App-Suche (Starter) |
+| `SUPER + Q` | aktives Fenster schliessen |
+
+**Alle Kürzel**
+
+| Kürzel | Wirkung |
+| --- | --- |
+| `SUPER + Return` (Enter) | Terminal (kitty) |
+| `SUPER + Q` / `SUPER + C` | Fenster schliessen (wie ein Klick aufs X) |
+| `SUPER + F` | Vollbild an / aus |
 | `SUPER + E` | Dateien (Nautilus) |
-| `SUPER + R` / `SUPER + Space` / `ALT + Space` | Starter (Suche nach Apps, `=` rechnet) |
+| `CTRL + SUPER + Return` / `SUPER + R` / `SUPER + Space` / `ALT + Space` | Starter (Suche nach Apps, `=` rechnet) |
 | `SUPER + V` | Fenster schwebend / gekachelt |
 | `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
 | `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
@@ -469,7 +480,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `sddm/` | Anmeldebildschirm (SDDM-Thema), nur mit `./install.sh --login-theme` |
 | `settings/` | `schema.json` (Beschreibung aller Werte) und `settings.example.json` (Standardwerte) |
 | `tests/` | Prüfskripte (`tests/lint.sh`, `tests/probeinstallation.sh`, …) |
-| `docs/` | Doku: [einstellungen.md](docs/einstellungen.md) (alle Werte, aus dem Schema erzeugt), [anbindungen.md](docs/anbindungen.md), [dock.md](docs/dock.md), [abnahme.md](docs/abnahme.md), Screenshots |
+| `docs/` | Doku: [einstellungen.md](docs/einstellungen.md) (alle Werte, aus dem Schema erzeugt), [anbindungen.md](docs/anbindungen.md), [dock.md](docs/dock.md), [tastenkuerzel.md](docs/tastenkuerzel.md), [abnahme.md](docs/abnahme.md), Screenshots |
 
 Die Screenshots stammen aus dem Oberflächentest der CI (unsichtbarer Compositor,
 Software-Rendering): Sie zeigen Aufbau und Masse, aber **ohne Blur**. Ohne Grafikkarte

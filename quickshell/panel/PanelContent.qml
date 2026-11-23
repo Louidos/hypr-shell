@@ -174,10 +174,19 @@ FocusScope {
                         height: 72
                         radius: 14
                         color: tileHover.hovered ? Theme.cardHover : "transparent"
+                        readonly property string iconSrc: Quickshell.iconPath(modelData.icon, true)
                         IconImage {
                             anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 8 }
                             implicitSize: 32
-                            source: Quickshell.iconPath(modelData.icon, "application-x-executable")
+                            visible: parent.iconSrc !== ""
+                            source: parent.iconSrc
+                        }
+                        Glyph {
+                            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 8 }
+                            visible: parent.iconSrc === ""
+                            text: "󰀻"
+                            size: 28
+                            color: Theme.subtext
                         }
                         Txt {
                             anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 8 }

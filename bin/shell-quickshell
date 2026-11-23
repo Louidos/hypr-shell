@@ -29,7 +29,7 @@ laeuft() { pgrep -f -- "-p $cfg" >/dev/null 2>&1; }
 benachrichtigungen() {
     local an=true
     if command -v jq >/dev/null 2>&1 && [ -f "$HOME/.local/share/hypr-shell/settings.effective.json" ]; then
-        an="$(jq -r '.notifications.enabled // true' "$HOME/.local/share/hypr-shell/settings.effective.json" 2>/dev/null || echo true)"
+        an="$(jq -r 'if .notifications.enabled == false then "false" else "true" end' "$HOME/.local/share/hypr-shell/settings.effective.json" 2>/dev/null || echo true)"
     fi
     if [ "$an" = true ]; then pkill -x swaync 2>/dev/null || true; fi
 }

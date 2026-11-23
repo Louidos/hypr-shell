@@ -1,6 +1,6 @@
 -- Attrappe der Hyprland-Lua-API (Stand Wiki 0.55): kennt nur dokumentierte Funktionen.
 -- Ein Tippfehler in hyprland.lua (z. B. hl.dsp.windw.close) führt hier zu einem Fehler.
-local M = { aufrufe = {}, binds = {}, layer = {}, start = {} }
+local M = { aufrufe = {}, binds = {}, flags = {}, layer = {}, start = {} }
 
 local function streng(name, t)
     return setmetatable(t, {
@@ -43,6 +43,7 @@ local hl = {
         end
         if M.binds[keys] then error("hl.bind: doppelt belegt: " .. keys, 2) end
         M.binds[keys] = action
+        M.flags[keys] = flags or {}
     end,
     layer_rule = function(r)
         for k in pairs(r) do

@@ -122,7 +122,7 @@ starte_qs() {
     # Quickshell sieht eine hyprctl-Attrappe mit Beispielfenstern (tests/daten), Aufrufe landen in $T/hyprctl.log
     mkdir -p "$T/fake"
     for p in hyprctl nmcli bluetoothctl; do ln -sf "$REPO/tests/daten/$p" "$T/fake/$p"; done
-    PATH="$T/fake:$PATH" HYPRCTL_LOG="$T/hyprctl.log" HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
+    PATH="$T/fake:$PATH" HYPRCTL_LOG="$T/hyprctl.log" HYPRCTL_BINDS="$T/binds.json" HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
     qspid="$!"
     pids+=("$qspid")
     sleep 6
@@ -283,6 +283,38 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target launcher'; then
     ipc launcher close; sleep 1
 else
     echo "FEHLER: IPC-Ziel launcher fehlt"; starter_ok=0
+fi
+
+# ---- Kürzel-Spickzettel (SUPER+F1) aus "hyprctl binds -j" (hier: die Kürzel aus hyprland.lua über die Attrappe)
+spick_ok=1
+lua_bin="$(command -v lua5.4 || command -v lua || true)"
+if [ -n "$lua_bin" ] && "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target cheatsheet'; then
+    echo "---- Kürzel-Spickzettel ----"
+    (cd "$REPO" && "$lua_bin" tests/binds-json.lua) > "$T/binds.json"
+    ipc cheatsheet open; sleep 2; bild spickzettel
+    zeilen="$("$qs" -p "$cfg" ipc call cheatsheet rows 2>/dev/null)"
+    soll="$(jq length "$T/binds.json")"
+    if grep -qx "Panels|SUPER + F1|Keyboard shortcuts" <<<"$zeilen" && grep -qx "Workspaces|SUPER + 1…0|Go to workspace 1…10" <<<"$zeilen" \
+        && grep -qx "Panels|SUPER + SHIFT + V|Clipboard history" <<<"$zeilen"; then echo "  ok: $(wc -l <<<"$zeilen") Zeilen aus $soll Kürzeln, Arbeitsflächen zusammengefasst"
+    else echo "  FEHLER: Spickzettel: $(head -c 400 <<<"$zeilen")"; spick_ok=0; fi
+    if [ "$(jq '[.[] | select(.has_description | not)] | length' "$T/binds.json")" = 0 ]; then echo "  ok: jedes Kürzel aus hyprland.lua hat eine Beschreibung"
+    else echo "  FEHLER: Kürzel ohne Beschreibung"; spick_ok=0; fi
+    if [ "$("$qs" -p "$cfg" ipc call cheatsheet filter terminal 2>/dev/null)" -ge 1 ]; then echo "  ok: Suche findet \"terminal\""
+    else echo "  FEHLER: Suche"; spick_ok=0; fi
+    ipc cheatsheet close; sleep 1
+    # geändertes Kürzel: nach "hyprctl reload" (hier: neu erzeugt) steht es beim nächsten Öffnen richtig drin
+    cp "$HOME/.config/hypr-shell/settings.json" "$T/settings.vorher"
+    jq '.keybinds.terminal = "SUPER + T"' "$T/settings.vorher" > "$HOME/.config/hypr-shell/settings.json"
+    KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload 2>/dev/null
+    (cd "$REPO" && "$lua_bin" tests/binds-json.lua) > "$T/binds.json"
+    ipc cheatsheet open; sleep 1.5
+    if "$qs" -p "$cfg" ipc call cheatsheet rows 2>/dev/null | grep -qx "Apps|SUPER + T|Terminal"; then echo "  ok: geändertes Kürzel steht nach dem Neuladen richtig drin"
+    else echo "  FEHLER: geändertes Kürzel fehlt"; spick_ok=0; fi
+    ipc cheatsheet close; sleep 0.5
+    cp "$T/settings.vorher" "$HOME/.config/hypr-shell/settings.json"
+    KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload 2>/dev/null
+else
+    echo "  Hinweis: lua fehlt, Spickzettel nicht geprüft"
 fi
 
 # ---- Unterseiten im Panel (WLAN und Bluetooth aus Attrappen; der Test-Rechner hat keinen Bluetooth-Adapter)
@@ -447,6 +479,7 @@ echo "------------------------"
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 [ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
+[ "$spick_ok" -eq 1 ] || { echo "FEHLER: Kürzel-Spickzettel (siehe oben)"; exit 1; }
 [ "$seiten_ok" -eq 1 ] || { echo "FEHLER: Unterseiten im Panel (siehe oben)"; exit 1; }
 [ "$uebersicht_ok" -eq 1 ] || { echo "FEHLER: Fenster-Übersicht (siehe oben)"; exit 1; }
 [ "$clip_ok" -eq 1 ] || { echo "FEHLER: Zwischenablage (siehe oben)"; exit 1; }

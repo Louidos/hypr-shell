@@ -69,6 +69,10 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 
 ## Tastenkürzel
 
+`SUPER + F1` zeigt alle Kürzel als Spickzettel – in Gruppen, mit Suche, gelesen aus den echten
+Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kürzel stehen dort unter
+„Custom“.
+
 | Kürzel | Wirkung |
 | --- | --- |
 | `SUPER + Q` | Terminal (kitty) |
@@ -78,6 +82,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `SUPER + V` | Fenster schwebend / gekachelt |
 | `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
 | `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
+| `SUPER + F1` | Kürzel-Spickzettel |
 | `SUPER + M` | abmelden (Hyprland beenden) |
 | `SUPER + L` | sperren |
 | `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |

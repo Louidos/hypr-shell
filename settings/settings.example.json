@@ -220,6 +220,7 @@
     "power": "SUPER + Escape",
     "clipboard": "SUPER + SHIFT + V",
     "overview": "SUPER + Tab",
+    "cheatsheet": "SUPER + F1",
     "lock": "SUPER + L",
     "exit": "SUPER + M",
     "screenshot_region": "Print",

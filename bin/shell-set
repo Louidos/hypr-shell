@@ -16,6 +16,9 @@
 # Werte: true/false (auch on/off), Zahlen, Text, Listen als a,b,c oder JSON wie ["a","b"].
 # Jede Änderung wird atomar geschrieben und sofort angewendet (shell-apply).
 # Beispiele:  shell-set look.rounding 20    shell-set bar.modules.left distro,workspaces
+# HYPR_SHELL_SETTINGS=<datei> liest und schreibt eine andere settings.json (gedacht für Tests). Verlauf,
+# letzter gültiger Stand und alle erzeugten Dateien liegen trotzdem unter $HOME – deshalb nur zusammen
+# mit einem eigenen HOME benutzen (HOME="$(mktemp -d)"), sonst ändern sich der echte Desktop und Verlauf.
 set -euo pipefail
 
 CONF="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -32,7 +35,7 @@ command -v jq >/dev/null 2>&1 || { echo "shell-set: jq fehlt" >&2; exit 1; }
 SCHEMA="$("$APPLY" --schema)"
 
 fehler() { printf 'shell-set: %s\n' "$*" >&2; exit 1; }
-hilfe() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+hilfe() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
@@ -42,9 +45,21 @@ trap 'rm -rf "$T"' EXIT
 # aktuelle Datei als JSON-Objekt (fehlt sie: {}); kaputtes JSON bricht ab
 roh() {
     if [ ! -e "$SETTINGS" ]; then echo '{}'; return 0; fi
-    jq -e 'if type == "object" then . else error("not an object") end' "$SETTINGS" 2> "$T/parse" \
-        || fehler "settings.json is not valid JSON ($(sed 's/^jq: error[^:]*: //' "$T/parse" | head -n1)) – fix it first, or use: shell-set import <file> / shell-set reset all"
+    if ! grep -q '[^[:space:]]' "$SETTINGS"; then
+        echo "the file is empty" > "$T/parse"
+    elif jq -e 'if type == "object" then . else error("not an object") end' "$SETTINGS" 2> "$T/parse"; then
+        return 0
+    fi
+    # Grund ohne "jq: …error (at <datei>:<zeile>):" davor
+    fehler "settings.json is not valid JSON ($(sed -E 's/^jq: (parse )?error( \(at [^)]*\))?: //' "$T/parse" | head -n1)) – fix it first, or use: shell-set import <file> / shell-set reset all"
 }
+
+# jq: Elternteile von $p, die kein Objekt sind (z. B. {"look": 5}), durch {} ersetzen – sonst scheitern
+# setpath/delpaths; shell-apply wertet so einen Wert ohnehin nur als Fehler mit Standardwerten
+# shellcheck disable=SC2016
+JQ_GRUPPEN='def gruppen($p): reduce range(1; $p | length) as $i (.;
+    if (getpath($p[:$i]) | . != null and type != "object") then setpath($p[:$i]; {}) else . end);'
+
 
 # schreibe: stdin (JSON) lesbar formatiert und atomar nach settings.json
 schreibe() {
@@ -117,7 +132,7 @@ umwandeln() { # schema-eintrag text
             ($v | ascii_downcase) as $l
             | if ["true", "on", "yes", "1"] | index([$l]) then true
               elif ["false", "off", "no", "0"] | index([$l]) then false else $v end
-        elif $s.type == "int" or $s.type == "number" then (try ($v | tonumber) catch $v)
+        elif $s.type == "int" or $s.type == "number" then (try ($v | tonumber | if isnan then error("nan") else . end) catch $v)
         elif $s.type == "list" or $s.type == "stringlist" then
             if ($v | startswith("[")) then ($v | json_or_text)
             elif $v == "" then []
@@ -174,7 +189,7 @@ cmd_set() { # live key value [key value …] (mehrere Werte = ein Schritt im Ver
         s="$(schluessel "$1")"
         [ -n "$s" ] || fehler "unknown setting: $1 (see: shell-set list)"
         umwandeln "$s" "$2" > "$T/wert.json"
-        jq --arg k "$1" --slurpfile w "$T/wert.json" 'setpath($k | split("."); $w[0])' "$T/neu.json" > "$T/neu2.json"
+        jq --arg k "$1" --slurpfile w "$T/wert.json" "$JQ_GRUPPEN"' ($k | split(".")) as $p | gruppen($p) | setpath($p; $w[0])' "$T/neu.json" > "$T/neu2.json"
         mv "$T/neu2.json" "$T/neu.json"
         shift 2
     done
@@ -212,7 +227,7 @@ cmd_reset() { # key|bereich|all … (mehrere Schlüssel = ein Schritt im Verlauf
         for k in "$@"; do
             [ -n "$(schluessel "$k")" ] || bereich_gibt_es "$k" || fehler "unknown setting or area: $k"
             # leere Gruppen danach entfernen, damit die Datei aufgeräumt bleibt
-            jq --arg k "$k" 'delpaths([$k | split(".")])
+            jq --arg k "$k" "$JQ_GRUPPEN"' ($k | split(".")) as $p | gruppen($p) | delpaths([$p])
                 | until([paths(type == "object" and length == 0)] | length == 0; delpaths([paths(type == "object" and length == 0)]))' \
                 "$T/neu.json" > "$T/neu2.json"
             mv "$T/neu2.json" "$T/neu.json"

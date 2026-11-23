@@ -13,6 +13,9 @@
 # Falsche Werte: der Standardwert gilt, eine Benachrichtigung nennt Schlüssel und Grund.
 # Kaputtes JSON: der letzte gültige Stand (~/.local/share/hypr-shell/settings.last-good.json)
 # bleibt aktiv. Jede erzeugte Datei wird über eine temporäre Datei geschrieben und umbenannt.
+# HYPR_SHELL_SETTINGS=<datei> liest und schreibt eine andere settings.json (gedacht für Tests). Verlauf,
+# letzter gültiger Stand und alle erzeugten Dateien liegen trotzdem unter $HOME – deshalb nur zusammen
+# mit einem eigenen HOME benutzen (HOME="$(mktemp -d)"), sonst ändern sich der echte Desktop und Verlauf.
 # Die Werte S_… setzt ein eval aus den gültigen Einstellungen:
 # shellcheck disable=SC2154,SC2329
 set -euo pipefail
@@ -653,7 +656,7 @@ while [ $# -gt 0 ]; do
         --effective) MODE=effective ;;
         --example) MODE=example ;;
         --schema) printf '%s\n' "$SCHEMA"; exit 0 ;;
-        -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "shell-apply: unbekannte Option $1" >&2; exit 2 ;;
     esac
     shift
@@ -671,15 +674,18 @@ trap 'rm -rf "$T"' EXIT
 roh_lesen() { # datei -> $T/raw.json, Rückgabe 1 bei kaputtem JSON
     local f="$1"
     if [ ! -e "$f" ]; then echo '{}' > "$T/raw.json"; return 0; fi
+    if ! grep -q '[^[:space:]]' "$f"; then echo "the file is empty" > "$T/parse"; return 1; fi
     if ! jq -e 'if type == "object" then . else error("settings.json must contain an object { … }") end' "$f" > "$T/raw.json" 2> "$T/parse"; then
         return 1
     fi
 }
+# Grund für kaputtes JSON, ohne "jq: …error (at <datei>:<zeile>):" davor
+json_grund() { sed -E 's/^jq: (parse )?error( \(at [^)]*\))?: //' "$T/parse" | head -n1; }
 
 if [ "$MODE" = check ]; then
     f="${CHECK_FILE:-$SETTINGS}"
     if ! roh_lesen "$f"; then
-        printf 'JSON: %s\n' "$(sed 's/^jq: error[^:]*: //' "$T/parse" | head -n1)"
+        printf 'JSON: %s\n' "$(json_grund)"
         exit 1
     fi
     auswerten "$T/raw.json" | jq -r '.err[] | "\(.key): \(.reason)"' > "$T/err"
@@ -697,7 +703,7 @@ fi
 
 kaputt=""
 if ! roh_lesen "$SETTINGS"; then
-    kaputt="$(sed 's/^jq: error[^:]*: //' "$T/parse" | head -n1)"
+    kaputt="$(json_grund)"
     if [ -f "$LAST_GOOD" ] && jq -e 'type == "object"' "$LAST_GOOD" > /dev/null 2>&1; then
         cp "$LAST_GOOD" "$T/raw.json"
     else

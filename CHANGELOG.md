@@ -11,6 +11,12 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Chat mit Missa direkt am Desktop (SUPER+I) und Missa-Karte im Dashboard, einschaltbar in den Einstellungen (#61)
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)
 
+### Behoben
+- `shell-set` stürzt nicht mehr ab, wenn in settings.json eine Gruppe ein einzelner Wert ist (z. B. `{"look": 5}`); Setzen ersetzt sie, Zurücksetzen entfernt sie
+- `shell-set` lehnt `nan` als Zahl ab, statt den Wert still zu löschen
+- Klarere Meldungen bei kaputter settings.json: eine leere Datei wird als leer gemeldet, ohne „jq: parse error“ und Dateipfad davor
+- `shell-set --help` und `shell-apply --help` zeigen keine überzählige Zeile aus dem Skript mehr
+
 ## 1.4.0 – 2026-11-23
 
 ### Hinzugefügt

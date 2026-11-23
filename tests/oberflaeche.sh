@@ -28,7 +28,7 @@ exec > >(tee -a "$T/ausgabe") 2>&1
 aufraeumen() {
     local p
     if grep -q "FEHLER" "$T/ausgabe" 2>/dev/null; then
-        { echo "---- Zusammenfassung: FEHLER ----"; grep "FEHLER" "$T/ausgabe"; } >&3
+        { echo "---- Zusammenfassung: FEHLER ----"; grep -E "FEHLER|Hinweis: ipc" "$T/ausgabe"; } >&3
     fi
     for p in "${pids[@]}"; do kill "$p" 2>/dev/null || true; done
     rm -rf "$T"
@@ -205,7 +205,11 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target power'; then
     echo "---- Anzeige und Power-Menü ----"
     ipc osd show volume 42 false; sleep 0.8; bild osd
     if [ "$("$qs" -p "$cfg" ipc call osd current 2>/dev/null)" = "volume 42" ]; then echo "  ok: Lautstärke-Anzeige erscheint"
-    else echo "  FEHLER: Anzeige: $("$qs" -p "$cfg" ipc call osd current 2>/dev/null)"; power_ok=0; fi
+    else
+        echo "  FEHLER: Anzeige: \"$("$qs" -p "$cfg" ipc call osd current 2>&1)\" – IPC: $("$qs" -p "$cfg" ipc show 2>&1 | grep -A4 'target osd' | tr '\n' ' ')"
+        echo "  FEHLER: (Anzeige) direkter Aufruf: $("$qs" -p "$cfg" ipc call osd show volume 42 false 2>&1 | head -c 300)"
+        power_ok=0
+    fi
     sleep 2
     if [ -z "$("$qs" -p "$cfg" ipc call osd current 2>/dev/null)" ]; then echo "  ok: Anzeige verschwindet von selbst"
     else echo "  FEHLER: Anzeige bleibt stehen"; power_ok=0; fi

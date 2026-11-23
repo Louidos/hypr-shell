@@ -15,6 +15,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Dateimanager und weitere Programme übernehmen die Farben des Hintergrundbilds: GTK und Qt standardmässig, Firefox, Discord (Vesktop) und Spotify (spicetify) einzeln einschaltbar, wenn installiert; Abschalten legt die gesicherten Dateien zurück (#70)
 
 ### Geändert
+- Neutrale Grund-Kürzel: SUPER+Enter Terminal, CTRL+SUPER+Enter App-Suche, SUPER+Q Fenster schliessen (SUPER+C bleibt), dazu SUPER+F Vollbild; selbst geänderte Kürzel bleiben (#82)
 - Das Dock weicht der Leiste aus, verschwindet bei Vollbild und Spielen und passt sich Bildschirmen und Hintergrundbild an (#81)
 
 ### Behoben

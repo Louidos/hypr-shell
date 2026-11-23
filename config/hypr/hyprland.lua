@@ -49,8 +49,9 @@ local S = {
     monitors = { scale = "auto", outputs = {} },
     apps = { terminal = "kitty", files = "nautilus", browser = "firefox", launcher = "builtin" },
     keybinds = {
-        terminal = "SUPER + Q", files = "SUPER + E", browser = "", launcher = "SUPER + R",
-        launcher_alt = "ALT + Space", launcher_space = "SUPER + Space", close = "SUPER + C", float = "SUPER + V",
+        terminal = "SUPER + Return", files = "SUPER + E", browser = "", launcher = "SUPER + R",
+        launcher_alt = "ALT + Space", launcher_space = "SUPER + Space", launcher_search = "CTRL + SUPER + Return",
+        close = "SUPER + Q", close_alt = "SUPER + C", float = "SUPER + V", fullscreen = "SUPER + F",
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
@@ -298,12 +299,15 @@ local function mit(m, key) return (m ~= nil and m ~= "") and (m .. " + " .. key)
 
 bind(K.terminal,     hl.dsp.exec_cmd(terminal), "Apps: Terminal")
 bind(K.close,        hl.dsp.window.close(), "Windows: Close window")
+bind(K.close_alt,    hl.dsp.window.close(), "Windows: Close window")
 bind(K.files,        hl.dsp.exec_cmd(fileManager), "Apps: File manager")
 bind(K.browser,      hl.dsp.exec_cmd(browser), "Apps: Browser")
 bind(K.launcher,     hl.dsp.exec_cmd(launcher), "Panels: Launcher")
 bind(K.launcher_alt, hl.dsp.exec_cmd(launcher), "Panels: Launcher")
 bind(K.launcher_space, hl.dsp.exec_cmd(launcher), "Panels: Launcher")
+bind(K.launcher_search, hl.dsp.exec_cmd(launcher), "Panels: App search")
 bind(K.float,        hl.dsp.window.float({ action = "toggle" }), "Windows: Floating / tiled")
+bind(K.fullscreen,   hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }), "Windows: Fullscreen")
 bind(K.exit,         hl.dsp.exit(), "System: Log out (quit Hyprland)")
 bind(K.lock,         hl.dsp.exec_cmd("pidof hyprlock || hyprlock"), "System: Lock screen")
 

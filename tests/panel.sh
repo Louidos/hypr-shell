@@ -40,7 +40,7 @@ pruefe '! "$REPO/bin/shell-toggle" unbekannt >/dev/null 2>&1' "unbekannter Schal
 
 echo "== Einstellungen"
 ex=settings/settings.example.json
-pruefe '[ "$(jq -r .panel.corner $ex)" = bottom-right ] && [ "$(jq .panel.trigger $ex)" = 6 ] && [ "$(jq .panel.width $ex)" = 420 ] && [ "$(jq .panel.radius $ex)" = 26 ] && [ "$(jq .panel.opacity $ex)" = 0.44 ]' "Ecke unten rechts, 6 px, 420 px, Radius 26, Deckkraft 0.44"
+pruefe '[ "$(jq -r .panel.corner $ex)" = bottom-right ] && [ "$(jq .panel.trigger $ex)" = 6 ] && [ "$(jq .panel.width $ex)" = 420 ] && [ "$(jq .panel.radius $ex)" = 14 ] && [ "$(jq .panel.opacity $ex)" = -1 ]' "Ecke unten rechts, 6 px, 420 px, Radius 14 und Deckkraft wie alles Glas (-1)"
 pruefe '[ "$(jq -c .panel.sections $ex)" = "[\"awake\",\"apps\",\"media\",\"shot\",\"toggles\"]" ]' "Karten in der richtigen Reihenfolge"
 pruefe '[ "$(jq -c .panel.toggles $ex)" = "[\"wifi\",\"bluetooth\",\"audio\",\"dnd\",\"gaming\",\"profile\",\"nightlight\",\"settings\"]" ]' "Schnellschalter"
 pruefe '[ "$(jq ".panel.apps | length" $ex)" = 6 ]' "App-Liste mit 6 Apps"

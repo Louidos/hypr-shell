@@ -245,7 +245,7 @@ erzeuge_waybar() { # eff
     jq --indent 2 '
     def mod: {distro: "custom/distro", workspaces: "hyprland/workspaces", window: "hyprland/window", media: "mpris",
               volume: "pulseaudio", battery: "battery", clock: "clock", bluetooth: "bluetooth", network: "network",
-              tray: "tray", recording: "custom/recording", power: "custom/power"}[.];
+              tray: "tray", recording: "custom/recording", notifications: "custom/notifications", power: "custom/power"}[.];
     . as $e
     | def mods($l): [$l[] | select(. != "battery" or $e.bar.battery) | mod];
       def tui($c): ($e.apps.terminal | split(" ")[0]) as $t
@@ -288,6 +288,10 @@ erzeuge_waybar() { # eff
                 "tooltip-format-disconnected": "offline", "on-click": tui("nmtui")},
       tray: {"icon-size": 16, spacing: 8},
       "custom/recording": {exec: "$HOME/.local/bin/shell-recording status", "return-type": "json", interval: 2, tooltip: true},
+      "custom/notifications": {exec: "cat \"$HOME/.local/share/hypr-shell/notifications-bar.json\" 2>/dev/null || echo '"'"'{\"text\": \"󰂜\"}'"'"'",
+                               "return-type": "json", interval: 30, signal: 9, tooltip: true,
+                               "on-click": "$HOME/.local/bin/shell-quickshell ipc notifications toggle",
+                               "on-click-right": "$HOME/.local/bin/shell-toggle dnd"},
       "custom/power": {format: "⏻", tooltip: false, "on-click": "$HOME/.local/bin/shell-powermenu"}
     }' <<<"$1"
 }
@@ -333,6 +337,7 @@ tooltip label { color: @text; font-weight: 500; }
 #network,
 #tray,
 #custom-recording,
+#custom-notifications,
 #custom-power {
   padding: 0 8px;
   color: @text;
@@ -363,11 +368,14 @@ tooltip label { color: @text; font-weight: 500; }
 
 #bluetooth,
 #network,
+#custom-notifications,
 #custom-power {
   font-family: "$S_theme_font_mono";
   font-size: $(px 14 "$fs")px;
 }
 #bluetooth.off, #bluetooth.disabled, #network.disconnected { color: alpha(@text, 0.45); }
+
+#custom-notifications.empty, #custom-notifications.dnd { color: alpha(@text, 0.45); }
 
 #custom-recording { color: #ff4d4d; font-size: $(px 12 "$fs")px; }
 

@@ -5,6 +5,7 @@ import "dashboard"
 import "panel"
 import "settings"
 import "launcher"
+import "notifications"
 
 // hypr-shell: Quickshell-Oberfläche (gestartet von ~/.local/bin/shell-quickshell, das das
 // Symbolthema aus settings.json – theme.icons – über QS_ICON_THEME setzt)
@@ -14,4 +15,5 @@ ShellRoot {
     HotCorner { }
     SettingsApp { }
     Launcher { }
+    Notifications { }
 }

@@ -22,9 +22,9 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `bar.position` | `top` | `top`, `bottom` | Edge of the screen the bar sits on | `shell-set bar.position bottom` |
 | `bar.height` | `30` | ganze Zahl 20 … 60 px | Height of the bar in pixels | `shell-set bar.height 31` |
 | `bar.opacity` | `0.25` | Zahl 0 … 1, Schritt 0.05 | Opacity of the bar background | `shell-set bar.opacity 0.3` |
-| `bar.modules.left` | `["distro","workspaces","media"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `power` | Modules on the left, in this order | `shell-set bar.modules.left distro,workspaces` |
-| `bar.modules.center` | `[]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `power` | Modules in the middle, in this order | `shell-set bar.modules.center distro,workspaces` |
-| `bar.modules.right` | `["volume","battery","clock","bluetooth","network","recording","power"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `power` | Modules on the right, in this order | `shell-set bar.modules.right distro,workspaces` |
+| `bar.modules.left` | `["distro","workspaces","media"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `power` | Modules on the left, in this order | `shell-set bar.modules.left distro,workspaces` |
+| `bar.modules.center` | `[]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `power` | Modules in the middle, in this order | `shell-set bar.modules.center distro,workspaces` |
+| `bar.modules.right` | `["volume","battery","clock","bluetooth","network","recording","notifications","power"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `power` | Modules on the right, in this order | `shell-set bar.modules.right distro,workspaces` |
 | `bar.workspaces` | `4` | ganze Zahl 0 … 10 | Workspaces that are always shown (0 = only used ones) | `shell-set bar.workspaces 5` |
 | `bar.clock` | `24h` | `24h`, `12h` | 24-hour or 12-hour clock in the bar | `shell-set bar.clock 12h` |
 | `bar.battery` | `true` | `true`, `false` | Show the battery (only on devices with a battery) | `shell-set bar.battery false` |
@@ -152,6 +152,14 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `apps.browser` | `firefox` | Text (Format geprüft) | Command for the web browser | `shell-set apps.browser chromium` |
 | `apps.launcher` | `builtin` | Text (Format geprüft) | builtin = the glass launcher of hypr-shell (with calculator), or an own command such as rofi -show drun | `shell-set apps.launcher "fuzzel"` |
 
+## notifications – notifications
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `notifications.enabled` | `true` | `true`, `false` | Show notifications as glass cards and keep a history (SUPER+N). Off: hypr-shell does not run a notification service | `shell-set notifications.enabled false` |
+| `notifications.timeout` | `6` | ganze Zahl 1 … 60 s | Seconds a card stays on screen (urgent ones stay until closed) | `shell-set notifications.timeout 7` |
+| `notifications.history` | `100` | ganze Zahl 10 … 500 | How many notifications the history keeps | `shell-set notifications.history 110` |
+
 ## keybinds – Tastenkürzel
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
@@ -175,6 +183,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.dashboard_alt` | `SUPER + D` | Tasten wie `SUPER + Q`, leer = keine Taste | Second shortcut that opens or closes the dashboard | `shell-set keybinds.dashboard_alt "SUPER + B"` |
 | `keybinds.wallpaper` | `SUPER + W` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the dashboard on the Wallpaper tab | `shell-set keybinds.wallpaper "SUPER + B"` |
 | `keybinds.panel` | `SUPER + A` | Tasten wie `SUPER + Q`, leer = keine Taste | Open or close the hot corner panel | `shell-set keybinds.panel "SUPER + B"` |
+| `keybinds.notifications` | `SUPER + N` | Tasten wie `SUPER + Q`, leer = keine Taste | Open or close the notification history | `shell-set keybinds.notifications "SUPER + B"` |
 | `keybinds.edit_desktop` | `SUPER + ALT + W` | Tasten wie `SUPER + Q`, leer = keine Taste | Move and resize the clock and tiles with the mouse | `shell-set keybinds.edit_desktop "SUPER + B"` |
 | `keybinds.settings` | `SUPER + U` | Tasten wie `SUPER + Q` (nicht leer) | Open or close this settings app (cannot be empty) | `shell-set keybinds.settings "SUPER + B"` |
 | `keybinds.lock` | `SUPER + L` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock the screen | `shell-set keybinds.lock "SUPER + B"` |

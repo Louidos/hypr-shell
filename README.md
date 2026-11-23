@@ -87,6 +87,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `SUPER + ALT + D` / `SUPER + D` | Dashboard öffnen / schliessen |
 | `SUPER + W` | Dashboard im Tab Wallpaper |
 | `SUPER + A` | Hot-Corner-Panel öffnen / schliessen |
+| `SUPER + N` | Benachrichtigungen (Verlauf) öffnen / schliessen |
 | `SUPER + U` | Einstellungs-App öffnen / schliessen |
 | `SUPER + ALT + W` | Uhr und Kacheln auf dem Desktop verschieben und skalieren |
 | `Print` | Screenshot eines Bereichs (speichern + Zwischenablage) |
@@ -114,7 +115,7 @@ auch per `shell-quickshell ipc <name> toggle` öffnen und schliessen (`dashboard
 
 Oben eine flache, halbtransparente Waybar: links Distro-Symbol (öffnet den Starter),
 Arbeitsflächen 1–4 und das aktuelle Lied; rechts Lautstärke, Akku (nur mit Akku), Uhr, Bluetooth, WLAN, ein
-roter Punkt während einer Bildschirmaufnahme und der Ausschalt-Knopf (sperren, abmelden,
+roter Punkt während einer Bildschirmaufnahme, die Glocke mit der Zahl der Benachrichtigungen und der Ausschalt-Knopf (sperren, abmelden,
 neu starten, herunterfahren).
 
 ### Desktop
@@ -155,6 +156,17 @@ wird gerechnet (`=12*8` zeigt 96, auch `^`, `%`, Klammern, `sqrt()`, `pi`); Ente
 Wer lieber rofi oder einen anderen Starter will: `shell-set apps.launcher "rofi -show drun"`
 (zurück mit `shell-set apps.launcher builtin`).
 
+### Benachrichtigungen
+
+Benachrichtigungen erscheinen oben rechts als Glas-Karten mit Symbol, Titel, Text und Knöpfen. Nach
+`notifications.timeout` Sekunden (Standard 6) verschwinden sie, dringende bleiben, bis man sie schliesst.
+Alle landen im Verlauf: `SUPER + N` oder ein Klick auf die Glocke in der Leiste (mit Zähler) öffnet ihn –
+nach App gruppiert, einzeln, je App oder mit **Clear all** löschbar, oben der Schalter **Do not
+disturb** (auch Rechtsklick auf die Glocke oder `shell-toggle dnd`). Mit Nicht stören erscheinen keine
+Karten, der Verlauf füllt sich trotzdem. hypr-shell ist dabei selbst der Benachrichtigungsdienst
+(swaync wird nicht mehr gestartet); mit `shell-set notifications.enabled false` lässt sich ein anderer
+Dienst verwenden.
+
 ### Hot-Corner-Panel
 
 Wächst aus der Ecke unten rechts: Begrüssung mit Uhrzeit, **Keep Awake** (kein Sperren,
@@ -178,7 +190,7 @@ in `lock.after`, `lock.screen_off` und `lock.suspend`.
 
 Eigene Bilder nach `~/Pictures/Wallpapers` legen und im Dashboard (SUPER + W) anklicken
 oder `shell-wallpaper <bild>` aufrufen. matugen erzeugt daraus die Farben für Hyprland,
-Waybar, kitty, rofi, swaync, hyprlock und Quickshell; bei einem grauen Bild bleibt alles
+Waybar, kitty, rofi, hyprlock und Quickshell; bei einem grauen Bild bleibt alles
 grau/weiss. Mitgeliefert ist ein schlichtes graues Verlaufsbild.
 
 ![Farben aus einem bunten Bild](docs/screenshots/farben-aus-bild.png)

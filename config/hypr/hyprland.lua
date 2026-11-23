@@ -53,7 +53,7 @@ local S = {
         launcher_alt = "ALT + Space", launcher_space = "SUPER + Space", close = "SUPER + C", float = "SUPER + V",
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
-        dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", edit_desktop = "SUPER + ALT + W",
+        dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
         settings = "SUPER + U",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
@@ -120,7 +120,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("awww-daemon")
     hl.exec_cmd(bin .. "shell-wallpaper --restore")
     hl.exec_cmd("waybar")
-    hl.exec_cmd("swaync")
     hl.exec_cmd("hypridle")
     hl.exec_cmd("swayosd-server")
     hl.exec_cmd(bin .. "shell-quickshell")
@@ -247,10 +246,8 @@ end
 
 blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
-blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher)$")
+blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
-blur_layer("hypr-shell-swaync-cc",   "^swaync-control-center$")
-blur_layer("hypr-shell-swaync-note", "^swaync-notification-window$")
 blur_layer("hypr-shell-swayosd",     "^swayosd$")
 
 hl.layer_rule({ name = "hypr-shell-slurp", match = { namespace = "^selection$" }, no_anim = true })
@@ -319,6 +316,7 @@ bind(K.dashboard, hl.dsp.exec_cmd(ui .. "dashboard toggle"))
 bind(K.dashboard_alt, hl.dsp.exec_cmd(ui .. "dashboard toggle"))
 bind(K.wallpaper, hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"))
 bind(K.panel,     hl.dsp.exec_cmd(ui .. "panel toggle"))
+bind(K.notifications, hl.dsp.exec_cmd(ui .. "notifications toggle"))
 -- Desktop-Widgets mit der Maus verschieben und skalieren
 bind(K.edit_desktop, hl.dsp.exec_cmd(ui .. "desktop edit"))
 -- die App bleibt immer erreichbar: ohne gültige Taste gilt SUPER + U

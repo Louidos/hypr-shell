@@ -31,6 +31,11 @@ if command -v systemd-inhibit >/dev/null && systemd-inhibit --list >/dev/null 2>
 else
     echo "  Hinweis: kein logind – Keep Awake nur auf dem echten System prüfbar"
 fi
+"$REPO/bin/shell-toggle" dnd on
+pruefe '[ "$(st dnd)" = true ] && [ "$(cat "$HOME/.local/share/hypr-shell/dnd")" = true ]' "Nicht stören an (Datei für den Benachrichtigungsdienst)"
+"$REPO/bin/shell-toggle" dnd
+pruefe '[ "$(st dnd)" = false ]' "Nicht stören wieder aus (toggle)"
+pruefe '! grep -q swaync bin/shell-toggle' "Nicht stören nutzt den eigenen Dienst, nicht swaync"
 pruefe '! "$REPO/bin/shell-toggle" unbekannt >/dev/null 2>&1' "unbekannter Schalter wird abgelehnt"
 
 echo "== Einstellungen"

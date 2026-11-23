@@ -30,7 +30,7 @@ local pflicht = { "SUPER + Q", "SUPER + C", "SUPER + E", "SUPER + R", "ALT + Spa
     "SUPER + mouse:272", "SUPER + mouse:273", "Print", "SHIFT + Print",
     "XF86AudioRaiseVolume", "XF86AudioLowerVolume", "XF86AudioMute",
     "XF86MonBrightnessUp", "XF86MonBrightnessDown", "XF86AudioPlay", "XF86AudioNext", "XF86AudioPrev",
-    "SUPER + ALT + D", "SUPER + D", "SUPER + W", "SUPER + A", "SUPER + U", "SUPER + ALT + W" }
+    "SUPER + ALT + D", "SUPER + D", "SUPER + W", "SUPER + A", "SUPER + N", "SUPER + U", "SUPER + ALT + W" }
 for i = 0, 9 do
     table.insert(pflicht, "SUPER + " .. i)
     table.insert(pflicht, "SUPER + SHIFT + " .. i)
@@ -42,14 +42,16 @@ for _, a in ipairs(A.aufrufe) do
     if a[1] == "exec_cmd" then table.insert(autostart, a[2]) end
 end
 local alles = table.concat(autostart, "\n")
-for _, prog in ipairs({ "waybar", "awww%-daemon", "swaync", "hypridle", "swayosd%-server", "shell%-quickshell" }) do
+-- genau ein Benachrichtigungsdienst: der von hypr-shell (Quickshell), swaync wird nicht mehr gestartet
+pruefe(alles:find("swaync") == nil, "swaync darf nicht mehr gestartet werden")
+for _, prog in ipairs({ "waybar", "awww%-daemon", "hypridle", "swayosd%-server", "shell%-quickshell" }) do
     pruefe(alles:find(prog) ~= nil, "Autostart fehlt: " .. prog)
 end
 
 local ns = {}
 for _, r in ipairs(A.layer) do if r.blur then ns[#ns + 1] = r.match.namespace end end
 local nsalle = table.concat(ns, " ")
-for _, n in ipairs({ "waybar", "hypr%-shell", "rofi", "swaync" }) do
+for _, n in ipairs({ "waybar", "hypr%-shell", "rofi" }) do
     pruefe(nsalle:find(n) ~= nil, "Blur-Regel fehlt für: " .. n)
 end
 

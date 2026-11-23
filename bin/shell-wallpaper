@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Setzt ein Hintergrundbild (awww) und erzeugt daraus die Farben (matugen)
-# für Hyprland, Waybar, kitty, rofi, swaync, hyprlock und Quickshell.
+# für Hyprland, Waybar, kitty, rofi, hyprlock und Quickshell.
 #
 #   shell-wallpaper <bild>     Bild setzen und Farben erzeugen
 #   shell-wallpaper --restore  zuletzt gewähltes Bild (oder das Startbild) wieder setzen
@@ -85,7 +85,6 @@ neu_laden() {
     fi
     pkill -SIGUSR2 -x waybar 2>/dev/null || true          # Waybar lädt sein Aussehen neu
     pkill -SIGUSR1 -x kitty 2>/dev/null || true           # kitty lädt seine Konfiguration neu
-    command -v swaync-client >/dev/null 2>&1 && swaync-client --reload-css >/dev/null 2>&1 || true
     # Quickshell beobachtet ~/.config/hypr-shell/colors.json selbst
 }
 

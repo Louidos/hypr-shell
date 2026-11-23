@@ -87,13 +87,14 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `SUPER + ALT + D` | Dashboard öffnen / schliessen |
 | `SUPER + W` | Dashboard im Tab Wallpaper |
 | `SUPER + A` | Hot-Corner-Panel öffnen / schliessen |
+| `SUPER + U` | Einstellungs-App öffnen / schliessen |
 | `Print` | Screenshot eines Bereichs (speichern + Zwischenablage) |
 | `SHIFT + Print` | Screenshot des ganzen Bildschirms (speichern + Zwischenablage) |
 | `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` | Lautstärke + / − |
 | `XF86AudioMute` / `XF86AudioMicMute` | Ton / Mikrofon stumm |
 | `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Helligkeit + / − |
 | `XF86AudioPlay` / `XF86AudioPause` / `XF86AudioNext` / `XF86AudioPrev` | Medien: Play/Pause, weiter, zurück |
-| `Esc` | Dashboard oder Panel schliessen |
+| `Esc` | Dashboard, Panel oder Einstellungs-App schliessen |
 | Wischen mit drei Fingern | Arbeitsfläche wechseln |
 
 Maus: Ecke **unten rechts** öffnet das Panel, die **Mitte der unteren Kante** das Dashboard.
@@ -134,7 +135,7 @@ Systemwerte werden nur abgefragt, solange das Dashboard offen ist.
 Wächst aus der Ecke unten rechts: Begrüssung mit Uhrzeit, **Keep Awake** (kein Sperren,
 kein Standby), **Apps** mit Suche, **Now playing**, **Screenshot** (Screen, Region,
 Ordner; gespeichert und in der Zwischenablage) und **Quick Toggles** für WLAN, Bluetooth, Nicht stören, Gaming-Modus (Blur,
-Animationen und Schatten aus) und Einstellungen.
+Animationen und Schatten aus) und Einstellungen (öffnet die Einstellungs-App).
 
 ![Panel](docs/screenshots/panel.png)
 
@@ -182,7 +183,19 @@ hypr-shell – nicht von Hand ändern“) und lädt nur den betroffenen Teil neu
   unverändert; Werte aus der alten `~/.config/hypr/hypr-shell-local.lua` (Tastatur, Skalierung,
   Touchpad) wandern beim ersten Start einmalig in `settings.json`.
 
-Das Zahnrad im Panel öffnet die Datei in kitty mit dem Editor aus `$EDITOR` (sonst nano).
+### Mit der Einstellungs-App
+
+`SUPER + U` (oder das Zahnrad im Panel) öffnet ein Glas-Fenster in der Bildschirmmitte. Links stehen
+die Seiten Home, Bar, Look, Theme, Desktop, Dashboard, Panel, Lock & Idle, Input, Monitors, Apps,
+Keybinds und About; rechts jeder Wert mit Erklärung und dem passenden Bedienelement (Schalter,
+Regler mit Zahl, Auswahl, Textfeld, Farbwähler, sortierbare Liste). Jede Änderung wirkt sofort – ein
+Regler schon beim Ziehen. Neben einem geänderten Wert steht **Reset**, oben auf jeder Seite
+**Reset page**, ganz oben **Undo** und **Redo**. Die Suche findet Werte über Titel, Erklärung und
+Schlüssel (z. B. „blur“, „clock“, „battery“) und springt zur Zeile. Auf **Home** lassen sich
+Profile speichern und laden und die Einstellungen in eine Datei sichern oder daraus laden. Auf
+**Monitors** stehen die echten Bildschirme aus Hyprland; eine neue Auflösung muss innerhalb von
+15 Sekunden bestätigt werden, sonst gilt wieder die alte. `Esc` schliesst die App.
+
 
 ### Mit dem Befehl `shell-set`
 
@@ -343,7 +356,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | Ordner | Inhalt |
 | --- | --- |
 | `config/` | Dotfiles, die nach `~/.config` kopiert werden |
-| `quickshell/` | QML-Oberfläche: `desktop/`, `dashboard/`, `panel/`, `common/` |
+| `quickshell/` | QML-Oberfläche: `desktop/`, `dashboard/`, `panel/`, `settings/` (Einstellungs-App), `common/` |
 | `bin/` | Hilfsskripte für `~/.local/bin` |
 | `wallpapers/` | mitgelieferte Hintergrundbilder |
 | `settings/` | `schema.json` (Beschreibung aller Werte) und `settings.example.json` (Standardwerte) |

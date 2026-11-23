@@ -97,3 +97,14 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | `shell-set look.rounding abc` meldet den erlaubten Bereich und ändert nichts | automatisch |
 | Ein gespeichertes Profil stellt nach `load` alle Werte wieder her | automatisch |
 | Tab-Vervollständigung in bash und fish | bash automatisch; fish automatisch, wenn fish installiert ist, sonst von Hand |
+
+## Einstellungs-App
+
+| Punkt | Prüfung |
+| --- | --- |
+| SUPER+U öffnet die App, jede Seite zeigt alle Werte ihres Bereichs aus dem Schema | Kürzel automatisch (`tests/hyprland-lua.sh`); jede Seite per IPC geöffnet, Screenshot `docs/screenshots/settings-<seite>.png` und Log ohne QML-Fehler (`tests/oberflaeche.sh`); die Zeilen entstehen aus dem Schema |
+| Ein Regler ändert den Desktop sichtbar, während man ihn zieht | automatisch: Ziehen mit dem sway-Zeiger, `hypr-shell-settings.lua` ändert sich schon vor dem Loslassen; sichtbare Wirkung in Hyprland von Hand |
+| Reset, Reset page und Undo stellen die vorherigen Werte her | Undo und Reset page automatisch (Klick); Reset je Zeile von Hand |
+| Die Suche findet „blur“, „clock“ und „battery“ | automatisch |
+| Monitors: neue Auflösung ohne Bestätigung nach 15 s zurück | von Hand (braucht echte Bildschirme und Hyprland) |
+| Blur hinter dem Fenster | von Hand (die CI hat keinen Blur) |

@@ -150,6 +150,72 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target panel'; then
     ipc panel close; sleep 1
 fi
 
+# ---- Einstellungs-App: jede Seite, Suche, Klicks wie mit der Maus (sway-Zeiger)
+app_ok=1
+SWAYSOCK="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'sway-ipc.*.sock' -print -quit)"
+export SWAYSOCK
+lage() { # probe -> "x y w h" aus dem neuesten Log-Eintrag
+    grep -o "hypr-shell-probe $1 .*" "$T/qs.log" | tail -n1 | awk '{print $3, $4, $5, $6}'
+}
+klick() { # probe [anteil-x]: Mitte (bzw. Anteil der Breite) anklicken
+    local x y w h
+    read -r x y w h < <(lage "$1") || true
+    [ -n "${h:-}" ] || { echo "  FEHLER: $1 nicht sichtbar"; app_ok=0; return 1; }
+    swaymsg -q "seat seat0 cursor set $((x + w * ${2:-50} / 100)) $((y + h / 2))" \
+        && swaymsg -q "seat seat0 cursor press button1" && sleep 0.15 && swaymsg -q "seat seat0 cursor release button1"
+}
+wert() { jq -c "$1" "$HOME/.config/hypr-shell/settings.json"; }
+warte_auf() { # jq-ausdruck erwartet [sekunden]
+    local _
+    for _ in $(seq 1 "${3:-20}"); do [ "$(wert "$1")" = "$2" ] && return 0; sleep 0.25; done
+    return 1
+}
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
+    echo "---- Einstellungs-App ----"
+    for seite in home bar look theme desktop dashboard panel lock input monitors apps keybinds about; do
+        ipc settings open "$seite"; sleep 2; bild "settings-$seite"
+    done
+    for q in blur clock battery; do
+        vorher="$(grep -c "hypr-shell-probe search-first" "$T/qs.log" || true)"
+        ipc settings search "$q"; sleep 1.5
+        [ "$q" = blur ] && bild settings-suche
+        if [ "$(grep -c "hypr-shell-probe search-first" "$T/qs.log" || true)" -gt "$vorher" ]; then echo "  ok: Suche findet \"$q\""
+        else echo "  FEHLER: Suche findet \"$q\" nicht"; app_ok=0; fi
+    done
+    ipc settings close; sleep 0.5
+    if [ -n "$SWAYSOCK" ] && command -v swaymsg >/dev/null 2>&1; then
+        ipc settings open look; sleep 2
+        # Schalter: Blur aus
+        klick setting-look.blur.enabled && if warte_auf .look.blur.enabled false; then echo "  ok: Klick auf einen Schalter landet in settings.json"
+            else echo "  FEHLER: Schalter-Klick kam nicht in settings.json an ($(wert .look))"; app_ok=0; fi
+        # Regler ziehen: Rundung von links nach rechts; schon während des Ziehens wirkt der Wert
+        sleep 2.5
+        read -r x y w h < <(lage setting-look.rounding) || true
+        if [ -n "${h:-}" ]; then
+            swaymsg -q "seat seat0 cursor set $((x + 2)) $((y + h / 2))"; swaymsg -q "seat seat0 cursor press button1"
+            for f in 25 50 75; do swaymsg -q "seat seat0 cursor set $((x + w * f / 100)) $((y + h / 2))"; sleep 0.6; done
+            r="$(grep -o '\["rounding"\] = [0-9]*' "$HOME/.config/hypr/hypr-shell-settings.lua" | grep -o '[0-9]*$')"
+            if [ "${r:-12}" -gt 12 ]; then echo "  ok: Regler wirkt schon beim Ziehen (Hyprland-Rundung jetzt $r)"
+            else echo "  FEHLER: Regler wirkt beim Ziehen nicht"; app_ok=0; fi
+            swaymsg -q "seat seat0 cursor set $((x + w + 20)) $((y + h / 2))"; sleep 0.3; swaymsg -q "seat seat0 cursor release button1"
+            if warte_auf .look.rounding 30; then echo "  ok: Regler losgelassen: look.rounding = 30"
+            else echo "  FEHLER: Regler-Wert $(wert .look.rounding)"; app_ok=0; fi
+        else
+            echo "  FEHLER: Regler look.rounding nicht sichtbar"; app_ok=0
+        fi
+        sleep 2.5; bild settings-look-geaendert
+        # Undo stellt den Regler zurück, Reset page alles auf der Seite
+        klick settings-undo && if warte_auf .look.rounding null; then echo "  ok: Undo nimmt das Ziehen in einem Schritt zurück"
+            else echo "  FEHLER: Undo: $(wert .look)"; app_ok=0; fi
+        sleep 2.5
+        klick reset-page && if warte_auf .look null; then echo "  ok: Reset page setzt die Seite zurück"
+            else echo "  FEHLER: Reset page: $(wert .look)"; app_ok=0; fi
+        ipc settings close; sleep 0.5
+    else
+        echo "  Hinweis: swaymsg fehlt, Klicks nicht geprüft"
+    fi
+fi
+
 echo "---- Bilder und Symbole ----"
 bereich dashboard-dashboard dashboard-avatar "Profilbild im Dashboard"
 bereich dashboard-wallpaper wallpaper-card "erste Wallpaper-Karte"
@@ -189,6 +255,7 @@ echo "------------------------"
 [ "$farben_ok" -eq 1 ] || { echo "FEHLER: Farben aus dem Hintergrundbild"; exit 1; }
 [ "$bereiche_ok" -eq 1 ] || { echo "FEHLER: Bilder oder Symbole fehlen (siehe oben)"; exit 1; }
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
+[ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then
     echo "FEHLER: Quickshell ist abgestürzt"
     exit 1

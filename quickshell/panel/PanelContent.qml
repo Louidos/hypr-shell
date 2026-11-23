@@ -311,12 +311,11 @@ FocusScope {
                         icon: tg.icons[modelData] || ""
                         active: modelData !== "settings" && pc.panel.st[modelData] === true
                         onClicked: {
-                            if (modelData === "settings")
-                                // settings.json im Terminal öffnen: $EDITOR, sonst nano
-                                pc.panel.run(["kitty", "--class", "hypr-shell-tui", "-e", "bash", "-c",
-                                              "exec ${EDITOR:-nano} \"$1\"", "_",
-                                              Settings.home + "/.config/hypr-shell/settings.json"], true)
-                            else
+                            if (modelData === "settings") {
+                                // Zahnrad: Einstellungs-App öffnen
+                                pc.panel.hide()
+                                Ui.openSettings("home")
+                            } else
                                 pc.panel.toggle(modelData)
                         }
                     }

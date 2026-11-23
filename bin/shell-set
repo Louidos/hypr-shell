@@ -185,29 +185,32 @@ cmd_set() { # key value live
     [ "$live" = 1 ] || printf '%s = %s\n' "$k" "$(zeige < "$T/wert.json")"
 }
 
-cmd_reset() { # key|bereich|all
-    local k="${1:-}" pfad
-    [ -n "$k" ] || fehler "what should be reset? shell-set reset <setting|area|all>"
-    if [ "$k" = all ]; then
+cmd_reset() { # key|bereich|all … (mehrere Schlüssel = ein Schritt im Verlauf)
+    if [ $# -eq 0 ] || [ -z "${1:-}" ]; then fehler "what should be reset? shell-set reset <setting|area|all> …"; fi
+    local k
+    if [ "$1" = all ]; then
         if [ -e "$SETTINGS" ]; then cp "$SETTINGS" "$T/raw.json"; else echo '{}' > "$T/raw.json"; fi
         echo '{}' > "$T/neu.json"
         if [ "$(sha256sum < "$T/raw.json")" = "$(sha256sum < "$T/neu.json")" ]; then echo "all: already at the default"; return 0; fi
     else
         roh > "$T/raw.json"
-        [ -n "$(schluessel "$k")" ] || bereich_gibt_es "$k" || fehler "unknown setting or area: $k"
-        pfad="$k"
-        # leere Gruppen danach entfernen, damit die Datei aufgeräumt bleibt
-        jq --arg k "$pfad" 'delpaths([$k | split(".")])
-            | until([paths(type == "object" and length == 0)] | length == 0; delpaths([paths(type == "object" and length == 0)]))' \
-            "$T/raw.json" > "$T/neu.json"
-    fi
-    if [ "$k" != all ] && jq -e --slurpfile a "$T/raw.json" '. == $a[0]' "$T/neu.json" > /dev/null; then
-        echo "$k: already at the default"; return 0
+        cp "$T/raw.json" "$T/neu.json"
+        for k in "$@"; do
+            [ -n "$(schluessel "$k")" ] || bereich_gibt_es "$k" || fehler "unknown setting or area: $k"
+            # leere Gruppen danach entfernen, damit die Datei aufgeräumt bleibt
+            jq --arg k "$k" 'delpaths([$k | split(".")])
+                | until([paths(type == "object" and length == 0)] | length == 0; delpaths([paths(type == "object" and length == 0)]))' \
+                "$T/neu.json" > "$T/neu2.json"
+            mv "$T/neu2.json" "$T/neu.json"
+        done
+        if jq -e --slurpfile a "$T/raw.json" '. == $a[0]' "$T/neu.json" > /dev/null; then
+            echo "$*: already at the default"; return 0
+        fi
     fi
     sichern 0
     schreibe < "$T/neu.json"
     anwenden
-    echo "$k: reset to the default"
+    echo "$*: reset to the default"
 }
 
 cmd_undo() { # undo|redo
@@ -315,7 +318,7 @@ case "$befehl" in
     ""|-h|--help|help) hilfe ;;
     list) cmd_list "${2:-}" ;;
     get) [ $# -ge 2 ] || fehler "shell-set get <setting>"; cmd_get "$2" ;;
-    reset) cmd_reset "${2:-}" ;;
+    reset) shift; cmd_reset "$@" ;;
     undo) cmd_undo undo ;;
     redo) cmd_undo redo ;;
     history) cmd_history ;;

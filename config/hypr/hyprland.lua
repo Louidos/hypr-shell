@@ -237,7 +237,7 @@ end
 
 blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
-blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel)$")
+blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
 blur_layer("hypr-shell-swaync-cc",   "^swaync-control-center$")
 blur_layer("hypr-shell-swaync-note", "^swaync-notification-window$")
@@ -297,6 +297,8 @@ hl.bind(mod .. " + ALT + D", hl.dsp.exec_cmd(ui .. "dashboard toggle"))
 hl.bind(mod .. " + W",       hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"))
 -- Hot-Corner-Panel (auch: Maus in die Ecke unten rechts)
 hl.bind(mod .. " + A",       hl.dsp.exec_cmd(ui .. "panel toggle"))
+-- Einstellungs-App (auch: Zahnrad im Panel)
+hl.bind(mod .. " + U",       hl.dsp.exec_cmd(ui .. "settings toggle"))
 
 -- Screenshots: speichern und in die Zwischenablage
 hl.bind("Print",         hl.dsp.exec_cmd(bin .. "shell-screenshot region"))

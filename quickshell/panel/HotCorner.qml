@@ -15,6 +15,8 @@ Scope {
     // Schnellschalter aus panel.toggles ohne die, die der Rechner nicht hat (Zustand null)
     readonly property var toggles: Settings.get("panel.toggles", ["wifi", "bluetooth", "audio", "dnd", "gaming", "profile", "nightlight", "settings"])
         .filter(n => n === "settings" || st[n] !== null)
+        // "Missa access" nur, wenn der Missa-Agent eingeschaltet ist
+        .concat(Integrations.missaAgent && st.missa !== null && st.missa !== undefined ? ["missa"] : [])
 
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
     readonly property string corner: Settings.get("panel.corner", "bottom-right")

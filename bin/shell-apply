@@ -245,7 +245,7 @@ erzeuge_waybar() { # eff
     jq --indent 2 '
     def mod: {distro: "custom/distro", workspaces: "hyprland/workspaces", window: "hyprland/window", media: "mpris",
               volume: "pulseaudio", battery: "battery", clock: "clock", bluetooth: "bluetooth", network: "network",
-              tray: "tray", recording: "custom/recording", notifications: "custom/notifications", power: "custom/power"}[.];
+              tray: "tray", recording: "custom/recording", notifications: "custom/notifications", missa: "custom/missa", power: "custom/power"}[.];
     . as $e
     | def mods($l): [$l[] | select(. != "battery" or $e.bar.battery) | mod];
     {
@@ -289,6 +289,9 @@ erzeuge_waybar() { # eff
                 "on-click": "$HOME/.local/bin/shell-quickshell ipc panel page wifi"},
       tray: {"icon-size": 16, spacing: 8},
       "custom/recording": {exec: "$HOME/.local/bin/shell-recording status", "return-type": "json", interval: 2, tooltip: true},
+      "custom/missa": {exec: "cat \"${XDG_RUNTIME_DIR:-/tmp}/hypr-shell-missa-bar.json\" 2>/dev/null || echo '"'"'{\"text\": \"\"}'"'"'",
+                       "return-type": "json", interval: 30, signal: 10, tooltip: true,
+                       "on-click": "$HOME/.local/bin/shell-quickshell ipc missa toggle"},
       "custom/notifications": {exec: "cat \"$HOME/.local/share/hypr-shell/notifications-bar.json\" 2>/dev/null || echo '"'"'{\"text\": \"󰂜\"}'"'"'",
                                "return-type": "json", interval: 30, signal: 9, tooltip: true,
                                "on-click": "$HOME/.local/bin/shell-quickshell ipc notifications toggle",
@@ -339,6 +342,7 @@ tooltip label { color: @text; font-weight: 500; }
 #tray,
 #custom-recording,
 #custom-notifications,
+#custom-missa,
 #custom-power {
   padding: 0 8px;
   color: @text;
@@ -377,6 +381,11 @@ tooltip label { color: @text; font-weight: 500; }
 #bluetooth.off, #bluetooth.disabled, #network.disconnected { color: alpha(@text, 0.45); }
 
 #custom-notifications.empty, #custom-notifications.dnd { color: alpha(@text, 0.45); }
+
+/* Missa bedient den Rechner: Symbol pulsiert, solange eine Aktion läuft */
+#custom-missa { font-family: "$S_theme_font_mono"; color: @accent; }
+@keyframes missa-puls { from { opacity: 1; } to { opacity: 0.3; } }
+#custom-missa.busy { animation: missa-puls 0.8s ease-in-out infinite alternate; }
 
 #custom-recording { color: #ff4d4d; font-size: $(px 12 "$fs")px; }
 
@@ -766,7 +775,8 @@ erzeuge rofi      "$CONF/rofi/hypr-shell-settings.rasi"  erzeuge_rofi
 jq -c '{colors: [.theme.colors, .theme.accent], cursor: [.theme.cursor.name, .theme.cursor.size], icons: .theme.icons,
         clipboard: [.clipboard.enabled, .clipboard.max],
         laptop: [.laptop.charge_limit, .laptop.kbd_light, .laptop.kbd_follow_wallpaper],
-        ordner: [.nextcloud, .missa.enabled, .missa.folder]}' "$T/eff.json" > "$T/applied"
+        ordner: [.nextcloud, .missa.enabled, .missa.folder],
+        agent: [.missa.enabled, .missa.agent_enabled, .missa.access, .missa.url]}' "$T/eff.json" > "$T/applied"
 alt='{}'
 [ -f "$APPLIED" ] && alt="$(cat "$APPLIED")"
 anders() { [ "$(jq -c ".$1" <<<"$alt")" != "$(jq -c ".$1" "$T/applied")" ]; }
@@ -776,6 +786,7 @@ anders icons && geaendert+=(icons)
 anders clipboard && geaendert+=(clipboard)
 anders laptop && geaendert+=(laptop)
 anders ordner && geaendert+=(ordner)
+anders agent && geaendert+=(agent)
 schreibe "$APPLIED" < "$T/applied" || true
 
 [ "${#geaendert[@]}" -gt 0 ] && [ "${SHELL_APPLY_VERBOSE:-0}" = 1 ] && echo "geändert: ${geaendert[*]}"
@@ -798,6 +809,10 @@ fi
 # Anbindungen mit Ordnern (Nextcloud, Missa): einhängen bzw. aufräumen
 if hat ordner && [ -x "$BIN/shell-mount" ]; then
     setsid -f "$BIN/shell-mount" sync >/dev/null 2>&1 || true
+fi
+# Missa-Agent: nur mit missa.enabled und missa.agent_enabled; ausgeschaltet sofort gestoppt
+if hat agent && [ -x "$BIN/shell-missa-agent" ]; then
+    setsid -f "$BIN/shell-missa-agent" sync >/dev/null 2>&1 || true
 fi
 # Laptop: Ladegrenze, Tastaturlicht (nur was eingestellt ist, über shell-laptop)
 if hat laptop && [ -x "$BIN/shell-laptop" ]; then

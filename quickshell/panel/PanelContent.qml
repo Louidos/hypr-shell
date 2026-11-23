@@ -341,7 +341,7 @@ FocusScope {
         GlassCard {
             id: tg
             readonly property var items: pc.panel.toggles
-            readonly property var icons: ({ wifi: "󰤨", bluetooth: "󰂯", audio: "󰕾", dnd: "󰂚", gaming: "󰊗", settings: "", awake: "󰅶", nightlight: "󰖔" })
+            readonly property var icons: ({ wifi: "󰤨", bluetooth: "󰂯", audio: "󰕾", dnd: "󰂚", gaming: "󰊗", settings: "", awake: "󰅶", nightlight: "󰖔", missa: "󰚩" })
             readonly property var profileIcons: ({ "power-saver": "󰌪", balanced: "󰾅", performance: "󰓅" })
             readonly property var pages: ["wifi", "bluetooth", "audio"]
             readonly property int perRow: Math.min(4, Math.max(1, items.length))

@@ -128,6 +128,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(bin .. "shell-laptop apply")
     -- Ordner der Anbindungen (Nextcloud, Missa) nach den Einstellungen; alles aus = nichts passiert
     hl.exec_cmd(bin .. "shell-mount sync")
+    -- Missa-Agent nur, wenn eingeschaltet (startet sonst nichts)
+    hl.exec_cmd(bin .. "shell-missa-agent sync")
 end)
 
 ------------------------------

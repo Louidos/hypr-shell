@@ -31,7 +31,7 @@ done < <(grep -oE '\.local/bin/[a-z-]+' config/waybar/config.jsonc | sed 's#.*/#
 
 pruefe 'grep -q "@import \"colors.css\"" config/waybar/style.css' "Farben aus colors.css"
 pruefe 'grep -q "waybar/colors.css" config/matugen/config.toml' "matugen erzeugt colors.css für Waybar"
-pruefe 'grep -qE "rgba\(10, 10, 12, 0\.25\)" config/waybar/style.css' "Deckkraft etwa 0.25"
+pruefe 'grep -qE "background: rgba\(42, 42, 47, 0\.55\)" config/waybar/style.css && grep -q "border-radius: 14px" config/waybar/style.css' "graues Glas (0.55) mit weissem Rand und Rundung 14"
 
 # jede @farbe in style.css muss in colors.css definiert sein
 for c in $(grep -oE '@[a-z_]+' config/waybar/style.css | grep -vE '@(import|keyframes)' | sort -u | tr -d @); do

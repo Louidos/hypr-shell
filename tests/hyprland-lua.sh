@@ -94,14 +94,14 @@ LUA
 }
 fehler=0
 pruef() { if [ "$1" = "$2" ]; then echo "  ok: $3"; else echo "FEHLER: $3: $1 (erwartet: $2)"; fehler=1; fi; }
-pruef "$(werte '' '')" "auto false true true us 6 12" "ohne Dateien: Standardwerte"
+pruef "$(werte '' '')" "auto false true true us 6 14" "ohne Dateien: Standardwerte"
 pruef "$(werte 'return { kb_layout = "ch", kb_variant = "de", scale = 1.5, natural_scroll = true, tap_to_click = false }' '')" \
-    "1.5 true false true ch 6 12" "alte hypr-shell-local.lua (v1.1) wirkt weiter"
-pruef "$(werte 'return { kb_layout = "ch", kb_variant = "de" }' '')" "auto false true true ch 6 12" "ältere hypr-shell-local.lua ohne Laptop-Werte: Standard"
+    "1.5 true false true ch 6 14" "alte hypr-shell-local.lua (v1.1) wirkt weiter"
+pruef "$(werte 'return { kb_layout = "ch", kb_variant = "de" }' '')" "auto false true true ch 6 14" "ältere hypr-shell-local.lua ohne Laptop-Werte: Standard"
 pruef "$(werte '' '{"look": {"gaps": {"inner": 10}, "rounding": 20}, "input": {"layout": "de"}, "monitors": {"scale": "2"}}')" \
     "2 false true true de 10 20" "settings.json wirkt über hypr-shell-settings.lua"
 pruef "$(werte 'return { kb_layout = "ch", scale = 1.5 }' '{"input": {"layout": "fr"}}')" \
-    "1.5 false true true fr 6 12" "settings.json gewinnt, hypr-shell-local.lua füllt Lücken"
+    "1.5 false true true fr 6 14" "settings.json gewinnt, hypr-shell-local.lua füllt Lücken"
 
 # Bildschirme drehen: Wert aus monitors.outputs[].transform → Zahl 0–7 für hl.monitor; Touchscreen
 # und Stift drehen mit, aber nur, wenn es sie gibt

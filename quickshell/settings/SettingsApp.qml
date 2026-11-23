@@ -5,8 +5,8 @@ import Quickshell.Wayland
 import "../common"
 
 // Einstellungs-App: schwebendes Glas-Fenster in der Bildschirmmitte (etwa 1100 × 700, Blur dahinter
-// über die Hyprland-Regel für "hypr-shell-settings"). Öffnen mit SUPER+U, über das Zahnrad im
-// Panel oder "shell-quickshell ipc settings open <seite>"; Esc schliesst.
+// über die Hyprland-Regel für "hypr-shell-settings"; gemeinsamer Baustein Overlay). Öffnen mit SUPER+U,
+// über das Zahnrad im Panel oder "shell-quickshell ipc settings open <seite>"; Esc schliesst.
 Scope {
     id: app
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
@@ -19,30 +19,18 @@ Scope {
         function search(text: string): void { Ui.openSettings(""); Ui.settingsSearch = text }
     }
 
-    PanelWindow {
-        id: win
-        property real t: Ui.settingsOpen ? 1 : 0
-        Behavior on t { NumberAnimation { duration: Ui.settingsOpen ? 320 : 180; easing.type: Easing.OutCubic } }
-
+    Overlay {
+        name: "settings"
+        ipc: false
+        place: "center"
+        glass: false
+        margin: 0
         screen: app.screen
-        visible: app.screen !== null && (Ui.settingsOpen || t > 0.001)
-        implicitWidth: Math.min(1100, (app.screen ? app.screen.width : 1920) - 40)
-        implicitHeight: Math.min(700, (app.screen ? app.screen.height : 1080) - 60)
-        color: "transparent"
-        exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.namespace: "hypr-shell-settings"
-        WlrLayershell.keyboardFocus: Ui.settingsOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-
-        Loader {
-            id: content
-            anchors.fill: parent
-            active: Ui.settingsOpen || win.t > 0.001
-            opacity: win.t
-            scale: 0.97 + 0.03 * win.t
-            focus: true
-            sourceComponent: SettingsContent { }
-            onLoaded: item.forceActiveFocus()
-        }
+        panelWidth: Math.min(1100, (app.screen ? app.screen.width : 1920) - 40)
+        panelHeight: Math.min(700, (app.screen ? app.screen.height : 1080) - 60)
+        keyboardFocus: WlrKeyboardFocus.Exclusive
+        // Esc behandelt die App selbst (erst die Suche leeren, dann schliessen)
+        closeOnEscape: false
+        content: Component { SettingsContent { } }
     }
 }

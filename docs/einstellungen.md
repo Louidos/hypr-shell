@@ -171,6 +171,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.move_mod` | `SUPER + SHIFT` | Tasten wie `SUPER + Q`, leer = keine Taste | Modifier for 1 … 0 (move the window there); empty = off | `shell-set keybinds.move_mod "ALT"` |
 | `keybinds.mouse_mod` | `SUPER` | Tasten wie `SUPER + Q`, leer = keine Taste | Modifier for dragging (left button) and resizing (right button) windows; empty = off | `shell-set keybinds.mouse_mod "ALT"` |
 | `keybinds.dashboard` | `SUPER + ALT + D` | Tasten wie `SUPER + Q`, leer = keine Taste | Open or close the dashboard | `shell-set keybinds.dashboard "SUPER + B"` |
+| `keybinds.dashboard_alt` | `SUPER + D` | Tasten wie `SUPER + Q`, leer = keine Taste | Second shortcut that opens or closes the dashboard | `shell-set keybinds.dashboard_alt "SUPER + B"` |
 | `keybinds.wallpaper` | `SUPER + W` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the dashboard on the Wallpaper tab | `shell-set keybinds.wallpaper "SUPER + B"` |
 | `keybinds.panel` | `SUPER + A` | Tasten wie `SUPER + Q`, leer = keine Taste | Open or close the hot corner panel | `shell-set keybinds.panel "SUPER + B"` |
 | `keybinds.edit_desktop` | `SUPER + ALT + W` | Tasten wie `SUPER + Q`, leer = keine Taste | Move and resize the clock and tiles with the mouse | `shell-set keybinds.edit_desktop "SUPER + B"` |

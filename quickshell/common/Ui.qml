@@ -3,12 +3,27 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Gemeinsamer Zustand der Oberfläche: Einstellungs-App offen/zu und welche Seite, und das Schreiben
-// von Einstellungen über shell-set (die App schreibt nie selbst in settings.json).
+// Gemeinsamer Zustand der Oberfläche: welches Panel offen ist (immer nur eines), Seite der
+// Einstellungs-App und das Schreiben von Einstellungen über shell-set (die App schreibt nie selbst in
+// settings.json).
 Singleton {
     id: ui
 
-    property bool settingsOpen: false
+    // ---- immer nur ein Panel offen: Name des offenen Panels (Overlay.name) oder ""
+    property string panel: ""
+    function openPanel(name) { panel = name }
+    function closePanel(name) { if (name === undefined || name === "" || panel === name) panel = "" }
+    function togglePanel(name) { if (panel === name) closePanel(name); else openPanel(name) }
+    // "shell-quickshell ipc shell current" nennt das offene Panel, "… shell close" schliesst es
+    IpcHandler {
+        target: "shell"
+        function current(): string { return ui.panel }
+        function close(): void { ui.closePanel() }
+    }
+    // läuft die Oberfläche unter Hyprland? (Fokus-Griff "Klick daneben schliesst" gibt es nur dort)
+    readonly property bool hyprland: (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "") !== ""
+
+    readonly property bool settingsOpen: panel === "settings"
     property string settingsPage: "home"
     // Schlüssel, zu dem die App nach dem Öffnen springen soll (Suche)
     property string settingsFocus: ""
@@ -17,9 +32,9 @@ Singleton {
 
     function openSettings(page) {
         if (page && page !== "") settingsPage = page
-        settingsOpen = true
+        openPanel("settings")
     }
-    function closeSettings() { settingsOpen = false }
+    function closeSettings() { closePanel("settings") }
     function toggleSettings(page) { if (settingsOpen) closeSettings(); else openSettings(page) }
 
     // ---- Bearbeiten-Modus für die Desktop-Widgets (SUPER+ALT+W): Entwurf der Positionen
@@ -34,7 +49,7 @@ Singleton {
     }
     function startEdit() {
         draft = { clock: current("clock"), resources: current("resources") }
-        settingsOpen = false
+        closePanel("settings")
         editDesktop = true
     }
     function cancelEdit() { editDesktop = false }

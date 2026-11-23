@@ -84,7 +84,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `SUPER + mouse_down` / `SUPER + mouse_up` (Mausrad) | nächste / vorige Arbeitsfläche |
 | `SUPER + mouse:272` (linke Maustaste ziehen) | Fenster verschieben |
 | `SUPER + mouse:273` (rechte Maustaste ziehen) | Fenstergrösse ändern |
-| `SUPER + ALT + D` | Dashboard öffnen / schliessen |
+| `SUPER + ALT + D` / `SUPER + D` | Dashboard öffnen / schliessen |
 | `SUPER + W` | Dashboard im Tab Wallpaper |
 | `SUPER + A` | Hot-Corner-Panel öffnen / schliessen |
 | `SUPER + U` | Einstellungs-App öffnen / schliessen |
@@ -95,7 +95,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `XF86AudioMute` / `XF86AudioMicMute` | Ton / Mikrofon stumm |
 | `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Helligkeit + / − |
 | `XF86AudioPlay` / `XF86AudioPause` / `XF86AudioNext` / `XF86AudioPrev` | Medien: Play/Pause, weiter, zurück |
-| `Esc` | Dashboard, Panel oder Einstellungs-App schliessen |
+| `Esc` | Dashboard, Panel oder Einstellungs-App schliessen (auch ein Klick daneben schliesst) |
 | Wischen mit drei Fingern | Arbeitsfläche wechseln |
 
 Alle Kürzel lassen sich in der Einstellungs-App auf der Seite **Keybinds** ändern (Klick, dann die
@@ -105,6 +105,8 @@ abgelehnt und die belegende Aktion genannt. `SUPER + U` (Einstellungs-App) läss
 Die Medien-, Lautstärke- und Helligkeitstasten bleiben fest.
 
 Maus: Ecke **unten rechts** öffnet das Panel, die **Mitte der unteren Kante** das Dashboard.
+Es ist immer nur ein Panel offen: Öffnet man eines, schliesst das andere. Jedes Panel lässt sich
+auch per `shell-quickshell ipc <name> toggle` öffnen und schliessen (`dashboard`, `panel`, `settings`).
 
 ## Was ist dabei?
 

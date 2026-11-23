@@ -5,11 +5,11 @@ import Quickshell.Wayland
 import "../common"
 
 // Hot-Corner-Panel: berührt die Maus die Ecke (Standard unten rechts, 6 px), wächst ein
-// schmales Glas-Panel heraus. Auch mit SUPER+A. Schliesst, wenn die Maus das Panel verlässt.
+// schmales Glas-Panel heraus (gemeinsamer Baustein Overlay). Auch mit SUPER+A. Schliesst, wenn die
+// Maus das Panel verlässt, mit Esc, beim Klick daneben oder wenn ein anderes Panel aufgeht.
 Scope {
     id: hc
-    property bool open: false
-    property bool entered: false
+    readonly property bool open: ov.open
     property var st: ({ wifi: false, bluetooth: false, dnd: false, gaming: false, awake: false })
 
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
@@ -18,8 +18,8 @@ Scope {
     readonly property bool atRight: corner.indexOf("right") > 0
     readonly property int gap: 10
 
-    function show() { entered = false; open = true; refresh() }
-    function hide() { open = false }
+    function show() { ov.show() }
+    function hide() { ov.hide() }
     function refresh() { if (!stateProc.running) stateProc.running = true }
     // Befehl ausführen; closeFirst schliesst das Panel vorher (z. B. für Screenshots)
     function run(args, closeFirst) {
@@ -30,13 +30,6 @@ Scope {
     function toggle(name) {
         const s = Object.assign({}, st); s[name] = !s[name]; st = s   // sofort zeigen, echter Zustand folgt
         run([Settings.home + "/.local/bin/shell-toggle", name], false)
-    }
-
-    IpcHandler {
-        target: "panel"
-        function open(): void { hc.show() }
-        function toggle(): void { if (hc.open) hc.hide(); else hc.show() }
-        function close(): void { hc.hide() }
     }
 
     Process {
@@ -66,68 +59,30 @@ Scope {
         }
     }
 
-    // ---- das Panel
-    PanelWindow {
-        id: win
-        property real t: hc.open ? 1 : 0
-        Behavior on t {
-            NumberAnimation { duration: hc.open ? 480 : 260; easing.type: hc.open ? Easing.OutQuint : Easing.InCubic }
-        }
-        readonly property real pw: Settings.get("panel.width", 420)
-        readonly property real ph: content.implicitHeight
-
+    // ---- das Panel: die Form wächst aus der Ecke (bleibt dabei gerundet), der Inhalt bleibt an der
+    // Ecke verankert. Ohne Mausbesuch nach dem Öffnen (SUPER+A) schliesst es erst nach einer Weile;
+    // panel.close_on_leave / panel.close_delay aus settings.json
+    Overlay {
+        id: ov
+        name: "panel"
+        place: hc.corner
+        animation: "grow"
         screen: hc.screen
-        visible: hc.screen !== null && (hc.open || t > 0.001)
-        anchors { bottom: hc.atBottom; top: !hc.atBottom; right: hc.atRight; left: !hc.atRight }
-        implicitWidth: pw + 2 * hc.gap
-        implicitHeight: ph + 2 * hc.gap
-        color: "transparent"
-        exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.namespace: "hypr-shell-panel"
-        WlrLayershell.keyboardFocus: hc.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-        mask: Region { item: shape }
+        margin: hc.gap
+        panelWidth: Settings.get("panel.width", 420)
+        panelHeight: item ? item.implicitHeight : 400
+        radius: Settings.get("panel.radius", Theme.panelRadius)
+        glassOpacity: Settings.get("panel.opacity", 0.44)
+        keyboardFocus: WlrKeyboardFocus.OnDemand
+        leaveDelay: Settings.get("panel.close_on_leave", true) ? Settings.get("panel.close_delay", 400) : -1
+        idleDelay: Settings.get("panel.close_on_leave", true) ? 4000 : -1
+        holdOpen: item ? item.typing : false
+        onOpened: hc.refresh()
 
-        // die Form wächst aus der Ecke (bleibt dabei gerundet)
-        GlassPanel {
-            id: shape
-            width: win.pw * (0.55 + 0.45 * win.t)
-            height: Math.max(1, win.ph * win.t)
-            x: hc.atRight ? parent.width - width - hc.gap : hc.gap
-            y: hc.atBottom ? parent.height - height - hc.gap : hc.gap
-            radius: Math.min(Settings.get("panel.radius", Theme.panelRadius), Math.min(width, height) / 2)
-            glassOpacity: Settings.get("panel.opacity", 0.44)
-            clip: true
-            opacity: Math.min(1, win.t * 3)
-
-            HoverHandler {
-                id: hov
-                onHoveredChanged: {
-                    if (hovered) { hc.entered = true; leaveTimer.stop() }
-                    else if (hc.open) leaveTimer.restart()
-                }
-            }
-
-            // Inhalt bleibt an der Ecke verankert, während die Form ihn freigibt
+        content: Component {
             PanelContent {
-                id: content
-                width: win.pw
-                x: hc.atRight ? shape.width - win.pw : 0
-                y: hc.atBottom ? shape.height - win.ph : 0
                 panel: hc
-                Keys.onEscapePressed: hc.hide()
             }
-        }
-        // ohne Mausbesuch nach dem Öffnen (SUPER+A) erst nach einer Weile schliessen
-        // panel.close_on_leave / panel.close_delay aus settings.json
-        Timer {
-            id: leaveTimer
-            interval: hc.entered ? Settings.get("panel.close_delay", 400) : 4000
-            onTriggered: if (!hov.hovered && !content.typing && Settings.get("panel.close_on_leave", true)) hc.hide()
-        }
-        Connections {
-            target: hc
-            function onOpenChanged() { if (hc.open) leaveTimer.restart(); else leaveTimer.stop() }
         }
     }
 }

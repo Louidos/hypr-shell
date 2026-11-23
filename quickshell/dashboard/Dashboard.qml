@@ -4,15 +4,14 @@ import Quickshell.Io
 import Quickshell.Wayland
 import "../common"
 
-// Dashboard: Glas-Panel, das unten in der Mitte hochgleitet.
-// Öffnen: SUPER+ALT+D, Maus an die Mitte der unteren Kante, SUPER+W (Tab Wallpaper).
-// Schliessen: Esc oder Maus verlässt das Panel.
-// Systemwerte werden nur abgefragt, solange das Panel offen ist (die Tabs werden erst dann geladen).
+// Dashboard: Glas-Panel, das unten in der Mitte hochgleitet (gemeinsamer Baustein Overlay).
+// Öffnen: SUPER+ALT+D oder SUPER+D, Maus an die Mitte der unteren Kante, SUPER+W (Tab Wallpaper).
+// Schliessen: Esc, Klick daneben oder Maus verlässt das Panel; öffnet ein anderes Panel, schliesst es.
+// Systemwerte werden nur abgefragt, solange das Panel offen ist (der Inhalt wird erst dann geladen).
 Scope {
     id: dash
-    property bool open: false
+    readonly property bool open: ov.open
     property string tab: "dashboard"
-    property bool entered: false
     property var about: ({})
     // Tabs, Reihenfolge und Start-Tab aus settings.json (dashboard.tabs, dashboard.start)
     readonly property var allTabs: ["dashboard", "wallpaper", "performance", "about"]
@@ -36,11 +35,9 @@ Scope {
 
     function show(t) {
         tab = tabs.indexOf(t) >= 0 ? t : startTab
-        entered = false
-        if (!aboutProc.running) aboutProc.running = true
-        open = true
+        ov.show()
     }
-    function hide() { open = false }
+    function hide() { ov.hide() }
 
     IpcHandler {
         target: "dashboard"
@@ -76,123 +73,98 @@ Scope {
         Timer { id: edgeTimer; interval: 150; onTriggered: dash.show("") }
     }
 
-    PanelWindow {
-        id: win
-        property real t: dash.open ? 1 : 0
-        Behavior on t {
-            NumberAnimation { duration: dash.open ? 460 : 280; easing.type: dash.open ? Easing.OutQuint : Easing.InCubic }
-        }
-
+    Overlay {
+        id: ov
+        name: "dashboard"
+        ipc: false
+        place: "bottom"
         screen: dash.screen
-        visible: dash.screen !== null && (dash.open || t > 0.001)
-        anchors { bottom: true }
-        implicitWidth: dash.panelW
-        implicitHeight: dash.panelH + 12
-        color: "transparent"
-        exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.layer: WlrLayer.Top
-        WlrLayershell.namespace: "hypr-shell-dashboard"
-        WlrLayershell.keyboardFocus: dash.open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-        mask: Region { item: body }
+        panelWidth: dash.panelW
+        panelHeight: dash.panelH
+        glassOpacity: Settings.get("dashboard.opacity", 0.42)
+        keyboardFocus: WlrKeyboardFocus.Exclusive
+        leaveDelay: Settings.get("dashboard.close_on_leave", true) ? 350 : -1
+        // von aussen geöffnet (z. B. Ui.openPanel): Start-Tab; Daten für About und Profil holen
+        onOpened: { if (dash.tabs.indexOf(dash.tab) < 0) dash.tab = dash.startTab; if (!aboutProc.running) aboutProc.running = true }
 
-        onVisibleChanged: if (visible) keys.forceActiveFocus()
-
-        GlassPanel {
-            id: body
-            width: parent.width
-            height: dash.panelH
-            y: (1 - win.t) * (dash.panelH + 24)
-            opacity: Math.min(1, win.t * 2)
-            glassOpacity: Settings.get("dashboard.opacity", 0.42)
-
-            HoverHandler {
-                id: hov
-                onHoveredChanged: {
-                    if (hovered) { dash.entered = true; leaveTimer.stop() }
-                    else if (dash.open && dash.entered) leaveTimer.restart()
-                }
-            }
-            Timer { id: leaveTimer; interval: 350; onTriggered: if (!hov.hovered && Settings.get("dashboard.close_on_leave", true)) dash.hide() }
-
+        content: Component {
             Item {
                 id: keys
-                anchors.fill: parent
                 focus: true
-                Keys.onEscapePressed: dash.hide()
                 Keys.onTabPressed: dash.tab = dash.tabs[(dash.tabs.indexOf(dash.tab) + 1) % dash.tabs.length]
-            }
 
-            // Tab-Leiste: gleich breite Tabs über die ganze Breite, Symbol über dem Text,
-            // der aktive Tab als weisse Pille, die zum gewählten Tab gleitet
-            Item {
-                id: tabBar
-                x: dash.pad
-                y: 10
-                width: parent.width - 2 * dash.pad
-                height: dash.headH - 14
-                readonly property int cur: Math.max(0, dash.tabs.indexOf(dash.tab))
-                readonly property real tw: width / dash.tabs.length
-                Rectangle {
-                    anchors.fill: parent
-                    radius: height / 2
-                    color: Theme.card
-                }
-                Rectangle {
-                    x: tabBar.cur * tabBar.tw + 4
-                    y: 4
-                    width: tabBar.tw - 8
-                    height: tabBar.height - 8
-                    radius: height / 2
-                    color: Theme.pill
-                    Behavior on x { NumberAnimation { duration: 460; easing.type: Easing.OutBack; easing.overshoot: 0.9 } }
-                }
-                Row {
-                    anchors.fill: parent
-                    Repeater {
-                        model: dash.tabs
-                        delegate: Item {
-                            id: tb
-                            required property string modelData
-                            required property int index
-                            readonly property bool active: tabBar.cur === index
-                            width: tabBar.tw
-                            height: tabBar.height
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 1
-                                Glyph {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: dash.tabIcons[tb.modelData]
-                                    size: 18
-                                    color: tb.active ? Theme.pillText : Theme.subtext
-                                    Behavior on color { ColorAnimation { duration: 220 } }
+                // Tab-Leiste: gleich breite Tabs über die ganze Breite, Symbol über dem Text,
+                // der aktive Tab als weisse Pille, die zum gewählten Tab gleitet
+                Item {
+                    id: tabBar
+                    x: dash.pad
+                    y: 10
+                    width: parent.width - 2 * dash.pad
+                    height: dash.headH - 14
+                    readonly property int cur: Math.max(0, dash.tabs.indexOf(dash.tab))
+                    readonly property real tw: width / dash.tabs.length
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: height / 2
+                        color: Theme.card
+                    }
+                    Rectangle {
+                        x: tabBar.cur * tabBar.tw + 4
+                        y: 4
+                        width: tabBar.tw - 8
+                        height: tabBar.height - 8
+                        radius: height / 2
+                        color: Theme.pill
+                        Behavior on x { NumberAnimation { duration: 460; easing.type: Easing.OutBack; easing.overshoot: 0.9 } }
+                    }
+                    Row {
+                        anchors.fill: parent
+                        Repeater {
+                            model: dash.tabs
+                            delegate: Item {
+                                id: tb
+                                required property string modelData
+                                required property int index
+                                readonly property bool active: tabBar.cur === index
+                                width: tabBar.tw
+                                height: tabBar.height
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: 1
+                                    Glyph {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: dash.tabIcons[tb.modelData]
+                                        size: 18
+                                        color: tb.active ? Theme.pillText : Theme.subtext
+                                        Behavior on color { ColorAnimation { duration: 220 } }
+                                    }
+                                    Txt {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: dash.tabNames[tb.modelData]
+                                        size: 12
+                                        weight: tb.active ? Font.DemiBold : Font.Medium
+                                        color: tb.active ? Theme.pillText : Theme.subtext
+                                        Behavior on color { ColorAnimation { duration: 220 } }
+                                    }
                                 }
-                                Txt {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: dash.tabNames[tb.modelData]
-                                    size: 12
-                                    weight: tb.active ? Font.DemiBold : Font.Medium
-                                    color: tb.active ? Theme.pillText : Theme.subtext
-                                    Behavior on color { ColorAnimation { duration: 220 } }
-                                }
+                                HoverHandler { cursorShape: Qt.PointingHandCursor }
+                                TapHandler { onTapped: dash.tab = tb.modelData }
                             }
-                            HoverHandler { cursorShape: Qt.PointingHandCursor }
-                            TapHandler { onTapped: dash.tab = tb.modelData }
                         }
                     }
                 }
-            }
 
-            Loader {
-                id: page
-                x: dash.pad
-                y: dash.headH + 4
-                width: parent.width - 2 * dash.pad
-                height: dash.pageH
-                active: dash.open || win.t > 0.001
-                sourceComponent: dash.tab === "wallpaper" ? wallTab
-                               : dash.tab === "performance" ? perfTab
-                               : dash.tab === "about" ? aboutTab : homeTab
+                // die Seite des gewählten Tabs (wird mit dem Panel geladen und wieder entladen)
+                Loader {
+                    id: page
+                    x: dash.pad
+                    y: dash.headH + 4
+                    width: parent.width - 2 * dash.pad
+                    height: dash.pageH
+                    sourceComponent: dash.tab === "wallpaper" ? wallTab
+                                   : dash.tab === "performance" ? perfTab
+                                   : dash.tab === "about" ? aboutTab : homeTab
+                }
             }
         }
     }

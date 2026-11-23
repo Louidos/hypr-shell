@@ -5,6 +5,7 @@ import Quickshell.Wayland
 import Quickshell.Hyprland
 import "../common"
 import "zuordnung.js" as Z
+import "verstecken.js" as V
 
 // Dock: schwebende Glas-Leiste mit angehefteten und laufenden Programmen, ein Fenster pro Bildschirm
 // (dock.monitor). Fensteränderungen kommen als Ereignisse über ToplevelManager (Wayland
@@ -43,7 +44,15 @@ Scope {
     readonly property string indicator: Settings.get("dock.indicator", "dot")
     readonly property bool showRunning: Settings.get("dock.show_running", true) === true
     readonly property bool showTrash: Settings.get("dock.trash", true) === true
-    readonly property int animMs: 180
+    // Animationen: dock.anim_ms; aus bei 0, im Gaming-Modus und wenn die Animationen von hypr-shell aus sind
+    readonly property int animMs: Ui.gaming || Settings.get("look.animations.enabled", true) !== true ? 0 : num("dock.anim_ms", 180, 0, 1000)
+    readonly property bool magnify: Settings.get("dock.magnify", true) === true
+    readonly property real magnifyFactor: num("dock.magnify_factor", 1.6, 1.0, 2.5)
+    readonly property int magnifyRange: num("dock.magnify_range", 2, 1, 5)
+    readonly property bool bounce: Settings.get("dock.bounce_on_launch", true) === true && animMs > 0
+    readonly property string autohide: ["never", "always", "smart"].indexOf(Settings.get("dock.autohide", "smart")) >= 0 ? Settings.get("dock.autohide", "smart") : "smart"
+    readonly property int showDelay: num("dock.show_delay_ms", 150, 0, 2000)
+    readonly property int hideDelay: num("dock.hide_delay_ms", 400, 0, 5000)
     readonly property bool launcherButton: Settings.get("dock.launcher_button", false) === true
     readonly property bool badges: Settings.get("dock.badges", true) === true
     readonly property bool previews: Settings.get("dock.previews", true) === true
@@ -402,6 +411,20 @@ Scope {
     }
     function leaveFocus() { if (focusWin) focusWin.stopKeyboard(); focusWin = null }
 
+    // ---- smart: Fensterflächen von Hyprland nur bei Fenster-Ereignissen neu holen, nie im Takt
+    readonly property var refreshEvents: ["openwindow", "closewindow", "movewindow", "movewindowv2", "changefloatingmode",
+        "fullscreen", "workspace", "workspacev2", "focusedmon", "focusedmonv2", "activewindowv2", "moveworkspace", "moveworkspacev2"]
+    Connections {
+        target: Ui.hyprland && dock.on && dock.autohide === "smart" ? Hyprland : null
+        function onRawEvent(event) { if (dock.refreshEvents.indexOf(event.name) >= 0) refreshLater.restart() }
+    }
+    Timer { id: refreshLater; interval: 60; onTriggered: Hyprland.refreshToplevels() }
+
+    // die untere Kante gehört dem Dock, solange es dort versteckt ist (siehe Dashboard)
+    readonly property bool ownsEdge: windows.some(w => w.ownsEdge)
+    onOwnsEdgeChanged: Ui.dockOwnsEdge = ownsEdge
+    Component.onDestruction: Ui.dockOwnsEdge = false
+
     // ---- ein Dock pro Bildschirm
     // eigener Name für den Bezug: im Fenster heisst die Eigenschaft selbst "dock"
     readonly property var dockRoot: dock
@@ -449,6 +472,11 @@ Scope {
         // für Tests: Taste im Dock (Left, Right, Return, Menu, Escape …); "" = Tastatur aktiv?
         function key(name: string): string { return dock.windows.length > 0 ? dock.windows[0].testKey(name) : "" }
         function refresh(): void { dock.refreshFiles() }
+        // für Tests: Logik von smart mit nachgestellten Flächen: {"dock": {...}, "windows": [...]}
+        function smartTest(json: string): bool { try { const o = JSON.parse(json); return V.ueberdeckt(o.dock, o.windows) } catch (e) { return false } }
+        function animMs(): int { return dock.animMs }
+        // für Tests: Maus n-mal über das erste Dock führen (Vergrösserung), Dauer in ms
+        function sweep(n: int): int { return dock.windows.length > 0 ? dock.windows[0].sweep(n) : -1 }
         function badge(index: int): int { const m = dock.model(dock.screens[0] || null); return index < m.length ? dock.badgeFor(m[index]) : 0 }
     }
 }

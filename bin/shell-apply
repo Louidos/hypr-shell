@@ -260,10 +260,11 @@ erzeuge_lua() { # eff
 erzeuge_waybar() { # eff
     printf '// %s\n' "$HEADER"
     jq --indent 2 '
-    def mod: {distro: "custom/distro", workspaces: "hyprland/workspaces", window: "hyprland/window", media: "mpris",
+    def mod: {distro: "custom/distro", apps: "custom/apps", workspaces: "hyprland/workspaces", window: "hyprland/window", media: "mpris",
               volume: "pulseaudio", battery: "battery", clock: "clock", bluetooth: "bluetooth", network: "network",
               tray: "tray", recording: "custom/recording", notifications: "custom/notifications", missa: "custom/missa", power: "custom/power"}[.];
     . as $e
+    | (if $e.apps.launcher == "builtin" then "$HOME/.local/bin/shell-quickshell ipc launcher toggle" else $e.apps.launcher end) as $starter
     | def mods($l): [$l[] | select(. != "battery" or $e.bar.battery) | mod];
     {
       layer: "top",
@@ -280,8 +281,13 @@ erzeuge_waybar() { # eff
       "modules-left": mods($e.bar.modules.left),
       "modules-center": mods($e.bar.modules.center),
       "modules-right": mods($e.bar.modules.right),
-      "custom/distro": {exec: "$HOME/.local/bin/shell-distro icon", interval: "once", tooltip: false,
-                        "on-click": (if $e.apps.launcher == "builtin" then "$HOME/.local/bin/shell-quickshell ipc launcher toggle" else $e.apps.launcher end)},
+      # Logo = Startknopf: Klick öffnet das App-Raster (appraster.enabled), Rechtsklick den Starter
+      "custom/distro": ({exec: "$HOME/.local/bin/shell-distro icon", interval: "once", tooltip: false}
+        + (if $e.appraster.enabled then {"on-click": "$HOME/.local/bin/shell-quickshell ipc apps toggle", "on-click-right": $starter}
+           else {"on-click": $starter} end)),
+      "custom/apps": {format: "󰀻", tooltip: false,
+                      "on-click": (if $e.appraster.enabled then "$HOME/.local/bin/shell-quickshell ipc apps toggle" else $starter end),
+                      "on-click-right": $starter},
       "hyprland/workspaces": ({format: "{name}"}
         + (if $e.bar.workspaces > 0 then {"persistent-workspaces": {"*": [range(1; $e.bar.workspaces + 1)]}} else {} end)
         + {"on-scroll-up": "hyprctl dispatch '"'"'hl.dsp.focus({ workspace = \"e-1\" })'"'"'",
@@ -389,6 +395,7 @@ tooltip {
 tooltip label { color: @text; font-weight: 500; }
 
 #custom-distro,
+#custom-apps,
 #workspaces button,
 #window,
 #mpris,
@@ -448,7 +455,7 @@ tooltip label { color: @text; font-weight: 500; }
 #custom-recording { color: #ff4d4d; font-size: $(px 12 "$fs")px; }
 
 #custom-power { padding: 0 12px 0 8px; }
-#custom-power:hover, #custom-distro:hover { color: @accent; }
+#custom-power:hover, #custom-distro:hover, #custom-apps:hover { color: @accent; }
 CSS
 }
 

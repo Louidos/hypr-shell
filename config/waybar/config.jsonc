@@ -31,7 +31,14 @@
     "exec": "$HOME/.local/bin/shell-distro icon",
     "interval": "once",
     "tooltip": false,
-    "on-click": "$HOME/.local/bin/shell-quickshell ipc launcher toggle"
+    "on-click": "$HOME/.local/bin/shell-quickshell ipc apps toggle",
+    "on-click-right": "$HOME/.local/bin/shell-quickshell ipc launcher toggle"
+  },
+  "custom/apps": {
+    "format": "󰀻",
+    "tooltip": false,
+    "on-click": "$HOME/.local/bin/shell-quickshell ipc apps toggle",
+    "on-click-right": "$HOME/.local/bin/shell-quickshell ipc launcher toggle"
   },
   "hyprland/workspaces": {
     "format": "{name}",

@@ -63,6 +63,9 @@ Scope {
     readonly property bool avoidBar: Settings.get("dock.avoid_bar", true) === true
     readonly property bool barSameEdge: String(Settings.get("bar.position", "top")) === position
     readonly property bool launcherButton: Settings.get("dock.launcher_button", false) === true
+    // App-Raster (appraster.enabled): der Startknopf öffnet das Raster, appraster.dock_knopf zeigt ihn
+    readonly property bool gridOn: Settings.get("appraster.enabled", true) === true
+    readonly property bool gridButton: gridOn && Settings.get("appraster.dock_knopf", true) === true
     readonly property bool badges: Settings.get("dock.badges", true) === true
     readonly property bool previews: Settings.get("dock.previews", true) === true
 
@@ -202,8 +205,8 @@ Scope {
                 pins.push(byKey.launcher)
             }
         }
-        // Startknopf links (dock.launcher_button), wenn er nicht schon in der Liste steht
-        if (launcherButton && !byKey.launcher) {
+        // Startknopf links (dock.launcher_button oder appraster.dock_knopf), wenn er nicht schon in der Liste steht
+        if ((launcherButton || gridButton) && !byKey.launcher) {
             byKey.launcher = { kind: "launcher", key: "launcher", name: "Apps", icon: "view-app-grid-symbolic", windows: [], pinned: true, src: -1 }
             pins.unshift(byKey.launcher)
         }
@@ -258,7 +261,7 @@ Scope {
         if (!it) return
         if (it.kind === "folder") { Quickshell.execDetached([Settings.bin + "shell-dock", "open", it.path]); return }
         if (it.kind === "trash") { Quickshell.execDetached([Settings.bin + "shell-dock", "open-trash"]); trashCheck.restart(); return }
-        if (it.kind === "launcher") { Quickshell.execDetached([Settings.bin + "shell-quickshell", "ipc", "launcher", "toggle"]); return }
+        if (it.kind === "launcher") { Quickshell.execDetached([Settings.bin + "shell-quickshell", "ipc", gridOn ? "apps" : "launcher", "toggle"]); return }
         readBadge(it)
         const w = it.windows || []
         if (w.length === 0) { launch(it); return }
@@ -431,7 +434,8 @@ Scope {
             m.push({ text: "Open", icon: "󰩹", run: () => dock.activate(it) })
             if (trash.full) m.push({ text: trashArmed ? "Click again to empty" : "Empty trash", icon: "󰗨", keep: true, run: () => dock.emptyTrash() })
         } else if (it.kind === "launcher") {
-            m.push({ text: "Open launcher", icon: "󰀻", run: () => dock.activate(it) })
+            m.push({ text: gridOn ? "Open apps" : "Open launcher", icon: "󰀻", run: () => dock.activate(it) })
+            if (gridOn) m.push({ text: "Search apps", icon: "󰍉", run: () => Quickshell.execDetached([Settings.bin + "shell-quickshell", "ipc", "launcher", "open"]) })
             if (it.src >= 0) m.push({ text: "Remove from Dock", icon: "󰐄", run: () => dock.unpin(it) })
         }
         if (it.kind === "folder" || it.kind === "trash")

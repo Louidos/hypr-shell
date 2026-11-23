@@ -332,7 +332,7 @@ end
 
 blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
-blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications|osd|power|clipboard|overview|cheatsheet)$")
+blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|apps|notifications|osd|power|clipboard|overview|cheatsheet)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
 blur_layer("hypr-shell-snap",        "^hypr-shell-snap$")
 -- Dock: eigene Regel; Schatten und durchsichtige Ränder (unter 30 % Deckkraft) bleiben ohne Blur.
@@ -478,6 +478,13 @@ bind(K.launcher,     hl.dsp.exec_cmd(launcher), "Panels: Launcher")
 bind(K.launcher_alt, hl.dsp.exec_cmd(launcher), "Panels: Launcher")
 bind(K.launcher_space, hl.dsp.exec_cmd(launcher), "Panels: Launcher")
 bind(K.launcher_search, hl.dsp.exec_cmd(launcher), "Panels: App search")
+-- App-Raster (quickshell/apps): SUPER allein antippen = drücken und loslassen ohne andere Taste.
+-- Hyprland löst ein Loslass-Kürzel auf der SUPER-Taste nicht aus, wenn während des Haltens ein anderes
+-- Kürzel gegriffen hat: SUPER + E bleibt SUPER + E, das Raster geht dabei nicht auf.
+if S.appraster == nil or (S.appraster.enabled ~= false and S.appraster.super_tippen ~= false) then
+    bind("SUPER + Super_L", hl.dsp.exec_cmd(bin .. "shell-quickshell ipc apps toggle"), "Panels: App grid (tap SUPER)", { release = true })
+    bind("SUPER + Super_R", hl.dsp.exec_cmd(bin .. "shell-quickshell ipc apps toggle"), "Panels: App grid (tap SUPER)", { release = true })
+end
 bind(K.float,        hl.dsp.window.float({ action = "toggle" }), "Windows: Floating / tiled")
 bind(K.fullscreen,   hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }), "Windows: Fullscreen")
 bind(K.minimize,     hl.dsp.exec_cmd(bin .. "shell-window minimize"), "Windows: Minimize")

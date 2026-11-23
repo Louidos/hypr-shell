@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Behoben
+- Bearbeiten-Modus der Desktop-Widgets (SUPER+ALT+W): keine Warnung „Binding loop“ mehr im Log beim Ein- und Ausblenden (#110)
+
 ## 1.8.0 – 2026-11-23
 
 ### Geändert

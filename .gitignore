@@ -1,0 +1,15 @@
+# Geheimnisse nie committen
+.env
+*.env
+secrets*
+# lokale Einstellungen (Vorlage liegt in settings/settings.example.json)
+settings/settings.json
+# Editor, Betriebssystem
+*.swp
+*~
+.DS_Store
+.vscode/
+.idea/
+# Testläufe
+/tmp/
+*.log

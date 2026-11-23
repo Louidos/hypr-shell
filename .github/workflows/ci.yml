@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint (shellcheck, Lua, QML, JSON)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Werkzeuge installieren
+        run: sudo apt-get update && sudo apt-get install -y shellcheck lua5.4 jq qt6-declarative-dev-tools
+      - name: Prüfen
+        run: PATH="$PATH:/usr/lib/qt6/bin" tests/lint.sh
+
+  arch:
+    name: Probelauf in archlinux:latest
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Grundpakete
+        run: pacman -Syu --noconfirm --needed git sudo jq which imagemagick lua
+      - uses: actions/checkout@v4
+      - name: Testbenutzer anlegen
+        run: |
+          useradd -m tester
+          echo 'tester ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/tester
+          chown -R tester:tester "$GITHUB_WORKSPACE"
+      - name: install.sh --dry-run
+        run: su tester -c "cd '$GITHUB_WORKSPACE' && ./install.sh --dry-run --yes"
+      - name: Weitere Tests
+        run: |
+          for t in tests/*.sh; do
+            [ "$t" = tests/lint.sh ] && continue
+            echo "== $t"
+            su tester -c "cd '$GITHUB_WORKSPACE' && $t"
+          done

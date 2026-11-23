@@ -20,6 +20,8 @@ jobs:
     name: Probelauf in archlinux:latest
     runs-on: ubuntu-latest
     container: archlinux:latest
+    permissions:
+      contents: write
     steps:
       - name: Grundpakete
         run: pacman -Syu --noconfirm --needed git sudo jq which imagemagick lua curl sway swaybg grim quickshell inter-font ttf-jetbrains-mono-nerd noto-fonts
@@ -45,3 +47,19 @@ jobs:
           name: screenshots
           path: screenshots-ci/
           if-no-files-found: ignore
+      - name: Screenshots in den Branch ci/screenshots legen
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          QUELLE: ${{ github.head_ref }}
+        run: |
+          [ -d screenshots-ci ] && [ -n "$(ls -A screenshots-ci)" ] || exit 0
+          git config --global --add safe.directory '*'
+          cd screenshots-ci
+          git init -q -b ci/screenshots
+          git config user.name "CI"
+          git config user.email "ci@localhost"
+          git add -A
+          git commit -qm "Screenshots aus $QUELLE ($GITHUB_SHA)"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${REPO}.git" HEAD:refs/heads/ci/screenshots

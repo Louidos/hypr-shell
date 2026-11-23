@@ -1,0 +1,48 @@
+/* hypr-shell: swaync im Glas-Look (Blur kommt von der Hyprland-Layer-Regel) */
+@import "colors.css";
+
+* {
+  font-family: "Inter", "JetBrainsMono Nerd Font", sans-serif;
+  font-size: 13px;
+}
+
+.control-center,
+.notification {
+  background: rgba(12, 12, 14, 0.44);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 18px;
+  color: @text;
+}
+
+.control-center { padding: 12px; }
+
+.notification-row { outline: none; background: transparent; }
+.notification-row:focus, .notification-row:hover { background: transparent; }
+.notification { margin: 6px; padding: 10px; }
+.notification-content { padding: 4px; }
+.notification-default-action, .notification-action {
+  background: transparent; border: none; color: @text; border-radius: 12px;
+}
+.notification-default-action:hover, .notification-action:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.summary { font-weight: 600; color: @text; }
+.body, .time { color: @subtext; }
+.close-button {
+  background: rgba(255, 255, 255, 0.08); color: @text; border-radius: 99px; border: none;
+}
+
+.widget-title, .widget-dnd, .widget-mpris {
+  margin: 6px; padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  color: @text;
+}
+.widget-title > button {
+  background: rgba(255, 255, 255, 0.92); color: #121214; border-radius: 99px; border: none; padding: 2px 12px;
+}
+.widget-dnd > switch { border-radius: 99px; background: rgba(255, 255, 255, 0.10); }
+.widget-dnd > switch:checked { background: rgba(255, 255, 255, 0.92); }
+.widget-dnd > switch slider { border-radius: 99px; background: @text; }
+.widget-dnd > switch:checked slider { background: #121214; }

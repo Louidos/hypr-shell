@@ -332,3 +332,17 @@ Sensor) und der echte SDDM-Anmeldebildschirm.
 | Zwei Bildschirme mit verschiedener Grösse: jedes Panel rechnet mit seinem | automatisch (2560×1440 neben 1280×720, Abstecken); echter zweiter Monitor von Hand |
 | Leiste, Sperr- und Login-Bildschirm bei 1280×720 und 4K | Schriftgrösse der Leiste automatisch (`tests/waybar.sh`); Sperrbildschirm und SDDM am echten Bildschirm von Hand |
 | Lokal ohne Quickshell | nicht lokal getestet, CI entscheidet (Arch-Container mit Quickshell) |
+
+## Bildschirme drehen (#112)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Monitors: jeden Bildschirm auf 0°, 90°, 180°, 270° drehen und spiegeln | Knöpfe, Schalter und settings.json automatisch (`tests/oberflaeche.sh`); Übersetzung 0–7 automatisch (`tests/hyprland-lua.sh`) und von echtem Hyprland angenommen (`tests/hyprland-echt.sh`) |
+| Ohne Keep springt die Drehung nach 15 Sekunden zurück | automatisch (mit und ohne Keep) |
+| `shell-set` dreht und lehnt ungültige Werte ab | automatisch (`tests/shell-set.sh`, bash- und fish-Vervollständigung) |
+| Einstellungen ohne `transform` funktionieren unverändert | automatisch (alter Eintrag gilt als normal, gleiche Hyprland-Aufrufe) |
+| Panels passen nach dem Drehen | automatisch (`tests/bildschirmgroessen.sh`, Ausgabe um 90° gedreht) |
+| **Bildschirm drehen am echten Laptop** | von Hand: Einstellungen → Monitors → eDP-1 auf 90°, Bild steht hochkant, Panels und Dock passen, Touchscreen/Stift treffen (falls vorhanden); ohne Keep nach 15 s zurück; `shell-set monitor eDP-1 rotate 0` |
+| Zwei Bildschirme mit fester Lage: Hinweis bei Überlappung | Rechenweg automatisch (`tests/monitore.sh`); Anzeige mit echtem zweitem Monitor von Hand |
+| Lokal ohne Hyprland/Quickshell | nicht lokal getestet, CI entscheidet |
+

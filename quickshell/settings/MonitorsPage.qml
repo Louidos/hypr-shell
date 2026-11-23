@@ -5,8 +5,8 @@ import "../common"
 import "monitore.js" as M
 
 // Seite Monitors: die echten Bildschirme aus Hyprland (hyprctl monitors -j, nur solange die Seite
-// offen ist). Eine neue Auflösung, Skalierung oder Position wird sofort gesetzt und muss innerhalb
-// von 15 Sekunden bestätigt werden, sonst gilt wieder der vorherige Stand.
+// offen ist). Eine neue Auflösung, Skalierung, Position oder Drehung wird sofort gesetzt und muss
+// innerhalb von 15 Sekunden bestätigt werden, sonst gilt wieder der vorherige Stand.
 Column {
     id: mp
     spacing: 12
@@ -22,7 +22,7 @@ Column {
         // ohne Hyprland (z. B. im Test): die Bildschirme, die Quickshell kennt
         monitors = Quickshell.screens.map(s => ({
             name: s.name, description: s.model || "", width: s.width, height: s.height,
-            refreshRate: 0, scale: 1, x: s.x, y: s.y, availableModes: []
+            refreshRate: 0, scale: 1, x: s.x, y: s.y, availableModes: [], transform: 0
         }))
     }
     Component.onCompleted: load()
@@ -35,7 +35,7 @@ Column {
 
     function entry(name) {
         for (let i = 0; i < outputs.length; i++) if (outputs[i].name === name) return outputs[i]
-        return { name: name, resolution: "", refresh: 0, scale: "", position: "" }
+        return { name: name, resolution: "", refresh: 0, scale: "", position: "", transform: "normal" }
     }
     // Eintrag für einen Bildschirm ändern; mit Rückfrage nach 15 Sekunden
     function change(name, patch) {
@@ -48,6 +48,17 @@ Column {
         Ui.set("monitors.outputs", list, false)
     }
     function keep() { previous = null; countdown = 0 }
+    // Drehung eines Bildschirms: eingestellt (alte Einträge ohne Wert: normal)
+    function rotation(name) { return M.parts(entry(name).transform) }
+    function rotate(name, grad, mirrored) { change(name, { transform: M.compose(grad, mirrored) }) }
+    // nach dem Drehen: überlappen sich Bildschirme mit fest eingetragener Lage? (automatische Lage
+    // ordnet Hyprland selbst neu)
+    readonly property bool fixedPositions: outputs.some(o => o.position && o.position !== "" && o.position !== "auto")
+    readonly property bool overlap: {
+        const neu = {}
+        for (const o of outputs) neu[o.name] = M.transformName(o.transform)
+        return monitors.length > 1 && M.overlaps(monitors, neu)
+    }
     function revert() {
         if (previous !== null) Ui.set("monitors.outputs", previous, false)
         previous = null; countdown = 0
@@ -73,8 +84,8 @@ Column {
         Row {
             anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
             spacing: 8
-            Pill { icon: "󰄬"; text: "Keep"; active: true; onClicked: mp.keep() }
-            Pill { icon: "󰑓"; text: "Revert"; onClicked: mp.revert() }
+            Pill { icon: "󰄬"; text: "Keep"; active: true; onClicked: mp.keep(); Probe { name: "monitors-keep" } }
+            Pill { icon: "󰑓"; text: "Revert"; onClicked: mp.revert(); Probe { name: "monitors-revert" } }
         }
     }
 
@@ -107,6 +118,7 @@ Column {
                             text: card.modelData.width + "x" + card.modelData.height
                                   + (card.modelData.refreshRate ? " @ " + Math.round(card.modelData.refreshRate) + " Hz" : "")
                                   + " · scale " + card.modelData.scale + " · at " + card.modelData.x + "x" + card.modelData.y
+                                  + " · rotation " + M.label2(card.modelData.transform)
                             sub: true; size: 12
                         }
                     }
@@ -143,6 +155,71 @@ Column {
                             onClicked: mp.change(card.modelData.name, { scale: modelData })
                         }
                     }
+                }
+                // ---- Drehung: 0°, 90°, 180°, 270° und gespiegelt, mit Vorschau der Ausrichtung
+                Txt { text: "Rotation"; size: 12; weight: Font.DemiBold; color: Theme.subtext }
+                Row {
+                    id: rotRow
+                    spacing: 14
+                    readonly property var rot: mp.rotation(card.modelData.name)
+                    // Vorschau-Kachel: der Bildschirm, wie er steht (A zeigt oben und die Spiegelung)
+                    Item {
+                        width: 52; height: 52
+                        anchors.verticalCenter: parent.verticalCenter
+                        Rectangle {
+                            id: tile
+                            anchors.centerIn: parent
+                            width: 44; height: 28
+                            radius: 5
+                            color: Theme.card
+                            border.width: 1
+                            border.color: Theme.glassBorder
+                            // Wayland dreht gegen den Uhrzeigersinn
+                            rotation: -rotRow.rot.grad
+                            transform: Scale { origin.x: tile.width / 2; xScale: rotRow.rot.mirrored ? -1 : 1 }
+                            Behavior on rotation { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                            Rectangle { x: 6; y: 3; width: parent.width - 12; height: 3; radius: 1.5; color: Theme.accent }
+                            Txt { anchors.centerIn: parent; anchors.verticalCenterOffset: 2; text: "A"; size: 12; weight: Font.Bold }
+                        }
+                    }
+                    Flow {
+                        width: card.width - 32 - 52 - 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 6
+                        Repeater {
+                            model: [0, 90, 180, 270]
+                            delegate: Pill {
+                                required property int modelData
+                                text: modelData + "°"
+                                active: rotRow.rot.grad === modelData
+                                onClicked: mp.rotate(card.modelData.name, modelData, rotRow.rot.mirrored)
+                                Probe { name: "monitor-rotate-" + card.modelData.name + "-" + modelData }
+                            }
+                        }
+                        Item { width: 8; height: 30 }
+                        Row {
+                            spacing: 8
+                            height: 30
+                            Txt { text: "Mirrored"; size: 12; anchors.verticalCenter: parent.verticalCenter }
+                            Toggle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                checked: rotRow.rot.mirrored
+                                onToggled: mp.rotate(card.modelData.name, rotRow.rot.grad, !rotRow.rot.mirrored)
+                                Probe { name: "monitor-mirror-" + card.modelData.name }
+                            }
+                        }
+                    }
+                }
+                Txt {
+                    visible: mp.overlap
+                    width: parent.width
+                    text: mp.fixedPositions
+                        ? "Screens overlap after rotating: their positions are set by hand – adjust \"Position\" so they sit side by side."
+                        : "Screens overlap after rotating – Hyprland arranges automatic positions again in a moment."
+                    color: Theme.warn
+                    size: 12
+                    wrapMode: Text.WordWrap
+                    elide: Text.ElideNone
                 }
                 Row {
                     spacing: 8

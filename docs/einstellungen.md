@@ -15,6 +15,11 @@ schreiben in dieselbe Datei und wirken sofort:
 Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 `{ "look": { "gaps": { "inner": 10 } } }`. Die Erklärungen sind dieselben wie in der App (Englisch).
 
+**Bildschirm drehen:** `shell-set monitor eDP-1 rotate 90` (0, 90, 180, 270; die Spiegelung bleibt),
+`shell-set monitor eDP-1 mirror on|off`, oder direkt das Feld `transform` in `monitors.outputs`:
+`normal`, `90`, `180`, `270`, `flipped`, `flipped-90`, `flipped-180`, `flipped-270`. Einträge ohne
+`transform` gelten als `normal`. Ein Touchscreen oder Stift dreht mit (nur, wenn es einen gibt).
+
 ## bar – Leiste
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
@@ -83,7 +88,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
 | --- | --- | --- | --- | --- |
 | `monitors.scale` | `auto` | Text (Format geprüft) | Scale for screens without their own entry: auto or a number like 1.25, 1.5, 2 | `shell-set monitors.scale 1.5` |
-| `monitors.outputs` | `[]` | Liste von Einträgen mit `name`, `resolution`, `refresh`, `scale`, `position` | Settings for single screens; empty values mean automatic | `shell-set monitors.outputs '[{"name":"eDP-1","scale":"1.5"}]'` |
+| `monitors.outputs` | `[]` | Liste von Einträgen mit `name`, `resolution`, `refresh`, `scale`, `position`, `transform` | Settings for single screens; empty values mean automatic, rotation normal | `shell-set monitors.outputs '[{"name":"eDP-1","scale":"1.5"}]'` |
 
 ## desktop – Desktop: Uhr und Kacheln
 

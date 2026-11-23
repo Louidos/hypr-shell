@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Hinzugefügt
+- Bildschirme lassen sich in den Einstellungen (Seite Monitors) und mit `shell-set monitor <name> rotate 0|90|180|270` bzw. `mirror on|off` drehen und spiegeln, mit Bestätigung und automatischem Zurücksetzen nach 15 Sekunden; ein Touchscreen oder Stift dreht mit (#112)
+
 ### Behoben
 - Bearbeiten-Modus der Desktop-Widgets (SUPER+ALT+W): keine Warnung „Binding loop“ mehr im Log beim Ein- und Ausblenden (#110)
 - Ohne eigenes Profilbild (~/.face) zeigen Dashboard, Panel und Einstellungen den Anfangsbuchstaben, ohne bei jedem Öffnen „Cannot open“ ins Log zu schreiben (#110)
@@ -17,6 +20,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Fehlt beim Aufruf von shell-clipboard, shell-games, shell-laptop, shell-missa, shell-net oder shell-overview ein Argument, kommt eine klare Meldung; `shell-clipboard delete` ohne ID lief vorher still weiter (#110)
 - Leiste, Dock, Widgets und alle Panels passen sich an Bildschirmgrösse, Skalierung und Hochformat an, nichts wird mehr abgeschnitten: Panels bleiben im freien Platz (ohne Leiste und reserviertes Dock) und rollen, wenn sie nicht passen; auf 4K mit Skalierung 1 ist alles grösser; im Hochformat ordnen sich Dashboard und Einstellungen um; jeder Bildschirm rechnet mit seiner eigenen Grösse, ohne Neustart (#111)
 - Die Schrift der Leiste wird bei niedriger Leiste (`bar.height`) und grossem Schriftfaktor kleiner, statt über die Leiste zu ragen (#111)
+- `shell-set help` zeigt am Ende nicht mehr die Zeile `set -euo pipefail` (#112)
 
 ## 1.8.0 – 2026-11-23
 

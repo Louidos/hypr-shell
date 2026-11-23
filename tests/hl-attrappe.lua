@@ -14,6 +14,10 @@ local bind_flags = { click=1, ignore_mods=1, locked=1, long_press=1, mouse=1, no
     release=1, repeating=1, submap_universal=1, transparent=1, description=1 }
 local layer_keys = { name=1, match=1, above_lock=1, animation=1, blur=1, blur_popups=1, dim_around=1,
     ignore_alpha=1, no_anim=1, no_screen_share=1, order=1, xray=1 }
+local monitor_keys = { output=1, mode=1, position=1, scale=1, reserved=1, reserved_area=1, disabled=1,
+    transform=1, mirror=1, bitdepth=1, cm=1, sdr_eotf=1, sdrbrightness=1, sdrsaturation=1, vrr=1, icc=1,
+    supports_wide_color=1, supports_hdr=1, sdr_min_luminance=1, sdr_max_luminance=1, min_luminance=1,
+    max_luminance=1, max_avg_luminance=1 }
 local config_cats = { general=1, decoration=1, animations=1, input=1, gestures=1, group=1, misc=1,
     binds=1, xwayland=1, opengl=1, render=1, cursor=1, ecosystem=1, debug=1, dwindle=1, master=1,
     scrolling=1, monocle=1, layout=1, quirks=1 }
@@ -26,7 +30,18 @@ local hl = {
         end
         table.insert(M.aufrufe, { "config", t })
     end,
-    monitor = merke("monitor"), env = merke("env"), curve = merke("curve"), animation = merke("animation"),
+    -- hl.monitor: nur bekannte Felder (Hyprland 0.55, src/config/lua/bindings/LuaBindingsConfigRules.cpp),
+    -- transform ist eine ganze Zahl 0–7 (wl_output_transform)
+    monitor = function(t)
+        for k in pairs(t) do
+            if not monitor_keys[k] then error("hl.monitor: unbekanntes Feld " .. tostring(k), 2) end
+        end
+        if t.transform ~= nil and (math.type(t.transform) ~= "integer" or t.transform < 0 or t.transform > 7) then
+            error("hl.monitor: transform muss 0–7 sein, nicht " .. tostring(t.transform), 2)
+        end
+        table.insert(M.aufrufe, { "monitor", t })
+    end,
+    env = merke("env"), curve = merke("curve"), animation = merke("animation"),
     gesture = merke("gesture"), window_rule = merke("window_rule"), workspace_rule = merke("workspace_rule"),
     device = merke("device"), permission = merke("permission"), unbind = merke("unbind"),
     exec_cmd = merke("exec_cmd"), dispatch = merke("dispatch"), timer = merke("timer"),

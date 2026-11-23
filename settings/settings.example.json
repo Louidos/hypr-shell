@@ -112,6 +112,7 @@
       "wallpaper",
       "performance",
       "games",
+      "lab",
       "about"
     ],
     "start": "dashboard",
@@ -253,7 +254,11 @@
   },
   "sensor": {
     "enabled": false,
-    "url": ""
+    "url": "",
+    "field": "value",
+    "title": "Air quality",
+    "unit": "ppm",
+    "warn": 1000
   },
   "integrations": {
     "ca_file": ""

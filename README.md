@@ -337,8 +337,8 @@ Monitors, Apps, Keybinds und About; rechts jeder Wert mit Erklärung und dem pas
 Ein Regler wirkt schon beim Ziehen. Neben einem geänderten Wert steht **Reset**, oben auf jeder Seite
 **Reset page**, ganz oben **Undo** und **Redo**; die Suche findet Werte über Titel, Erklärung und
 Schlüssel (z. B. „blur“, „clock“, „battery“) und springt zur Zeile. Auf **Monitors** stehen die echten
-Bildschirme aus Hyprland; eine neue Auflösung muss innerhalb von 15 Sekunden bestätigt werden, sonst
-gilt wieder die alte. **About** öffnet `settings.json` und diese Übersicht. Weitere Seiten:
+Bildschirme aus Hyprland; eine neue Auflösung oder Drehung muss innerhalb von 15 Sekunden bestätigt
+werden, sonst gilt wieder die alte. **About** öffnet `settings.json` und diese Übersicht. Weitere Seiten:
 [Home](docs/screenshots/settings-home.png), [Bar](docs/screenshots/settings-bar.png),
 [Theme](docs/screenshots/settings-theme.png), [Monitors](docs/screenshots/settings-monitors.png),
 [Keybinds](docs/screenshots/settings-keybinds.png), [Suche](docs/screenshots/settings-suche.png).
@@ -466,6 +466,26 @@ der Skalierung von Hyprland (2560×1600 mit Skalierung 1.6 sind also 1600×1000)
 
 Die Schrift der Leiste wird nie grösser, als die Leiste hoch ist (`bar.height`); Sperr- und
 Login-Bildschirm passen ab 1280×720.
+
+### Bildschirm drehen
+
+Einstellungen → **Monitors** → Zeile **Rotation**: 0°, 90°, 180° oder 270°, dazu der Schalter
+**Mirrored**; die kleine Kachel zeigt, wie der Bildschirm steht. Wie bei der Auflösung muss die
+Drehung innerhalb von 15 Sekunden mit **Keep** bestätigt werden, sonst springt sie zurück. Auf der
+Befehlszeile:
+
+```bash
+shell-set monitor eDP-1 rotate 90
+```
+
+```bash
+shell-set monitor eDP-1 mirror on
+```
+
+Ungültige Werte (z. B. `rotate 45`) werden mit einer Meldung abgelehnt. Ein Touchscreen oder Stift
+dreht mit dem eingebauten Bildschirm mit (gibt es keinen, ändert sich nichts). Ist die Lage eines
+Bildschirms von Hand eingetragen und überlappen sich danach zwei, weist die Seite darauf hin;
+automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelten als `normal`.
 
 ## Hilfsprogramme
 

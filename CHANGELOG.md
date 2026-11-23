@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Behoben
+- Missa-Agent: Ein Auftrag direkt nach einer Änderung der Einstellungen fragt nicht mehr fälschlich nach (#91)
+
 ## 1.5.0 – 2026-11-23
 
 ### Hinzugefügt

@@ -1,30 +1,52 @@
 name: Release
 
-# Legt zu einem Versions-Tag (vX.Y.Z) das GitHub-Release an; Text = Abschnitt "## X.Y.Z – …" aus
-# CHANGELOG.md. Ein Tag wird nie verschoben: gibt es das Release schon, passiert nichts.
+# Markiert jede neue Version: ändert sich VERSION auf main (Release-PR gemergt) – oder von Hand über
+# "Run workflow" –, legt dieser Ablauf den Tag vX.Y.Z (annotiert) auf den Commit und das GitHub-Release
+# mit dem Abschnitt "## X.Y.Z – …" aus CHANGELOG.md an. Einen vorhandenen Tag oder ein vorhandenes
+# Release fasst er nie an (Tags werden nicht verschoben). Ein von Hand gepushter Tag vX.Y.Z bekommt
+# ebenso sein Release.
 on:
   push:
+    branches: [main]
+    paths: [VERSION]
     tags: ['v*.*.*']
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: Release aus dem CHANGELOG
+    name: Tag und Release aus VERSION und CHANGELOG
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Abschnitt aus CHANGELOG.md
+        with:
+          fetch-depth: 0
+      - name: Version und Abschnitt aus CHANGELOG.md
+        id: v
         run: |
-          v="${GITHUB_REF_NAME#v}"
+          v="$(tr -d '[:space:]' < VERSION)"
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "VERSION ist keine Version: $v"; exit 1; }
+          if [[ "$GITHUB_REF" == refs/tags/* ]] && [ "${GITHUB_REF_NAME#v}" != "$v" ]; then
+            echo "VERSION ($v) passt nicht zum Tag $GITHUB_REF_NAME"; exit 1
+          fi
           awk -v v="$v" '$0 ~ "^## " v " " { an = 1; next } an && /^## / { exit } an' CHANGELOG.md > notes.md
           [ -s notes.md ] || { echo "Kein Abschnitt \"## $v\" in CHANGELOG.md"; exit 1; }
-          [ "$(cat VERSION)" = "$v" ] || { echo "VERSION ($(cat VERSION)) passt nicht zum Tag $GITHUB_REF_NAME"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
           cat notes.md
-      - name: Release anlegen
+      - name: Tag anlegen (nur wenn es ihn noch nicht gibt)
+        run: |
+          t="v${{ steps.v.outputs.version }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$t" >/dev/null; then echo "Tag $t gibt es schon"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$t" -m "${{ steps.v.outputs.version }}" "$GITHUB_SHA"
+          git push origin "refs/tags/$t"
+      - name: Release anlegen (nur wenn es es noch nicht gibt)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then echo "Release gibt es schon"; exit 0; fi
-          gh release create "$GITHUB_REF_NAME" --title "${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag
+          t="v${{ steps.v.outputs.version }}"
+          if gh release view "$t" >/dev/null 2>&1; then echo "Release $t gibt es schon"; exit 0; fi
+          gh release create "$t" --title "${{ steps.v.outputs.version }}" --notes-file notes.md --verify-tag

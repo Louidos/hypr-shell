@@ -409,9 +409,7 @@ installieren() {
 
     erzeuge_lokal
     erzeuge_env
-    if [ "$DRY" -eq 0 ] && command -v fc-cache >/dev/null 2>&1; then
-        fc-cache -f "$HOME/.local/share/fonts/hypr-shell" >/dev/null 2>&1 || true
-    fi
+    # kein fc-cache: das schriebe nach ~/.cache; fontconfig findet neue Schriften von selbst
 
     if [ "$DRY" -eq 0 ]; then
         # Manifest: alle Dateien, die zu hypr-shell gehören (für --uninstall)

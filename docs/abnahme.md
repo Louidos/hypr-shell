@@ -8,10 +8,12 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 
 | Punkt | Prüfung |
 | --- | --- |
-| Frischer Klon + `./install.sh` läuft ohne Fehler durch | automatisch (Dateien, `tests/probeinstallation.sh`); Paketinstallation von Hand |
+| Frischer Klon + `./install.sh` läuft ohne Fehler durch | automatisch (Dateien, `tests/probeinstallation.sh`); Paketinstallation und Systemupdate von Hand |
+| Hyprland unter 0.55: Abbruch vor jeder Änderung | automatisch (vorgetäuschte Version 0.54) |
+| `--update` lässt settings.json, user.lua, hypr-shell-local.lua in Ruhe | automatisch |
 | `--dry-run` ändert nichts | automatisch |
 | `--restore` stellt die vorherigen Dateien wieder her | automatisch |
-| Nach Neuanmeldung: `hyprctl configerrors` leer | Lua-Aufrufe automatisch gegen die dokumentierte API geprüft; echte Sitzung von Hand |
+| Nach Neuanmeldung: `hyprctl configerrors` leer | automatisch mit echtem Hyprland (`Hyprland --verify-config`, `tests/hyprland-echt.sh`); laufende Sitzung von Hand |
 | Hintergrundbild da, Farben passen zum Bild | automatisch (awww + matugen im Test-Compositor) |
 | Alle Kürzel funktionieren | Belegung automatisch; Wirkung von Hand |
 | Steam und Spiele starten wie vorher | von Hand (alte Umgebungsvariablen werden übernommen, keine Fensterregeln für Spiele) |
@@ -57,3 +59,21 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | SUPER+L sperrt, Passwort entsperrt | **von Hand** |
 | Konfiguration ohne Fehlermeldung | automatisch (hyprlock im Test-Compositor) |
 | Mit Keep Awake wird nicht gesperrt | **von Hand** (nach 5 Minuten warten) |
+
+## Bilder und Symbole
+
+| Punkt | Prüfung |
+| --- | --- |
+| Profilbild, erste Wallpaper-Karte, erstes App-Symbol sichtbar | automatisch (`tests/oberflaeche.sh`: Ausschnitt nicht einfarbig) |
+| Ohne `~/.face` Anfangsbuchstabe (Dashboard, Panel, Sperrbildschirm) | automatisch (Panel, Ersatzbild für hyprlock); Sperrbildschirm mit runden Ecken von Hand |
+| Runde Ecken der Bilder mit Grafikkarte | von Hand (die CI hat keine Shader) |
+
+## Laptop
+
+| Punkt | Prüfung |
+| --- | --- |
+| Akkustand in der Leiste stimmt mit `upower -i $(upower -e \| grep BAT)` | von Hand |
+| `scale`, `natural_scroll`, `tap_to_click` wirken nach `hyprctl reload` | Werte an Hyprland automatisch (`tests/hyprland-lua.sh`); Wirkung von Hand |
+| XWayland-Fenster (Steam) bei Skalierung über 1 scharf | von Hand |
+| GPU-Kachel zeigt „–“, solange die NVIDIA-Karte schläft, und weckt sie nicht | automatisch mit nachgebauter Karte (`tests/dashboard.sh`); echte Karte von Hand: `cat /sys/bus/pci/devices/*/power/runtime_status` |
+| Zahnrad im Panel öffnet settings.json im Terminal | von Hand |

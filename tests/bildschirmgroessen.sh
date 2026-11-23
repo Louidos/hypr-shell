@@ -20,7 +20,8 @@ echo "== 1. Grössen-Hilfe (fit.js)"
 qml="$(command -v qml6 || command -v qml || ls /usr/lib/qt6/bin/qml 2>/dev/null || true)"
 if [ -n "$qml" ]; then
     R="$(mktemp -d)"
-    if XDG_RUNTIME_DIR="$R" QT_QPA_PLATFORM=offscreen timeout 60 "$qml" tests/daten/fit-test.qml > "$R/log" 2>&1 \
+    # QT_FORCE_STDERR_LOGGING: ohne Terminal schreibt Qt sonst ins Journal (console.* wäre unsichtbar)
+    if XDG_RUNTIME_DIR="$R" QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true;js.debug=true" timeout 60 "$qml" tests/daten/fit-test.qml > "$R/log" 2>&1 \
         && ! grep -qE "FEHLER|Error|TypeError|ReferenceError" "$R/log" && grep -q "ok:" "$R/log"; then
         sed 's/^qml: //' "$R/log"
     else

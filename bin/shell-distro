@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Angaben zur Distribution aus /etc/os-release.
+#   shell-distro icon   Nerd-Font-Symbol der Distribution
+#   shell-distro name   Name (z. B. "CachyOS")
+#   shell-distro id     Kennung (z. B. "cachyos")
+set -euo pipefail
+
+ID="" ID_LIKE="" NAME="" PRETTY_NAME=""
+# shellcheck disable=SC1091
+[ -r /etc/os-release ] && . /etc/os-release
+
+symbol() {
+    local i
+    for i in "$ID" $ID_LIKE; do
+        case "$i" in
+            arch|cachyos|archarm|garuda|artix) printf ''; return ;;
+            endeavouros) printf ''; return ;;
+            manjaro) printf ''; return ;;
+            nixos) printf ''; return ;;
+            fedora) printf ''; return ;;
+            ubuntu) printf ''; return ;;
+            debian) printf ''; return ;;
+            opensuse*|suse) printf ''; return ;;
+            gentoo) printf ''; return ;;
+        esac
+    done
+    printf ''   # Tux
+}
+
+case "${1:-icon}" in
+    icon) symbol; echo ;;
+    name) echo "${NAME:-${PRETTY_NAME:-Linux}}" ;;
+    id) echo "${ID:-linux}" ;;
+    *) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

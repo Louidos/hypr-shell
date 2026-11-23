@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Zeigt in der Leiste einen roten Punkt, solange eine Bildschirmaufnahme läuft.
+#   shell-recording status   JSON für Waybar ({"text": "●"} oder leer)
+set -euo pipefail
+
+aufnahme() {
+    pgrep -x wf-recorder >/dev/null 2>&1 || pgrep -x wl-screenrec >/dev/null 2>&1 \
+        || pgrep -f '^gpu-screen-recorder' >/dev/null 2>&1
+}
+
+case "${1:-status}" in
+    status)
+        if aufnahme; then
+            printf '{"text": "●", "tooltip": "Recording", "class": "recording"}\n'
+        else
+            printf '{"text": ""}\n'
+        fi
+        ;;
+    *) echo "Aufruf: shell-recording status" >&2; exit 2 ;;
+esac

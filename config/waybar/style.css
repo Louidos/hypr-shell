@@ -1,0 +1,69 @@
+/* hypr-shell: Leiste im Glas-Look. Farben aus dem Hintergrundbild (colors.css von matugen). */
+@import "colors.css";
+
+* {
+  font-family: "Inter", "JetBrainsMono Nerd Font", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+window#waybar {
+  background: rgba(10, 10, 12, 0.25);
+  color: @text;
+}
+
+tooltip {
+  background: rgba(12, 12, 14, 0.80);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 12px;
+}
+tooltip label { color: @text; font-weight: 500; }
+
+#custom-distro,
+#workspaces button,
+#mpris,
+#pulseaudio,
+#clock,
+#bluetooth,
+#network,
+#custom-recording,
+#custom-power {
+  padding: 0 8px;
+  color: @text;
+  background: transparent;
+}
+
+#custom-distro {
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 15px;
+  padding: 0 10px 0 12px;
+}
+
+#workspaces button {
+  padding: 0 6px;
+  color: alpha(@text, 0.45);
+  box-shadow: none;
+  transition: color 150ms ease;
+}
+#workspaces button.active { color: @text; }
+#workspaces button.empty { color: alpha(@text, 0.30); }
+#workspaces button.urgent { color: @error; }
+#workspaces button:hover { color: @accent; background: transparent; }
+
+#mpris { color: @subtext; font-weight: 500; }
+
+#bluetooth,
+#network,
+#custom-power {
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 14px;
+}
+#bluetooth.off, #bluetooth.disabled, #network.disconnected { color: alpha(@text, 0.45); }
+
+#custom-recording { color: #ff4d4d; font-size: 12px; }
+
+#custom-power { padding: 0 12px 0 8px; }
+#custom-power:hover, #custom-distro:hover { color: @accent; }

@@ -91,8 +91,9 @@ pruefe '! geschrieben' "… danach kein weiterer Schreibzugriff"
 
 echo "== ohne asusctl"
 pruefe '[ "$(PATH="/usr/bin:/bin" HYPR_SHELL_SYSFS="$T/leer" "$REPO/bin/shell-laptop" caps | jq -c "[.laptop, .asusctl, .charge, .kbd, .gfx]")" = "[false,false,false,false,false]" ]' "nichts davon erscheint"
+# $befehl absichtlich ohne Anführungszeichen: wird in Wörter zerlegt
+# shellcheck disable=SC2086
 for befehl in "charge set 80" "kbd set low" "kbd color #8ab4f8"; do
-    # shellcheck disable=SC2086
     rc=0; out="$(PATH="/usr/bin:/bin" HYPR_SHELL_SYSFS="$T/leer" "$REPO/bin/shell-laptop" $befehl 2>&1)" || rc=$?
     pruefe '[ "$rc" != 0 ] && grep -q "needs asusctl" <<<"$out" && ! grep -q "command not found" <<<"$out"' "$befehl ohne asusctl: klare Meldung ($out)"
 done

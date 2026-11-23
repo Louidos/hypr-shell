@@ -174,6 +174,9 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dock.indicator_color` | `auto` | Text (Format geprüft) | auto = accent color of the wallpaper, or a color like #8ab4f8 | `shell-set dock.indicator_color auto` |
 | `dock.show_running` | `true` | `true`, `false` | Also show running apps that are not pinned | `shell-set dock.show_running false` |
 | `dock.trash` | `true` | `true`, `false` | Show the trash entry from the item list | `shell-set dock.trash false` |
+| `dock.launcher_button` | `false` | `true`, `false` | Button at the start of the dock that opens the launcher | `shell-set dock.launcher_button true` |
+| `dock.badges` | `true` | `true`, `false` | Small number on an icon for notifications of that app (needs the notification service of hypr-shell) | `shell-set dock.badges false` |
+| `dock.previews` | `true` | `true`, `false` | Preview pictures in the window list when the mouse rests on an app with several windows | `shell-set dock.previews false` |
 | `dock.items` | `[{"type":"app","desktop_id":"org.gnome.Nautilus","path":""},{"type":"app","desktop_id":"kitty","path":""},{"type":"app","desktop_id":"firefox","path":""},{"type":"separator","desktop_id":"","path":""},{"type":"folder","desktop_id":"","path":"~/Downloads"},{"type":"separator","desktop_id":"","path":""},{"type":"trash","desktop_id":"","path":""}]` | Liste von Einträgen mit `type`, `desktop_id`, `path` | Pinned apps, folders, separators, trash and launcher button in this order | `shell-set dock.items '[]'` |
 
 ## lock – Sperren und Standby
@@ -324,6 +327,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.clipboard` | `SUPER + SHIFT + V` | Tasten wie `SUPER + Q`, leer = keine Taste | Show the last copies to paste them again | `shell-set keybinds.clipboard "SUPER + B"` |
 | `keybinds.overview` | `SUPER + Tab` | Tasten wie `SUPER + Q`, leer = keine Taste | Show all workspaces with their windows | `shell-set keybinds.overview "SUPER + B"` |
 | `keybinds.cheatsheet` | `SUPER + F1` | Tasten wie `SUPER + Q`, leer = keine Taste | Show all keyboard shortcuts | `shell-set keybinds.cheatsheet "SUPER + B"` |
+| `keybinds.dock_focus` | `SUPER + B` | Tasten wie `SUPER + Q`, leer = keine Taste | Use the dock with the keyboard: arrows choose, Enter starts, Menu or SHIFT+F10 opens the menu, Esc leaves | `shell-set keybinds.dock_focus "SUPER + B"` |
 | `keybinds.missa_chat` | `SUPER + I` | Tasten wie `SUPER + Q`, leer = keine Taste | Chat with Missa (only when Missa is switched on) | `shell-set keybinds.missa_chat "SUPER + B"` |
 | `keybinds.missa_voice` | `SUPER + SHIFT + I` | Tasten wie `SUPER + Q`, leer = keine Taste | Speak with Missa; press again to stop (only when Missa and talking are switched on) | `shell-set keybinds.missa_voice "SUPER + B"` |
 | `keybinds.lock` | `SUPER + L` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock the screen | `shell-set keybinds.lock "SUPER + B"` |

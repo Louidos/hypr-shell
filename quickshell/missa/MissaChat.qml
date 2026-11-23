@@ -180,6 +180,7 @@ Scope {
     FileView {
         id: store
         path: Settings.dataDir + "/missa-chat.json"
+        printErrors: false
         onLoaded: { try { const m = JSON.parse(text()); if (Array.isArray(m)) mc.messages = m } catch (e) { } }
     }
 

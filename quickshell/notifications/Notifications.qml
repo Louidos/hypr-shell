@@ -121,12 +121,13 @@ Scope {
     FileView {
         id: dndFile
         path: Settings.dataDir + "/dnd"
+        printErrors: false
         watchChanges: true
         onFileChanged: reload()
         // auch über shell-toggle dnd: mit Nicht stören verschwinden offene Karten sofort
         onLoaded: { const on = text().trim() === "true"; if (on !== nc.dnd) { nc.dnd = on; if (on) nc.popups = []; nc.writeBar() } }
     }
-    FileView { id: barFile; path: Settings.dataDir + "/notifications-bar.json" }
+    FileView { id: barFile; path: Settings.dataDir + "/notifications-bar.json"; printErrors: false }
     Component.onCompleted: writeBar()
 
     IpcHandler {

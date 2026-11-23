@@ -124,6 +124,7 @@ Singleton {
     }
     FileView {
         path: s.dataDir + "/settings.effective.json"
+        printErrors: false
         watchChanges: true
         onFileChanged: reload()
         onLoaded: { try { s.effective = JSON.parse(text()) } catch (e) { } }

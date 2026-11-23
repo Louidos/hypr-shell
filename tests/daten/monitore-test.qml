@@ -26,6 +26,27 @@ Item {
         pruefe(aufl(l) === "1920x1080" && M.label(l[0]) === "1920x1080", "ohne Modi (kein Hyprland): nur die laufende, ohne \"@ 0 Hz\"")
         pruefe(M.modes(null, "", 6).length === 0 && M.modes({}, "unsinn", 6).length === 0, "leere oder kaputte Angaben brechen nichts")
         pruefe(M.label({ res: "2560x1600", hz: 165 }) === "2560x1600 @ 165 Hz", "Beschriftung")
+        // Drehung
+        pruefe(M.transformName(0) === "normal" && M.transformName(1) === "90" && M.transformName(3) === "270" && M.transformName(5) === "flipped-90" && M.transformName(7) === "flipped-270", "Zahl aus Hyprland → Wert (0 normal, 1 90, 3 270, 5 flipped-90, 7 flipped-270)")
+        pruefe(M.transformName(9) === "normal" && M.transformName("quer") === "normal" && M.transformName(undefined) === "normal", "Unsinn oder fehlend (alte Einträge) → normal")
+        const p = M.parts("flipped-180")
+        pruefe(p.grad === 180 && p.mirrored && M.parts("flipped").grad === 0 && M.parts("flipped").mirrored && !M.parts("90").mirrored, "Wert → Grad und gespiegelt")
+        pruefe(M.compose(90, false) === "90" && M.compose(0, false) === "normal" && M.compose(0, true) === "flipped" && M.compose(270, true) === "flipped-270" && M.compose(45, false) === "normal", "Grad und gespiegelt → Wert")
+        let alle = true
+        for (let i = 0; i < 8; i++) { const q = M.parts(M.transformName(i)); if (M.compose(q.grad, q.mirrored) !== M.transformName(i)) alle = false }
+        pruefe(alle, "alle acht Werte hin und zurück")
+        pruefe(M.label2("normal") === "normal" && M.label2("90") === "90°" && M.label2("flipped-180") === "180° mirrored", "Beschriftung der Drehung")
+        // Überlappung nach dem Drehen (zwei Bildschirme nebeneinander, feste Lage)
+        const zwei = [{ name: "eDP-1", width: 2560, height: 1600, scale: 1.6, x: 0, y: 0, transform: 0 },
+                      { name: "DP-1", width: 1920, height: 1080, scale: 1, x: 1600, y: 0, transform: 0 }]
+        pruefe(!M.overlaps(zwei, {}), "nebeneinander: keine Überlappung")
+        const r = M.rect(zwei[0], "90")
+        pruefe(r.w === 1000 && r.h === 1600, "gedreht: Breite und Höhe vertauscht (logisch 1000×1600)")
+        pruefe(!M.overlaps(zwei, { "eDP-1": "90" }), "links schmaler gedreht: keine Überlappung")
+        pruefe(M.overlaps([zwei[0], { name: "DP-1", width: 1920, height: 1080, scale: 1, x: 1000, y: 0, transform: 0 }], { "DP-1": "normal" }) === true, "überlappende Lage wird erkannt")
+        pruefe(M.overlaps([{ name: "A", width: 1920, height: 1080, scale: 1, x: 0, y: 0, transform: 0 }, { name: "B", width: 1920, height: 1080, scale: 1, x: 1920, y: 0, transform: 0 }], { A: "flipped-270" }) === false
+               && M.overlaps([{ name: "A", width: 1920, height: 1080, scale: 1, x: 0, y: 0, transform: 0 }, { name: "B", width: 1920, height: 1080, scale: 1, x: 0, y: 1080, transform: 0 }], { A: "90" }) === true,
+               "hochkant gedreht über einem anderen: Überlappung")
         ende.start()
     }
     // erst nach dem Laden beenden (sonst meldet qml "Did not load any objects")

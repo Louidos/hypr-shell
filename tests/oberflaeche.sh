@@ -379,6 +379,27 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
         if [ "$(grep -c "hypr-shell-probe search-first" "$T/qs.log" || true)" -gt "$vorher" ]; then echo "  ok: Suche findet \"$q\""
         else echo "  FEHLER: Suche findet \"$q\" nicht"; app_ok=0; fi
     done
+    # Monitors: drehen und spiegeln mit 15-Sekunden-Bestätigung (ohne Keep zurück, mit Keep bleibt es)
+    ipc settings open monitors; sleep 2.5
+    mon="$(grep -o 'hypr-shell-probe monitor-rotate-[A-Za-z0-9_.:-]*-90 ' "$T/qs.log" | tail -n1 | sed -E 's/.*monitor-rotate-(.*)-90 /\1/')"
+    if [ -n "$mon" ] && test_ipc click "monitor-rotate-$mon-90" && warte_auf ".monitors.outputs[0].transform" '"90"'; then
+        echo "  ok: Monitors: $mon auf 90° gedreht"
+        bild settings-monitors-gedreht
+        if test_ipc click "monitor-mirror-$mon" && warte_auf ".monitors.outputs[0].transform" '"flipped-90"'; then echo "  ok: Mirrored: flipped-90"
+        else echo "  FEHLER: Mirrored ($(wert .monitors))"; app_ok=0; fi
+        if warte_auf ".monitors.outputs" '[]' 80; then echo "  ok: ohne Keep nach 15 s zurück"
+        else echo "  FEHLER: Drehung springt nicht zurück ($(wert .monitors))"; app_ok=0; fi
+        sleep 2
+        if test_ipc click "monitor-rotate-$mon-180" && warte_auf ".monitors.outputs[0].transform" '"180"' && test_ipc click monitors-keep; then
+            sleep 17
+            if [ "$(wert '.monitors.outputs[0].transform')" = '"180"' ]; then echo "  ok: mit Keep bleibt die Drehung"
+            else echo "  FEHLER: Keep: $(wert .monitors)"; app_ok=0; fi
+        else echo "  FEHLER: 180° oder Keep ($(wert .monitors))"; app_ok=0; fi
+        "$HOME/.local/bin/shell-set" reset monitors.outputs >/dev/null 2>&1 || true
+    else
+        echo "  FEHLER: Drehknopf auf der Seite Monitors (${mon:-kein Bildschirm}, $(wert .monitors))"; app_ok=0
+    fi
+    ipc settings close; sleep 0.5
     # Programme mitfärben: GTK steht immer da, Firefox nur, wenn installiert
     ipc settings open theme; sleep 2
     if test_ipc click setting-theme.apps.gtk && warte_auf .theme.apps.gtk false; then echo "  ok: Theme → Apps: GTK-Schalter landet in settings.json"

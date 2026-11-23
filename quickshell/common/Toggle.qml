@@ -20,7 +20,7 @@ Item {
         radius: width / 2
         y: 3
         x: t.checked ? t.width - width - 3 : 3
-        color: t.checked ? Theme.onPill : Qt.rgba(1, 1, 1, 0.75)
+        color: t.checked ? Theme.pillText : Qt.rgba(1, 1, 1, 0.75)
         Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
     MouseArea {

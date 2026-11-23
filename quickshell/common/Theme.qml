@@ -13,7 +13,7 @@ Singleton {
         text: "#e6e6e6", subtext: "#a0a0a0", outline: "#474747", error: "#dc5050"
     })
     readonly property color accent: c.accent
-    readonly property color onAccent: c.onAccent
+    readonly property color accentText: c.onAccent
     readonly property color text: c.text
     readonly property color subtext: c.subtext
     readonly property color error: c.error
@@ -27,7 +27,7 @@ Singleton {
     readonly property color cardBorder: Qt.rgba(1, 1, 1, 0.08)
     // aktive Schalter und Tabs: weisse Pille mit dunklem Symbol
     readonly property color pill: Qt.rgba(1, 1, 1, 0.92)
-    readonly property color onPill: "#121214"
+    readonly property color pillText: "#121214"
     readonly property color track: Qt.rgba(1, 1, 1, 0.10)
 
     readonly property int panelRadius: 26

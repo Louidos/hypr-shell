@@ -26,7 +26,7 @@ Rectangle {
             visible: p.icon !== ""
             text: p.icon
             size: p.fontSize + 2
-            color: p.active ? Theme.onPill : Theme.text
+            color: p.active ? Theme.pillText : Theme.text
             anchors.verticalCenter: parent.verticalCenter
         }
         Txt {
@@ -34,7 +34,7 @@ Rectangle {
             text: p.text
             size: p.fontSize
             weight: Font.DemiBold
-            color: p.active ? Theme.onPill : Theme.text
+            color: p.active ? Theme.pillText : Theme.text
             anchors.verticalCenter: parent.verticalCenter
         }
     }

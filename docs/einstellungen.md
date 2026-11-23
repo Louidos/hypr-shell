@@ -28,9 +28,9 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `bar.height` | `30` | ganze Zahl 20 … 60 px | Height of the bar in pixels | `shell-set bar.height 31` |
 | `bar.opacity` | `-1` | Zahl -1 … 1, Schritt 0.05 | Opacity of the bar background; -1 = same as all glass (Theme → Glass opacity) | `shell-set bar.opacity -0.95` |
 | `bar.floating` | `true` | `true`, `false` | Rounded glass bar with a small gap to the screen edge; off = full width along the edge | `shell-set bar.floating false` |
-| `bar.modules.left` | `["distro","workspaces","media"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the left, in this order | `shell-set bar.modules.left distro,workspaces` |
-| `bar.modules.center` | `[]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules in the middle, in this order | `shell-set bar.modules.center distro,workspaces` |
-| `bar.modules.right` | `["volume","battery","clock","bluetooth","network","recording","notifications","missa","power"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the right, in this order | `shell-set bar.modules.right distro,workspaces` |
+| `bar.modules.left` | `["distro","workspaces","media"]` | Liste aus `distro`, `apps`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the left, in this order | `shell-set bar.modules.left distro,apps` |
+| `bar.modules.center` | `[]` | Liste aus `distro`, `apps`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules in the middle, in this order | `shell-set bar.modules.center distro,apps` |
+| `bar.modules.right` | `["volume","battery","clock","bluetooth","network","recording","notifications","missa","power"]` | Liste aus `distro`, `apps`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the right, in this order | `shell-set bar.modules.right distro,apps` |
 | `bar.workspaces` | `4` | ganze Zahl 0 … 10 | Workspaces that are always shown (0 = only used ones) | `shell-set bar.workspaces 5` |
 | `bar.clock` | `24h` | `24h`, `12h` | 24-hour or 12-hour clock in the bar | `shell-set bar.clock 12h` |
 | `bar.battery` | `true` | `true`, `false` | Show the battery (only on devices with a battery) | `shell-set bar.battery false` |
@@ -277,6 +277,17 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `switcher.scope` | `all` | `all`, `workspace` | all = every workspace and screen (and minimized windows), workspace = only the current workspace | `shell-set switcher.scope workspace` |
 | `switcher.previews` | `true` | `true`, `false` | Live picture of each window; off = icons only (faster on slow graphics) | `shell-set switcher.previews false` |
 | `switcher.size` | `medium` | `small`, `medium`, `large` | Size of the tiles | `shell-set switcher.size small` |
+
+## appraster – appraster
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `appraster.enabled` | `true` | `true`, `false` | All apps as icons in a glass grid with search, categories, favorites and recent apps (like a start menu); open it by tapping SUPER, with the dock button or the logo in the bar | `shell-set appraster.enabled false` |
+| `appraster.super_tippen` | `true` | `true`, `false` | Pressing and releasing SUPER alone opens the app grid; SUPER with another key works as before | `shell-set appraster.super_tippen false` |
+| `appraster.dock_knopf` | `true` | `true`, `false` | Button at the start of the dock that opens the app grid | `shell-set appraster.dock_knopf false` |
+| `appraster.kategorien` | `true` | `true`, `false` | Category buttons above the grid (Internet, Office, Media, Games, …) | `shell-set appraster.kategorien false` |
+| `appraster.zuletzt` | `8` | ganze Zahl 0 … 24 | How many recently used apps are shown above the grid (0 = none) | `shell-set appraster.zuletzt 9` |
+| `appraster.favoriten` | `[]` | Liste von Texten | Apps shown first in the grid (name of the .desktop file); right-click an app in the grid to add or remove it | `shell-set appraster.favoriten code` |
 
 ## nightlight – nightlight
 

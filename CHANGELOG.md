@@ -10,11 +10,13 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Fenster haben oben rechts Knöpfe zum Minimieren, Maximieren und Schliessen (umstellbar auf macOS-Stil); minimierte Fenster liegen im Dock und kommen per Klick an ihre alte Stelle zurück (SUPER+M, SUPER+SHIFT+M) (#120)
 - Mit ALT+Tab zwischen offenen Programmen wechseln, mit Vorschaubildern: zuletzt benutzte zuerst, ALT loslassen wechselt, Escape bricht ab, auch minimierte Fenster und andere Arbeitsflächen (#121)
 - Fenster an den Rand ziehen: oben Vollbild, seitlich halbe Breite, in die Ecke ein Viertel, mit Vorschau; Fenster sind jetzt standardmässig frei verschiebbar (Kacheln weiter einstellbar, SUPER+SHIFT+T); SUPER+Pfeile docken an (#122)
+- App-Raster wie Start-Menü/Launchpad: SUPER allein antippen, der neue Knopf im Dock oder ein Klick auf das Logo in der Leiste zeigt alle Apps mit Suche, Kategorien, Favoriten und zuletzt benutzten; Rechtsklick heftet im Dock an, merkt Favoriten oder öffnet ein neues Fenster; neues Leisten-Modul `apps` (#123)
 
 ### Geändert
 - Einheitlicher Glas-Look: grau durchsichtig, feiner weisser Rand und runde Ecken (14 px) überall – Leiste (jetzt schwebend), Dock, Panels, Menüs, Benachrichtigungen, rofi – auch an den Programmfenstern (leicht durchsichtig, Spiele, Videos und Bildbearbeitung undurchsichtig); bei hellem Hintergrundbild wird das Glas automatisch dunkler; Voreinstellungen glass, minimal und gaming mit Live-Vorschau (#119)
 - Abmelden liegt jetzt auf CTRL+SUPER+M (vorher SUPER+M, das jetzt minimiert); selbst gesetzte Kürzel bleiben (#120)
 - Fokus in eine Richtung liegt jetzt auf SUPER+ALT+Pfeile (vorher SUPER+Pfeile, die jetzt andocken); neue Fenster öffnen schwebend statt gekachelt (fenster.modus); selbst gesetzte Kürzel bleiben (#122)
+- Klick auf das Logo in der Leiste öffnet jetzt das App-Raster; der Starter (Suche) liegt auf Rechtsklick und weiter auf SUPER+R, SUPER+Space und ALT+Space (#123)
 
 ### Behoben
 - Ein eigenes Kürzel auf einer fest belegten Taste (Lautstärke, Helligkeit, Medien) wird abgelehnt statt die Hyprland-Konfiguration zu stören (#88)

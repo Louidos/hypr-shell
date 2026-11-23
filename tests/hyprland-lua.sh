@@ -30,7 +30,7 @@ local pflicht = { "SUPER + Q", "SUPER + C", "SUPER + E", "SUPER + R", "ALT + Spa
     "SUPER + mouse:272", "SUPER + mouse:273", "Print", "SHIFT + Print",
     "XF86AudioRaiseVolume", "XF86AudioLowerVolume", "XF86AudioMute",
     "XF86MonBrightnessUp", "XF86MonBrightnessDown", "XF86AudioPlay", "XF86AudioNext", "XF86AudioPrev",
-    "SUPER + ALT + D", "SUPER + D", "SUPER + W", "SUPER + A", "SUPER + N", "SUPER + U", "SUPER + ALT + W" }
+    "SUPER + ALT + D", "SUPER + D", "SUPER + W", "SUPER + A", "SUPER + N", "SUPER + U", "SUPER + Escape", "XF86KbdBrightnessUp", "XF86KbdBrightnessDown", "SUPER + ALT + W" }
 for i = 0, 9 do
     table.insert(pflicht, "SUPER + " .. i)
     table.insert(pflicht, "SUPER + SHIFT + " .. i)
@@ -44,7 +44,9 @@ end
 local alles = table.concat(autostart, "\n")
 -- genau ein Benachrichtigungsdienst: der von hypr-shell (Quickshell), swaync wird nicht mehr gestartet
 pruefe(alles:find("swaync") == nil, "swaync darf nicht mehr gestartet werden")
-for _, prog in ipairs({ "waybar", "awww%-daemon", "hypridle", "swayosd%-server", "shell%-quickshell" }) do
+-- genau eine Lautstärke-Anzeige: die von hypr-shell (shell-osd), swayosd wird nicht mehr gestartet
+pruefe(alles:find("swayosd") == nil, "swayosd darf nicht mehr gestartet werden")
+for _, prog in ipairs({ "waybar", "awww%-daemon", "hypridle", "shell%-quickshell" }) do
     pruefe(alles:find(prog) ~= nil, "Autostart fehlt: " .. prog)
 end
 

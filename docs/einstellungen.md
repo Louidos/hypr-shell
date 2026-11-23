@@ -160,6 +160,12 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `notifications.timeout` | `6` | ganze Zahl 1 … 60 s | Seconds a card stays on screen (urgent ones stay until closed) | `shell-set notifications.timeout 7` |
 | `notifications.history` | `100` | ganze Zahl 10 … 500 | How many notifications the history keeps | `shell-set notifications.history 110` |
 
+## osd – osd
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `osd.enabled` | `true` | `true`, `false` | Show a small glass display at the bottom when volume or brightness changes | `shell-set osd.enabled false` |
+
 ## keybinds – Tastenkürzel
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
@@ -186,6 +192,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.notifications` | `SUPER + N` | Tasten wie `SUPER + Q`, leer = keine Taste | Open or close the notification history | `shell-set keybinds.notifications "SUPER + B"` |
 | `keybinds.edit_desktop` | `SUPER + ALT + W` | Tasten wie `SUPER + Q`, leer = keine Taste | Move and resize the clock and tiles with the mouse | `shell-set keybinds.edit_desktop "SUPER + B"` |
 | `keybinds.settings` | `SUPER + U` | Tasten wie `SUPER + Q` (nicht leer) | Open or close this settings app (cannot be empty) | `shell-set keybinds.settings "SUPER + B"` |
+| `keybinds.power` | `SUPER + Escape` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock, sleep, log out, restart or shut down | `shell-set keybinds.power "SUPER + B"` |
 | `keybinds.lock` | `SUPER + L` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock the screen | `shell-set keybinds.lock "SUPER + B"` |
 | `keybinds.exit` | `SUPER + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Leave Hyprland | `shell-set keybinds.exit "SUPER + B"` |
 | `keybinds.screenshot_region` | `Print` | Tasten wie `SUPER + Q`, leer = keine Taste | Select a region; saved and copied | `shell-set keybinds.screenshot_region "SUPER + B"` |

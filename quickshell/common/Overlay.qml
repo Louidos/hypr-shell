@@ -46,6 +46,8 @@ Scope {
     property int leaveDelay: -1
     property int idleDelay: -1
     property bool holdOpen: false
+    // nimmt keine Klicks an (z. B. die Lautstärke-Anzeige)
+    property bool clickThrough: false
 
     // nicht exklusive Überlagerungen (Anzeigen, Karten) öffnen über localOpen
     property bool localOpen: false
@@ -134,7 +136,9 @@ Scope {
         WlrLayershell.layer: ov.layer
         WlrLayershell.namespace: ov.namespace
         WlrLayershell.keyboardFocus: ov.open ? ov.keyboardFocus : WlrKeyboardFocus.None
-        mask: Region { item: body }
+        mask: ov.clickThrough ? noInput : bodyInput
+        Region { id: noInput }
+        Region { id: bodyInput; item: body }
 
         onVisibleChanged: if (visible) keys.forceActiveFocus()
 

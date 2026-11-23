@@ -119,7 +119,7 @@ fi
 
 cfg="$HOME/.config/quickshell/hypr-shell"
 starte_qs() {
-    HYPR_SHELL_TEST=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
+    HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
     qspid="$!"
     pids+=("$qspid")
     sleep 6
@@ -134,6 +134,7 @@ ipc() {
     echo "  Hinweis: ipc call $* ging nicht: $(head -c 300 "$T/ipc.err" | tr '\n' ' ')"
     return 0
 }
+offen() { "$qs" -p "$cfg" ipc call shell current 2>/dev/null; }
 
 # bereich SCREENSHOT PROBE TEXT: der Ausschnitt (Rand je 20 % weggelassen) darf nicht einfarbig sein.
 # So fällt auf, wenn Profilbild, Vorschaubild oder App-Symbol leer bleiben.
@@ -198,6 +199,29 @@ else
     echo "  Hinweis: notify-send oder D-Bus fehlt, Benachrichtigungen nicht geprüft"
 fi
 
+# ---- Lautstärke-Anzeige und Power-Menü (Probelauf: nichts wird wirklich ausgeschaltet)
+power_ok=1
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target power'; then
+    echo "---- Anzeige und Power-Menü ----"
+    ipc osd show volume 42 false; sleep 0.8; bild osd
+    if [ "$("$qs" -p "$cfg" ipc call osd current 2>/dev/null)" = "volume 42" ]; then echo "  ok: Lautstärke-Anzeige erscheint"
+    else echo "  FEHLER: Anzeige: $("$qs" -p "$cfg" ipc call osd current 2>/dev/null)"; power_ok=0; fi
+    sleep 2
+    if [ -z "$("$qs" -p "$cfg" ipc call osd current 2>/dev/null)" ]; then echo "  ok: Anzeige verschwindet von selbst"
+    else echo "  FEHLER: Anzeige bleibt stehen"; power_ok=0; fi
+    log="$HOME/.local/share/hypr-shell/power-dryrun.log"; rm -f "$log"
+    ipc power open; sleep 1.5; bild power
+    r1="$("$qs" -p "$cfg" ipc call power press shutdown 2>/dev/null)"; sleep 0.8; bild power-bestaetigen
+    if [ "$r1" = armed ] && [ ! -s "$log" ]; then echo "  ok: Shutdown braucht einen zweiten Druck"
+    else echo "  FEHLER: erster Druck: $r1, Log: $(cat "$log" 2>/dev/null)"; power_ok=0; fi
+    r2="$("$qs" -p "$cfg" ipc call power press shutdown 2>/dev/null)"; sleep 1.5
+    if [ "$r2" = "done" ] && [ "$(cat "$log" 2>/dev/null)" = shutdown ]; then echo "  ok: zweiter Druck löst aus (Probelauf)"
+    else echo "  FEHLER: zweiter Druck: $r2, Log: $(cat "$log" 2>/dev/null)"; power_ok=0; fi
+    if [ -z "$(offen)" ]; then echo "  ok: Menü danach geschlossen"; else echo "  FEHLER: noch offen: $(offen)"; power_ok=0; fi
+else
+    echo "FEHLER: IPC-Ziel power fehlt"; power_ok=0
+fi
+
 # ---- Starter (SUPER+R): Suche, Rechner
 starter_ok=1
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target launcher'; then
@@ -216,7 +240,6 @@ fi
 
 # ---- immer nur ein Panel offen: öffnet man das Dashboard bei offenem Panel, schliesst das Panel
 panel_ok=1
-offen() { "$qs" -p "$cfg" ipc call shell current 2>/dev/null; }
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target shell'; then
     echo "---- nur ein Panel offen ----"
     ipc panel open; sleep 1
@@ -364,6 +387,7 @@ echo "------------------------"
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 [ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
+[ "$power_ok" -eq 1 ] || { echo "FEHLER: Anzeige oder Power-Menü (siehe oben)"; exit 1; }
 [ "$note_ok" -eq 1 ] || { echo "FEHLER: Benachrichtigungen (siehe oben)"; exit 1; }
 [ "$starter_ok" -eq 1 ] || { echo "FEHLER: Starter (siehe oben)"; exit 1; }
 [ "$panel_ok" -eq 1 ] || { echo "FEHLER: mehr als ein Panel offen (siehe oben)"; exit 1; }

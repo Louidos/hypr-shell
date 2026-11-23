@@ -46,6 +46,7 @@ SUPER + ALT + W
 SUPER + C
 SUPER + D
 SUPER + E
+SUPER + Escape
 SUPER + L
 SUPER + M
 SUPER + N
@@ -71,6 +72,8 @@ XF86AudioPause
 XF86AudioPlay
 XF86AudioPrev
 XF86AudioRaiseVolume
+XF86KbdBrightnessDown
+XF86KbdBrightnessUp
 XF86MonBrightnessDown
 XF86MonBrightnessUp"
 for i in 0 1 2 3 4 5 6 7 8 9; do erwartet="$erwartet

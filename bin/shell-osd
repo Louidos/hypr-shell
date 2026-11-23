@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Lautstärke, Mikrofon und Helligkeit ändern und die Glas-Anzeige von hypr-shell zeigen
+# (ersetzt swayosd; die Tasten in hyprland.lua rufen dieses Skript auf).
+#   shell-osd volume up|down|mute      Lautstärke ±5 % (höchstens 100 %), stumm an/aus
+#   shell-osd mic mute                 Mikrofon stumm an/aus
+#   shell-osd brightness up|down       Bildschirmhelligkeit ±5 %
+#   shell-osd kbd up|down              Tastaturbeleuchtung ±33 %
+#   shell-osd show                     nur anzeigen (aktuelle Lautstärke)
+# Ton über wpctl (PipeWire), sonst pamixer; Helligkeit über brightnessctl. Fehlt ein Programm, passiert
+# nichts (kein Fehler). Die Anzeige: shell-quickshell ipc osd show <art> <prozent> <stumm>.
+set -uo pipefail
+
+BIN="${HYPR_SHELL_BIN:-$HOME/.local/bin}"
+hat() { command -v "$1" >/dev/null 2>&1; }
+SINK=@DEFAULT_AUDIO_SINK@
+SOURCE=@DEFAULT_AUDIO_SOURCE@
+
+zeige() { # art prozent stumm
+    [ -x "$BIN/shell-quickshell" ] || return 0
+    "$BIN/shell-quickshell" ipc osd show "$1" "$2" "$3" >/dev/null 2>&1 || true
+}
+
+# wpctl get-volume: "Volume: 0.45" oder "Volume: 0.45 [MUTED]"
+wp_prozent() { wpctl get-volume "$1" 2>/dev/null | awk '{ printf "%d", $2 * 100 + 0.5 }'; }
+wp_stumm() { wpctl get-volume "$1" 2>/dev/null | grep -q MUTED && echo true || echo false; }
+
+lautstaerke() {
+    if hat wpctl; then
+        case "$1" in
+            up) wpctl set-mute "$SINK" 0; wpctl set-volume -l 1.0 "$SINK" 5%+ ;;
+            down) wpctl set-volume "$SINK" 5%- ;;
+            mute) wpctl set-mute "$SINK" toggle ;;
+        esac
+        zeige volume "$(wp_prozent "$SINK")" "$(wp_stumm "$SINK")"
+    elif hat pamixer; then
+        case "$1" in
+            up) pamixer -u; pamixer -i 5 --set-limit 100 ;;
+            down) pamixer -d 5 ;;
+            mute) pamixer -t ;;
+        esac
+        zeige volume "$(pamixer --get-volume 2>/dev/null || echo 0)" "$(pamixer --get-mute 2>/dev/null || echo false)"
+    fi
+}
+
+mikrofon() {
+    if hat wpctl; then
+        wpctl set-mute "$SOURCE" toggle
+        zeige mic "$(wp_prozent "$SOURCE")" "$(wp_stumm "$SOURCE")"
+    elif hat pamixer; then
+        pamixer --default-source -t
+        zeige mic "$(pamixer --default-source --get-volume 2>/dev/null || echo 0)" "$(pamixer --default-source --get-mute 2>/dev/null || echo false)"
+    fi
+}
+
+# brightnessctl -m: "gerät,klasse,wert,prozent%,max"
+hell() { # art geraet-option schritt richtung
+    hat brightnessctl || return 0
+    local art="$1" schritt="$3" p
+    local opt=()
+    [ -n "$2" ] && opt=(-d "$2")
+    if [ "$4" = up ]; then brightnessctl "${opt[@]}" -q set "$schritt+" || return 0
+    else brightnessctl "${opt[@]}" -q set "$schritt-" || return 0; fi
+    p="$(brightnessctl "${opt[@]}" -m 2>/dev/null | head -n1 | cut -d, -f4 | tr -d '%')"
+    zeige "$art" "${p:-0}" false
+}
+
+case "${1:-}" in
+    volume) lautstaerke "${2:-up}" ;;
+    mic) mikrofon ;;
+    brightness) hell brightness "" 5% "${2:-up}" ;;
+    kbd) hell kbd '*::kbd_backlight' 33% "${2:-up}" ;;
+    show)
+        if hat wpctl; then zeige volume "$(wp_prozent "$SINK")" "$(wp_stumm "$SINK")"; fi ;;
+    *) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac
+exit 0

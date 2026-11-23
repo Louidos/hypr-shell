@@ -178,6 +178,9 @@
     "timeout": 6,
     "history": 100
   },
+  "osd": {
+    "enabled": true
+  },
   "keybinds": {
     "terminal": "SUPER + Q",
     "files": "SUPER + E",
@@ -201,6 +204,7 @@
     "notifications": "SUPER + N",
     "edit_desktop": "SUPER + ALT + W",
     "settings": "SUPER + U",
+    "power": "SUPER + Escape",
     "lock": "SUPER + L",
     "exit": "SUPER + M",
     "screenshot_region": "Print",

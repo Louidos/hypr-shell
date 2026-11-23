@@ -54,7 +54,7 @@ local S = {
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
-        settings = "SUPER + U",
+        settings = "SUPER + U", power = "SUPER + Escape",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
     },
@@ -121,7 +121,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(bin .. "shell-wallpaper --restore")
     hl.exec_cmd("waybar")
     hl.exec_cmd("hypridle")
-    hl.exec_cmd("swayosd-server")
     hl.exec_cmd(bin .. "shell-quickshell")
 end)
 
@@ -246,9 +245,8 @@ end
 
 blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
-blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications)$")
+blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications|osd|power)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
-blur_layer("hypr-shell-swayosd",     "^swayosd$")
 
 hl.layer_rule({ name = "hypr-shell-slurp", match = { namespace = "^selection$" }, no_anim = true })
 
@@ -322,6 +320,9 @@ bind(K.edit_desktop, hl.dsp.exec_cmd(ui .. "desktop edit"))
 -- die App bleibt immer erreichbar: ohne gültige Taste gilt SUPER + U
 bind((K.settings ~= nil and K.settings ~= "") and K.settings or "SUPER + U", hl.dsp.exec_cmd(ui .. "settings toggle"))
 
+-- Power-Menü (Lock, Sleep, Logout, Restart, Shutdown)
+bind(K.power, hl.dsp.exec_cmd(ui .. "power toggle"))
+
 -- Screenshots: speichern und in die Zwischenablage
 bind(K.screenshot_region, hl.dsp.exec_cmd(bin .. "shell-screenshot region"))
 bind(K.screenshot_screen, hl.dsp.exec_cmd(bin .. "shell-screenshot screen"))
@@ -333,14 +334,16 @@ for _, c in ipairs(K.custom or {}) do
     end
 end
 
--- Lautstärke und Helligkeit (mit Anzeige von swayosd), auch im Sperrbildschirm
-local osd = "swayosd-client "
-hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(osd .. "--output-volume raise"), { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(osd .. "--output-volume lower"), { locked = true, repeating = true })
-hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(osd .. "--output-volume mute-toggle"), { locked = true })
-hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd(osd .. "--input-volume mute-toggle"),  { locked = true })
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(osd .. "--brightness raise"), { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(osd .. "--brightness lower"), { locked = true, repeating = true })
+-- Lautstärke und Helligkeit mit der Glas-Anzeige von hypr-shell (shell-osd), auch im Sperrbildschirm
+local osd = bin .. "shell-osd "
+hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(osd .. "volume up"),   { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(osd .. "volume down"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(osd .. "volume mute"), { locked = true })
+hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd(osd .. "mic mute"),    { locked = true })
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(osd .. "brightness up"),   { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(osd .. "brightness down"), { locked = true, repeating = true })
+hl.bind("XF86KbdBrightnessUp",   hl.dsp.exec_cmd(osd .. "kbd up"),   { locked = true, repeating = true })
+hl.bind("XF86KbdBrightnessDown", hl.dsp.exec_cmd(osd .. "kbd down"), { locked = true, repeating = true })
 
 -- Medientasten
 hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })

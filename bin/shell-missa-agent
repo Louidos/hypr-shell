@@ -1,0 +1,804 @@
+#!/usr/bin/env python3
+# Missa-Agent von hypr-shell: Missa bedient diesen Rechner – sichtbar, begrenzt und sofort stoppbar.
+# Nur mit missa.enabled und missa.agent_enabled. Verbindet sich ausgehend mit Missa-Core nach dem Vertrag
+# "Geräte-Anschluss v1" (Missa-Core docs/geraete.md); am Rechner wird kein Port geöffnet.
+#
+#   shell-missa-agent run            verbinden und Aufträge ausführen (vom Dienst shell-missa-agent.service)
+#   shell-missa-agent sync           Dienst nach den Einstellungen starten oder stoppen
+#   shell-missa-agent pause|resume   Schalter "Missa access" im Panel: sofort trennen / wieder verbinden
+#   shell-missa-agent status         Zustand als JSON (für Leiste und Panel)
+#   shell-missa-agent answer <id> yes|no   Antwort auf eine Rückfrage (Glas-Karte in Stufe ask)
+#   shell-missa-agent tools          die angemeldeten Werkzeuge als JSON
+#
+# Zugriffsstufe missa.access: off (nichts), read (nur lesen), ask (Standard: Schreiben frei,
+# Zerstörerisches erst nach Klick auf der Glas-Karte, nach 60 s abgelehnt), full (ohne Rückfrage).
+# In jeder Stufe: gesperrte Ordner (missa.blocked_paths), nie als root, kein Passwort wird gespeichert,
+# bei gesperrtem Bildschirm nur Lesendes, Ausgaben höchstens 20000 Zeichen. Jede Aktion steht in
+# ~/.local/share/hypr-shell/missa-actions.log. Der Geräte-Token steht nur in secrets.env
+# (MISSA_DEVICE_TOKEN) und wird nie geschrieben oder protokolliert.
+import datetime, fnmatch, json, os, re, signal, socket, ssl, subprocess, sys, threading, time
+import urllib.error, urllib.request
+
+HOME = os.path.expanduser("~")
+DATA = os.path.join(HOME, ".local/share/hypr-shell")
+EFF = os.path.join(DATA, "settings.effective.json")
+RUN = os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
+STATE = os.path.join(RUN, "hypr-shell-missa-agent.json")
+BAR = os.path.join(RUN, "hypr-shell-missa-bar.json")      # Symbol in der Leiste (Waybar)
+PAUSED = os.path.join(DATA, "missa-agent.paused")
+ACTIONS = os.path.join(DATA, "missa-actions.log")
+BIN = os.path.dirname(os.path.realpath(__file__))
+UNIT = "shell-missa-agent.service"
+MAX = 20000
+DEFAULT_BLOCKED = ["~/.ssh", "~/.gnupg", "~/.local/share/keyrings", "~/.password-store", "~/.mozilla",
+                   "~/.config/google-chrome", "~/.config/chromium", "~/.config/BraveSoftware", "~/.var/app",
+                   "~/.config/hypr-shell/secrets.env"]
+
+
+# ------------------------------------------------------------------ Einstellungen und Zustand
+
+def settings():
+    # eine gerade geschriebene Datei ist kurz leer oder halb: einmal kurz warten und neu lesen
+    for versuch in range(2):
+        try:
+            with open(EFF) as f:
+                return json.load(f)
+        except ValueError:
+            if versuch == 0:
+                time.sleep(0.05)
+        except OSError:
+            break
+    return {}
+
+
+def get(path, default=None):
+    v = settings()
+    for p in path.split("."):
+        if not isinstance(v, dict) or p not in v:
+            return default
+        v = v[p]
+    return default if v is None else v
+
+
+def enabled():
+    return get("missa.enabled", False) is True and get("missa.agent_enabled", False) is True \
+        and get("missa.access", "ask") != "off"
+
+
+def secret(name):
+    try:
+        r = subprocess.run([os.path.join(BIN, "shell-secrets"), "get", name], capture_output=True, text=True, timeout=5)
+        return r.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def host():
+    return socket.gethostname() or "rechner"
+
+
+def device_name():
+    n = get("missa.device", "") or host()
+    n = re.sub(r"[^a-z0-9_-]", "-", n.lower())[:32]
+    return n or "laptop"
+
+
+def session():
+    return re.sub(r"[^A-Za-z0-9_.-]", "-", "hypr-shell-" + host())[:200]
+
+
+STATE_LOCK = threading.Lock()
+
+
+def write_state(**kw):
+    with STATE_LOCK:
+        _write_state(**kw)
+
+
+def _write_state(**kw):
+    s = {"connected": False, "busy": False, "tool": "", "since": ""}
+    try:
+        with open(STATE) as f:
+            s.update(json.load(f))
+    except (OSError, ValueError):
+        pass
+    s.update(kw)
+    tmp = "%s.%d.tmp" % (STATE, os.getpid())
+    with open(tmp, "w") as f:
+        json.dump(s, f)
+    os.replace(tmp, STATE)
+    # Leiste: Symbol nur, solange verbunden; es pulsiert, während eine Aktion läuft
+    bar = {"text": ""} if not s.get("connected") else {
+        "text": "󰚩", "class": "busy" if s.get("busy") else "connected",
+        "tooltip": ("Missa: " + s.get("tool", "")) if s.get("busy") else "Missa may use this computer"}
+    with open("%s.%d.tmp" % (BAR, os.getpid()), "w") as f:
+        json.dump(bar, f, ensure_ascii=False)
+    os.replace("%s.%d.tmp" % (BAR, os.getpid()), BAR)
+    subprocess.run(["pkill", "-RTMIN+10", "-x", "waybar"], capture_output=True)
+
+
+def now():
+    return datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def log_action(tool, summary, outcome):
+    os.makedirs(DATA, exist_ok=True)
+    with open(ACTIONS, "a") as f:
+        f.write(json.dumps({"zeit": now(), "werkzeug": tool, "kurz": summary[:200], "ergebnis": outcome},
+                           ensure_ascii=False) + "\n")
+
+
+def notify(title, text, urgency="normal"):
+    try:
+        subprocess.Popen(["notify-send", "-a", "Missa", "-u", urgency, title, text],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError:
+        pass
+
+
+def cut(text):
+    text = str(text)
+    return text if len(text) <= MAX else text[:MAX - 60] + "\n… (gekürzt auf 20000 Zeichen)"
+
+
+# ------------------------------------------------------------------ Schutz
+
+class Abgelehnt(Exception):
+    pass
+
+
+def expand(p):
+    p = os.path.expanduser(str(p).strip())
+    if not os.path.isabs(p):
+        p = os.path.join(HOME, p)
+    return os.path.realpath(p)
+
+
+def blocked_paths():
+    l = get("missa.blocked_paths", DEFAULT_BLOCKED)
+    return [expand(x) for x in l if isinstance(x, str) and x.strip()]
+
+
+def check_path(p):
+    rp = expand(p)
+    for b in blocked_paths():
+        if rp == b or rp.startswith(b.rstrip("/") + "/"):
+            raise Abgelehnt("Gesperrter Ordner: " + p)
+    return rp
+
+
+def check_text(text):
+    # Befehle: gesperrte Ordner dürfen auch dort nicht vorkommen (in ~- und voller Schreibweise)
+    t = str(text)
+    for raw in get("missa.blocked_paths", DEFAULT_BLOCKED):
+        if not isinstance(raw, str) or not raw.strip():
+            continue
+        full = expand(raw)
+        for form in {raw.rstrip("/"), full, full.replace(HOME, "$HOME"), full.replace(HOME, "${HOME}")}:
+            if form and form in t:
+                raise Abgelehnt("Gesperrter Ordner im Befehl: " + raw)
+
+
+def locked():
+    try:
+        return subprocess.run(["pgrep", "-x", "hyprlock"], capture_output=True).returncode == 0
+    except OSError:
+        return False
+
+
+# ------------------------------------------------------------------ Werkzeuge
+
+def run(cmd, timeout=20, inp=None):
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, input=inp)
+    return (r.stdout or "") + (("\n" + r.stderr) if r.returncode != 0 and r.stderr else "")
+
+
+def t_status(a):
+    out = ["Rechner: " + host()]
+    for bat in sorted(p for p in os.listdir("/sys/class/power_supply") if p.startswith("BAT")) if os.path.isdir("/sys/class/power_supply") else []:
+        try:
+            cap = open("/sys/class/power_supply/%s/capacity" % bat).read().strip()
+            st = open("/sys/class/power_supply/%s/status" % bat).read().strip()
+            out.append("Akku %s: %s %% (%s)" % (bat, cap, st))
+        except OSError:
+            pass
+    try:
+        out.append("Auslastung (1/5/15 min): " + " ".join(open("/proc/loadavg").read().split()[:3]))
+        mem = dict(l.split(":", 1) for l in open("/proc/meminfo").read().splitlines() if ":" in l)
+        tot = int(mem["MemTotal"].split()[0]); av = int(mem["MemAvailable"].split()[0])
+        out.append("Arbeitsspeicher: %d %% belegt" % round(100 * (tot - av) / tot))
+    except (OSError, KeyError, ValueError):
+        pass
+    try:
+        out.append("Netz: " + (run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show", "--active"]).strip().replace("\n", ", ") or "keins"))
+    except (OSError, subprocess.SubprocessError):
+        pass
+    out.append("Sitzung: " + ("gesperrt" if locked() else "offen"))
+    return "\n".join(out)
+
+
+def t_search(a):
+    suche = str(a.get("suche", "")).strip()
+    ordner = check_path(a.get("ordner") or "~")
+    inhalt = bool(a.get("inhalt", False))
+    limit = max(1, min(int(a.get("max", 20)), 100))
+    if not suche:
+        raise ValueError("suche fehlt")
+    muster = suche if any(c in suche for c in "*?[") else "*" + suche + "*"
+    treffer = []
+    gesperrt = blocked_paths()
+    for root, dirs, files in os.walk(ordner):
+        dirs[:] = [d for d in dirs if not d.startswith(".") and os.path.join(root, d) not in gesperrt]
+        for f in files:
+            p = os.path.join(root, f)
+            if any(p == b or p.startswith(b + "/") for b in gesperrt):
+                continue
+            ok = fnmatch.fnmatch(f.lower(), muster.lower())
+            if not ok and inhalt:
+                try:
+                    if os.path.getsize(p) < 2_000_000:
+                        with open(p, "r", errors="ignore") as fh:
+                            ok = suche.lower() in fh.read().lower()
+                except OSError:
+                    pass
+            if ok:
+                try:
+                    treffer.append((os.path.getmtime(p), p, os.path.getsize(p)))
+                except OSError:
+                    pass
+        if len(treffer) > 5000:
+            break
+    treffer.sort(reverse=True)
+    if not treffer:
+        return "Keine Treffer für %s in %s." % (suche, ordner)
+    return "\n".join("%s  (%s, %d Bytes)" % (p, datetime.datetime.fromtimestamp(m).strftime("%Y-%m-%d %H:%M"), s)
+                     for m, p, s in treffer[:limit])
+
+
+def t_read(a):
+    p = check_path(a["pfad"])
+    if os.path.isdir(p):
+        return "\n".join(sorted(os.listdir(p))) or "(leerer Ordner)"
+    with open(p, "rb") as f:
+        raw = f.read(MAX + 1)
+    if b"\0" in raw[:4096]:
+        return "Keine Textdatei (%d Bytes)." % os.path.getsize(p)
+    return raw.decode("utf-8", errors="replace")
+
+
+def hypr_json(what):
+    try:
+        return json.loads(run(["hyprctl", "-j", what], timeout=5) or "[]")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return []
+
+
+def t_windows(a):
+    out = ["Fenster:"]
+    for c in hypr_json("clients"):
+        out.append("- %s | %s | Arbeitsfläche %s | %s" % (c.get("address"), c.get("class"), (c.get("workspace") or {}).get("id"), c.get("title")))
+    apps = set()
+    for d in [os.path.join(HOME, ".local/share/applications"), "/usr/share/applications"]:
+        if os.path.isdir(d):
+            apps.update(f[:-8] for f in os.listdir(d) if f.endswith(".desktop"))
+    out.append("Apps: " + ", ".join(sorted(apps)[:200]))
+    return "\n".join(out)
+
+
+def t_clip_read(a):
+    return run(["wl-paste", "-n", "-t", "text"], timeout=5) or "(Zwischenablage leer)"
+
+
+def t_open(a):
+    ziel = str(a["ziel"]).strip()
+    if re.match(r"^(https?|mailto):", ziel):
+        subprocess.Popen(["xdg-open", ziel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        return "Geöffnet: " + ziel
+    if ziel.startswith(("/", "~", ".")) or os.path.exists(expand(ziel)):
+        p = check_path(ziel)
+        if not os.path.exists(p):
+            raise ValueError("Gibt es nicht: " + ziel)
+        subprocess.Popen(["xdg-open", p], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        return "Geöffnet: " + p
+    # App: über ihre .desktop-Datei
+    if re.match(r"^[A-Za-z0-9_.-]+$", ziel):
+        subprocess.Popen(["gtk-launch", ziel], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        return "App gestartet: " + ziel
+    raise ValueError("Unbekanntes Ziel: " + ziel)
+
+
+def window_selector(w):
+    w = str(w)
+    if re.match(r"^0x[0-9a-fA-F]+$", w):
+        return "address:" + w.lower()
+    for c in hypr_json("clients"):
+        if w.lower() in (c.get("class") or "").lower() or w.lower() in (c.get("title") or "").lower():
+            return "address:" + c.get("address")
+    raise ValueError("Kein Fenster passt zu " + w)
+
+
+def t_window(a):
+    sel = window_selector(a["fenster"])
+    akt = a["aktion"]
+    lua = {"fokussieren": 'hl.dsp.focus({ window = "%s" })' % sel,
+           "schliessen": 'hl.dsp.window.close({ window = "%s" })' % sel,
+           "vollbild": 'hl.dsp.window.fullscreen({ window = "%s" })' % sel}
+    if akt == "verschieben":
+        n = int(a.get("arbeitsflaeche", 0))
+        if not 1 <= n <= 10:
+            raise ValueError("arbeitsflaeche 1–10")
+        cmd = 'hl.dsp.window.move({ window = "%s", workspace = %d, follow = false })' % (sel, n)
+    elif akt in lua:
+        cmd = lua[akt]
+    else:
+        raise ValueError("aktion: fokussieren, schliessen, verschieben, vollbild")
+    return run(["hyprctl", "dispatch", cmd], timeout=5).strip() or "ok"
+
+
+def t_media(a):
+    akt, w = a["aktion"], a.get("wert")
+    osd = os.path.join(BIN, "shell-osd")
+    m = {"play": ["playerctl", "play"], "pause": ["playerctl", "pause"], "weiter": ["playerctl", "next"],
+         "zurueck": ["playerctl", "previous"], "lauter": [osd, "volume", "up"], "leiser": [osd, "volume", "down"],
+         "stumm": [osd, "volume", "mute"]}
+    if akt in m:
+        run(m[akt]); return "ok: " + akt
+    if akt == "lautstaerke" and w is not None:
+        v = max(0, min(100, int(w)))
+        run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "%d%%" % v]); return "Lautstärke %d %%" % v
+    if akt == "helligkeit" and w is not None:
+        v = max(1, min(100, int(w)))
+        run(["brightnessctl", "-q", "set", "%d%%" % v]); return "Helligkeit %d %%" % v
+    raise ValueError("aktion: play, pause, weiter, zurueck, lauter, leiser, stumm, lautstaerke, helligkeit")
+
+
+def t_notify(a):
+    notify(str(a.get("titel", "Missa")), str(a.get("text", "")))
+    return "Benachrichtigung gezeigt"
+
+
+def t_ui(a):
+    akt = a["aktion"]
+    if akt == "panel":
+        name = str(a["name"])
+        if not re.match(r"^[a-z-]+$", name):
+            raise ValueError("ungültiges Panel")
+        return run([os.path.join(BIN, "shell-quickshell"), "ipc", name, "open"]) or "Panel geöffnet: " + name
+    if akt == "hintergrund":
+        return run([os.path.join(BIN, "shell-wallpaper"), check_path(a["datei"])], timeout=60) or "Hintergrundbild gesetzt"
+    if akt == "einstellung":
+        key = str(a["schluessel"])
+        if key.startswith(("missa.", "keybinds.")):
+            raise Abgelehnt("Missa ändert ihre eigenen Rechte und die Tastenkürzel nicht")
+        return run([os.path.join(BIN, "shell-set"), key, str(a["wert"])]) or "gesetzt: %s = %s" % (key, a["wert"])
+    raise ValueError("aktion: panel, hintergrund, einstellung")
+
+
+def ausgabe_ordner():
+    d = os.path.expanduser(get("missa.folder", "~/Missa"))
+    return os.path.join(d, "Ausgabe")
+
+
+def target(p):
+    p = str(p)
+    if not p.startswith(("/", "~")):
+        p = os.path.join(ausgabe_ordner(), p)
+    return check_path(p)
+
+
+def t_create(a):
+    p = target(a["pfad"])
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    try:
+        fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)   # überschreibt nie
+    except FileExistsError:
+        raise ValueError("Gibt es schon (wird nie überschrieben): " + p)
+    with os.fdopen(fd, "w") as f:
+        f.write(str(a.get("inhalt", "")))
+    return "Angelegt: " + p
+
+
+def t_clip_set(a):
+    subprocess.run(["wl-copy"], input=str(a["text"]), text=True, timeout=5)
+    return "In der Zwischenablage"
+
+
+class Job:
+    def __init__(self):
+        self.proc = None
+        self.cancelled = False
+
+
+def t_command(a, job, frist):
+    befehl = str(a["befehl"])
+    check_text(befehl)
+    limit = max(1, min(int(a.get("zeitlimit", 30)), max(1, frist - 3)))
+    job.proc = subprocess.Popen(["bash", "-lc", befehl], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                text=True, start_new_session=True, cwd=HOME)
+    try:
+        out, _ = job.proc.communicate(timeout=limit)
+    except subprocess.TimeoutExpired:
+        os.killpg(job.proc.pid, signal.SIGKILL)
+        raise TimeoutError("Befehl nach %d Sekunden abgebrochen" % limit)
+    if job.cancelled:
+        raise InterruptedError("abgebrochen")
+    return (out or "") + "\n(Rückgabewert %d)" % job.proc.returncode
+
+
+def trash(p):
+    tdir = os.path.join(HOME, ".local/share/Trash")
+    os.makedirs(os.path.join(tdir, "files"), exist_ok=True)
+    os.makedirs(os.path.join(tdir, "info"), exist_ok=True)
+    base = os.path.basename(p)
+    name, n = base, 1
+    while os.path.exists(os.path.join(tdir, "files", name)):
+        n += 1
+        name = "%s.%d" % (base, n)
+    with open(os.path.join(tdir, "info", name + ".trashinfo"), "w") as f:
+        f.write("[Trash Info]\nPath=%s\nDeletionDate=%s\n" % (p, datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")))
+    os.rename(p, os.path.join(tdir, "files", name))
+    return "In den Papierkorb: " + p
+
+
+def t_change(a):
+    akt = a["aktion"]
+    p = check_path(a["pfad"])
+    if akt == "papierkorb":
+        return trash(p)
+    if akt == "verschieben":
+        z = target(a["ziel"])
+        if os.path.exists(z):
+            raise ValueError("Ziel gibt es schon: " + z)
+        os.makedirs(os.path.dirname(z), exist_ok=True)
+        os.rename(p, z)
+        return "Verschoben nach " + z
+    if akt == "ueberschreiben":
+        with open(p, "w") as f:
+            f.write(str(a.get("inhalt", "")))
+        return "Überschrieben: " + p
+    raise ValueError("aktion: ueberschreiben, verschieben, papierkorb (endgültig gelöscht wird nie)")
+
+
+def t_kill(a):
+    pid = a.get("pid")
+    if pid is not None:
+        pid = int(pid)
+        if pid < 2 or pid == os.getpid():
+            raise Abgelehnt("Diesen Prozess beende ich nicht")
+        os.kill(pid, signal.SIGKILL)
+        return "Prozess %d beendet" % pid
+    name = str(a.get("name", ""))
+    if not re.match(r"^[A-Za-z0-9_.+-]+$", name) or name in ("Hyprland", "systemd", "qs", "quickshell"):
+        raise Abgelehnt("Diesen Prozess beende ich nicht: " + name)
+    r = subprocess.run(["pkill", "-KILL", "-x", name], capture_output=True)
+    return ("Beendet: " if r.returncode == 0 else "Kein Prozess: ") + name
+
+
+def t_power(a):
+    m = {"sperren": "lock", "abmelden": "logout", "neustart": "reboot", "ausschalten": "shutdown", "standby": "suspend"}
+    akt = a["aktion"]
+    if akt not in m:
+        raise ValueError("aktion: " + ", ".join(m))
+    subprocess.Popen([os.path.join(BIN, "shell-powermenu"), m[akt]], start_new_session=True)
+    return "Ausgeführt: " + akt
+
+
+def schema(props, req):
+    return {"type": "object", "properties": props, "required": req, "additionalProperties": False}
+
+
+S = lambda d: {"type": "string", "description": d}
+I = lambda d: {"type": "integer", "description": d}
+TOOLS = [
+    ("rechner_status", "lesen", "Zeigt Akku, Auslastung, Arbeitsspeicher, Netz und ob die Sitzung gesperrt ist.", schema({}, []), t_status),
+    ("rechner_dateien_suchen", "lesen", "Findet Dateien nach Name (Muster wie *.pdf) oder Inhalt, neueste zuerst. Gesperrte Ordner werden nie durchsucht.",
+     schema({"suche": S("Name, Teil des Namens oder Muster wie *.pdf"), "ordner": S("Ordner, Standard ~ (z. B. ~/Downloads)"),
+             "inhalt": {"type": "boolean", "description": "auch im Inhalt suchen"}, "max": I("höchstens so viele Treffer (1–100)")}, ["suche"]), t_search),
+    ("rechner_datei_lesen", "lesen", "Liest den Text einer Datei (höchstens 20000 Zeichen) oder listet einen Ordner.", schema({"pfad": S("Pfad der Datei oder des Ordners")}, ["pfad"]), t_read),
+    ("rechner_fenster_anzeigen", "lesen", "Zeigt die offenen Fenster (Adresse, Klasse, Arbeitsfläche, Titel) und die installierten Apps.", schema({}, []), t_windows),
+    ("rechner_zwischenablage_lesen", "lesen", "Liest den Text in der Zwischenablage.", schema({}, []), t_clip_read),
+    ("rechner_oeffnen", "schreiben", "Öffnet eine Datei, einen Ordner, eine Adresse (https://…) oder eine App (Name der .desktop-Datei).", schema({"ziel": S("Pfad, Adresse oder App")}, ["ziel"]), t_open),
+    ("rechner_fenster_steuern", "schreiben", "Fokussiert, schliesst, verschiebt (auf eine Arbeitsfläche) oder macht ein Fenster zum Vollbild.",
+     schema({"aktion": {"type": "string", "enum": ["fokussieren", "schliessen", "verschieben", "vollbild"]}, "fenster": S("Adresse (0x…), Klasse oder Teil des Titels"),
+             "arbeitsflaeche": I("Ziel beim Verschieben (1–10)")}, ["aktion", "fenster"]), t_window),
+    ("rechner_medien", "schreiben", "Steuert Wiedergabe, Lautstärke und Helligkeit.",
+     schema({"aktion": {"type": "string", "enum": ["play", "pause", "weiter", "zurueck", "lauter", "leiser", "stumm", "lautstaerke", "helligkeit"]}, "wert": I("Prozent für lautstaerke/helligkeit")}, ["aktion"]), t_media),
+    ("rechner_benachrichtigen", "schreiben", "Zeigt eine Benachrichtigung am Desktop.", schema({"titel": S("Titel"), "text": S("Text")}, ["text"]), t_notify),
+    ("rechner_oberflaeche", "schreiben", "Öffnet ein Panel von hypr-shell, setzt das Hintergrundbild oder eine Einstellung (shell-set; nicht missa.* und keybinds.*).",
+     schema({"aktion": {"type": "string", "enum": ["panel", "hintergrund", "einstellung"]}, "name": S("Panel: dashboard, panel, launcher, notifications, clipboard, overview, cheatsheet, power, settings"),
+             "datei": S("Bild für das Hintergrundbild"), "schluessel": S("Einstellung, z. B. look.rounding"), "wert": S("neuer Wert")}, ["aktion"]), t_ui),
+    ("rechner_datei_anlegen", "schreiben", "Legt eine neue Textdatei an (ohne Ordner in ~/Missa/Ausgabe); überschreibt nie.", schema({"pfad": S("Dateiname oder Pfad"), "inhalt": S("Text")}, ["pfad", "inhalt"]), t_create),
+    ("rechner_zwischenablage_setzen", "schreiben", "Legt Text in die Zwischenablage.", schema({"text": S("Text")}, ["text"]), t_clip_set),
+    ("rechner_befehl", "zerstoererisch", "Führt einen Befehl als Benutzer aus (bash, mit Zeitlimit; nie als root, sudo fragt der Rechner selbst).",
+     schema({"befehl": S("der Befehl"), "zeitlimit": I("Sekunden, Standard 30")}, ["befehl"]), None),
+    ("rechner_datei_aendern", "zerstoererisch", "Überschreibt, verschiebt eine Datei oder legt sie in den Papierkorb (endgültig gelöscht wird nie).",
+     schema({"aktion": {"type": "string", "enum": ["ueberschreiben", "verschieben", "papierkorb"]}, "pfad": S("Datei"), "inhalt": S("neuer Text beim Überschreiben"), "ziel": S("Ziel beim Verschieben")}, ["aktion", "pfad"]), t_change),
+    ("rechner_prozess_beenden", "zerstoererisch", "Beendet ein Programm hart (nach Prozessnummer oder genauem Namen).", schema({"pid": I("Prozessnummer"), "name": S("genauer Programmname")}, []), t_kill),
+    ("rechner_energie", "zerstoererisch", "Sperrt, meldet ab, startet neu, schaltet aus oder geht in den Standby.",
+     schema({"aktion": {"type": "string", "enum": ["sperren", "abmelden", "neustart", "ausschalten", "standby"]}}, ["aktion"]), t_power),
+]
+BY_NAME = {t[0]: t for t in TOOLS}
+
+
+def describe(name, args):
+    if name == "rechner_befehl":
+        return str(args.get("befehl", ""))
+    for k in ("pfad", "ziel", "suche", "aktion", "text", "name", "fenster"):
+        if k in args:
+            return "%s: %s" % (k, args[k])
+    return json.dumps(args, ensure_ascii=False)[:200]
+
+
+# ------------------------------------------------------------------ Rückfrage (Glas-Karte)
+
+def ask_user(job_id, tool, text):
+    """Stufe ask: Glas-Karte zeigt Befehl/Datei wörtlich; Enter erlaubt, Esc lehnt ab, nach 60 s abgelehnt."""
+    ans = os.path.join(RUN, "hypr-shell-missa-answer-" + job_id)
+    try:
+        os.remove(ans)
+    except OSError:
+        pass
+    try:
+        subprocess.run([os.path.join(BIN, "shell-quickshell"), "ipc", "missaagent", "ask", job_id, tool, text[:2000]],
+                       capture_output=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    ende = time.time() + 60
+    while time.time() < ende:
+        if os.path.exists(ans):
+            with open(ans) as f:
+                a = f.read().strip()
+            os.remove(ans)
+            return a == "yes"
+        time.sleep(0.2)
+    try:
+        subprocess.run([os.path.join(BIN, "shell-quickshell"), "ipc", "missaagent", "expire", job_id], capture_output=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return False
+
+
+# ------------------------------------------------------------------ Verbindung
+
+class Agent:
+    def __init__(self):
+        self.base = str(get("missa.url", "")).rstrip("/")
+        self.token = secret("MISSA_DEVICE_TOKEN")
+        self.done = set()
+        self.jobs = {}
+        self.lock = threading.Lock()
+        ca = get("integrations.ca_file", "")
+        self.ctx = ssl.create_default_context(cafile=os.path.expanduser(ca)) if ca and os.path.isfile(os.path.expanduser(ca)) else None
+
+    def req(self, method, path, body=None, timeout=15):
+        data = json.dumps(body).encode() if body is not None else None
+        r = urllib.request.Request(self.base + path, data=data, method=method,
+                                   headers={"Authorization": "Bearer " + self.token, "Content-Type": "application/json"})
+        return urllib.request.urlopen(r, timeout=timeout, context=self.ctx)
+
+    def register(self):
+        tools = [{"name": n, "beschreibung": d, "parameter": p, "stufe": s} for n, s, d, p, _ in TOOLS]
+        with self.req("POST", "/api/geraete/anmelden", {"protokoll": 1, "geraet": device_name(), "sitzungen": [session()], "werkzeuge": tools}) as r:
+            a = json.load(r)
+        for x in a.get("abgelehnt", []):
+            print("abgelehnt: %s (%s)" % (x.get("name"), x.get("grund")), file=sys.stderr)
+
+    def result(self, job_id, ok, text=None, art=None):
+        body = {"id": job_id, "ok": True, "ergebnis": cut(text)} if ok else {"id": job_id, "ok": False, "art": art, "fehler": str(text)[:500]}
+        try:
+            self.req("POST", "/api/geraete/ergebnis", body).close()
+        except urllib.error.HTTPError as e:
+            if e.code not in (404, 409):
+                print("Ergebnis nicht angenommen: %d" % e.code, file=sys.stderr)
+        except (urllib.error.URLError, OSError):
+            pass
+
+    def execute(self, job):
+        jid, name, args = job.get("id"), job.get("werkzeug"), job.get("argumente") or {}
+        frist = int(job.get("frist_s", 60) or 60)
+        state = Job()
+        with self.lock:
+            if jid in self.done:          # jede Auftrags-ID höchstens einmal
+                return
+            self.done.add(jid)
+            self.jobs[jid] = state
+        write_state(busy=True, tool=name)
+        kurz = describe(name, args)
+        try:
+            tool = BY_NAME.get(name)
+            if not tool:
+                raise Abgelehnt("Unbekanntes Werkzeug " + str(name))
+            stufe = tool[1]
+            access = get("missa.access", "ask")
+            if not enabled() or os.path.exists(PAUSED):
+                raise Abgelehnt("Missa access ist ausgeschaltet")
+            if stufe != "lesen" and access == "read":
+                raise Abgelehnt("Zugriffsstufe read: nur lesende Werkzeuge")
+            if stufe != "lesen" and locked():
+                raise Abgelehnt("Bildschirm gesperrt: nur lesende Werkzeuge")
+            if stufe == "zerstoererisch" and access != "full":
+                if not ask_user(jid, name, kurz):
+                    raise Abgelehnt("Am Rechner abgelehnt (oder nach 60 Sekunden ohne Antwort)")
+            if state.cancelled:
+                return
+            if name == "rechner_befehl":
+                out = t_command(args, state, frist)
+            else:
+                out = tool[4](args)
+            if state.cancelled:
+                return
+            self.result(jid, True, out)
+            log_action(name, kurz, "erlaubt")
+        except Abgelehnt as e:
+            self.result(jid, False, str(e), "abgelehnt")
+            log_action(name, kurz + " – " + str(e), "abgelehnt")
+        except TimeoutError as e:
+            self.result(jid, False, str(e), "zeitlimit")
+            log_action(name, kurz, "zeitlimit")
+        except InterruptedError:
+            log_action(name, kurz, "abgebrochen")
+        except Exception as e:  # noqa: BLE001 – jeder Fehler geht als kurzer Satz an Missa
+            if not state.cancelled:
+                self.result(jid, False, "%s: %s" % (type(e).__name__, e), "fehler")
+                log_action(name, kurz + " – " + str(e), "fehler")
+        finally:
+            with self.lock:
+                self.jobs.pop(jid, None)
+                busy = bool(self.jobs)
+            write_state(busy=busy, tool="" if not busy else name)
+
+    def cancel(self, jid):
+        with self.lock:
+            j = self.jobs.get(jid)
+        if j:
+            j.cancelled = True
+            if j.proc and j.proc.poll() is None:
+                try:
+                    os.killpg(j.proc.pid, signal.SIGKILL)
+                except OSError:
+                    pass
+
+    def stream(self):
+        with self.req("GET", "/api/geraete/auftraege", timeout=45) as r:
+            write_state(connected=True, since=now())
+            event, data = None, []
+            for raw in r:
+                line = raw.decode("utf-8", errors="replace").rstrip("\r\n")
+                if not enabled() or os.path.exists(PAUSED):
+                    return
+                if line.startswith(":"):
+                    continue
+                if line.startswith("event:"):
+                    event = line[6:].strip()
+                elif line.startswith("data:"):
+                    data.append(line[5:].lstrip())
+                elif line == "":
+                    if event and data:
+                        self.dispatch(event, "\n".join(data))
+                    event, data = None, []
+
+    def dispatch(self, event, data):
+        try:
+            d = json.loads(data)
+        except ValueError:
+            return
+        if event == "auftrag":
+            threading.Thread(target=self.execute, args=(d,), daemon=True).start()
+        elif event == "meldung":
+            stufe = d.get("stufe", "info")
+            notify(d.get("titel", "Missa"), d.get("text", ""), "critical" if stufe == "notfall" else "normal")
+        elif event == "abbruch":
+            self.cancel(d.get("id"))
+
+    def loop(self):
+        wait = 1
+        while enabled() and not os.path.exists(PAUSED):
+            try:
+                self.register()
+                wait = 1
+                self.stream()
+            except urllib.error.HTTPError as e:
+                print("Missa-Core antwortet %d" % e.code, file=sys.stderr)
+                if e.code in (401, 400):
+                    wait = 60
+            except (urllib.error.URLError, OSError, ValueError) as e:
+                print("Verbindung: %s" % type(e).__name__, file=sys.stderr)
+            write_state(connected=False, busy=False, tool="")
+            if not enabled() or os.path.exists(PAUSED):
+                break
+            time.sleep(wait)
+            wait = min(60, wait * 2)      # wachsende Wartezeit 1 … 60 Sekunden
+
+
+# ------------------------------------------------------------------ Befehle
+
+def systemd():
+    if os.environ.get("HYPR_SHELL_NO_SYSTEMD") == "1":
+        return False
+    return subprocess.run(["systemctl", "--user", "show-environment"], capture_output=True).returncode == 0
+
+
+def running():
+    try:
+        with open(STATE) as f:
+            pid = json.load(f).get("pid")
+        os.kill(int(pid), 0)
+        return True
+    except (OSError, ValueError, TypeError):
+        return False
+
+
+def start():
+    if systemd():
+        subprocess.run(["systemctl", "--user", "start", UNIT], capture_output=True)
+    elif not running():
+        subprocess.Popen([os.path.realpath(__file__), "run"], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=open(os.path.join(DATA, "missa-agent.err"), "a"))
+
+
+def stop():
+    if systemd():
+        subprocess.run(["systemctl", "--user", "stop", UNIT], capture_output=True)
+    try:
+        with open(STATE) as f:
+            pid = json.load(f).get("pid")
+        if pid and int(pid) != os.getpid():
+            os.kill(int(pid), signal.SIGTERM)
+    except (OSError, ValueError, TypeError):
+        pass
+    write_state(connected=False, busy=False, tool="", pid=None)
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    os.makedirs(DATA, exist_ok=True)
+    if cmd == "run":
+        # nie als root (nur der Test-Container der CI darf das mit HYPR_SHELL_ALLOW_ROOT=1 übergehen)
+        if os.geteuid() == 0 and os.environ.get("HYPR_SHELL_ALLOW_ROOT") != "1":
+            sys.exit("shell-missa-agent: läuft nie als root")
+        if not enabled() or os.path.exists(PAUSED):
+            return
+        if not get("missa.url", "") or not secret("MISSA_DEVICE_TOKEN"):
+            sys.exit("shell-missa-agent: missa.url oder MISSA_DEVICE_TOKEN fehlt")
+        write_state(connected=False, busy=False, tool="", pid=os.getpid())
+        signal.signal(signal.SIGTERM, lambda *a: (write_state(connected=False, busy=False, pid=None), os._exit(0)))
+        Agent().loop()
+        write_state(connected=False, busy=False, pid=None)
+    elif cmd == "sync":
+        if enabled() and not os.path.exists(PAUSED):
+            start()
+        else:
+            stop()
+    elif cmd == "pause":
+        open(PAUSED, "w").close()
+        stop()
+    elif cmd == "resume":
+        try:
+            os.remove(PAUSED)
+        except OSError:
+            pass
+        if enabled():
+            start()
+    elif cmd == "status":
+        s = {"enabled": enabled(), "paused": os.path.exists(PAUSED), "connected": False, "busy": False, "tool": ""}
+        try:
+            with open(STATE) as f:
+                s.update(json.load(f))
+        except (OSError, ValueError):
+            pass
+        if not running():
+            s.update(connected=False, busy=False)
+        s.pop("pid", None)
+        print(json.dumps(s))
+    elif cmd == "answer" and len(sys.argv) == 4 and re.match(r"^[A-Za-z0-9_-]{1,64}$", sys.argv[2]):
+        with open(os.path.join(RUN, "hypr-shell-missa-answer-" + sys.argv[2]), "w") as f:
+            f.write("yes" if sys.argv[3] == "yes" else "no")
+    elif cmd == "tools":
+        print(json.dumps([{"name": n, "stufe": s, "beschreibung": d, "parameter": p} for n, s, d, p, _ in TOOLS], ensure_ascii=False))
+    else:
+        print(open(os.path.realpath(__file__)).read().split("import ")[0].replace("# ", "").replace("#", ""), end="")
+        sys.exit(2)
+
+
+if __name__ == "__main__":
+    main()

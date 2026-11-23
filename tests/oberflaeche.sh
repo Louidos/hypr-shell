@@ -376,6 +376,15 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
         if [ "$(grep -c "hypr-shell-probe search-first" "$T/qs.log" || true)" -gt "$vorher" ]; then echo "  ok: Suche findet \"$q\""
         else echo "  FEHLER: Suche findet \"$q\" nicht"; app_ok=0; fi
     done
+    # Programme mitfärben: GTK steht immer da, Firefox nur, wenn installiert
+    ipc settings open theme; sleep 2
+    if test_ipc click setting-theme.apps.gtk && warte_auf .theme.apps.gtk false; then echo "  ok: Theme → Apps: GTK-Schalter landet in settings.json"
+    else echo "  FEHLER: Schalter theme.apps.gtk ($(wert .theme))"; app_ok=0; fi
+    if ! command -v firefox >/dev/null 2>&1; then
+        if test_ipc click setting-theme.apps.firefox; then echo "  FEHLER: Firefox-Zeile da, obwohl Firefox fehlt"; app_ok=0
+        else echo "  ok: ohne Firefox keine Firefox-Zeile"; fi
+    fi
+    test_ipc click setting-theme.apps.gtk && warte_auf .theme.apps.gtk true || true
     ipc settings close; sleep 0.5
     ipc settings open look; sleep 2
     # Schalter: Blur aus
@@ -478,8 +487,31 @@ if command -v python3 >/dev/null 2>&1; then
             echo "  ok: gesprochener Satz steht im Chat und wird beantwortet (Sprechmodus)"
         else echo "  FEHLER: Sprechen: Zustand $zustand, Log: $(tail -n 2 "$T/missa.log")"; missa_ok=0; fi
         if [ -z "$(find "$XDG_RUNTIME_DIR" "$HOME" -name 'hypr-shell-voice-*.wav' 2>/dev/null)" ]; then echo "  ok: keine Audiodatei bleibt liegen"; else echo "  FEHLER: Audiodatei liegt noch"; missa_ok=0; fi
+        # Missa-Agent: Glas-Karte für die Rückfrage (Stufe ask) und Schalter "Missa access" im Panel
+        jq '.missa.agent_enabled = true' "$HOME/.config/hypr-shell/settings.json" > "$T/s.json" && mv "$T/s.json" "$HOME/.config/hypr-shell/settings.json"
+        KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload 2>/dev/null; sleep 2
+        ipc missaagent ask test-1 rechner_befehl "rm -rf ~/tmp/*.log"; sleep 1; bild missa-rueckfrage-karte
+        if [ "$("$qs" -p "$cfg" ipc call missaagent waiting 2>/dev/null)" = "rechner_befehl: rm -rf ~/tmp/*.log" ]; then echo "  ok: Glas-Karte zeigt den Befehl wörtlich"
+        else echo "  FEHLER: Rückfrage-Karte"; missa_ok=0; fi
+        ipc missaagent deny
+        for _ in $(seq 1 25); do [ "$(cat "$XDG_RUNTIME_DIR/hypr-shell-missa-answer-test-1" 2>/dev/null)" = no ] && break; sleep 0.2; done
+        if [ -z "$("$qs" -p "$cfg" ipc call missaagent waiting 2>/dev/null)" ] && [ "$(cat "$XDG_RUNTIME_DIR/hypr-shell-missa-answer-test-1" 2>/dev/null)" = no ]; then echo "  ok: Esc/Deny lehnt ab"
+        else echo "  FEHLER: Ablehnen"; missa_ok=0; fi
+        ipc panel open; sleep 2; bild panel-missa
+        if [[ ",$("$qs" -p "$cfg" ipc call panel toggles 2>/dev/null)," == *",missa,"* ]]; then echo "  ok: Schalter Missa access im Panel (Agent eingeschaltet)"
+        else echo "  FEHLER: Schalter Missa access fehlt"; missa_ok=0; fi
+        ipc panel close; sleep 1
+        # Homelab, Kalender, Sensor (über denselben Testserver)
+        jq --arg u "http://127.0.0.1:$mport" '.lab.enabled = true | .calendar.enabled = true | .calendar.url = ($u + "/caldav/") | .calendar.user = "kal"
+            | .sensor.enabled = true | .sensor.url = ($u + "/sensor.json") | .sensor.field = "luft.co2" | .sensor.title = "CO2"' \
+            "$HOME/.config/hypr-shell/settings.json" > "$T/s.json" && mv "$T/s.json" "$HOME/.config/hypr-shell/settings.json"
+        echo kal-pw | "$HOME/.local/bin/shell-secrets" set CALDAV_PASSWORD
+        KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload 2>/dev/null; sleep 2
+        ipc dashboard open lab; sleep 3; bild dashboard-lab
         ipc dashboard open dashboard; sleep 3; bild dashboard-missa; ipc dashboard close; sleep 1
         missa_vorher="$("$qs" -p "$cfg" ipc call missa lastText 2>/dev/null)"
+        if grep -q '"/api/homelab"' "$T/missa.log" && grep -q '"caldav"' "$T/missa.log"; then echo "  ok: Lab und Kalender lesen erst, wenn eingeschaltet und das Dashboard offen ist"
+        else echo "  FEHLER: keine Abfrage für Lab/Kalender"; missa_ok=0; fi
     else
         echo "  FEHLER: Missa eingeschaltet, aber kein Panel"; missa_ok=0
     fi
@@ -493,6 +525,8 @@ bereich panel panel-avatar "Profilbild im Panel"
 bereich panel app-icon "erstes App-Symbol im Panel"
 bereich launcher launcher-first "erstes App-Symbol im Starter"
 [ -f "$T/log-dashboard-missa" ] && bereich dashboard-missa missa-card "Missa-Karte im Dashboard"
+[ -f "$T/log-dashboard-lab" ] && bereich dashboard-lab lab-vms "VMs im Tab Lab"
+[ -f "$T/log-dashboard-missa" ] && bereich dashboard-missa calendar-event "Termin unter dem Kalender"
 if command -v cliphist >/dev/null 2>&1 && [ -n "$im" ]; then bereich zwischenablage clipboard-image "Bild-Vorschau in der Zwischenablage"; fi
 
 # ohne ~/.face: Anfangsbuchstabe statt Bild

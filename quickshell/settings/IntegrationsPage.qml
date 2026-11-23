@@ -18,13 +18,13 @@ Column {
           secret: "NEXTCLOUD_APP_PASSWORD", secretTitle: "App password", howto: "In Nextcloud: Settings → Security → Devices & sessions → Create new app password." },
         { id: "missa", title: "Missa", icon: "󰚩", keys: ["missa.enabled", "missa.url", "missa.folder"],
           secret: "MISSA_API_KEY", secretTitle: "API key", howto: "Enter the address of Missa-Core and the API key from its configuration." },
-        { id: "agent", title: "Missa on this computer", icon: "󰍹", keys: ["missa.agent_enabled"],
+        { id: "agent", title: "Missa on this computer", icon: "󰍹", keys: ["missa.agent_enabled", "missa.access", "missa.blocked_paths", "missa.device"],
           secret: "MISSA_DEVICE_TOKEN", secretTitle: "Device token", howto: "Create a device token in Missa-Core (devices) and enter it here." },
         { id: "voice", title: "Talk to Missa", icon: "󰍬", keys: ["missa.voice_enabled", "missa.voice_language", "missa.voice_model", "missa.voice_voice", "missa.voice_speed"], secret: "", howto: "" },
         { id: "lab", title: "Homelab", icon: "󰒋", keys: ["lab.enabled"], secret: "", howto: "" },
         { id: "calendar", title: "Calendar", icon: "󰃭", keys: ["calendar.enabled", "calendar.url", "calendar.user"],
           secret: "CALDAV_PASSWORD", secretTitle: "Password", howto: "Enter the CalDAV address, user name and an (app) password." },
-        { id: "sensor", title: "Sensor", icon: "󰈐", keys: ["sensor.enabled", "sensor.url"], secret: "", howto: "Enter an address that returns JSON." },
+        { id: "sensor", title: "Sensor", icon: "󰈐", keys: ["sensor.enabled", "sensor.url", "sensor.field", "sensor.title", "sensor.unit", "sensor.warn"], secret: "", howto: "Enter an address that returns JSON." },
         { id: "games", title: "Own games", icon: "󰊴", keys: ["games.custom_enabled", "games.custom"], secret: "", howto: "" },
         { id: "security", title: "Self-signed servers", icon: "󰒃", keys: ["integrations.ca_file"], secret: "", howto: "", always: true }
     ]

@@ -77,6 +77,8 @@ farben() {
     if [ "$modus" != custom ] && matugen --help 2>&1 | grep -q -- '--source-color-index'; then args+=(--source-color-index 0); fi
     matugen "${args[@]}" >/dev/null
     kennung "$bild" > "$FARBEN_FUER"
+    # eingeschaltete Programme (GTK, Qt, …) bekommen die neuen Farben
+    if [ -x "$HOME/.local/bin/shell-appcolors" ]; then "$HOME/.local/bin/shell-appcolors" apply >/dev/null 2>&1 || true; fi
 }
 
 neu_laden() {

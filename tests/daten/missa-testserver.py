@@ -129,7 +129,7 @@ class H(BaseHTTPRequestHandler):
             b = self.body()
             with lock:
                 if p == "/test/auftrag":
-                    i = str(uuid.uuid4())
+                    i = b.get("id") or str(uuid.uuid4())
                     queue.append(("auftrag", {"id": i, "werkzeug": b["werkzeug"], "argumente": b.get("argumente", {}), "frist_s": b.get("frist_s", 60)}))
                     return self.send_json(200, {"id": i})
                 if p == "/test/meldung":

@@ -66,6 +66,20 @@ Netz. **New conversation** leert die Anzeige; danach schickt hypr-shell seinen e
 (einen System-Hinweis „Neues Gespräch“ und die Nachrichten seither), damit Missa-Core die ältere
 Unterhaltung dieser Sitzung nicht wieder einfügt.
 
+## Homelab, Kalender, Sensor
+
+`shell-fetch` holt die Daten für das Dashboard – nur, wenn der Schalter an ist und das Dashboard offen
+ist, mit 3 Sekunden Zeitlimit und 60 Sekunden Zwischenspeicher (`~/.cache/hypr-shell/fetch`, ohne
+Zugangsdaten). Ist ein Server nicht erreichbar, bleibt der letzte Stand mit dem Zeitpunkt stehen.
+
+- **Lab** (`lab.enabled`, braucht `missa.enabled`): liest über Missa-Core `GET /api/homelab`,
+  `/api/server`, `/api/container` und `/api/alarme` (Proxmox ist vom Laptop aus nicht direkt erreichbar).
+- **Kalender** (`calendar.enabled`): CalDAV-Abfrage (`REPORT`, heute bis +30 Tage) an `calendar.url`
+  mit `calendar.user` und `CALDAV_PASSWORD`.
+- **Sensor** (`sensor.enabled`): `GET sensor.url` (optional mit `SENSOR_TOKEN`), Wert aus dem Feld
+  `sensor.field` (z. B. `luft.co2`), Titel `sensor.title`, Einheit `sensor.unit`, Warnfarbe ab
+  `sensor.warn`.
+
 ## Missa-Ordner
 
 Mit `missa.enabled` entsteht `~/Missa` (`missa.folder`) als gewöhnlicher lokaler Ordner: in `Eingang/`

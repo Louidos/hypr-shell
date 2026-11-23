@@ -20,6 +20,7 @@
     "network",
     "custom/recording",
     "custom/notifications",
+    "custom/missa",
     "custom/power"
   ],
   "custom/distro": {
@@ -126,6 +127,14 @@
     "return-type": "json",
     "interval": 2,
     "tooltip": true
+  },
+  "custom/missa": {
+    "exec": "cat \"${XDG_RUNTIME_DIR:-/tmp}/hypr-shell-missa-bar.json\" 2>/dev/null || echo '{\"text\": \"\"}'",
+    "return-type": "json",
+    "interval": 30,
+    "signal": 10,
+    "tooltip": true,
+    "on-click": "$HOME/.local/bin/shell-quickshell ipc missa toggle"
   },
   "custom/notifications": {
     "exec": "cat \"$HOME/.local/share/hypr-shell/notifications-bar.json\" 2>/dev/null || echo '{\"text\": \"󰂜\"}'",

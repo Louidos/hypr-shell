@@ -41,7 +41,7 @@ local S = {
         opacity = { inactive = 1.0 },
         animations = { enabled = true, speed = "normal" },
     },
-    theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 } },
+    theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 }, apps = { gtk = true, qt = true } },
     input = {
         layout = "us", variant = "", sensitivity = 0,
         touchpad = { natural_scroll = false, tap_to_click = true },
@@ -128,6 +128,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(bin .. "shell-laptop apply")
     -- Ordner der Anbindungen (Nextcloud, Missa) nach den Einstellungen; alles aus = nichts passiert
     hl.exec_cmd(bin .. "shell-mount sync")
+    -- Missa-Agent nur, wenn eingeschaltet (startet sonst nichts)
+    hl.exec_cmd(bin .. "shell-missa-agent sync")
 end)
 
 ------------------------------
@@ -348,6 +350,12 @@ if missa_an then
     if S.missa.voice_enabled == true and programm("whisper-cli") then
         bind(K.missa_voice, hl.dsp.exec_cmd(ui .. "missa voice"), "Missa: Talk to Missa")
     end
+end
+
+-- Qt-Programme mit den Farben des Hintergrundbilds (theme.apps.qt, über qt6ct); wer selbst schon ein
+-- Plattform-Thema gesetzt hat, behält es
+if S.theme.apps ~= nil and S.theme.apps.qt == true and os.getenv("QT_QPA_PLATFORMTHEME") == nil and programm("qt6ct") then
+    hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 end
 
 -- Kürzel-Spickzettel

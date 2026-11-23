@@ -22,9 +22,9 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `bar.position` | `top` | `top`, `bottom` | Edge of the screen the bar sits on | `shell-set bar.position bottom` |
 | `bar.height` | `30` | ganze Zahl 20 … 60 px | Height of the bar in pixels | `shell-set bar.height 31` |
 | `bar.opacity` | `0.25` | Zahl 0 … 1, Schritt 0.05 | Opacity of the bar background | `shell-set bar.opacity 0.3` |
-| `bar.modules.left` | `["distro","workspaces","media"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `power` | Modules on the left, in this order | `shell-set bar.modules.left distro,workspaces` |
-| `bar.modules.center` | `[]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `power` | Modules in the middle, in this order | `shell-set bar.modules.center distro,workspaces` |
-| `bar.modules.right` | `["volume","battery","clock","bluetooth","network","recording","notifications","power"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `power` | Modules on the right, in this order | `shell-set bar.modules.right distro,workspaces` |
+| `bar.modules.left` | `["distro","workspaces","media"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the left, in this order | `shell-set bar.modules.left distro,workspaces` |
+| `bar.modules.center` | `[]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules in the middle, in this order | `shell-set bar.modules.center distro,workspaces` |
+| `bar.modules.right` | `["volume","battery","clock","bluetooth","network","recording","notifications","missa","power"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the right, in this order | `shell-set bar.modules.right distro,workspaces` |
 | `bar.workspaces` | `4` | ganze Zahl 0 … 10 | Workspaces that are always shown (0 = only used ones) | `shell-set bar.workspaces 5` |
 | `bar.clock` | `24h` | `24h`, `12h` | 24-hour or 12-hour clock in the bar | `shell-set bar.clock 12h` |
 | `bar.battery` | `true` | `true`, `false` | Show the battery (only on devices with a battery) | `shell-set bar.battery false` |
@@ -61,7 +61,12 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `theme.font.scale` | `1.0` | Zahl 0.8 … 1.5, Schritt 0.05 | Factor for all font sizes | `shell-set theme.font.scale 1.05` |
 | `theme.cursor.name` | `Bibata-Modern-Ice` | Text (Format geprüft) | Name of the mouse cursor theme | `shell-set theme.cursor.name Adwaita` |
 | `theme.cursor.size` | `24` | ganze Zahl 16 … 64 px | Size of the mouse cursor | `shell-set theme.cursor.size 26` |
-| `theme.icons` | `Papirus-Dark` | Text (Format geprüft) | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |
+| `theme.icons` | `Papirus-Dark` | Text | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |
+| `theme.apps.gtk` | `true` | `true`, `false` | Files (Nautilus), dialogs and other GTK 3/4 apps take the wallpaper colors; off restores your own gtk.css. Open windows change after reopening | `shell-set theme.apps.gtk false` |
+| `theme.apps.qt` | `true` | `true`, `false` | Qt apps take the wallpaper colors through qt5ct/qt6ct; off restores your qt5ct/qt6ct settings | `shell-set theme.apps.qt false` |
+| `theme.apps.firefox` | `false` | `true`, `false` | Toolbar and tabs in the wallpaper colors (userChrome.css, backed up first); takes effect after restarting Firefox | `shell-set theme.apps.firefox true` |
+| `theme.apps.vesktop` | `false` | `true`, `false` | Vesktop theme in the wallpaper colors (settings backed up first) | `shell-set theme.apps.vesktop true` |
+| `theme.apps.spotify` | `false` | `true`, `false` | Spotify colors through spicetify (config backed up first, off restores it and runs spicetify apply) | `shell-set theme.apps.spotify true` |
 
 ## input – Eingabe
 
@@ -104,8 +109,8 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dashboard.opacity` | `0.42` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the glass | `shell-set dashboard.opacity 0.43` |
 | `dashboard.edge` | `true` | `true`, `false` | Open when the mouse touches the middle of the bottom edge | `shell-set dashboard.edge false` |
 | `dashboard.close_on_leave` | `true` | `true`, `false` | Close when the mouse leaves the dashboard | `shell-set dashboard.close_on_leave false` |
-| `dashboard.tabs` | `["dashboard","wallpaper","performance","games","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `games`, `about` | Tabs and their order (Games only appears when Steam games or own entries exist) | `shell-set dashboard.tabs dashboard,wallpaper` |
-| `dashboard.start` | `dashboard` | `dashboard`, `wallpaper`, `performance`, `games`, `about` | Tab shown when the dashboard opens | `shell-set dashboard.start wallpaper` |
+| `dashboard.tabs` | `["dashboard","wallpaper","performance","games","lab","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `games`, `lab`, `about` | Tabs in this order (Games only with Steam games or own entries, Lab only with lab.enabled) | `shell-set dashboard.tabs dashboard,wallpaper` |
+| `dashboard.start` | `dashboard` | `dashboard`, `wallpaper`, `performance`, `games`, `lab`, `about` | Tab shown when the dashboard opens | `shell-set dashboard.start wallpaper` |
 | `dashboard.cards` | `["weather","profile","media","clock","calendar","rings"]` | Liste aus `weather`, `profile`, `media`, `clock`, `calendar`, `rings` | Cards on the Dashboard tab | `shell-set dashboard.cards weather,profile` |
 
 ## weather – Wetter
@@ -218,6 +223,9 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `missa.url` | `""` | Text (Format geprüft) | Base address of Missa-Core, like https://missa.example.org (the key is stored in secrets.env) | `shell-set missa.url ` |
 | `missa.folder` | `~/Missa` | Text (Format geprüft) | Local folder with Eingang (files for Missa) and Ausgabe (files from Missa) | `shell-set missa.folder ~/Missa` |
 | `missa.agent_enabled` | `false` | `true`, `false` | Missa can find and open files, control apps and windows and, after confirmation, run commands | `shell-set missa.agent_enabled true` |
+| `missa.access` | `ask` | `off`, `read`, `ask`, `full` | off: nothing · read: only reading · ask: writing is free, destructive actions need your click · full: no local question | `shell-set missa.access off` |
+| `missa.blocked_paths` | `["~/.ssh","~/.gnupg","~/.local/share/keyrings","~/.password-store","~/.mozilla","~/.config/google-chrome","~/.config/chromium","~/.config/BraveSoftware","~/.var/app","~/.config/hypr-shell/secrets.env"]` | Liste von Texten | Missa never reads, searches or changes these (in every access level) | `shell-set missa.blocked_paths ~/.ssh,~/.gnupg,~/.local/share/keyrings,~/.password-store,~/.mozilla,~/.config/google-chrome,~/.config/chromium,~/.config/BraveSoftware,~/.var/app,~/.config/hypr-shell/secrets.env,code` |
+| `missa.device` | `""` | Text (Format geprüft) | Name of this computer in Missa-Core (the token belongs to it); empty = host name | `shell-set missa.device ` |
 | `missa.voice_enabled` | `false` | `true`, `false` | Speak with Missa (SUPER+SHIFT+I) and hear her answers, locally with whisper.cpp and piper | `shell-set missa.voice_enabled true` |
 | `missa.voice_language` | `de` | Text (Format geprüft) | Language for recognition (whisper.cpp), e.g. de, en or auto | `shell-set missa.voice_language de` |
 | `missa.voice_model` | `~/.local/share/hypr-shell/whisper/ggml-base.bin` | Text (Format geprüft) | whisper.cpp model file (bigger = better, slower: tiny, base, small …) | `shell-set missa.voice_model ~/.local/share/hypr-shell/whisper/ggml-base.bin` |
@@ -244,6 +252,10 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `sensor.enabled` | `false` | `true`, `false` | Dashboard tile with a value from a JSON address, e.g. air quality | `shell-set sensor.enabled true` |
 | `sensor.url` | `""` | Text (Format geprüft) | Address that returns JSON | `shell-set sensor.url ` |
+| `sensor.field` | `value` | Text (Format geprüft) | Which value of the JSON to show, as a path like luft.co2 | `shell-set sensor.field value` |
+| `sensor.title` | `Air quality` | Text (Format geprüft) | Title of the tile | `shell-set sensor.title Air quality` |
+| `sensor.unit` | `ppm` | Text (Format geprüft) | Unit shown after the value | `shell-set sensor.unit ppm` |
+| `sensor.warn` | `1000` | Zahl 0 … 100000, Schritt 1 | From this value on, the tile shows the warning color | `shell-set sensor.warn 1001` |
 
 ## integrations – integrations
 

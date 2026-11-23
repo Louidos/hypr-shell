@@ -29,6 +29,12 @@ FocusScope {
         running: true
         stdout: StdioCollector { onStreamFinished: { try { Ui.caps = Object.assign({}, Ui.caps, JSON.parse(text)) } catch (e) { } } }
     }
+    // Programme zum Mitfärben (Qt, Firefox, Vesktop, spicetify): Zeilen nur, wenn installiert
+    Process {
+        command: [Settings.bin + "shell-appcolors", "caps"]
+        running: true
+        stdout: StdioCollector { onStreamFinished: { try { Ui.caps = Object.assign({}, Ui.caps, JSON.parse(text)) } catch (e) { } } }
+    }
     Process {
         command: [Settings.bin + "shell-sysinfo", "about"]
         running: true

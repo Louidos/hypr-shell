@@ -15,6 +15,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Dashboard, Einstellungen, Spickzettel, Übersicht, Dock und Widgets rechnen ohne bekannten Bildschirm mit dem echten ersten Bildschirm statt mit fest 1920×1080 (#110)
 - Einstellungen → Monitors zeigt die laufende und die eingestellte Auflösung immer zur Auswahl an, auch wenn sie nicht zu den sechs grössten gehört; ohne bekannte Bildrate steht kein „@ 0 Hz“ mehr da (#110)
 - Fehlt beim Aufruf von shell-clipboard, shell-games, shell-laptop, shell-missa, shell-net oder shell-overview ein Argument, kommt eine klare Meldung; `shell-clipboard delete` ohne ID lief vorher still weiter (#110)
+- Leiste, Dock, Widgets und alle Panels passen sich an Bildschirmgrösse, Skalierung und Hochformat an, nichts wird mehr abgeschnitten: Panels bleiben im freien Platz (ohne Leiste und reserviertes Dock) und rollen, wenn sie nicht passen; auf 4K mit Skalierung 1 ist alles grösser; im Hochformat ordnen sich Dashboard und Einstellungen um; jeder Bildschirm rechnet mit seiner eigenen Grösse, ohne Neustart (#111)
+- Die Schrift der Leiste wird bei niedriger Leiste (`bar.height`) und grossem Schriftfaktor kleiner, statt über die Leiste zu ragen (#111)
 
 ## 1.8.0 – 2026-11-23
 

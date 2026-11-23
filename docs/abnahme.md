@@ -321,3 +321,14 @@ Sensor) und der echte SDDM-Anmeldebildschirm.
 | Bildwechsel färbt das Dock um | automatisch |
 | Nach `hyprctl reload` ein Dock pro Bildschirm, `hyprctl configerrors` leer | von Hand (echtes Hyprland); `Hyprland --verify-config` automatisch |
 
+## Bildschirmgrösse und Skalierung (#111)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Bei 1280×720 ist jedes Panel vollständig sichtbar und bedienbar | Lage automatisch (`tests/bildschirmgroessen.sh`, sway headless, alle Panels, Dock, Widgets, Karten); Bedienen von Hand |
+| 4K und Skalierung 2 sehen gleich gross aus wie der Laptop, nicht winzig | Faktor und Lage automatisch (4K mit Skalierung 1 und 2); Augenschein am echten 4K-Bildschirm von Hand |
+| Hochformat: nichts abgeschnitten, Dashboard und Einstellungen umgeordnet | automatisch (Bildschirm um 90° gedreht, Seitenleiste oben); Augenschein von Hand |
+| Nach dem Ändern von Auflösung oder Skalierung passt sich alles ohne Neustart an | automatisch (Wechsel im laufenden sway); am Laptop von Hand: `hyprctl keyword monitor eDP-1,preferred,auto,1.25` und zurück, Panels öffnen |
+| Zwei Bildschirme mit verschiedener Grösse: jedes Panel rechnet mit seinem | automatisch (4K neben 1280×720, Abstecken); echter zweiter Monitor von Hand |
+| Leiste, Sperr- und Login-Bildschirm bei 1280×720 und 4K | Schriftgrösse der Leiste automatisch (`tests/waybar.sh`); Sperrbildschirm und SDDM am echten Bildschirm von Hand |
+| Lokal ohne Quickshell | nicht lokal getestet, CI entscheidet (Arch-Container mit Quickshell) |

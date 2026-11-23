@@ -53,6 +53,21 @@ Singleton {
         return null
     }
 
+    // Profilbild ~/.face: fehlt es, bleibt die Quelle leer und die Panels zeigen den Anfangsbuchstaben
+    // (statt bei jedem Öffnen „Cannot open“ ins Log zu schreiben). checkFace() beim Öffnen eines Panels.
+    property bool hasFace: false
+    readonly property string face: hasFace ? "file://" + home + "/.face" : ""
+    function checkFace() { faceFile.reload() }
+    FileView {
+        id: faceFile
+        path: s.home + "/.face"
+        printErrors: false
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: s.hasFace = true
+        onLoadFailed: s.hasFace = false
+    }
+
     // Bildschirm aus den Einstellungen (Name), sonst der erste
     function screenFor(name) {
         const list = Quickshell.screens

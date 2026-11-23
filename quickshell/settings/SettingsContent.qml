@@ -89,7 +89,8 @@ FocusScope {
             spacing: 8
             RoundImage {
                 width: 56; height: 56; radius: 28
-                source: "file://" + Settings.home + "/.face"
+                source: Settings.face
+                Component.onCompleted: Settings.checkFace()
                 fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
                 probe: "settings-avatar"
             }

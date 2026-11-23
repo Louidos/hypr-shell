@@ -114,7 +114,8 @@ Grid12 {
             id: avatar
             width: 62; height: 62; radius: 31
             anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
-            source: "file://" + Settings.home + "/.face"
+            source: Settings.face
+            Component.onCompleted: Settings.checkFace()
             fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
             probe: "dashboard-avatar"
         }

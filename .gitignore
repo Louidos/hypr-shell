@@ -13,3 +13,4 @@ settings/settings.json
 # Testläufe
 /tmp/
 *.log
+screenshots-ci/

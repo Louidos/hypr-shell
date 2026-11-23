@@ -22,7 +22,7 @@ jobs:
     container: archlinux:latest
     steps:
       - name: Grundpakete
-        run: pacman -Syu --noconfirm --needed git sudo jq which imagemagick lua
+        run: pacman -Syu --noconfirm --needed git sudo jq which imagemagick lua curl sway swaybg grim quickshell inter-font ttf-jetbrains-mono-nerd noto-fonts
       - uses: actions/checkout@v4
       - name: Testbenutzer anlegen
         run: |
@@ -36,5 +36,12 @@ jobs:
           for t in tests/*.sh; do
             [ "$t" = tests/lint.sh ] && continue
             echo "== $t"
-            su tester -c "cd '$GITHUB_WORKSPACE' && $t"
+            su tester -c "cd '$GITHUB_WORKSPACE' && SCREENSHOTS='$GITHUB_WORKSPACE/screenshots-ci' $t"
           done
+      - name: Screenshots der Oberfläche
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots-ci/
+          if-no-files-found: ignore

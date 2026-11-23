@@ -39,6 +39,14 @@ Starter), die Arbeitsflächen 1–4 und das aktuelle Lied; rechts Lautstärke, U
 Bluetooth, WLAN, ein roter Punkt während einer Bildschirmaufnahme und der
 Ausschalt-Knopf (sperren, abmelden, neu starten, herunterfahren).
 
+## Desktop
+
+Hinter den Fenstern stehen eine grosse gestapelte Uhr (oben links) und drei
+Glas-Kacheln mit Ringen für CPU, Arbeitsspeicher und Datenträger (linker Rand).
+Position und Grösse stehen in `~/.config/hypr-shell/settings.json` unter `desktop`
+(`x`/`y` als Anteil der Bildschirmbreite/-höhe, `scale`, `enabled`); Änderungen
+wirken sofort.
+
 ## Aufbau
 
 | Ordner | Inhalt |

@@ -154,6 +154,7 @@ aktive als weisse Pille):
 | Dashboard | Wetter, Profil mit Begrüssung, Musik, Uhr, Kalender, drei Ringe für CPU/RAM/Disk |
 | Wallpaper | alle Bilder aus `~/Pictures/Wallpapers` mit Suche; Klick setzt Bild und Farben |
 | Performance | CPU und GPU mit Modell, Temperatur und Auslastung („Usage“; eine schlafende NVIDIA-Karte wird nicht geweckt), Datenträger, Netzwerk mit Verlauf, Arbeitsspeicher |
+| Lab | nur mit `lab.enabled`: VMs und IPs, Messwerte und Erreichbarkeit, Container und Alarme des Homelabs, gelesen über Missa-Core |
 | Games | zuletzt gespielte Steam-Spiele mit Cover, Klick startet; eigene Einträge (GOG, Battle.net …) mit `games.custom_enabled` und `games.custom`. Ohne Spiele fehlt der Tab |
 | About | System, Distribution, Version von hypr-shell, Hyprland und Quickshell |
 
@@ -307,6 +308,12 @@ oder Homelab benutzt, sieht nichts davon. Einschalten in der Einstellungs-App au
 `~/Missa` mit `Eingang/` und `Ausgabe/`, beide mit Lesezeichen in der Seitenleiste des Dateimanagers.
 Alles Weitere steht in [docs/anbindungen.md](docs/anbindungen.md).
 
+Mit `calendar.enabled` (CalDAV, z. B. Nextcloud) bekommt der Kalender im Dashboard Punkte an Tagen
+mit Terminen und darunter die nächsten drei Termine; mit `sensor.enabled` zeigt die Wetter-Kachel
+rechts einen Messwert aus einer JSON-Adresse (Feld, Titel, Einheit, ab `sensor.warn` in Warnfarbe).
+Alles wird nur bei offenem Dashboard geholt (3 s Zeitlimit, Zwischenspeicher); ist ein Server nicht
+erreichbar, steht ruhig „not reachable“ mit dem letzten Stand.
+
 **Missa-Chat** (mit `missa.enabled`): `SUPER + I` öffnet von der rechten Kante ein Chatfenster. Enter
 sendet, SHIFT+Enter macht eine neue Zeile; Missas Antwort läuft Wort für Wort ein („Missa is working …“,
 während sie ein Werkzeug benutzt), der Knopf unten rechts bricht ab. Stellt Missa eine Rückfrage,
@@ -323,6 +330,21 @@ piper Satz für Satz vor (Stimme `missa.voice_voice`, Tempo `missa.voice_speed`)
 Pille oder die Taste stoppt. Aufgenommen wird nur nach Tastendruck, nichts wird gespeichert. Der
 Installer fragt, ob whisper.cpp, piper und die Modelle (etwa 250 MB) geholt werden sollen; ohne sie
 fehlen Taste und Mikrofon-Knopf.
+
+**Missa bedient den Rechner** (zusätzlich `missa.agent_enabled` und ein Geräte-Token): Der Missa-Agent
+(`shell-missa-agent`, Benutzerdienst) verbindet sich ausgehend mit Missa-Core – am Rechner wird kein
+Port geöffnet – und bietet Missa 16 Werkzeuge: Dateien suchen, lesen und öffnen, Fenster und Medien
+steuern, Benachrichtigungen, Panels und Einstellungen, Dateien anlegen (nie überschreiben), und nach
+Rückfrage Befehle, Dateien ändern (Papierkorb statt löschen), Programme beenden, Energie. Die
+**Zugriffsstufe** `missa.access`: `read` (nur lesen), `ask` (Standard: Schreiben frei, Zerstörerisches
+erst nach Klick auf einer Glas-Karte, die den Befehl wörtlich zeigt – Enter erlaubt, Esc lehnt ab, nach
+60 s abgelehnt), `full` (ohne lokale Rückfrage). In jeder Stufe gilt: gesperrte Ordner
+(`missa.blocked_paths`, z. B. `~/.ssh`, Schlüsselbund, Browser-Profile, `secrets.env`), nie als root,
+bei gesperrtem Bildschirm nur Lesendes, Ausgaben höchstens 20 000 Zeichen. Solange der Agent verbunden
+ist, steht ein Symbol in der Leiste (es pulsiert während einer Aktion); der Schalter **Missa access** im
+Panel trennt sofort. Jede Aktion steht im Chat (Knopf 󰋚) und in
+`~/.local/share/hypr-shell/missa-actions.log`; Erinnerungen und Alarme von Missa erscheinen als
+Benachrichtigung (Notfälle bleiben stehen).
 
 ## Laptop
 
@@ -373,6 +395,8 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
 | `shell-games list\|launch <id>` | Spiele für den Tab Games |
 | `shell-laptop status\|profile\|gfx\|charge\|kbd …` | Laptop-Funktionen (asusctl, supergfxctl, power-profiles-daemon) |
+| `shell-fetch lab\|calendar\|sensor` | Abruf für Lab, Kalender und Sensor (nur eingeschaltet) |
+| `shell-missa-agent sync\|pause\|resume\|status` | Missa-Agent (Geräte-Anschluss v1) |
 | `shell-voice available\|listen\|speak\|stop` | mit Missa sprechen (Aufnahme, whisper.cpp, piper) |
 | `shell-missa health\|chat\|get …` | Verbindung zu Missa-Core (Chat, Status, Lagebild) |
 | `shell-mount nextcloud\|missa up\|down\|status` | Ordner der Anbindungen einhängen / aufräumen |
@@ -401,7 +425,7 @@ haben Profilbild, Cover und Vorschaubilder dort eckige statt runde Ecken.
 
 ## Projektstand
 
-Version: **1.4.0** (siehe [`VERSION`](VERSION)). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
+Version: **1.5.0** (siehe [`VERSION`](VERSION)). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
 Was nur auf dem echten Rechner geprüft werden kann, steht in [docs/abnahme.md](docs/abnahme.md).
 Optik und Aufbau sind an „DarkShadow's Shell“ (MIT) angelehnt; der Code ist neu geschrieben,
 übernommene Masse und Formen sind in [NOTICE](NOTICE) vermerkt.

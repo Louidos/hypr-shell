@@ -18,6 +18,7 @@
         "network",
         "recording",
         "notifications",
+        "missa",
         "power"
       ]
     },
@@ -111,6 +112,7 @@
       "wallpaper",
       "performance",
       "games",
+      "lab",
       "about"
     ],
     "start": "dashboard",
@@ -222,6 +224,20 @@
     "url": "",
     "folder": "~/Missa",
     "agent_enabled": false,
+    "access": "ask",
+    "blocked_paths": [
+      "~/.ssh",
+      "~/.gnupg",
+      "~/.local/share/keyrings",
+      "~/.password-store",
+      "~/.mozilla",
+      "~/.config/google-chrome",
+      "~/.config/chromium",
+      "~/.config/BraveSoftware",
+      "~/.var/app",
+      "~/.config/hypr-shell/secrets.env"
+    ],
+    "device": "",
     "voice_enabled": false,
     "voice_language": "de",
     "voice_model": "~/.local/share/hypr-shell/whisper/ggml-base.bin",
@@ -238,7 +254,11 @@
   },
   "sensor": {
     "enabled": false,
-    "url": ""
+    "url": "",
+    "field": "value",
+    "title": "Air quality",
+    "unit": "ppm",
+    "warn": 1000
   },
   "integrations": {
     "ca_file": ""

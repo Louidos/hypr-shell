@@ -60,6 +60,15 @@ GlassCard {
             spacing: 2
             Txt { width: parent.width; text: row.spec.title || row.key; size: 14; weight: Font.DemiBold }
             Txt { width: parent.width; text: row.spec.description || ""; size: 12; sub: true; wrapMode: Text.WordWrap; elide: Text.ElideNone }
+            // Warnung zu einem gewählten Wert (z. B. missa.access = full): ein Satz zum Risiko
+            Txt {
+                visible: row.spec.warn !== undefined && row.spec.warn[String(row.shown)] !== undefined
+                width: parent.width
+                text: row.spec.warn ? (row.spec.warn[String(row.shown)] || "") : ""
+                size: 12
+                color: Theme.warn
+                wrapMode: Text.WordWrap
+            }
             Txt {
                 visible: row.blocked
                 width: parent.width

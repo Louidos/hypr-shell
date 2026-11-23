@@ -155,7 +155,7 @@ FocusScope {
                 Pill {
                     id: allBtn
                     implicitHeight: 36
-                    icon: "󰓜"
+                    icon: "󰀻"
                     text: "All"
                     onClicked: pc.panel.run(["rofi", "-show", "drun"], true)
                 }
@@ -239,7 +239,7 @@ FocusScope {
                 anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
                 spacing: 6
                 Pill { implicitHeight: 34; icon: "󰍹"; text: "Screen"; onClicked: pc.panel.run([pc.bin + "shell-screenshot", "screen"], true) }
-                Pill { implicitHeight: 34; icon: "󰹊"; text: "Region"; onClicked: pc.panel.run([pc.bin + "shell-screenshot", "region"], true) }
+                Pill { implicitHeight: 34; icon: "󰒉"; text: "Region"; onClicked: pc.panel.run([pc.bin + "shell-screenshot", "region"], true) }
                 IconButton { icon: ""; onClicked: pc.panel.run([pc.bin + "shell-screenshot", "folder"], true) }
             }
         }
@@ -251,7 +251,7 @@ FocusScope {
         GlassCard {
             id: tg
             readonly property var items: Settings.get("panel.toggles", ["wifi", "bluetooth", "dnd", "gaming", "settings"])
-            readonly property var icons: ({ wifi: "󰤨", bluetooth: "󰂯", dnd: "󰂚", gaming: "󰊵", settings: "", awake: "󰅶" })
+            readonly property var icons: ({ wifi: "󰤨", bluetooth: "󰂯", dnd: "󰂚", gaming: "󰊗", settings: "", awake: "󰅶" })
             height: 16 + 20 + 10 + 44 + 16
             Txt { x: 16; y: 16; text: "Quick Toggles"; size: 13; weight: Font.Bold; font.family: Theme.mono }
             Row {

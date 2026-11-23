@@ -14,6 +14,7 @@ command -v Hyprland >/dev/null 2>&1 || { echo "Hinweis: Hyprland fehlt, Test üb
 
 T="$(mktemp -d)"
 pids=()
+# shellcheck disable=SC2329 # wird über trap aufgerufen
 aufraeumen() {
     local p
     for p in "${pids[@]}"; do kill "$p" 2>/dev/null || true; done

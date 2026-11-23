@@ -32,7 +32,8 @@ unset WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CONFIG_HOME
 "$REPO/install.sh" --yes --no-packages > "$T/install.log" 2>&1 || { cat "$T/install.log"; exit 1; }
 
 # Testdaten: Einstellungen und ein Profilbild-Ersatz
-[ -n "${SETTINGS_JSON:-}" ] && printf '%s\n' "$SETTINGS_JSON" > "$HOME/.config/hypr-shell/settings.json"
+SETTINGS_JSON="${SETTINGS_JSON:-$(jq '.weather.location = "Zurich"' "$REPO/settings/settings.example.json")}"
+printf '%s\n' "$SETTINGS_JSON" > "$HOME/.config/hypr-shell/settings.json"
 
 cat > "$T/sway.conf" <<CONF
 output HEADLESS-1 resolution 1920x1080 position 0 0
@@ -63,7 +64,7 @@ ipc() { "$qs" -p "$cfg" ipc call "$@" >/dev/null 2>&1; }
 bild desktop
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dashboard'; then
     for tab in dashboard wallpaper performance about; do
-        ipc dashboard open "$tab"; sleep 2; bild "dashboard-$tab"
+        ipc dashboard open "$tab"; sleep 3; bild "dashboard-$tab"
     done
     ipc dashboard close; sleep 1
 fi

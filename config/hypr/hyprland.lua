@@ -215,6 +215,11 @@ hl.bind(mod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
+-- Oberfläche (Quickshell): Dashboard; SUPER + W öffnet direkt den Tab Wallpaper
+local ui = bin .. "shell-quickshell ipc "
+hl.bind(mod .. " + ALT + D", hl.dsp.exec_cmd(ui .. "dashboard toggle"))
+hl.bind(mod .. " + W",       hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"))
+
 -- Screenshots: speichern und in die Zwischenablage
 hl.bind("Print",         hl.dsp.exec_cmd(bin .. "shell-screenshot region"))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd(bin .. "shell-screenshot screen"))

@@ -47,6 +47,24 @@ Position und Grösse stehen in `~/.config/hypr-shell/settings.json` unter `deskt
 (`x`/`y` als Anteil der Bildschirmbreite/-höhe, `scale`, `enabled`); Änderungen
 wirken sofort.
 
+## Dashboard
+
+Ein Glas-Panel gleitet unten in der Mitte hoch – mit **SUPER+ALT+D**, wenn die Maus
+die Mitte der unteren Bildschirmkante berührt, oder mit **SUPER+W** direkt im Tab
+Wallpaper. **Esc** oder Maus weg schliesst es.
+
+| Tab | Inhalt |
+| --- | --- |
+| Dashboard | Wetter, Profil mit Begrüssung, Musik, Uhr, Kalender, Ringe für CPU/RAM/Disk/Swap |
+| Wallpaper | alle Bilder aus `~/Pictures/Wallpapers` mit Suche; Klick setzt Bild und Farben |
+| Performance | CPU (Modell, Temperatur, Last), GPU (Modell, Temperatur, Grafikspeicher), Datenträger, Netzwerk, Arbeitsspeicher |
+| About | System, Distribution, Version von hypr-shell, Hyprland und Quickshell |
+
+Das Wetter kommt ohne API-Schlüssel von open-meteo.com; den Ort einmal in
+`~/.config/hypr-shell/settings.json` unter `weather.location` eintragen (z. B. `"Zürich"`).
+Systemwerte werden nur abgefragt, solange das Dashboard offen ist; eine schlafende
+NVIDIA-Karte wird dafür nicht geweckt.
+
 ## Aufbau
 
 | Ordner | Inhalt |

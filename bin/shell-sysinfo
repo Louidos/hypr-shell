@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# Systemwerte als JSON für Dashboard und Panel.
+#   shell-sysinfo about   Benutzer, Rechner, Kernel, Distribution, Versionen, Laufzeit
+#   shell-sysinfo cpu     Modell und Temperatur
+#   shell-sysinfo gpu     Modell, Temperatur, Grafikspeicher (nvidia-smi, sonst sysfs)
+# Eine schlafende NVIDIA-Karte (Hybrid-Grafik) wird nicht geweckt.
+set -euo pipefail
+
+zahl() { [[ "${1:-}" =~ ^[0-9]+([.][0-9]+)?$ ]] && echo "$1" || echo null; }
+
+cpu_temp() {
+    local h n
+    for h in /sys/class/hwmon/hwmon*; do
+        n="$(cat "$h/name" 2>/dev/null || true)"
+        case "$n" in
+            coretemp|k10temp|zenpower|cpu_thermal|acpitz)
+                [ -r "$h/temp1_input" ] && { echo $(( $(cat "$h/temp1_input") / 1000 )); return; } ;;
+        esac
+    done
+    echo null
+}
+
+cpu_modell() {
+    awk -F': *' '/^model name/ {print $2; exit}' /proc/cpuinfo 2>/dev/null \
+        | sed -E 's/\((R|TM)\)//g; s/ CPU//; s/ +@.*//; s/ +[0-9]+-Core Processor//; s/ +/ /g'
+}
+
+uptime_s() { awk '{print int($1)}' /proc/uptime; }
+
+about() {
+    local id="" name="" kernel hyprv qsv version=""
+    # shellcheck disable=SC1091
+    [ -r /etc/os-release ] && { id="$(. /etc/os-release; echo "${ID:-linux}")"; name="$(. /etc/os-release; echo "${NAME:-Linux}")"; }
+    kernel="$(uname -r)"
+    hyprv="$( (hyprctl version -j 2>/dev/null | jq -r '.version // .tag // empty') || true)"
+    [ -n "$hyprv" ] || hyprv="$( (Hyprland --version 2>/dev/null | head -n1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1) || true)"
+    qsv="$( (qs --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1) || true)"
+    [ -r "$HOME/.local/share/hypr-shell/VERSION" ] && version="$(tr -d '[:space:]' < "$HOME/.local/share/hypr-shell/VERSION")"
+    jq -n --arg user "${USER:-$(id -un)}" --arg host "$(cat /proc/sys/kernel/hostname 2>/dev/null || echo linux)" \
+        --arg kernel "$kernel" --arg distro "$name" --arg distroId "$id" --arg icon "$(shell_distro_icon)" \
+        --arg cpu "$(cpu_modell)" --arg hyprland "${hyprv:-?}" --arg quickshell "${qsv:-?}" --arg version "${version:-?}" \
+        --argjson uptime "$(uptime_s)" \
+        --argjson memTotal "$(awk '/^MemTotal/ {print $2 * 1024}' /proc/meminfo)" \
+        '{user: $user, host: $host, kernel: $kernel, distro: $distro, distroId: $distroId, icon: $icon,
+          cpu: $cpu, hyprland: $hyprland, quickshell: $quickshell, version: $version, uptime: $uptime, memTotal: $memTotal}'
+}
+
+shell_distro_icon() {
+    if command -v shell-distro >/dev/null 2>&1; then shell-distro icon
+    elif [ -x "$HOME/.local/bin/shell-distro" ]; then "$HOME/.local/bin/shell-distro" icon
+    else printf '\n'; fi
+}
+
+cpu() {
+    jq -n --arg model "$(cpu_modell)" --argjson temp "$(cpu_temp)" --argjson cores "$(nproc)" \
+        '{model: $model, temp: $temp, cores: $cores}'
+}
+
+nvidia_schlaeft() {
+    local d
+    for d in /sys/bus/pci/devices/*; do
+        [ "$(cat "$d/vendor" 2>/dev/null)" = 0x10de ] || continue
+        case "$(cat "$d/class" 2>/dev/null)" in 0x03*) ;; *) continue ;; esac
+        [ "$(cat "$d/power/runtime_status" 2>/dev/null)" = suspended ] && return 0
+    done
+    return 1
+}
+
+gpu() {
+    local name="" temp=null used=null total=null util=null state=active line d card vendor
+    if command -v nvidia-smi >/dev/null 2>&1 && [ -d /proc/driver/nvidia ]; then
+        name="$(awk -F':[[:space:]]*' '/^Model/ {print $2; exit}' /proc/driver/nvidia/gpus/*/information 2>/dev/null || true)"
+        if nvidia_schlaeft; then
+            state=sleeping
+        elif line="$(nvidia-smi --query-gpu=name,temperature.gpu,memory.used,memory.total,utilization.gpu \
+                --format=csv,noheader,nounits 2>/dev/null | head -n1)" && [ -n "$line" ]; then
+            IFS=',' read -r name temp used total util <<<"$line"
+            name="$(echo "$name" | xargs)"; temp="$(zahl "$(echo "$temp" | xargs)")"
+            used="$(zahl "$(echo "$used" | xargs)")"; total="$(zahl "$(echo "$total" | xargs)")"
+            util="$(zahl "$(echo "$util" | xargs)")"
+        fi
+    fi
+    if [ -z "$name" ]; then
+        for card in /sys/class/drm/card[0-9]; do
+            d="$card/device"
+            [ -r "$d/vendor" ] || continue
+            vendor="$(cat "$d/vendor" 2>/dev/null || true)"
+            if command -v lspci >/dev/null 2>&1; then
+                name="$( (lspci -s "$(basename "$(readlink -f "$d")")" 2>/dev/null || true) | sed -E 's/^[^:]*: *[^:]*: *//; s/ \(rev.*//' | head -n1)"
+            fi
+            case "$vendor" in
+                0x8086) name="${name:-Intel Graphics}" ;;
+                0x1002) name="${name:-AMD Radeon}"
+                        [ -r "$d/mem_info_vram_used" ] && used=$(( $(cat "$d/mem_info_vram_used") / 1048576 ))
+                        [ -r "$d/mem_info_vram_total" ] && total=$(( $(cat "$d/mem_info_vram_total") / 1048576 ))
+                        [ -r "$d/gpu_busy_percent" ] && util="$(cat "$d/gpu_busy_percent")" ;;
+                *) name="${name:-GPU}" ;;
+            esac
+            for line in "$d"/hwmon/hwmon*/temp1_input; do
+                if [ -r "$line" ]; then temp=$(( $(cat "$line") / 1000 )); break; fi
+            done
+            break
+        done
+    fi
+    name="$(echo "${name:-–}" | sed -E 's/^NVIDIA //; s/Corporation //')"
+    temp="$(zahl "$temp")"; used="$(zahl "$used")"; total="$(zahl "$total")"; util="$(zahl "$util")"
+    jq -n --arg name "$name" --arg state "$state" --argjson temp "$temp" --argjson memUsed "$used" \
+        --argjson memTotal "$total" --argjson util "$util" \
+        '{name: $name, state: $state, temp: $temp, memUsed: $memUsed, memTotal: $memTotal, util: $util}'
+}
+
+case "${1:-about}" in
+    about) about ;;
+    cpu) cpu ;;
+    gpu) gpu ;;
+    *) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

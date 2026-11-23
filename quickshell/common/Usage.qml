@@ -13,6 +13,9 @@ Item {
     property real memUsed: 0      // KiB
     property real memTotal: 0     // KiB
     readonly property real mem: memTotal > 0 ? 100 * memUsed / memTotal : 0
+    property real swapUsed: 0     // KiB
+    property real swapTotal: 0
+    readonly property real swap: swapTotal > 0 ? 100 * swapUsed / swapTotal : 0
     property real diskUsed: 0     // Bytes
     property real diskTotal: 0
     property string diskDevice: ""
@@ -41,6 +44,8 @@ Item {
             const val = k => { const m = t.match(new RegExp("^" + k + ":\\s+(\\d+)", "m")); return m ? Number(m[1]) : 0 }
             u.memTotal = val("MemTotal")
             u.memUsed = u.memTotal - val("MemAvailable")
+            u.swapTotal = val("SwapTotal")
+            u.swapUsed = u.swapTotal - val("SwapFree")
         }
     }
     Process {

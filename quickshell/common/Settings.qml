@@ -17,7 +17,8 @@ Singleton {
             screen: "",
             clock: { enabled: true, x: 0.02, y: 0.045, scale: 1.0 },
             resources: { enabled: true, x: 0.015, y: 0.56, scale: 1.0 }
-        }
+        },
+        dashboard: { width: 1000, edge: true, opacity: 0.42 }
     })
     property var data: defaults
 

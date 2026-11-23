@@ -196,6 +196,12 @@ Profile speichern und laden und die Einstellungen in eine Datei sichern oder dar
 **Monitors** stehen die echten Bildschirme aus Hyprland; eine neue Auflösung muss innerhalb von
 15 Sekunden bestätigt werden, sonst gilt wieder die alte. `Esc` schliesst die App.
 
+![Einstellungs-App](docs/screenshots/settings-look.png)
+
+Weitere Seiten: [Home](docs/screenshots/settings-home.png), [Bar](docs/screenshots/settings-bar.png),
+[Theme](docs/screenshots/settings-theme.png), [Monitors](docs/screenshots/settings-monitors.png),
+[Suche](docs/screenshots/settings-suche.png).
+
 
 ### Mit dem Befehl `shell-set`
 

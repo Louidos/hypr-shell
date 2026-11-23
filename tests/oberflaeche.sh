@@ -180,6 +180,7 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     else echo "  FEHLER: Schalter kam nicht in settings.json an ($(wert .look))"; app_ok=0; fi
     sleep 1
     # Regler ziehen: schon während des Ziehens wirkt der Wert
+    rund_vorher="$(wert .look.rounding)"
     if test_ipc dragStart setting-look.rounding 0.8; then
         sleep 2
         r="$(grep -o '\["rounding"\] = [0-9]*' "$HOME/.config/hypr/hypr-shell-settings.lua" | grep -o '[0-9]*$')"
@@ -192,10 +193,11 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     else echo "  FEHLER: Regler-Wert $(wert .look.rounding)"; app_ok=0; fi
     sleep 2.5; bild settings-look-geaendert
     # Undo nimmt das ganze Ziehen in einem Schritt zurück, Reset page die ganze Seite
-    if test_ipc click settings-undo && warte_auf .look.rounding null; then echo "  ok: Undo nimmt das Ziehen in einem Schritt zurück"
+    if test_ipc click settings-undo && warte_auf .look.rounding "$rund_vorher" && [ "$(wert .look.blur.enabled)" = false ]; then echo "  ok: Undo nimmt das Ziehen in einem Schritt zurück"
     else echo "  FEHLER: Undo: $(wert .look)"; app_ok=0; fi
     sleep 2.5
-    if test_ipc click reset-page && warte_auf .look null; then echo "  ok: Reset page setzt die Seite zurück"
+    # Reset page setzt die geänderten Werte der Seite zurück (hier: Blur wieder Standard)
+    if test_ipc click reset-page && warte_auf .look.blur.enabled null && [ "$(wert .look.rounding)" = "$rund_vorher" ]; then echo "  ok: Reset page setzt die Seite zurück"
     else echo "  FEHLER: Reset page: $(wert .look)"; app_ok=0; fi
     sleep 1
     # Reset neben einem Wert

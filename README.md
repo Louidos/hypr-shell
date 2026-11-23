@@ -243,6 +243,14 @@ grau/weiss. Mitgeliefert ist ein schlichtes graues Verlaufsbild.
 
 ![Farben aus einem bunten Bild](docs/screenshots/farben-aus-bild.png)
 
+**Programme mitfärben** (Einstellungs-App → Theme → Apps, `theme.apps.*`): GTK-Programme
+wie Nautilus und Dialoge sowie Qt-Programme (über qt6ct/qt5ct) übernehmen die Farben
+standardmässig mit; Firefox, Discord (Vesktop) und Spotify (spicetify) lassen sich einzeln
+einschalten und erscheinen nur, wenn sie installiert sind. Jede Datei, die dafür geändert
+wird (`gtk.css`, `qt6ct.conf`, `userChrome.css`, `user.js`, Vesktop-Einstellungen,
+`config-xpui.ini`), wird vorher gesichert; Ausschalten legt die Sicherung genau so zurück.
+Offene GTK-4-Fenster und Firefox zeigen die neuen Farben nach dem nächsten Öffnen.
+
 Ein Profilbild wird aus `~/.face` gelesen (quadratisches Bild, z. B. PNG). Fehlt es, steht
 im Dashboard, im Panel und auf dem Sperrbildschirm der Anfangsbuchstabe des Benutzers in
 einem Kreis (für den Sperrbildschirm erzeugt der Installer dafür ein Ersatzbild).
@@ -391,6 +399,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-set …` | Einstellungen lesen, ändern, zurücksetzen, rückgängig machen, Profile (siehe „Anpassen“) |
 | `shell-apply` | Einstellungen prüfen und anwenden (`--check` nur prüfen) |
 | `shell-wallpaper <bild>` | Hintergrundbild setzen und Farben erzeugen (Farbmodus aus `theme.colors`) |
+| `shell-appcolors sync\|apply\|restore\|status` | Programme mitfärben (GTK, Qt, Firefox, Vesktop, Spotify) bzw. Sicherungen zurücklegen |
 | `shell-screenshot region\|screen\|folder` | Screenshot bzw. Ordner öffnen |
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
 | `shell-games list\|launch <id>` | Spiele für den Tab Games |

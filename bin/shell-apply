@@ -776,7 +776,8 @@ jq -c '{colors: [.theme.colors, .theme.accent], cursor: [.theme.cursor.name, .th
         clipboard: [.clipboard.enabled, .clipboard.max],
         laptop: [.laptop.charge_limit, .laptop.kbd_light, .laptop.kbd_follow_wallpaper],
         ordner: [.nextcloud, .missa.enabled, .missa.folder],
-        agent: [.missa.enabled, .missa.agent_enabled, .missa.access, .missa.url]}' "$T/eff.json" > "$T/applied"
+        agent: [.missa.enabled, .missa.agent_enabled, .missa.access, .missa.url],
+        appfarben: .theme.apps}' "$T/eff.json" > "$T/applied"
 alt='{}'
 [ -f "$APPLIED" ] && alt="$(cat "$APPLIED")"
 anders() { [ "$(jq -c ".$1" <<<"$alt")" != "$(jq -c ".$1" "$T/applied")" ]; }
@@ -787,6 +788,7 @@ anders clipboard && geaendert+=(clipboard)
 anders laptop && geaendert+=(laptop)
 anders ordner && geaendert+=(ordner)
 anders agent && geaendert+=(agent)
+anders appfarben && geaendert+=(appfarben)
 schreibe "$APPLIED" < "$T/applied" || true
 
 [ "${#geaendert[@]}" -gt 0 ] && [ "${SHELL_APPLY_VERBOSE:-0}" = 1 ] && echo "geändert: ${geaendert[*]}"
@@ -813,6 +815,10 @@ fi
 # Missa-Agent: nur mit missa.enabled und missa.agent_enabled; ausgeschaltet sofort gestoppt
 if hat agent && [ -x "$BIN/shell-missa-agent" ]; then
     setsid -f "$BIN/shell-missa-agent" sync >/dev/null 2>&1 || true
+fi
+# Programme mitfärben (GTK, Qt, Firefox, Vesktop, Spotify): einfärben oder Sicherung zurück
+if hat appfarben && [ -x "$BIN/shell-appcolors" ]; then
+    setsid -f "$BIN/shell-appcolors" sync >/dev/null 2>&1 || true
 fi
 # Laptop: Ladegrenze, Tastaturlicht (nur was eingestellt ist, über shell-laptop)
 if hat laptop && [ -x "$BIN/shell-laptop" ]; then

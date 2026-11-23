@@ -7,6 +7,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Dateimanager und weitere Programme übernehmen die Farben des Hintergrundbilds: GTK und Qt standardmässig, Firefox, Discord (Vesktop) und Spotify (spicetify) einzeln einschaltbar, wenn installiert; Abschalten legt die gesicherten Dateien zurück (#70)
 - Homelab-Übersicht über Missa (Tab Lab), Kalendertermine (CalDAV) und Sensor-Kachel im Dashboard, einschaltbar in den Einstellungen (#64)
 - Missa kann am Rechner Dateien finden und öffnen, Programme und Fenster steuern und nach Bestätigung Befehle ausführen; sichtbar in der Leiste, sofort trennbar im Panel, jede Aktion im Verlauf, einschaltbar in den Einstellungen (#63)
 - Mit Missa sprechen und Antworten vorlesen lassen (SUPER+SHIFT+I), lokal mit whisper.cpp und piper, einschaltbar in den Einstellungen (#62)

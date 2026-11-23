@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Attrappe für spicetify (Tests): -c, config SCHLÜSSEL WERT …, apply, refresh; jeder Aufruf landet im Log
+cfg="$HOME/.config/spicetify/config-xpui.ini"
+echo "$*" >> "$HOME/spicetify.log"
+case "${1:-}" in
+    -c) echo "$cfg" ;;
+    config)
+        shift
+        while [ $# -ge 2 ]; do
+            if grep -q "^$1 " "$cfg" 2>/dev/null; then sed -i "s|^$1 .*|$1 = $2|" "$cfg"; else echo "$1 = $2" >> "$cfg"; fi
+            shift 2
+        done ;;
+    apply|refresh) : ;;
+    *) exit 1 ;;
+esac

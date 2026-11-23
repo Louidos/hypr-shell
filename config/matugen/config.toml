@@ -25,3 +25,25 @@ output_path = '~/.config/rofi/colors.rasi'
 [templates.quickshell]
 input_path = '~/.config/matugen/templates/colors.json'
 output_path = '~/.config/hypr-shell/colors.json'
+
+# Programme mitfärben: matugen schreibt nur in den Zwischenspeicher von hypr-shell;
+# shell-appcolors bindet die Farben in die eingeschalteten Programme ein (mit Sicherung)
+[templates.apps-gtk]
+input_path = '~/.config/matugen/templates/apps/gtk.css'
+output_path = '~/.local/share/hypr-shell/app-colors/gtk.css'
+
+[templates.apps-qt]
+input_path = '~/.config/matugen/templates/apps/qt.conf'
+output_path = '~/.local/share/hypr-shell/app-colors/qt.conf'
+
+[templates.apps-firefox]
+input_path = '~/.config/matugen/templates/apps/firefox.css'
+output_path = '~/.local/share/hypr-shell/app-colors/firefox.css'
+
+[templates.apps-vesktop]
+input_path = '~/.config/matugen/templates/apps/vesktop.css'
+output_path = '~/.local/share/hypr-shell/app-colors/vesktop.css'
+
+[templates.apps-spotify]
+input_path = '~/.config/matugen/templates/apps/spicetify.ini'
+output_path = '~/.local/share/hypr-shell/app-colors/spicetify.ini'

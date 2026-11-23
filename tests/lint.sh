@@ -42,6 +42,11 @@ else
     echo "Hinweis: luac fehlt, Lua übersprungen."
 fi
 
+# QML: Eigenschaften dürfen nicht mit "on" + Grossbuchstabe beginnen (QML hält sie für Signal-Handler)
+if grep -rnE 'property +[A-Za-z0-9_.<>]+ +on[A-Z]' --include='*.qml' quickshell 2>/dev/null; then
+    melde "QML-Eigenschaft beginnt mit on + Grossbuchstabe"
+fi
+
 # QML (nur Syntax; Quickshell-Module kennt qmlformat nicht, das ist egal)
 qmlformat=$(command -v qmlformat || command -v qmlformat6 || ls /usr/lib/qt6/bin/qmlformat 2>/dev/null || true)
 if [ -n "$qmlformat" ]; then

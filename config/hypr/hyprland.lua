@@ -160,7 +160,8 @@ local function blur_layer(name, namespace, alpha)
 end
 
 blur_layer("hypr-shell-waybar",      "^waybar$")
-blur_layer("hypr-shell-quickshell",  "^hypr-shell")
+-- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
+blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
 blur_layer("hypr-shell-swaync-cc",   "^swaync-control-center$")
 blur_layer("hypr-shell-swaync-note", "^swaync-notification-window$")

@@ -1,0 +1,10 @@
+singleton Theme 1.0 Theme.qml
+singleton Settings 1.0 Settings.qml
+GlassPanel 1.0 GlassPanel.qml
+GlassCard 1.0 GlassCard.qml
+Ring 1.0 Ring.qml
+Toggle 1.0 Toggle.qml
+Pill 1.0 Pill.qml
+Glyph 1.0 Glyph.qml
+Txt 1.0 Txt.qml
+Usage 1.0 Usage.qml

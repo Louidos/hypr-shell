@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
 REPO="$(pwd)"
-command -v jq >/dev/null && command -v python3 >/dev/null && command -v curl >/dev/null || { echo "Hinweis: jq, python3 oder curl fehlt, übersprungen."; exit 0; }
+for p in jq python3 curl; do command -v "$p" >/dev/null || { echo "Hinweis: $p fehlt, übersprungen."; exit 0; }; done
 
 T="$(mktemp -d)"
 pids=()

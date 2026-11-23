@@ -3,6 +3,8 @@
 #   ohne Einträge gelten genau die bisherigen Kürzel; ein geändertes Kürzel wirkt, das alte ist frei;
 #   leeres Kürzel = keine Taste; SUPER+U lässt sich nicht leeren; eigene Kürzel; doppelte Belegung wird
 #   von shell-set abgelehnt und benannt, von Hand eingetragen fällt die spätere weg.
+#   Die festen Tasten (Lautstärke, Helligkeit, Medien) gelten als belegt; ihre Liste im Schema
+#   (fixed_binds) muss genau den festen hl.bind-Aufrufen in hyprland.lua entsprechen.
 # shellcheck disable=SC2016,SC2034,SC2329
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -134,5 +136,21 @@ pruefe '[ "$(grep -c "^SUPER + Q	" <<<"$b")" = 1 ] && grep -qx "SUPER + Q	exec_c
 echo '{"keybinds": {"files": "SUPER + Q"}}' > "$T/doppelt.json"
 meldung="$(HOME="$h" "$REPO/bin/shell-apply" --check "$T/doppelt.json" || true)"
 pruefe 'grep -q "^keybinds.files: SUPER + Q is already used by Terminal" <<<"$meldung" && grep -q "^keybinds.terminal: SUPER + Q is also used by File manager" <<<"$meldung"' "Meldung nennt beide"
+out="$(HOME="$h" "$REPO/bin/shell-set" keybinds.terminal "SUPER + SHIFT + 1" 2>&1 || true)"
+pruefe 'grep -q "SUPER + SHIFT + 1 is also used by Move window to workspace" <<<"$out"' "Konflikt mit einer Gruppe nennt die kollidierende Kombination ($out)"
+echo '{"keybinds": {"terminal": "SUPER + SHIFT + 1"}}' > "$T/gruppe.json"
+meldung="$(HOME="$h" "$REPO/bin/shell-apply" --check "$T/gruppe.json" || true)"
+pruefe 'grep -q "^keybinds.move_mod: SUPER + SHIFT + 1 is already used by Terminal" <<<"$meldung"' "… auch in der Meldung zur Gruppe ($(head -n1 <<<"$meldung"))"
+
+echo "== feste Tasten (Lautstärke, Helligkeit, Medien)"
+fest_lua="$(grep -oE '^hl\.bind\("[^"]+"' config/hypr/hyprland.lua | sed 's/^hl\.bind("//; s/"$//' | sort)"
+fest_schema="$(jq -r '.fixed_binds[].keys' settings/schema.json | sort)"
+pruefe '[ -n "$fest_lua" ] && [ "$fest_lua" = "$fest_schema" ]' "fixed_binds im Schema = feste hl.bind in hyprland.lua ($(wc -l <<<"$fest_lua") Tasten)"
+[ "$fest_lua" = "$fest_schema" ] || diff <(echo "$fest_lua") <(echo "$fest_schema") | head
+out="$(HOME="$h" "$REPO/bin/shell-set" keybinds.custom '[{"keys": "XF86AudioRaiseVolume", "command": "x"}]' 2>&1 || true)"
+pruefe '! HOME="$h" "$REPO/bin/shell-set" keybinds.custom "[{\"keys\": \"XF86AudioRaiseVolume\", \"command\": \"x\"}]" >/dev/null 2>&1 && grep -q "already used by Volume up" <<<"$out"' "eigenes Kürzel auf der Lautstärke-Taste wird abgelehnt ($out)"
+pruefe '! HOME="$h" "$REPO/bin/shell-set" keybinds.lock XF86AudioMute >/dev/null 2>&1' "einstellbares Kürzel auf einer festen Taste wird abgelehnt"
+b="$(binds '{"keybinds": {"lock": "XF86AudioMute", "custom": [{"keys": "XF86AudioPlay", "command": "x"}]}}')"
+pruefe '[ "$(grep -c "^XF86AudioMute	" <<<"$b")" = 1 ] && grep -q "^XF86AudioMute	exec_cmd .*shell-osd volume mute" <<<"$b" && ! grep -q "	exec_cmd x$" <<<"$b"' "von Hand auf feste Tasten gelegt: die feste Taste bleibt, Hyprland lädt ohne Fehler"
 
 exit "$fehler"

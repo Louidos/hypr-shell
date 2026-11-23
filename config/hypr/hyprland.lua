@@ -373,6 +373,8 @@ for _, c in ipairs(K.custom or {}) do
     end
 end
 
+-- Feste Tasten (nicht einstellbar): stehen auch als fixed_binds in settings/schema.json, damit shell-apply
+-- eigene Kürzel darauf ablehnt; tests/tastenkuerzel.sh prüft, dass beide Listen gleich sind.
 -- Lautstärke und Helligkeit mit der Glas-Anzeige von hypr-shell (shell-osd), auch im Sperrbildschirm
 local osd = bin .. "shell-osd "
 hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(osd .. "volume up"),   { description = "System: Volume up", locked = true, repeating = true })

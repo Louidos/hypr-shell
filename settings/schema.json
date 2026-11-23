@@ -174,5 +174,20 @@
     {"key": "keybinds.screenshot_region", "type": "keybind", "default": "Print", "title": "Screenshot of a region", "description": "Select a region; saved and copied", "page": "keybinds", "section": "Shell", "icon": "󰋩"},
     {"key": "keybinds.screenshot_screen", "type": "keybind", "default": "SHIFT + Print", "title": "Screenshot of the screen", "description": "Whole screen; saved and copied", "page": "keybinds", "section": "Shell", "icon": "󰋩"},
     {"key": "keybinds.custom", "type": "objectlist", "default": [], "title": "Own shortcuts", "description": "Own key combinations that run a command", "page": "keybinds", "section": "Own shortcuts", "icon": "󰌌", "fields": [{"key": "keys", "type": "keybind", "default": "", "title": "Keys", "description": "e.g. SUPER + B", "required": true}, {"key": "command", "type": "string", "default": "", "title": "Command", "description": "Command to run", "pattern": "^[^\\n]+$", "required": true}]}
+  ],
+  "_fixed_binds": "Fest belegte Tasten aus config/hypr/hyprland.lua (nicht einstellbar); shell-apply lehnt Kürzel darauf ab, tests/tastenkuerzel.sh vergleicht beide Listen.",
+  "fixed_binds": [
+    {"keys": "XF86AudioRaiseVolume", "title": "Volume up"},
+    {"keys": "XF86AudioLowerVolume", "title": "Volume down"},
+    {"keys": "XF86AudioMute", "title": "Mute"},
+    {"keys": "XF86AudioMicMute", "title": "Mute microphone"},
+    {"keys": "XF86MonBrightnessUp", "title": "Brightness up"},
+    {"keys": "XF86MonBrightnessDown", "title": "Brightness down"},
+    {"keys": "XF86KbdBrightnessUp", "title": "Keyboard light up"},
+    {"keys": "XF86KbdBrightnessDown", "title": "Keyboard light down"},
+    {"keys": "XF86AudioPlay", "title": "Play / pause"},
+    {"keys": "XF86AudioPause", "title": "Play / pause"},
+    {"keys": "XF86AudioNext", "title": "Next track"},
+    {"keys": "XF86AudioPrev", "title": "Previous track"}
   ]
 }

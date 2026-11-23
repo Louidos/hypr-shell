@@ -22,7 +22,7 @@ pruefe 'j ".battery.format" | grep -q "{capacity}%" && j ".battery.\"format-char
 pruefe '[ "$(j ".\"hyprland/workspaces\".\"persistent-workspaces\".\"*\" | join(\",\")")" = "1,2,3,4" ]' "Arbeitsflächen 1–4"
 pruefe '[ "$(j .clock.format)" = "{:%H:%M}" ]' "Uhr HH:MM"
 pruefe 'j ".pulseaudio.format" | grep -q "{volume}%"' "Lautstärke in Prozent"
-pruefe 'j ".\"custom/distro\".\"on-click\"" | grep -q "ipc launcher toggle"' "Distro-Symbol öffnet den Starter"
+pruefe 'j ".\"custom/distro\".\"on-click\"" | grep -q "ipc apps toggle" && j ".\"custom/distro\".\"on-click-right\"" | grep -q "ipc launcher toggle"' "Distro-Symbol: Klick öffnet das App-Raster, Rechtsklick den Starter"
 
 # alle aufgerufenen Skripte aus ~/.local/bin müssen im Repo liegen
 while IFS= read -r s; do

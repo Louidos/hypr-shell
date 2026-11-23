@@ -59,7 +59,7 @@ local S = {
         terminal = "SUPER + Return", files = "SUPER + E", browser = "", launcher = "SUPER + R",
         launcher_alt = "ALT + Space", launcher_space = "SUPER + Space", launcher_search = "CTRL + SUPER + Return",
         close = "SUPER + Q", close_alt = "SUPER + C", float = "SUPER + V", fullscreen = "SUPER + F",
-        minimize = "SUPER + M", restore = "SUPER + SHIFT + M",
+        minimize = "SUPER + M", restore = "SUPER + SHIFT + M", switcher = "ALT + Tab", switcher_back = "ALT + SHIFT + Tab",
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
@@ -542,6 +542,40 @@ end
 -- Fenster unter der Maus). Als Hyprland-Kürzel wirkt es auch, wenn eine Fläche die Tastatur hält,
 -- und in jeder Submap (submap_universal).
 bind(K.emergency, hl.dsp.exec_cmd(bin .. "shell-diag freigeben"), "System: Give back the keyboard (emergency)", { submap_universal = true })
+
+-- ALT+Tab: Umschalter mit Vorschau (quickshell/switcher). Das Kürzel öffnet die Leiste und betritt die
+-- Submap hypr-shell-switcher; dort wählt Tab weiter, Loslassen des Modifikators wechselt, Escape bricht
+-- ab, Q/Entf schliesst. Escape und das Notfall-Kürzel führen immer hinaus; die Leiste selbst schliesst
+-- nach 5 s ohne Taste und verlässt die Submap (nie hängen bleiben).
+if (S.switcher == nil or S.switcher.enabled ~= false) and type(K.switcher) == "string" and K.switcher ~= "" then
+    local sw = bin .. "shell-switcher "
+    local mods = K.switcher:match("^(.*) %+ [^+]+$") or ""
+    local loslassen = {}
+    for m in mods:gmatch("[^ +]+") do
+        local u = m:upper()
+        local keys = ({ ALT = { "Alt_L", "Alt_R" }, SUPER = { "Super_L", "Super_R" }, CTRL = { "Control_L", "Control_R" },
+                        CONTROL = { "Control_L", "Control_R" }, SHIFT = { "Shift_L", "Shift_R" } })[u] or {}
+        for _, k in ipairs(keys) do loslassen[#loslassen + 1] = { mod = u, key = k } end
+    end
+    bind(K.switcher, hl.dsp.exec_cmd(sw .. "next"), "Windows: Switch windows")
+    bind(K.switcher_back, hl.dsp.exec_cmd(sw .. "prev"), "Windows: Switch windows backwards")
+    hl.define_submap("hypr-shell-switcher", function()
+        bind(K.switcher, hl.dsp.exec_cmd(sw .. "next"), "Windows: Next window")
+        bind(K.switcher_back, hl.dsp.exec_cmd(sw .. "prev"), "Windows: Previous window")
+        for _, l in ipairs(loslassen) do
+            bind(l.mod .. " + " .. l.key, hl.dsp.exec_cmd(sw .. "commit"), "Windows: Switch to the chosen window", { release = true })
+            bind(l.key, hl.dsp.exec_cmd(sw .. "commit"), "Windows: Switch to the chosen window", { release = true })
+        end
+        local m = mods ~= "" and (mods .. " + ") or ""
+        bind(m .. "right", hl.dsp.exec_cmd(sw .. "next"), "Windows: Next window")
+        bind(m .. "left", hl.dsp.exec_cmd(sw .. "prev"), "Windows: Previous window")
+        bind(m .. "Return", hl.dsp.exec_cmd(sw .. "commit"), "Windows: Switch to the chosen window")
+        bind(m .. "Q", hl.dsp.exec_cmd(sw .. "close"), "Windows: Close the chosen window")
+        bind(m .. "Delete", hl.dsp.exec_cmd(sw .. "close"), "Windows: Close the chosen window")
+        bind(m .. "Escape", hl.dsp.exec_cmd(sw .. "cancel"), "Windows: Cancel switching")
+        bind("Escape", hl.dsp.exec_cmd(sw .. "cancel"), "Windows: Cancel switching")
+    end)
+end
 
 -- Fenster-Übersicht aller Arbeitsflächen
 bind(K.overview, hl.dsp.exec_cmd(ui .. "overview toggle"), "Panels: Window overview")

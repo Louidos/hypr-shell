@@ -125,6 +125,29 @@ pruefe 'apply "$h2" --no-reload 2>/dev/null && jq -e ".bar.height == 30" "$h2/.l
 h3="$T/ohne-datei"; mkdir -p "$h3"
 pruefe 'apply "$h3" --no-reload && [ -f "$h3/.config/waybar/config.jsonc" ]' "ohne settings.json: Standardwerte"
 
+echo "== 5b. Namen von Schriften, Mauszeiger, Symbolen und Programmen"
+h="$(neues_home namen '{}')"
+ss() { HOME="$h" "$REPO/bin/shell-set" "$@"; }
+for v in 'Inter"' "Inter\\" 'Inter; x' 'Inter{' 'Inter}' '' '   '; do
+    pruefe '! ss theme.font.ui "$v" >/dev/null 2>&1 && [ "$(jq -c . "$h/.config/hypr-shell/settings.json")" = "{}" ]' "Schriftname »$v« wird abgelehnt"
+done
+pruefe '! ss theme.cursor.name "Bibata\"" >/dev/null 2>&1 && ! ss theme.icons "" >/dev/null 2>&1 && ! ss theme.font.display "  " >/dev/null 2>&1' "Mauszeiger, Symbole und Anzeigeschrift ebenso"
+pruefe 'ss theme.font.ui "Noto Sans CJK JP" >/dev/null && ss theme.font.mono "JetBrainsMono Nerd Font" >/dev/null && ss theme.cursor.name Bibata-Modern-Ice >/dev/null && ss theme.icons Papirus-Dark >/dev/null && ss theme.font.clock "Font Awesome 6 Free (Solid)" >/dev/null' "übliche Namen bleiben gültig"
+for k in terminal files browser launcher; do
+    pruefe '! ss "apps.$k" "  " >/dev/null 2>&1' "apps.$k aus Leerzeichen wird abgelehnt"
+done
+pruefe 'ss apps.terminal "foot -e tmux" >/dev/null && ss apps.launcher "rofi -show drun" >/dev/null' "Befehle mit Leerzeichen bleiben gültig"
+# von Hand eingetragen: der Standard gilt, die Leiste bleibt lesbares CSS
+h="$(neues_home schrift-hand '{"theme": {"font": {"ui": "Inter\"; } * { color: red; } x {", "mono": "Hack\\"}}}')"
+apply "$h" --no-reload 2>/dev/null
+pruefe 'grep -q "^  font-family: \"Inter\", \"JetBrainsMono Nerd Font\", sans-serif;" "$h/.config/waybar/style.css" && ! grep -q "color: red" "$h/.config/waybar/style.css"' "von Hand eingetragener kaputter Name: Standardschrift in der Leiste"
+pruefe 'grep -q "^theme.font.ui: invalid format" "$h/.local/share/hypr-shell/settings.errors" && grep -q "^theme.font.mono: invalid format" "$h/.local/share/hypr-shell/settings.errors"' "… und gemeldet"
+# zweite Sicherung: auch ein Wert, den das Schema durchliesse, bricht nicht aus der CSS-Zeichenkette aus
+jq '(.keys[] | select(.key | startswith("theme.font."))) |= del(.pattern)' "$SCHEMA" > "$T/schema-ohne-muster.json"
+h="$(neues_home schrift-maskiert '{"theme": {"font": {"ui": "Inter\"; } * { color: red; } x {"}}}')"
+HYPR_SHELL_SCHEMA="$T/schema-ohne-muster.json" apply "$h" --no-reload 2>/dev/null
+pruefe 'grep -qF "  font-family: \"Inter\\\"; } * { color: red; } x {\", \"JetBrainsMono Nerd Font\", sans-serif;" "$h/.config/waybar/style.css"' "Anführungszeichen werden im CSS maskiert"
+
 echo "== 6. ältere Versionen"
 v100='{"weather": {"location": "Zürich", "units": "metric"}, "desktop": {"screen": "", "clock": {"enabled": true, "x": 0.02, "y": 0.045, "scale": 1.0},
   "resources": {"enabled": false, "x": 0.015, "y": 0.56, "scale": 1.0}}, "dashboard": {"width": 1000, "edge": true, "opacity": 0.42},

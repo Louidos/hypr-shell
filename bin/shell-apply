@@ -298,16 +298,19 @@ erzeuge_waybar() { # eff
 }
 
 px() { awk -v a="$1" -v k="$2" 'BEGIN { printf "%d", a * k + 0.5 }'; }
+# Text für eine CSS-Zeichenkette in "…": \ und " maskieren (das Schema lässt beides gar nicht erst durch)
+css() { local s="${1//\\/\\\\}"; printf '%s' "${s//\"/\\\"}"; }
 
 erzeuge_waybar_style() {
-    local fs="$S_theme_font_scale"
+    local fs="$S_theme_font_scale" ui mono
+    ui="$(css "$S_theme_font_ui")"; mono="$(css "$S_theme_font_mono")"
     cat <<CSS
 /* $HEADER */
 /* hypr-shell: Leiste im Glas-Look. Farben aus dem Hintergrundbild (colors.css von matugen). */
 @import "colors.css";
 
 * {
-  font-family: "$S_theme_font_ui", "$S_theme_font_mono", sans-serif;
+  font-family: "$ui", "$mono", sans-serif;
   font-size: $(px 13 "$fs")px;
   font-weight: 600;
   min-height: 0;
@@ -346,7 +349,7 @@ tooltip label { color: @text; font-weight: 500; }
 }
 
 #custom-distro {
-  font-family: "$S_theme_font_mono";
+  font-family: "$mono";
   font-size: $(px 15 "$fs")px;
   padding: 0 10px 0 12px;
 }
@@ -371,7 +374,7 @@ tooltip label { color: @text; font-weight: 500; }
 #network,
 #custom-notifications,
 #custom-power {
-  font-family: "$S_theme_font_mono";
+  font-family: "$mono";
   font-size: $(px 14 "$fs")px;
 }
 #bluetooth.off, #bluetooth.disabled, #network.disconnected { color: alpha(@text, 0.45); }

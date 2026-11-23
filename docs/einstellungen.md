@@ -54,14 +54,14 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `theme.glass` | `0.44` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the desktop tiles and the settings window | `shell-set theme.glass 0.45` |
 | `theme.radius.panel` | `26` | ganze Zahl 0 … 40 px | Corner radius of glass panels | `shell-set theme.radius.panel 27` |
 | `theme.radius.card` | `18` | ganze Zahl 0 … 30 px | Corner radius of cards inside panels | `shell-set theme.radius.card 19` |
-| `theme.font.ui` | `Inter` | Text | Font for text in the bar, dashboard, panel and lock screen | `shell-set theme.font.ui "Noto Sans"` |
-| `theme.font.mono` | `JetBrainsMono Nerd Font` | Text | Font for symbols and numbers (needs Nerd Font symbols) | `shell-set theme.font.mono "Noto Sans"` |
-| `theme.font.clock` | `JetBrainsMono Nerd Font` | Text | Font of the big clock on the desktop | `shell-set theme.font.clock "Noto Sans"` |
-| `theme.font.display` | `Bebas Neue` | Text | Font of the clocks in the dashboard and on the lock screen | `shell-set theme.font.display "Noto Sans"` |
+| `theme.font.ui` | `Inter` | Text (Format geprüft) | Font for text in the bar, dashboard, panel and lock screen | `shell-set theme.font.ui "Noto Sans"` |
+| `theme.font.mono` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font for symbols and numbers (needs Nerd Font symbols) | `shell-set theme.font.mono "Noto Sans"` |
+| `theme.font.clock` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font of the big clock on the desktop | `shell-set theme.font.clock "Noto Sans"` |
+| `theme.font.display` | `Bebas Neue` | Text (Format geprüft) | Font of the clocks in the dashboard and on the lock screen | `shell-set theme.font.display "Noto Sans"` |
 | `theme.font.scale` | `1.0` | Zahl 0.8 … 1.5, Schritt 0.05 | Factor for all font sizes | `shell-set theme.font.scale 1.05` |
-| `theme.cursor.name` | `Bibata-Modern-Ice` | Text | Name of the mouse cursor theme | `shell-set theme.cursor.name Adwaita` |
+| `theme.cursor.name` | `Bibata-Modern-Ice` | Text (Format geprüft) | Name of the mouse cursor theme | `shell-set theme.cursor.name Adwaita` |
 | `theme.cursor.size` | `24` | ganze Zahl 16 … 64 px | Size of the mouse cursor | `shell-set theme.cursor.size 26` |
-| `theme.icons` | `Papirus-Dark` | Text | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |
+| `theme.icons` | `Papirus-Dark` | Text (Format geprüft) | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |
 
 ## input – Eingabe
 

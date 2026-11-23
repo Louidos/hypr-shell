@@ -241,10 +241,13 @@ erzeuge_lokal() {
     if [ "$DRY" -eq 1 ]; then probe "neu: ~/.config/hypr/hypr-shell-local.lua (Tastatur: $layout ${variante:-})"; return 0; fi
     mkdir -p "$CONF/hypr"
     {
-        echo "-- erzeugt von install.sh aus localectl; darf von Hand geändert werden"
+        echo "-- erzeugt von install.sh; darf von Hand geändert werden (wirkt nach hyprctl reload)"
         echo "return {"
-        echo "    kb_layout  = $(lua_text "$layout"),"
-        echo "    kb_variant = $(lua_text "$variante"),"
+        echo "    kb_layout      = $(lua_text "$layout"),   -- Tastaturlayout (aus localectl)"
+        echo "    kb_variant     = $(lua_text "$variante"),"
+        echo "    scale          = \"auto\",   -- Bildschirm-Skalierung: \"auto\" oder z. B. 1.25, 1.5, 2"
+        echo "    natural_scroll = false,    -- Touchpad: Inhalt folgt den Fingern"
+        echo "    tap_to_click   = true,     -- Touchpad: Tippen klickt"
         echo "}"
     } > "$ziel"
     vermerke neu.txt "$ziel"

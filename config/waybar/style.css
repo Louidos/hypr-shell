@@ -26,6 +26,7 @@ tooltip label { color: @text; font-weight: 500; }
 #workspaces button,
 #mpris,
 #pulseaudio,
+#battery,
 #clock,
 #bluetooth,
 #network,
@@ -54,6 +55,9 @@ tooltip label { color: @text; font-weight: 500; }
 #workspaces button:hover { color: @accent; background: transparent; }
 
 #mpris { color: @subtext; font-weight: 500; }
+
+/* Akku: Warnfarbe unter 15 %, solange nicht geladen wird */
+#battery.critical:not(.charging):not(.plugged) { color: @error; }
 
 #bluetooth,
 #network,

@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.8.0 – 2026-11-23
+
 ### Geändert
 - Neutrale Grund-Kürzel: SUPER+Enter Terminal, CTRL+SUPER+Enter App-Suche, SUPER+Q Fenster schliessen (SUPER+C bleibt), dazu SUPER+F Vollbild; selbst geänderte Kürzel bleiben (#82)
 

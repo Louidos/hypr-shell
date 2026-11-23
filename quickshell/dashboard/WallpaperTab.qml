@@ -37,7 +37,7 @@ Item {
             Keys.onEscapePressed: text.length > 0 ? text = "" : wt.closeRequested()
             Txt { visible: input.text.length === 0; text: "Search wallpapers"; sub: true; size: 13 }
         }
-        Txt { id: count; anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter } text: files.count + " images"; sub: true; size: 11 }
+        Txt { id: count; anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter } text: files.count + (files.count === 1 ? " image" : " images"); sub: true; size: 11 }
     }
 
     FolderListModel {

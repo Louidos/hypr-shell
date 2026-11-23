@@ -64,7 +64,7 @@ ipc() { "$qs" -p "$cfg" ipc call "$@" >/dev/null 2>&1; }
 bild desktop
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dashboard'; then
     for tab in dashboard wallpaper performance about; do
-        ipc dashboard open "$tab"; sleep 2; bild "dashboard-$tab"
+        ipc dashboard open "$tab"; sleep 3; bild "dashboard-$tab"
     done
     ipc dashboard close; sleep 1
 fi

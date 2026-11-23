@@ -7,7 +7,7 @@ import "../common"
 Grid12 {
     id: home
     property var about: ({})
-    property var weather: ({ ok: false })
+    property var weather: ({ ok: false, reason: "loading" })
     rows: 3
 
     SystemClock { id: clock; precision: SystemClock.Minutes }
@@ -27,7 +27,7 @@ Grid12 {
         id: weatherProc
         command: [Settings.home + "/.local/bin/shell-weather"]
         running: true
-        stdout: StdioCollector { onStreamFinished: { try { home.weather = JSON.parse(text) } catch (e) { home.weather = { ok: false } } } }
+        stdout: StdioCollector { onStreamFinished: { try { home.weather = JSON.parse(text) } catch (e) { home.weather = { ok: false, reason: "offline" } } } }
     }
     Timer { interval: 15 * 60 * 1000; running: true; repeat: true; onTriggered: if (!weatherProc.running) weatherProc.running = true }
 
@@ -53,7 +53,8 @@ Grid12 {
                 Txt {
                     text: home.weather.ok ? home.weather.description + " · " + home.weather.location
                         : home.weather.reason === "no-location" ? "Set weather.location in settings.json"
-                        : home.weather.reason === "unknown-location" ? "Unknown place: " + home.weather.location : ""
+                        : home.weather.reason === "unknown-location" ? "Unknown place: " + home.weather.location
+                        : home.weather.reason === "loading" ? "Loading weather…" : "Offline"
                     sub: true
                     size: 12
                     width: 210

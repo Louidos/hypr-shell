@@ -7,6 +7,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Benachrichtigungen im Glas-Look mit Verlauf (SUPER+N oder Glocke in der Leiste): Karten oben rechts mit Knöpfen, Verlauf nach App gruppiert, einzeln oder alle löschen, Nicht stören; ersetzt swaync (#48)
 - App-Starter im Glas-Look mit Rechner (SUPER+R, SUPER+Space): Suche nach Name und Beschreibung, zuletzt benutzte zuerst, `=12*8` rechnet; mit `apps.launcher` lässt sich wieder rofi einstellen (#46)
 
 ### Geändert

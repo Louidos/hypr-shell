@@ -40,7 +40,7 @@ ARGS=("$@")
 # Pakete (Namen werden vor der Installation mit pacman -Si / paru -Si geprüft)
 PAKETE=(
     hyprland hyprlock hypridle xdg-desktop-portal-hyprland hyprpolkitagent
-    quickshell waybar swaync rofi awww matugen kitty cava
+    quickshell waybar rofi awww matugen kitty cava
     grim slurp wl-clipboard libnotify jq playerctl brightnessctl pamixer swayosd
     power-profiles-daemon networkmanager bluez bluez-utils nautilus xdg-user-dirs imagemagick
     papirus-icon-theme bibata-cursor-theme-bin
@@ -49,7 +49,6 @@ PAKETE=(
 # Ausweichnamen, falls ein Paket anders heisst
 declare -A ALTERNATIVEN=(
     [quickshell]="quickshell-git"
-    [swaync]="swaynotificationcenter"
     [awww]="awww-bin awww-git"
     [matugen]="matugen-bin matugen-git"
     [swayosd]="swayosd-git"
@@ -59,7 +58,7 @@ declare -A ALTERNATIVEN=(
 # Programme, die am Ende da sein müssen (Programm:Paket)
 PROGRAMME=(
     Hyprland:hyprland hyprlock:hyprlock hypridle:hypridle qs:quickshell waybar:waybar
-    swaync:swaync rofi:rofi awww:awww awww-daemon:awww matugen:matugen kitty:kitty
+    rofi:rofi awww:awww awww-daemon:awww matugen:matugen kitty:kitty
     grim:grim slurp:slurp wl-copy:wl-clipboard notify-send:libnotify jq:jq playerctl:playerctl
     brightnessctl:brightnessctl pamixer:pamixer swayosd-server:swayosd swayosd-client:swayosd
     powerprofilesctl:power-profiles-daemon nmcli:networkmanager bluetoothctl:bluez-utils
@@ -71,7 +70,6 @@ NUR_WENN_FEHLT=(
     "$CONF/hypr/hyprlock-colors.conf"
     "$CONF/kitty/colors.conf"
     "$CONF/rofi/colors.rasi"
-    "$CONF/swaync/colors.css"
     "$CONF/waybar/colors.css"
     "$CONF/hypr-shell/colors.json"
     "$CONF/hypr-shell/settings.json"

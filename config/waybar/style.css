@@ -34,6 +34,7 @@ tooltip label { color: @text; font-weight: 500; }
 #network,
 #tray,
 #custom-recording,
+#custom-notifications,
 #custom-power {
   padding: 0 8px;
   color: @text;
@@ -64,11 +65,14 @@ tooltip label { color: @text; font-weight: 500; }
 
 #bluetooth,
 #network,
+#custom-notifications,
 #custom-power {
   font-family: "JetBrainsMono Nerd Font";
   font-size: 14px;
 }
 #bluetooth.off, #bluetooth.disabled, #network.disconnected { color: alpha(@text, 0.45); }
+
+#custom-notifications.empty, #custom-notifications.dnd { color: alpha(@text, 0.45); }
 
 #custom-recording { color: #ff4d4d; font-size: 12px; }
 

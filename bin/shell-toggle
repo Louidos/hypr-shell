@@ -15,7 +15,9 @@ meldung() { hat notify-send && notify-send -a "hypr-shell" -t 2500 "$@" || true;
 
 wifi_an() { hat nmcli && [ "$(nmcli radio wifi 2>/dev/null)" = enabled ]; }
 bt_an() { hat bluetoothctl && bluetoothctl show 2>/dev/null | grep -q 'Powered: yes'; }
-dnd_an() { hat swaync-client && [ "$(swaync-client -D 2>/dev/null)" = true ]; }
+# Nicht stören: Zustand in einer Datei, die der Benachrichtigungsdienst von hypr-shell (Quickshell) beobachtet
+DND="$DATA/dnd"
+dnd_an() { [ "$(cat "$DND" 2>/dev/null)" = true ]; }
 gaming_an() { [ -e "$GAMING" ]; }
 awake_an() { [ -f "$AWAKE_PID" ] && kill -0 "$(cat "$AWAKE_PID")" 2>/dev/null; }
 
@@ -45,7 +47,7 @@ bluetooth() {
 }
 
 dnd() {
-    if [ "$(ziel dnd_an "$1")" = on ]; then swaync-client -dn >/dev/null; else swaync-client -df >/dev/null; fi
+    if [ "$(ziel dnd_an "$1")" = on ]; then echo true > "$DND"; else echo false > "$DND"; fi
 }
 
 # Gaming-Modus: Blur, Animationen und Schatten aus. Die Datei sorgt dafür, dass hyprland.lua

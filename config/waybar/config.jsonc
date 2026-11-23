@@ -19,6 +19,7 @@
     "bluetooth",
     "network",
     "custom/recording",
+    "custom/notifications",
     "custom/power"
   ],
   "custom/distro": {
@@ -124,6 +125,15 @@
     "return-type": "json",
     "interval": 2,
     "tooltip": true
+  },
+  "custom/notifications": {
+    "exec": "cat \"$HOME/.local/share/hypr-shell/notifications-bar.json\" 2>/dev/null || echo '{\"text\": \"󰂜\"}'",
+    "return-type": "json",
+    "interval": 30,
+    "signal": 9,
+    "tooltip": true,
+    "on-click": "$HOME/.local/bin/shell-quickshell ipc notifications toggle",
+    "on-click-right": "$HOME/.local/bin/shell-toggle dnd"
   },
   "custom/power": {
     "format": "⏻",

@@ -48,6 +48,7 @@ SUPER + D
 SUPER + E
 SUPER + L
 SUPER + M
+SUPER + N
 SUPER + Q
 SUPER + R
 SUPER + Space

@@ -24,7 +24,16 @@ QS_ICON_THEME="$(symbole)"
 export QS_ICON_THEME
 
 laeuft() { pgrep -f -- "-p $cfg" >/dev/null 2>&1; }
-start() { laeuft || setsid -f "$qs" -p "$cfg" >/dev/null 2>&1; }
+# Benachrichtigungen übernimmt hypr-shell selbst: ein von früher (oder über D-Bus) gestartetes swaync
+# gibt den Dienstnamen frei, damit genau ein Benachrichtigungsdienst läuft
+benachrichtigungen() {
+    local an=true
+    if command -v jq >/dev/null 2>&1 && [ -f "$HOME/.local/share/hypr-shell/settings.effective.json" ]; then
+        an="$(jq -r '.notifications.enabled // true' "$HOME/.local/share/hypr-shell/settings.effective.json" 2>/dev/null || echo true)"
+    fi
+    if [ "$an" = true ]; then pkill -x swaync 2>/dev/null || true; fi
+}
+start() { laeuft || { benachrichtigungen; setsid -f "$qs" -p "$cfg" >/dev/null 2>&1; }; }
 stop() { pkill -f -- "-p $cfg" 2>/dev/null || true; }
 
 case "${1:-start}" in

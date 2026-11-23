@@ -15,6 +15,11 @@ done
 [ -n "$qs" ] || { echo "Hinweis: quickshell fehlt, Oberflächentest übersprungen."; exit 0; }
 [ -f quickshell/shell.qml ] || { echo "Hinweis: noch keine Oberfläche, übersprungen."; exit 0; }
 
+# eigener D-Bus der Sitzung (für den Benachrichtigungsdienst und notify-send)
+if [ -z "${HYPR_SHELL_DBUS:-}" ] && command -v dbus-run-session >/dev/null 2>&1; then
+    HYPR_SHELL_DBUS=1 exec dbus-run-session -- "$0" "$@"
+fi
+
 T="$(mktemp -d)"
 pids=()
 aufraeumen() {
@@ -82,7 +87,7 @@ if command -v awww >/dev/null 2>&1 && command -v matugen >/dev/null 2>&1; then
         "$HOME/.local/bin/shell-wallpaper" "$bunt" > "$T/wallpaper.log" 2>&1 || { cat "$T/wallpaper.log"; farben_ok=0; }
         echo "---- Farben aus dem Bild ----"
         for f in .config/hypr/hypr-shell-colors.lua .config/hypr/hyprlock-colors.conf .config/waybar/colors.css \
-                 .config/swaync/colors.css .config/kitty/colors.conf .config/rofi/colors.rasi .config/hypr-shell/colors.json; do
+                 .config/kitty/colors.conf .config/rofi/colors.rasi .config/hypr-shell/colors.json; do
             if [ -f "$HOME/$f" ] && ! grep -q "Standardfarben" "$HOME/$f" && ! grep -q "{{" "$HOME/$f"; then
                 echo "  ok: $f"
             else
@@ -148,6 +153,37 @@ fi
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target panel'; then
     ipc panel open; sleep 2; bild panel
     ipc panel close; sleep 1
+fi
+
+# ---- Benachrichtigungen: Karte, Verlauf, Nicht stören
+note_ok=1
+if command -v notify-send >/dev/null 2>&1 && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] \
+    && "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target notifications'; then
+    echo "---- Benachrichtigungen ----"
+    nzahl() { "$qs" -p "$cfg" ipc call notifications "$1" 2>/dev/null; }
+    notify-send -a "Test" Test "Body of the test notification"; sleep 1.5; bild benachrichtigung
+    if [ "$(nzahl visible)" = 1 ] && [ "$(nzahl count)" = 1 ]; then echo "  ok: notify-send zeigt eine Karte und steht im Verlauf"
+    else echo "  FEHLER: Karte/Verlauf: $(nzahl visible) / $(nzahl count)"; note_ok=0; fi
+    "$HOME/.local/bin/shell-toggle" dnd on; sleep 1.5
+    notify-send -a "Test" "Second" "while do not disturb"; sleep 1.5
+    if [ "$(nzahl visible)" = 0 ] && [ "$(nzahl count)" = 2 ]; then echo "  ok: mit Nicht stören keine Karte, der Verlauf füllt sich trotzdem"
+    else echo "  FEHLER: Nicht stören: $(nzahl visible) Karten, $(nzahl count) im Verlauf"; note_ok=0; fi
+    if grep -q '"class":"dnd"' "$HOME/.local/share/hypr-shell/notifications-bar.json" 2>/dev/null; then echo "  ok: Glocke in der Leiste zeigt Nicht stören"
+    else echo "  FEHLER: Glocke: $(cat "$HOME/.local/share/hypr-shell/notifications-bar.json" 2>/dev/null)"; note_ok=0; fi
+    ipc notifications open; sleep 2; bild benachrichtigungen-verlauf
+    ipc notifications clear; sleep 0.5
+    if [ "$(nzahl count)" = 0 ]; then echo "  ok: Clear all leert den Verlauf"; else echo "  FEHLER: Verlauf nicht leer"; note_ok=0; fi
+    ipc notifications close; sleep 0.5
+    "$HOME/.local/bin/shell-toggle" dnd off
+    if command -v dbus-send >/dev/null 2>&1; then
+        besitzer="$(dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.GetConnectionUnixProcessID \
+            string:org.freedesktop.Notifications 2>/dev/null | awk '/uint32/ {print $2}')"
+        if [ "$besitzer" = "$qspid" ]; then echo "  ok: genau ein Benachrichtigungsdienst, und zwar hypr-shell (PID $besitzer)"
+        else echo "  FEHLER: Benachrichtigungsdienst gehört PID ${besitzer:-?}, nicht Quickshell ($qspid)"; note_ok=0; fi
+    fi
+    pgrep -x swaync >/dev/null && { echo "  FEHLER: swaync läuft"; note_ok=0; }
+else
+    echo "  Hinweis: notify-send oder D-Bus fehlt, Benachrichtigungen nicht geprüft"
 fi
 
 # ---- Starter (SUPER+R): Suche, Rechner
@@ -316,6 +352,7 @@ echo "------------------------"
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 [ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
+[ "$note_ok" -eq 1 ] || { echo "FEHLER: Benachrichtigungen (siehe oben)"; exit 1; }
 [ "$starter_ok" -eq 1 ] || { echo "FEHLER: Starter (siehe oben)"; exit 1; }
 [ "$panel_ok" -eq 1 ] || { echo "FEHLER: mehr als ein Panel offen (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then

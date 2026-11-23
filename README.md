@@ -324,6 +324,21 @@ Pille oder die Taste stoppt. Aufgenommen wird nur nach Tastendruck, nichts wird 
 Installer fragt, ob whisper.cpp, piper und die Modelle (etwa 250 MB) geholt werden sollen; ohne sie
 fehlen Taste und Mikrofon-Knopf.
 
+**Missa bedient den Rechner** (zusätzlich `missa.agent_enabled` und ein Geräte-Token): Der Missa-Agent
+(`shell-missa-agent`, Benutzerdienst) verbindet sich ausgehend mit Missa-Core – am Rechner wird kein
+Port geöffnet – und bietet Missa 16 Werkzeuge: Dateien suchen, lesen und öffnen, Fenster und Medien
+steuern, Benachrichtigungen, Panels und Einstellungen, Dateien anlegen (nie überschreiben), und nach
+Rückfrage Befehle, Dateien ändern (Papierkorb statt löschen), Programme beenden, Energie. Die
+**Zugriffsstufe** `missa.access`: `read` (nur lesen), `ask` (Standard: Schreiben frei, Zerstörerisches
+erst nach Klick auf einer Glas-Karte, die den Befehl wörtlich zeigt – Enter erlaubt, Esc lehnt ab, nach
+60 s abgelehnt), `full` (ohne lokale Rückfrage). In jeder Stufe gilt: gesperrte Ordner
+(`missa.blocked_paths`, z. B. `~/.ssh`, Schlüsselbund, Browser-Profile, `secrets.env`), nie als root,
+bei gesperrtem Bildschirm nur Lesendes, Ausgaben höchstens 20 000 Zeichen. Solange der Agent verbunden
+ist, steht ein Symbol in der Leiste (es pulsiert während einer Aktion); der Schalter **Missa access** im
+Panel trennt sofort. Jede Aktion steht im Chat (Knopf 󰋚) und in
+`~/.local/share/hypr-shell/missa-actions.log`; Erinnerungen und Alarme von Missa erscheinen als
+Benachrichtigung (Notfälle bleiben stehen).
+
 ## Laptop
 
 Auf ASUS-ROG-Laptops (z. B. Zephyrus M16) steuert hypr-shell über `asusctl` und `supergfxctl`
@@ -373,6 +388,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
 | `shell-games list\|launch <id>` | Spiele für den Tab Games |
 | `shell-laptop status\|profile\|gfx\|charge\|kbd …` | Laptop-Funktionen (asusctl, supergfxctl, power-profiles-daemon) |
+| `shell-missa-agent sync\|pause\|resume\|status` | Missa-Agent (Geräte-Anschluss v1) |
 | `shell-voice available\|listen\|speak\|stop` | mit Missa sprechen (Aufnahme, whisper.cpp, piper) |
 | `shell-missa health\|chat\|get …` | Verbindung zu Missa-Core (Chat, Status, Lagebild) |
 | `shell-mount nextcloud\|missa up\|down\|status` | Ordner der Anbindungen einhängen / aufräumen |

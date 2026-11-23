@@ -18,7 +18,7 @@ Column {
           secret: "NEXTCLOUD_APP_PASSWORD", secretTitle: "App password", howto: "In Nextcloud: Settings → Security → Devices & sessions → Create new app password." },
         { id: "missa", title: "Missa", icon: "󰚩", keys: ["missa.enabled", "missa.url", "missa.folder"],
           secret: "MISSA_API_KEY", secretTitle: "API key", howto: "Enter the address of Missa-Core and the API key from its configuration." },
-        { id: "agent", title: "Missa on this computer", icon: "󰍹", keys: ["missa.agent_enabled"],
+        { id: "agent", title: "Missa on this computer", icon: "󰍹", keys: ["missa.agent_enabled", "missa.access", "missa.blocked_paths", "missa.device"],
           secret: "MISSA_DEVICE_TOKEN", secretTitle: "Device token", howto: "Create a device token in Missa-Core (devices) and enter it here." },
         { id: "voice", title: "Talk to Missa", icon: "󰍬", keys: ["missa.voice_enabled", "missa.voice_language", "missa.voice_model", "missa.voice_voice", "missa.voice_speed"], secret: "", howto: "" },
         { id: "lab", title: "Homelab", icon: "󰒋", keys: ["lab.enabled"], secret: "", howto: "" },

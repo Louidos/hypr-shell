@@ -16,7 +16,7 @@ j() { jq -r "$1" <<<"$cfg"; }
 pruefe '[ "$(j .position)" = top ]' "Leiste oben"
 pruefe '[ "$(j ".\"modules-left\" | join(\",\")")" = "custom/distro,hyprland/workspaces,mpris" ]' "links: Distro, Arbeitsflächen, Lied"
 pruefe '[ "$(j ".\"modules-center\" | length")" = 0 ]' "Mitte leer"
-pruefe '[ "$(j ".\"modules-right\" | join(\",\")")" = "pulseaudio,battery,clock,bluetooth,network,custom/recording,custom/notifications,custom/power" ]' "rechts: Lautstärke, Akku, Uhr, Bluetooth, WLAN, Aufnahme, Glocke, Ausschalten"
+pruefe '[ "$(j ".\"modules-right\" | join(\",\")")" = "pulseaudio,battery,clock,bluetooth,network,custom/recording,custom/notifications,custom/missa,custom/power" ]' "rechts: Lautstärke, Akku, Uhr, Bluetooth, WLAN, Aufnahme, Glocke, Missa (nur verbunden sichtbar), Ausschalten"
 pruefe '[ "$(j ".battery.states.critical")" = 14 ] && grep -q "#battery.critical" config/waybar/style.css' "Akku: Warnfarbe unter 15 %"
 pruefe 'j ".battery.format" | grep -q "{capacity}%" && j ".battery.\"format-charging\"" | grep -q "{capacity}%" && [ "$(j ".battery.\"format-icons\" | length")" -ge 5 ]' "Akku: Symbol und Prozent, Ladesymbol am Netz"
 pruefe '[ "$(j ".\"hyprland/workspaces\".\"persistent-workspaces\".\"*\" | join(\",\")")" = "1,2,3,4" ]' "Arbeitsflächen 1–4"
@@ -34,7 +34,7 @@ pruefe 'grep -q "waybar/colors.css" config/matugen/config.toml' "matugen erzeugt
 pruefe 'grep -qE "rgba\(10, 10, 12, 0\.25\)" config/waybar/style.css' "Deckkraft etwa 0.25"
 
 # jede @farbe in style.css muss in colors.css definiert sein
-for c in $(grep -oE '@[a-z_]+' config/waybar/style.css | grep -v '@import' | sort -u | tr -d @); do
+for c in $(grep -oE '@[a-z_]+' config/waybar/style.css | grep -vE '@(import|keyframes)' | sort -u | tr -d @); do
     pruefe 'grep -q "@define-color $c " config/waybar/colors.css && grep -q "@define-color $c " config/matugen/templates/colors.css' "Farbe @$c definiert"
 done
 

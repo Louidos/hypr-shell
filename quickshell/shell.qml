@@ -31,4 +31,5 @@ ShellRoot {
     Cheatsheet { }
     // Missa nur, wenn missa.enabled an ist (sonst kein Panel, kein IPC-Ziel, keine Netzanfrage)
     LazyLoader { active: Integrations.missa; MissaChat { } }
+    LazyLoader { active: Integrations.missaAgent; MissaAgent { } }
 }

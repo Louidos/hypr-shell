@@ -1,0 +1,331 @@
+#!/usr/bin/env bash
+# Einstellungen von hypr-shell lesen und ändern (~/.config/hypr-shell/settings.json).
+#
+#   shell-set list [bereich]                Schlüssel, aktueller Wert, Standard und Erklärung
+#   shell-set get <schlüssel>               aktueller Wert
+#   shell-set <schlüssel> <wert>            Wert setzen (wird vorher gegen das Schema geprüft)
+#   shell-set reset <schlüssel|bereich|all> auf den Standard zurücksetzen
+#   shell-set undo | redo                   letzte Änderung zurücknehmen / wiederholen (20 Schritte)
+#   shell-set history                       gespeicherte Schritte anzeigen
+#   shell-set profile save|load|delete <n>  Profil sichern, laden, löschen
+#   shell-set profile list                  Profile anzeigen
+#   shell-set export <datei>                Einstellungen in eine Datei schreiben
+#   shell-set import <datei>                Einstellungen aus einer Datei laden (wird geprüft)
+#
+# Werte: true/false (auch on/off), Zahlen, Text, Listen als a,b,c oder JSON wie ["a","b"].
+# Jede Änderung wird atomar geschrieben und sofort angewendet (shell-apply).
+# Beispiele:  shell-set look.rounding 20    shell-set bar.modules.left distro,workspaces
+set -euo pipefail
+
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}"
+DATA="$HOME/.local/share/hypr-shell"
+SETTINGS="${HYPR_SHELL_SETTINGS:-$CONF/hypr-shell/settings.json}"
+HIST="$DATA/history"
+PROFILES="$CONF/hypr-shell/profiles"
+MAX_HIST=20
+HIER="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+APPLY="$HIER/shell-apply"
+[ -x "$APPLY" ] || APPLY="$(command -v shell-apply || echo "$HOME/.local/bin/shell-apply")"
+
+command -v jq >/dev/null 2>&1 || { echo "shell-set: jq fehlt" >&2; exit 1; }
+SCHEMA="$("$APPLY" --schema)"
+
+fehler() { printf 'shell-set: %s\n' "$*" >&2; exit 1; }
+hilfe() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+
+T="$(mktemp -d)"
+trap 'rm -rf "$T"' EXIT
+
+# ---------------------------------------------------------------- Lesen und Schreiben
+
+# aktuelle Datei als JSON-Objekt (fehlt sie: {}); kaputtes JSON bricht ab
+roh() {
+    if [ ! -e "$SETTINGS" ]; then echo '{}'; return 0; fi
+    jq -e 'if type == "object" then . else error("not an object") end' "$SETTINGS" 2> "$T/parse" \
+        || fehler "settings.json is not valid JSON ($(sed 's/^jq: error[^:]*: //' "$T/parse" | head -n1)) – fix it first, or use: shell-set import <file> / shell-set reset all"
+}
+
+# schreibe: stdin (JSON) lesbar formatiert und atomar nach settings.json
+schreibe() {
+    mkdir -p "$(dirname "$SETTINGS")"
+    local tmp
+    tmp="$(mktemp "$SETTINGS.XXXXXX.tmp")"
+    jq --indent 2 . > "$tmp" || { rm -f "$tmp"; fehler "konnte nicht schreiben"; }
+    chmod 644 "$tmp"
+    mv -f "$tmp" "$SETTINGS"
+}
+
+anwenden() {
+    [ "${HYPR_SHELL_NO_APPLY:-0}" = 1 ] && return 0
+    "$APPLY" >/dev/null 2>&1 || true
+}
+
+# ---------------------------------------------------------------- Verlauf
+
+stapel() { # undo|redo -> Dateien, älteste zuerst
+    find "$HIST/$1" -maxdepth 1 -name '*.json' 2>/dev/null | sort
+}
+lege() { # undo|redo datei
+    mkdir -p "$HIST/$1"
+    local n
+    n="$(date +%s%N)"
+    cp "$2" "$HIST/$1/$n.json"
+    # nur die letzten MAX_HIST behalten
+    local alle
+    mapfile -t alle < <(stapel "$1")
+    if [ "${#alle[@]}" -gt "$MAX_HIST" ]; then
+        rm -f "${alle[@]:0:$((${#alle[@]} - MAX_HIST))}"
+    fi
+}
+nimm() { # undo|redo -> Pfad der neuesten Datei (leer, wenn keine)
+    stapel "$1" | tail -n1
+}
+
+# vor einer Änderung den alten Stand sichern. live=1: während die App einen Regler zieht – nur der
+# Stand vor dem ersten Schritt zählt (pending), der abschliessende Schritt legt ihn in den Verlauf
+sichern() { # live(0/1)
+    mkdir -p "$HIST"
+    # der Stand genau so, wie er in der Datei steht (auch kaputtes JSON lässt sich so zurückholen)
+    if [ -e "$SETTINGS" ]; then cp "$SETTINGS" "$T/vorher.json"; else echo '{}' > "$T/vorher.json"; fi
+    if [ "$1" = 1 ]; then
+        [ -f "$HIST/pending.json" ] || cp "$T/vorher.json" "$HIST/pending.json"
+        return 0
+    fi
+    if [ -f "$HIST/pending.json" ]; then
+        lege undo "$HIST/pending.json"; rm -f "$HIST/pending.json"
+    else
+        lege undo "$T/vorher.json"
+    fi
+    rm -rf "$HIST/redo"
+}
+
+# ---------------------------------------------------------------- Schema
+
+schluessel() { # key -> Schema-Eintrag (leer, wenn unbekannt)
+    jq -c --arg k "$1" '.keys[] | select(.key == $k)' "$SCHEMA"
+}
+bereich_gibt_es() { # prefix
+    jq -e --arg p "$1" 'any(.keys[]; .key | startswith($p + "."))' "$SCHEMA" > /dev/null
+}
+
+# Text von der Kommandozeile -> JSON-Wert passend zum Typ (Prüfung danach durch shell-apply)
+umwandeln() { # schema-eintrag text
+    jq -n --argjson s "$1" --arg v "$2" '
+        def json_or_text: . as $t | (try ($t | fromjson) catch $t);
+        if $s.type == "bool" then
+            ($v | ascii_downcase) as $l
+            | if ["true", "on", "yes", "1"] | index([$l]) then true
+              elif ["false", "off", "no", "0"] | index([$l]) then false else $v end
+        elif $s.type == "int" or $s.type == "number" then (try ($v | tonumber) catch $v)
+        elif $s.type == "list" or $s.type == "stringlist" then
+            if ($v | startswith("[")) then ($v | json_or_text)
+            elif $v == "" then []
+            else ($v | split(",") | map(gsub("^\\s+|\\s+$"; ""))) end
+        elif $s.type == "objectlist" then ($v | json_or_text)
+        else $v end'
+}
+
+# Prüfen, ob in der Kandidatendatei der Schlüssel (oder etwas darunter) fehlerhaft ist
+pruefen() { # datei schlüssel-oder-leer -> gibt Fehler aus, Rückgabe 1 bei Fehler
+    local f="$1" k="$2"
+    "$APPLY" --check "$f" > "$T/check" 2>&1 && return 0
+    if [ -z "$k" ]; then cat "$T/check"; return 1; fi
+    if grep -E "^(JSON: |$(printf '%s' "$k" | sed 's/[.[\*^$]/\\&/g')(\\.|:))" "$T/check"; then return 1; fi
+    return 0
+}
+
+zeige() { # JSON-Wert -> Text für Menschen
+    jq -r 'if type == "string" then . else tojson end'
+}
+
+# ---------------------------------------------------------------- Befehle
+
+cmd_list() { # [bereich]
+    local p="${1:-}"
+    if [ -n "$p" ] && [ -z "$(schluessel "$p")" ] && ! bereich_gibt_es "$p"; then
+        fehler "unknown area or setting: $p (areas: $(jq -r '[.keys[].key | split(".")[0]] | unique | join(", ")' "$SCHEMA"))"
+    fi
+    roh > "$T/raw.json"
+    "$APPLY" --effective > "$T/eff.json" 2>/dev/null || cp "$T/raw.json" "$T/eff.json"
+    jq -r --arg p "$p" --slurpfile eff "$T/eff.json" --slurpfile raw "$T/raw.json" '
+        def show: if type == "string" then (if . == "" then "\"\"" else . end) else tojson end;
+        .keys[] | select($p == "" or .key == $p or (.key | startswith($p + ".")))
+        | (.key | split(".")) as $path
+        | ($eff[0] | getpath($path)) as $v
+        | ($raw[0] | try getpath($path) catch null) as $r
+        | "\(if $r != null and $r != .default then "*" else " " end) \(.key) = \($v | show)" + "\t" + "(default \(.default | show)) – \(.description)"' "$SCHEMA" \
+        > "$T/list"
+    if command -v column >/dev/null 2>&1; then column -t -s $'\t' "$T/list"; else tr '\t' ' ' < "$T/list"; fi
+}
+
+cmd_get() { # key
+    local k="$1"
+    [ -n "$(schluessel "$k")" ] || bereich_gibt_es "$k" || fehler "unknown setting: $k (see: shell-set list)"
+    "$APPLY" --effective | jq --arg k "$k" 'getpath($k | split("."))' | zeige
+}
+
+cmd_set() { # key value live
+    local k="$1" v="$2" live="${3:-0}" s
+    s="$(schluessel "$k")"
+    [ -n "$s" ] || fehler "unknown setting: $k (see: shell-set list)"
+    roh > "$T/raw.json"
+    umwandeln "$s" "$v" > "$T/wert.json"
+    jq --arg k "$k" --slurpfile w "$T/wert.json" 'setpath($k | split("."); $w[0])' "$T/raw.json" > "$T/neu.json"
+    if ! pruefen "$T/neu.json" "$k" > "$T/grund"; then
+        fehler "$(sed 's/^[^:]*: //' "$T/grund" | head -n1) – nothing changed"
+    fi
+    if jq -e --slurpfile a "$T/raw.json" '. == $a[0]' "$T/neu.json" > /dev/null; then
+        # gleicher Wert: nichts zu tun (ein abschliessender Schritt der App legt pending trotzdem ab)
+        [ "$live" = 0 ] && [ -f "$HIST/pending.json" ] && { lege undo "$HIST/pending.json"; rm -f "$HIST/pending.json"; rm -rf "$HIST/redo"; }
+        return 0
+    fi
+    sichern "$live"
+    schreibe < "$T/neu.json"
+    anwenden
+    [ "$live" = 1 ] || printf '%s = %s\n' "$k" "$(zeige < "$T/wert.json")"
+}
+
+cmd_reset() { # key|bereich|all
+    local k="${1:-}" pfad
+    [ -n "$k" ] || fehler "what should be reset? shell-set reset <setting|area|all>"
+    if [ "$k" = all ]; then
+        if [ -e "$SETTINGS" ]; then cp "$SETTINGS" "$T/raw.json"; else echo '{}' > "$T/raw.json"; fi
+        echo '{}' > "$T/neu.json"
+        if [ "$(sha256sum < "$T/raw.json")" = "$(sha256sum < "$T/neu.json")" ]; then echo "all: already at the default"; return 0; fi
+    else
+        roh > "$T/raw.json"
+        [ -n "$(schluessel "$k")" ] || bereich_gibt_es "$k" || fehler "unknown setting or area: $k"
+        pfad="$k"
+        # leere Gruppen danach entfernen, damit die Datei aufgeräumt bleibt
+        jq --arg k "$pfad" 'delpaths([$k | split(".")])
+            | until([paths(type == "object" and length == 0)] | length == 0; delpaths([paths(type == "object" and length == 0)]))' \
+            "$T/raw.json" > "$T/neu.json"
+    fi
+    if [ "$k" != all ] && jq -e --slurpfile a "$T/raw.json" '. == $a[0]' "$T/neu.json" > /dev/null; then
+        echo "$k: already at the default"; return 0
+    fi
+    sichern 0
+    schreibe < "$T/neu.json"
+    anwenden
+    echo "$k: reset to the default"
+}
+
+cmd_undo() { # undo|redo
+    local von="$1" nach f
+    [ "$von" = undo ] && nach=redo || nach=undo
+    rm -f "$HIST/pending.json"
+    f="$(nimm "$von")"
+    [ -n "$f" ] || { echo "nothing to $von"; return 1; }
+    if [ -e "$SETTINGS" ]; then cp "$SETTINGS" "$T/jetzt.json"; else echo '{}' > "$T/jetzt.json"; fi
+    lege "$nach" "$T/jetzt.json"
+    # Stand unverändert zurück (atomar)
+    mkdir -p "$(dirname "$SETTINGS")"
+    cp "$f" "$SETTINGS.undo.tmp" && mv -f "$SETTINGS.undo.tmp" "$SETTINGS"
+    rm -f "$f"
+    anwenden
+    echo "$von: done ($(stapel undo | wc -l | tr -d ' ') undo, $(stapel redo | wc -l | tr -d ' ') redo left)"
+}
+
+cmd_history() {
+    local f n=0
+    echo "undo (newest last):"
+    while IFS= read -r f; do n=$((n + 1)); printf '  %2d  %s\n' "$n" "$(date -d "@$(basename "$f" .json | cut -c1-10)" '+%F %T' 2>/dev/null || basename "$f")"; done < <(stapel undo)
+    echo "redo: $(stapel redo | wc -l | tr -d ' ')"
+}
+
+profilname() {
+    [[ "${1:-}" =~ ^[A-Za-z0-9_-]{1,40}$ ]] || fehler "profile names use letters, digits, - and _ (got: ${1:-nothing})"
+}
+
+cmd_profile() { # save|load|list|delete name
+    local was="${1:-list}" name="${2:-}"
+    case "$was" in
+        list)
+            mkdir -p "$PROFILES"
+            find "$PROFILES" -maxdepth 1 -name '*.json' -printf '%f\n' | sed 's/\.json$//' | sort
+            ;;
+        save)
+            profilname "$name"; mkdir -p "$PROFILES"
+            roh | jq --indent 2 . > "$PROFILES/$name.json.tmp" && mv -f "$PROFILES/$name.json.tmp" "$PROFILES/$name.json"
+            echo "profile saved: $name"
+            ;;
+        load)
+            profilname "$name"
+            [ -f "$PROFILES/$name.json" ] || fehler "no profile named $name (see: shell-set profile list)"
+            laden "$PROFILES/$name.json" "profile $name"
+            ;;
+        delete)
+            profilname "$name"
+            [ -f "$PROFILES/$name.json" ] || fehler "no profile named $name"
+            rm -f "$PROFILES/$name.json"
+            echo "profile deleted: $name"
+            ;;
+        *) fehler "shell-set profile save|load|list|delete <name>" ;;
+    esac
+}
+
+laden() { # datei text
+    if ! pruefen "$1" "" > "$T/grund"; then
+        echo "shell-set: $2 has problems – nothing changed:" >&2
+        sed 's/^/  /' "$T/grund" >&2
+        exit 1
+    fi
+    sichern 0
+    jq . "$1" | schreibe
+    anwenden
+    echo "$2 loaded"
+}
+
+cmd_export() {
+    local ziel="${1:-}"
+    [ -n "$ziel" ] || fehler "shell-set export <file>"
+    roh | jq --indent 2 . > "$ziel.tmp.$$" && mv -f "$ziel.tmp.$$" "$ziel"
+    echo "exported to $ziel"
+}
+
+cmd_import() {
+    local quelle="${1:-}"
+    if [ -z "$quelle" ] || [ ! -f "$quelle" ]; then fehler "shell-set import <file> (file not found: ${quelle:-nothing})"; fi
+    laden "$quelle" "$quelle"
+}
+
+# Für die Tab-Vervollständigung (bash, fish)
+cmd_complete() { # keys | areas | values <key> | profiles
+    case "${1:-keys}" in
+        keys) jq -r '.keys[].key' "$SCHEMA" ;;
+        areas) jq -r '.keys[].key | split(".") as $p | range(1; $p | length) as $i | $p[0:$i] | join(".")' "$SCHEMA" | sort -u ;;
+        values)
+            jq -r --arg k "${2:-}" '.keys[] | select(.key == $k)
+                | if .type == "bool" then "true", "false"
+                  elif .type == "enum" then .values[]
+                  elif .type == "list" then (.default | join(","))
+                  elif .type == "int" or .type == "number" then .default | tostring
+                  else empty end' "$SCHEMA" ;;
+        profiles) cmd_profile list 2>/dev/null || true ;;
+        describe) jq -r '.keys[] | "\(.key)\t\(.title): \(.description)"' "$SCHEMA" ;;
+    esac
+}
+
+# ---------------------------------------------------------------- Aufruf
+
+LIVE=0
+[ "${1:-}" = --live ] && { LIVE=1; shift; }
+befehl="${1:-}"
+case "$befehl" in
+    ""|-h|--help|help) hilfe ;;
+    list) cmd_list "${2:-}" ;;
+    get) [ $# -ge 2 ] || fehler "shell-set get <setting>"; cmd_get "$2" ;;
+    reset) cmd_reset "${2:-}" ;;
+    undo) cmd_undo undo ;;
+    redo) cmd_undo redo ;;
+    history) cmd_history ;;
+    profile|profiles) cmd_profile "${2:-list}" "${3:-}" ;;
+    export) cmd_export "${2:-}" ;;
+    import) cmd_import "${2:-}" ;;
+    __complete) cmd_complete "${2:-keys}" "${3:-}" ;;
+    *)
+        [ $# -ge 2 ] || { [ -n "$(schluessel "$befehl")" ] && { cmd_get "$befehl"; exit 0; }; hilfe 2; }
+        [ $# -eq 2 ] || fehler "too many arguments – put values with spaces in quotes: shell-set $befehl \"…\""
+        cmd_set "$befehl" "$2" "$LIVE"
+        ;;
+esac

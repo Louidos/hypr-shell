@@ -284,6 +284,18 @@ installiere_baum() { # quellordner zielordner [modus]
     done < <(find "$quelle" -type f ! -name '.gitkeep' -print0 | sort -z)
 }
 
+vervollstaendigung() { # quelle ziel
+    local d
+    d="$(dirname "$1")"
+    for d in "$(dirname "$2")" "$(dirname "$(dirname "$2")")"; do
+        if [ -L "$d" ]; then
+            warnung "~/${d#"$HOME"/} ist ein Link – Vervollständigung für shell-set dort nicht installiert"
+            return 0
+        fi
+    done
+    installiere_datei "$1" "$2"
+}
+
 # ---------------------------------------------------------------- Erzeugte Dateien
 
 lua_text() { # Text als Lua-Zeichenkette
@@ -549,6 +561,9 @@ installieren() {
     installiere_datei "$REPO/VERSION" "$DATA/VERSION"
     installiere_datei "$REPO/settings/settings.example.json" "$DATA/settings.example.json"
     installiere_datei "$REPO/settings/schema.json" "$DATA/schema.json"
+    # Tab-Vervollständigung für shell-set (bash, fish); ein verlinkter Ordner wird nicht angefasst
+    vervollstaendigung "$REPO/settings/completions/shell-set.bash" "$HOME/.local/share/bash-completion/completions/shell-set"
+    vervollstaendigung "$REPO/settings/completions/shell-set.fish" "$CONF/fish/completions/shell-set.fish"
     # mitgelieferte Bilder nur nach ~/Pictures/Wallpapers, wenn sie dort fehlen
     local w
     for w in "$REPO"/wallpapers/*; do

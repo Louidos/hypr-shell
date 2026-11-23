@@ -43,7 +43,8 @@ if [ -n "$(find quickshell -name '*.qml' -print -quit)" ]; then
 fi
 while IFS= read -r -d '' f; do erwartet+=(".local/share/fonts/hypr-shell/$(basename "$f")"); done < <(find quickshell/common/fonts -type f -print0)
 erwartet+=(".local/share/hypr-shell/VERSION" ".local/share/hypr-shell/schema.json" ".config/hypr-shell/settings.json"
-          ".config/hypr/hypr-shell-settings.lua" ".local/share/hypr-shell/settings.effective.json")
+          ".config/hypr/hypr-shell-settings.lua" ".local/share/hypr-shell/settings.effective.json"
+          ".local/share/bash-completion/completions/shell-set" ".config/fish/completions/shell-set.fish")
 
 echo "== 1. alte Datei anlegen"
 mkdir -p "$TESTHOME/.config/kitty"

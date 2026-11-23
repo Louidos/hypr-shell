@@ -10,9 +10,9 @@ melde() { echo "FEHLER: $*" >&2; fehler=1; }
 # Shell-Skripte: install.sh, alles in bin/ mit Shell-Kopfzeile, tests/*.sh
 mapfile -t skripte < <(
     echo install.sh
-    for f in bin/* tests/*.sh; do
+    for f in bin/* tests/*.sh settings/completions/*.bash; do
         [ -f "$f" ] || continue
-        case "$f" in *.sh) echo "$f"; continue ;; esac
+        case "$f" in *.sh|*.bash) echo "$f"; continue ;; esac
         head -n1 "$f" | grep -qE '^#!.*(ba)?sh' && echo "$f"
     done
 )

@@ -184,6 +184,28 @@ hypr-shell – nicht von Hand ändern“) und lädt nur den betroffenen Teil neu
 
 Das Zahnrad im Panel öffnet die Datei in kitty mit dem Editor aus `$EDITOR` (sonst nano).
 
+### Mit dem Befehl `shell-set`
+
+```bash
+shell-set look.rounding 20
+```
+
+ändert die Fenster-Rundung sofort; `shell-set undo` nimmt es zurück. Ein falscher Wert
+(`shell-set look.rounding abc`) wird abgelehnt, die Meldung nennt den erlaubten Bereich, und nichts
+ändert sich.
+
+| Befehl | Wirkung |
+| --- | --- |
+| `shell-set list [bereich]` | alle Werte (oder z. B. nur `look`) mit aktuellem Wert, Standard und Erklärung; `*` = geändert |
+| `shell-set get <schlüssel>` | aktueller Wert |
+| `shell-set <schlüssel> <wert>` | setzen; Listen als `a,b,c` oder JSON, Schalter als `true`/`false` oder `on`/`off` |
+| `shell-set reset <schlüssel\|bereich\|all>` | auf den Standard zurück |
+| `shell-set undo` / `shell-set redo` | letzte Änderung zurücknehmen / wiederholen (die letzten 20 Schritte) |
+| `shell-set profile save\|load\|list\|delete <name>` | Profile in `~/.config/hypr-shell/profiles/` |
+| `shell-set export <datei>` / `shell-set import <datei>` | sichern / laden (ein Import wird vorher geprüft) |
+
+Die Tab-Taste vervollständigt in bash und fish Befehle, Schlüssel und erlaubte Werte.
+
 | Wert | Standard | Bedeutung |
 | --- | --- | --- |
 | `bar.position` | `"top"` | Edge of the screen the bar sits on – erlaubt: `top`, `bottom` |
@@ -308,6 +330,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 
 | Befehl | Wirkung |
 | --- | --- |
+| `shell-set …` | Einstellungen lesen, ändern, zurücksetzen, rückgängig machen, Profile (siehe „Anpassen“) |
 | `shell-apply` | Einstellungen prüfen und anwenden (`--check` nur prüfen) |
 | `shell-wallpaper <bild>` | Hintergrundbild setzen und Farben erzeugen (Farbmodus aus `theme.colors`) |
 | `shell-screenshot region\|screen\|folder` | Screenshot bzw. Ordner öffnen |

@@ -88,3 +88,12 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | Kein einstellbarer Wert steht mehr fest in config/ oder Theme.qml | automatisch: Standardwerte ergeben genau die Dateien in `config/`, jeder Schlüssel wird gelesen |
 | Farbmodus `grey` / `custom` färbt alles um | von Hand (matugen im Test-Compositor nur mit `auto`) |
 | Symbolthema (`theme.icons`) wechselt nach dem automatischen Neustart der Oberfläche | von Hand |
+
+## Befehl shell-set
+
+| Punkt | Prüfung |
+| --- | --- |
+| `shell-set look.rounding 20` ändert die Fenster-Rundung sofort, `shell-set undo` nimmt es zurück | Datei und erzeugte Hyprland-Werte automatisch (`tests/shell-set.sh`); sichtbare Wirkung von Hand |
+| `shell-set look.rounding abc` meldet den erlaubten Bereich und ändert nichts | automatisch |
+| Ein gespeichertes Profil stellt nach `load` alle Werte wieder her | automatisch |
+| Tab-Vervollständigung in bash und fish | bash automatisch; fish automatisch, wenn fish installiert ist, sonst von Hand |

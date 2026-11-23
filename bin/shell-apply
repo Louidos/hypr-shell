@@ -33,7 +33,7 @@ command -v jq >/dev/null 2>&1 || { echo "shell-apply: jq fehlt" >&2; exit 1; }
 # Schema: im Repo neben bin/, sonst die installierte Kopie
 schema_pfad() {
     local hier
-    hier="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    hier="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
     if [ -n "${HYPR_SHELL_SCHEMA:-}" ]; then printf '%s\n' "$HYPR_SHELL_SCHEMA"
     elif [ -f "$hier/../settings/schema.json" ]; then printf '%s\n' "$hier/../settings/schema.json"
     else printf '%s\n' "$DATA/schema.json"; fi

@@ -24,7 +24,8 @@ Item {
                     id: g
                     required property var modelData
                     required property int index
-                    width: 196
+                    // Cover im Seitenverhältnis 2:3 (196 px bei der üblichen Höhe)
+                    width: Math.round((gt.height - 34) * 0.662)
                     height: gt.height
                     Rectangle {
                         id: frame

@@ -34,8 +34,13 @@ PanelWindow {
     readonly property int sepW: 1 + d.spacing
     function lengthFor(s) { return nIcons * s + Math.max(0, entries.length - 1) * d.spacing + nSeps * sepW + 2 * d.padding }
     readonly property real maxBody: Math.floor(screenLen * d.maxLength)
-    readonly property int icon: nIcons === 0 ? d.iconSize
-        : Math.max(d.iconMin, Math.min(d.iconSize, Math.floor((maxBody - lengthFor(0)) / nIcons)))
+    // Symbolgrösse mit dem Grössenfaktor dieses Bildschirms (1 im üblichen Bereich, 4K mit
+    // Skalierung 1 grösser, 1280×720 etwas kleiner)
+    ScreenFit { id: fitter; screen: win.screen }
+    readonly property int baseIcon: Math.round(d.iconSize * fitter.factor)
+    readonly property int baseMin: Math.min(baseIcon, Math.round(d.iconMin * fitter.factor))
+    readonly property int icon: nIcons === 0 ? baseIcon
+        : Math.max(baseMin, Math.min(baseIcon, Math.floor((maxBody - lengthFor(0)) / nIcons)))
     readonly property real contentLen: lengthFor(icon)
     readonly property bool scrolls: contentLen > maxBody + 0.5
     readonly property real bodyLen: Math.min(maxBody, contentLen)
@@ -391,6 +396,7 @@ PanelWindow {
         // Länge: wächst mit den vergrösserten Symbolen mit (nach beiden Seiten gleich)
         readonly property real len: win.scrolls ? win.bodyLen : Math.max(win.bodyLen, (win.vertical ? row.height : row.width) + 2 * win.d.padding)
         width: win.vertical ? win.thickness : len
+        Probe { name: "dock-body" }
         height: win.vertical ? len : win.thickness
         x: win.pos === "left" ? win.d.margin : win.pos === "right" ? parent.width - win.d.margin - width : Math.round((parent.width - width) / 2)
         y: win.pos === "top" ? win.d.margin : win.pos === "bottom" ? parent.height - win.d.margin - height : Math.round((parent.height - height) / 2)

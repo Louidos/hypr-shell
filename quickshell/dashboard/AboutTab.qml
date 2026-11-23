@@ -6,6 +6,7 @@ Grid12 {
     id: ab
     property var about: ({})
     rows: 2
+    narrowRows: 4
 
     function uptime(s) {
         s = Math.floor(s || 0)
@@ -25,6 +26,7 @@ Grid12 {
 
     Cell {
         col: 0; row: 0; cs: 5; rs: 2
+        narrowAt: [0, 0, 6, 2]
         Column {
             anchors { fill: parent; margins: 20 }
             spacing: 12
@@ -39,6 +41,7 @@ Grid12 {
     }
     Cell {
         col: 5; row: 0; cs: 3; rs: 2
+        narrowAt: [0, 2, 3, 2]
         Column {
             anchors.centerIn: parent
             spacing: 12
@@ -49,6 +52,7 @@ Grid12 {
     }
     Cell {
         col: 8; row: 0; cs: 4; rs: 2
+        narrowAt: [3, 2, 3, 2]
         Column {
             anchors { fill: parent; margins: 20 }
             spacing: 12

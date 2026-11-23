@@ -9,6 +9,8 @@ Grid12 {
     property var about: ({})
     property var weather: ({ ok: false, reason: "loading" })
     rows: 3
+    // Hochformat: 6 Spalten, 5 Zeilen (Wetter | Profil, Uhr | Kalender, Musik | Ringe)
+    narrowRows: 5
     // Karten an/aus aus settings.json (dashboard.cards)
     readonly property var cards: Settings.get("dashboard.cards", ["weather", "profile", "media", "clock", "calendar", "rings"])
     function shown(name) { return cards.indexOf(name) >= 0 }
@@ -44,7 +46,9 @@ Grid12 {
 
     // ---- Wetter (4×1 bei 0,0)
     Cell {
+        id: weatherCell
         col: 0; row: 0; cs: 4; rs: 1
+        narrowAt: [0, 0, 3, 1]
         visible: home.shown("weather") || Integrations.sensor
         Item {
             visible: Integrations.sensor
@@ -93,7 +97,7 @@ Grid12 {
                         : home.weather.reason === "loading" ? "Loading weather…" : "Offline"
                     sub: true
                     size: 12
-                    width: 210
+                    width: Math.max(60, Math.min(210, weatherCell.width * (Integrations.sensor ? 0.58 : 1) - 90))
                 }
             }
         }
@@ -102,6 +106,7 @@ Grid12 {
     // ---- Missa (nur mit missa.enabled): nimmt den Platz des Profils ein (5×1 bei 4,0)
     Cell {
         col: 4; row: 0; cs: 5; rs: 1
+        narrowAt: [3, 0, 3, 1]
         visible: Integrations.missa
         Loader { anchors.fill: parent; active: Integrations.missa; source: "../missa/MissaCard.qml" }
     }
@@ -109,6 +114,7 @@ Grid12 {
     // ---- Profil (5×1 bei 4,0)
     Cell {
         col: 4; row: 0; cs: 5; rs: 1
+        narrowAt: [3, 0, 3, 1]
         visible: home.shown("profile") && !Integrations.missa
         RoundImage {
             id: avatar
@@ -139,6 +145,7 @@ Grid12 {
     // ---- Musik (3×3 bei 9,0)
     Cell {
         col: 9; row: 0; cs: 3; rs: 3
+        narrowAt: [0, 3, 4, 2]
         visible: home.shown("media")
         MediaCard { anchors.fill: parent; anchors.margins: 14 }
     }
@@ -146,6 +153,7 @@ Grid12 {
     // ---- Uhr (2×2 bei 0,1)
     Cell {
         col: 0; row: 1; cs: 2; rs: 2
+        narrowAt: [0, 1, 2, 2]
         visible: home.shown("clock")
         Column {
             anchors.centerIn: parent
@@ -176,6 +184,7 @@ Grid12 {
     // ---- Kalender (5×2 bei 2,1)
     Cell {
         col: 2; row: 1; cs: 5; rs: 2
+        narrowAt: [2, 1, 4, 2]
         visible: home.shown("calendar")
         Calendar { anchors.fill: parent; anchors.margins: 14; today: clock.date }
     }
@@ -184,6 +193,7 @@ Grid12 {
     Cell {
         id: rings
         col: 7; row: 1; cs: 2; rs: 2
+        narrowAt: [4, 3, 2, 2]
         visible: home.shown("rings")
         readonly property bool tall: height >= width
         readonly property real s: tall ? Math.min(width - 20, (height - 32) / 3) : Math.min(height - 30, (width - 50) / 3)

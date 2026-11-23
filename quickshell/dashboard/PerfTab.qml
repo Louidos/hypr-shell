@@ -9,6 +9,7 @@ import "../common"
 Grid12 {
     id: perf
     rows: 2
+    narrowRows: 4
     property var cpuInfo: ({})
     property var gpu: ({})
     property string iface: ""
@@ -183,6 +184,7 @@ Grid12 {
     // ---- CPU (5×1 bei 1,0)
     Chipset {
         col: 1; row: 0; cs: 5; rs: 1
+        narrowAt: [0, 0, 6, 1]
         title: "CPU"
         icon: "󰘚"
         model: perf.cpuInfo.model || ""
@@ -194,6 +196,7 @@ Grid12 {
     // ---- GPU (5×1 bei 6,0); eine schlafende NVIDIA-Karte wird nicht geweckt
     Chipset {
         col: 6; row: 0; cs: 5; rs: 1
+        narrowAt: [0, 1, 6, 1]
         title: "GPU"
         icon: "󰍹"
         model: perf.gpu.name || ""
@@ -207,6 +210,7 @@ Grid12 {
     Cell {
         id: st
         col: 1; row: 1; cs: 4; rs: 1
+        narrowAt: [0, 2, 6, 1]
         readonly property real rs2: Math.min(height - 36, 116)
         Item {
             id: sr
@@ -246,6 +250,7 @@ Grid12 {
     Cell {
         id: net
         col: 5; row: 1; cs: 4; rs: 1
+        narrowAt: [0, 3, 4, 1]
         Row {
             x: 16; y: 12
             spacing: 8
@@ -310,6 +315,7 @@ Grid12 {
     Cell {
         id: mem
         col: 9; row: 1; cs: 2; rs: 1
+        narrowAt: [4, 3, 2, 1]
         readonly property real rs2: Math.min(height - 70, width - 40, 96)
         Row {
             x: 16; y: 12

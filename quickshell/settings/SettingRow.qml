@@ -42,6 +42,8 @@ GlassCard {
         return v.toFixed(decimals()) + (spec.unit ? " " + spec.unit : "")
     }
 
+    // schmale Zeile (Hochformat, kleiner Bildschirm): Bedienelement unter dem Text statt rechts daneben
+    readonly property bool stacked: width < controls.implicitWidth + 64 + 14 + 14 + 220
     height: head.height + (wide ? editor.height + 14 : 0)
     color: flash ? Qt.rgba(1, 1, 1, 0.14) : Theme.card
     Behavior on color { ColorAnimation { duration: 400 } }
@@ -50,18 +52,21 @@ GlassCard {
     Item {
         id: head
         width: parent.width
-        height: Math.max(64, texts.implicitHeight + 24)
+        height: row.stacked ? texts.implicitHeight + 12 + controls.height + 26 : Math.max(64, texts.implicitHeight + 24)
 
         Rectangle {
             id: bubble
             width: 36; height: 36; radius: 18
-            anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+            x: 14
+            y: row.stacked ? 14 : (head.height - height) / 2
             color: Qt.rgba(1, 1, 1, 0.07)
             Glyph { anchors.centerIn: parent; text: row.spec.icon || ""; size: 15 }
         }
         Column {
             id: texts
-            anchors { left: bubble.right; leftMargin: 14; right: controls.left; rightMargin: 14; verticalCenter: parent.verticalCenter }
+            x: bubble.x + bubble.width + 14
+            y: row.stacked ? 14 : (head.height - implicitHeight) / 2
+            width: (row.stacked ? head.width - 14 : controls.x - 14) - x
             spacing: 2
             Txt { width: parent.width; text: row.spec.title || row.key; size: 14; weight: Font.DemiBold }
             Txt { width: parent.width; text: row.spec.description || ""; size: 12; sub: true; wrapMode: Text.WordWrap; elide: Text.ElideNone }
@@ -87,7 +92,8 @@ GlassCard {
         }
         Row {
             id: controls
-            anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+            x: row.stacked ? texts.x : head.width - 14 - width
+            y: row.stacked ? texts.y + texts.implicitHeight + 12 : (head.height - height) / 2
             spacing: 10
             Pill {
                 visible: row.changed
@@ -138,7 +144,7 @@ GlassCard {
             spacing: 12
             Slider {
                 id: sl
-                width: 200
+                width: Math.max(120, Math.min(200, row.width - 64 - 14 - 14 - 82))
                 anchors.verticalCenter: parent.verticalCenter
                 from: row.spec.min
                 to: row.spec.max
@@ -210,7 +216,7 @@ GlassCard {
     Component {
         id: textC
         Field {
-            width: 260
+            width: Math.max(140, Math.min(260, row.width - 64 - 14 - 14))
             text: row.shown === undefined || row.shown === null ? "" : String(row.shown)
             mono: row.key.indexOf("apps.") === 0
             placeholder: row.spec.default === "" ? "empty = automatic" : String(row.spec.default)

@@ -256,11 +256,15 @@ Ton-Symbol in der Leiste öffnet direkt die passende Unterseite (Rechtsklick auf
 
 ### Dock
 
+![Dock](docs/screenshots/dock.png)
+
 Ein schwebendes Glas-Dock mittig unten mit angehefteten und laufenden Programmen: Klick startet
 oder holt das Fenster nach vorn, Punkte zeigen laufende Programme. Rechtsklick öffnet ein Menü,
 Ziehen sortiert um, Herausziehen löst an, `SUPER + B` bedient das Dock mit der Tastatur. Abschaltbar mit
 `shell-set dock.enabled false`. Jeder Wert ist in der Einstellungs-App (Seite **Dock**, mit
-fünf Voreinstellungen, Export und Import) einstellbar; alle Werte stehen in [docs/dock.md](docs/dock.md).
+fünf Voreinstellungen, Export und Import) einstellbar. Es weicht der Leiste aus, verschwindet bei
+Vollbild und Spielen und färbt sich mit dem Hintergrundbild. Alle Werte stehen in
+[docs/dock.md](docs/dock.md).
 
 ### Sperrbildschirm
 

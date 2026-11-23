@@ -187,6 +187,8 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dock.autohide` | `smart` | `never`, `always`, `smart` | never, always (hide when the mouse leaves) or smart (hide only when a window covers the dock); touch the screen edge to show it again | `shell-set dock.autohide never` |
 | `dock.show_delay_ms` | `150` | ganze Zahl 0 … 2000 ms | Time the mouse must touch the edge before a hidden dock comes back | `shell-set dock.show_delay_ms 160` |
 | `dock.hide_delay_ms` | `400` | ganze Zahl 0 … 5000 ms | Time before the dock hides after the mouse left it | `shell-set dock.hide_delay_ms 450` |
+| `dock.hide_on_fullscreen` | `true` | `true`, `false` | No dock while a fullscreen window or the gaming mode is on; the edge does not show it either | `shell-set dock.hide_on_fullscreen false` |
+| `dock.avoid_bar` | `true` | `true`, `false` | When the bar is on the same edge, the dock keeps its distance from it (also with reserve) | `shell-set dock.avoid_bar false` |
 | `dock.items` | `[{"type":"app","desktop_id":"org.gnome.Nautilus","path":""},{"type":"app","desktop_id":"kitty","path":""},{"type":"app","desktop_id":"firefox","path":""},{"type":"separator","desktop_id":"","path":""},{"type":"folder","desktop_id":"","path":"~/Downloads"},{"type":"separator","desktop_id":"","path":""},{"type":"trash","desktop_id":"","path":""}]` | Liste von Einträgen mit `type`, `desktop_id`, `path` | Pinned apps, folders, separators, trash and launcher button in this order | `shell-set dock.items '[]'` |
 
 ## lock – Sperren und Standby

@@ -107,6 +107,28 @@ Starter und Fenster-Übersicht bieten kein Ziehen an; Programme kommen dort desh
 - `dock.anim_ms` 0 schaltet alle Dock-Animationen ab; ebenso im Gaming-Modus und wenn die
   Animationen von hypr-shell (`look.animations.enabled`) aus sind.
 
+## Zusammenspiel mit dem Rest
+
+- **Leiste**: Liegt die Leiste (Waybar) auf derselben Kante, hält das Dock ihren Abstand ein
+  (`dock.avoid_bar`, auch bei `reserve`); die Leiste selbst bleibt unverändert.
+- **Panels**: Dashboard, Panel, Starter, Power-Menü und Benachrichtigungen liegen über dem Dock.
+  Solange eines offen ist, nimmt das Dock keine Eingaben an; Esc und Klick daneben verhalten sich
+  wie vorher.
+- **Vollbild und Gaming-Modus** (`dock.hide_on_fullscreen`): Das Dock ist weg, auch die Kante
+  blendet es nicht ein; danach ist es wieder da.
+- **Mehrere Bildschirme**: `dock.monitor` (all, primary oder ein Name) und
+  `dock.running_per_monitor`. An- und Abstecken im laufenden Betrieb gibt genau ein Dock pro
+  Bildschirm. Die Symbole werden in doppelter Auflösung geladen und bleiben bei Skalierung 1.25
+  und 2.0 scharf.
+- **Hintergrundbild**: Mit `dock.color_mode` wallpaper färben sich Glas, Rand und Indikator beim
+  Bildwechsel (`shell-wallpaper`) sanft mit um.
+- `hyprctl reload` lässt die Oberfläche laufen; `shell-quickshell restart` startet sie neu – in
+  beiden Fällen gibt es genau ein Dock pro Bildschirm.
+
+| Helles Bild | Dunkles Bild |
+| --- | --- |
+| ![hell](screenshots/dock/hell.png) | ![dunkel](screenshots/dock/dunkel.png) |
+
 ## Einstellungen
 
 Einstellungs-App → **Dock** (`SUPER + U`): alle Werte in den Abschnitten General, Size & Shape,
@@ -180,6 +202,8 @@ von `shell-set profile`.
 | `dock.autohide` | `smart` | never, always, smart | Verstecken |
 | `dock.show_delay_ms` | `150` | 0–2000 ms | Verzögerung beim Einblenden |
 | `dock.hide_delay_ms` | `400` | 0–5000 ms | Verzögerung beim Ausblenden |
+| `dock.hide_on_fullscreen` | `true` | bool | Bei Vollbild und Gaming-Modus weg |
+| `dock.avoid_bar` | `true` | bool | Abstand zur Leiste auf derselben Kante |
 | `dock.items` | Standardliste | Liste | Reihenfolge und Art der Einträge |
 | `dock.preset` | `mac` | mac, minimal, compact, island, full | Zuletzt gewählte Voreinstellung |
 

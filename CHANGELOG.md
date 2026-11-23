@@ -12,6 +12,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Dock mit Menü per Rechtsklick, Sortieren per Ziehen, Ordnern, Papierkorb, Fensterliste mit Vorschau, Zählern für Benachrichtigungen und Tastaturbedienung (SUPER+B) (#78)
 - Schwebendes Dock in der Mitte unten mit angehefteten und laufenden Programmen; Klick startet oder holt das Fenster nach vorn, abschaltbar mit `dock.enabled` (#77)
 
+### Geändert
+- Das Dock weicht der Leiste aus, verschwindet bei Vollbild und Spielen und passt sich Bildschirmen und Hintergrundbild an (#81)
+
 ### Behoben
 - Ein leerer Name oder einer mit Anführungszeichen für das Symbolthema wird wieder abgelehnt (die Prüfung war beim Zusammenführen verloren gegangen) (#100)
 

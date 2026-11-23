@@ -56,11 +56,7 @@ PanelWindow {
         id: col
         spacing: 12 * w.k
         Repeater {
-            model: [
-                { label: "CPU", icon: "", value: () => usage.cpu },
-                { label: "RAM", icon: "󰍛", value: () => usage.mem },
-                { label: "GPU", icon: "", value: () => w.gpuUtil }
-            ]
+            model: w.tiles.filter(t => w.tileInfo[t] !== undefined).map(t => w.tileInfo[t])
             delegate: GlassPanel {
                 id: tile
                 required property var modelData

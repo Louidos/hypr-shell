@@ -13,6 +13,8 @@
 # Falsche Werte: der Standardwert gilt, eine Benachrichtigung nennt Schlüssel und Grund.
 # Kaputtes JSON: der letzte gültige Stand (~/.local/share/hypr-shell/settings.last-good.json)
 # bleibt aktiv. Jede erzeugte Datei wird über eine temporäre Datei geschrieben und umbenannt.
+# Die Werte S_… setzt ein eval aus den gültigen Einstellungen:
+# shellcheck disable=SC2154
 set -euo pipefail
 
 CONF="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -131,10 +133,10 @@ auswerten() { # datei-mit-rohen-einstellungen
 # Werte aus der alten hypr-shell-local.lua als JSON (nur die bekannten Schlüssel)
 local_json() {
     [ -f "$LOCAL_LUA" ] || { echo '{}'; return 0; }
-    local zeile name wert args=()
-    while IFS= read -r zeile; do
-        zeile="${zeile%%--*}"
-        [[ "$zeile" =~ ^[[:space:]]*([a-z_]+)[[:space:]]*=[[:space:]]*(\"[^\"]*\"|true|false|[0-9]+(\.[0-9]+)?)[[:space:]]*,?[[:space:]]*$ ]] || continue
+    local paar name wert args=()
+    # Paare "name = wert" (auch mehrere in einer Zeile), Kommentare entfernt
+    while IFS= read -r paar; do
+        [[ "$paar" =~ ^([a-z_]+)[[:space:]]*=[[:space:]]*(.+)$ ]] || continue
         name="${BASH_REMATCH[1]}"; wert="${BASH_REMATCH[2]}"
         case "$name" in
             kb_layout)      args+=(--argjson input_layout "$wert") ;;
@@ -143,7 +145,7 @@ local_json() {
             natural_scroll) args+=(--argjson natural_scroll "$wert") ;;
             tap_to_click)   args+=(--argjson tap_to_click "$wert") ;;
         esac
-    done < "$LOCAL_LUA"
+    done < <(sed 's/--.*$//' "$LOCAL_LUA" | grep -oE '[a-z_]+[[:space:]]*=[[:space:]]*("[^"]*"|true|false|[0-9]+(\.[0-9]+)?)' || true)
     jq -n "${args[@]}" '
         ($ARGS.named) as $a
         | {}
@@ -158,7 +160,7 @@ local_json() {
 
 meldung() { # titel text
     [ "${KEINE_MELDUNG:-0}" = 1 ] && return 0
-    command -v notify-send >/dev/null 2>&1 && notify-send -a hypr-shell -u normal -t 8000 "$1" "$2" 2>/dev/null || true
+    if command -v notify-send >/dev/null 2>&1; then notify-send -a hypr-shell -u normal -t 8000 "$1" "$2" 2>/dev/null || true; fi
 }
 
 gleich() {
@@ -656,7 +658,7 @@ if ! roh_lesen "$SETTINGS"; then
         echo '{}' > "$T/raw.json"
     fi
 elif [ "$MODE" = apply ] && [ -e "$SETTINGS" ]; then
-    cp "$T/raw.json" "$T/good" && schreibe "$LAST_GOOD" < "$T/good" || true
+    schreibe "$LAST_GOOD" < "$T/raw.json" || true
 fi
 
 # Ebene aus hypr-shell-local.lua (v1.1) unter settings.json – nur bis zum Umzug; danach steht

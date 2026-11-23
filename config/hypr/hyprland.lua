@@ -207,7 +207,9 @@ hl.curve("linear", { type = "bezier", points = { { 0.0, 0.0 }, { 1.0, 1.0 } } })
 -- Tempo aus look.animations.speed: slow / normal / fast (Hyprland: grössere Zahl = langsamer)
 local tempo = ({ slow = 1.6, normal = 1.0, fast = 0.6 })[S.look.animations.speed] or 1.0
 local function anim(leaf, speed, bezier, style)
-    hl.animation({ leaf = leaf, enabled = true, speed = math.floor(speed * tempo * 10 + 0.5) / 10, bezier = bezier, style = style })
+    local v = math.floor(speed * tempo * 10 + 0.5) / 10
+    v = (math.tointeger and math.tointeger(v)) or v   -- ganze Zahlen als Ganzzahl übergeben
+    hl.animation({ leaf = leaf, enabled = true, speed = v, bezier = bezier, style = style })
 end
 anim("windows",     4, "smooth", "popin 90%")
 anim("windowsOut",  3, "quick",  "popin 90%")

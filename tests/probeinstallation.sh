@@ -6,6 +6,9 @@
 #   4. --dry-run ändert nichts
 #   5. --restore holt die alte Datei zurück und entfernt neue Dateien
 #   6. --uninstall entfernt alles wieder
+#   7. ein Dotfiles-Ordner (Symlink) wird nicht durchschrieben
+#   8. ein zu altes Hyprland (vorgetäuscht 0.54) bricht vor jeder Änderung ab
+#   9. --update holt den neuen Stand und lässt settings.json, user.lua, hypr-shell-local.lua in Ruhe
 # Prüfungen werden als Text an pruefe übergeben und dort ausgewertet:
 # shellcheck disable=SC2016,SC2034,SC2088
 set -euo pipefail
@@ -20,7 +23,12 @@ unset HYPRLAND_INSTANCE_SIGNATURE XDG_CONFIG_HOME XDG_DATA_HOME
 fehler=0
 pruefe() { if eval "$1"; then echo "  ok: $2"; else echo "  FEHLER: $2"; fehler=1; fi; }
 inst() { HOME="$TESTHOME" "$REPO/install.sh" "$@" > "$TESTHOME/.ausgabe" 2>&1 || { cat "$TESTHOME/.ausgabe"; return 1; }; }
-zustand() { (cd "$TESTHOME" && find . -path ./.ausgabe -prune -o \( -type f -o -type l \) -print0 | sort -z | xargs -0 -r sha256sum); }
+zustand() { # Inhalt aller Dateien und Ziele aller Links unter TESTHOME
+    (cd "$TESTHOME" && {
+        find . -path ./.ausgabe -prune -o -type l -printf 'L %p %l\n' | sort
+        find . -path ./.ausgabe -prune -o -type f -print0 | sort -z | xargs -0 -r sha256sum
+    })
+}
 
 # erwartete Ziele aus dem Repo ableiten
 erwartet=()
@@ -108,6 +116,54 @@ pruefe '[ "$dotfile_vorher" = "$(stat -c %Y-%s "$TESTHOME/dotfiles/kitty/kitty.c
 pruefe '[ ! -L "$TESTHOME/.config/kitty" ]' "~/.config/kitty ist jetzt ein eigener Ordner"
 inst --restore --yes
 pruefe '[ -L "$TESTHOME/.config/kitty" ]' "Link nach --restore wieder da"
+
+echo "== 8. zu altes Hyprland: Abbruch vor jeder Änderung"
+mkdir -p "$TESTHOME/.fakebin"
+printf '#!/bin/sh\necho "Hyprland 0.54.2 built from branch v0.54.2 at commit 0000000"\n' > "$TESTHOME/.fakebin/Hyprland"
+chmod +x "$TESTHOME/.fakebin/Hyprland"
+vorher="$(zustand)"
+for opt in "--yes --no-packages" "--yes" "--dry-run" "--update --yes --no-packages"; do
+    # shellcheck disable=SC2086 # Optionen absichtlich getrennt
+    if PATH="$TESTHOME/.fakebin:$PATH" HOME="$TESTHOME" "$REPO/install.sh" $opt > "$TESTHOME/.ausgabe" 2>&1; then
+        pruefe 'false' "Abbruch mit $opt"
+    else
+        pruefe 'grep -q "sudo pacman -Syu hyprland" "$TESTHOME/.ausgabe" && [ "$vorher" = "$(zustand)" ]' "Abbruch mit $opt: Hinweis sudo pacman -Syu hyprland, nichts verändert"
+    fi
+done
+rm -rf "$TESTHOME/.fakebin"
+
+echo "== 9. --update"
+if command -v git >/dev/null 2>&1; then
+    G=(git -c user.name=Test -c user.email=test@localhost -c init.defaultBranch=main -c advice.detachedHead=false)
+    quelle="$TESTHOME/.quelle"; klon="$TESTHOME/.klon"; uhome="$TESTHOME/.uhome"
+    mkdir -p "$quelle" "$uhome"
+    # Arbeitsstand des Repos (auch nicht eingecheckte Änderungen) als "GitHub"
+    (cd "$REPO" && git ls-files -z --cached --others --exclude-standard | xargs -0 cp --parents -t "$quelle")
+    "${G[@]}" -C "$quelle" init -q && "${G[@]}" -C "$quelle" add -A && "${G[@]}" -C "$quelle" commit -qm Stand
+    "${G[@]}" clone -q "$quelle" "$klon"
+    HOME="$uhome" "$klon/install.sh" --yes --no-packages > "$TESTHOME/.ausgabe" 2>&1 || { cat "$TESTHOME/.ausgabe"; fehler=1; }
+    echo '{"weather": {"location": "Bern"}, "panel": {"width": 480}}' > "$uhome/.config/hypr-shell/settings.json"
+    echo '-- meine user.lua' > "$uhome/.config/hypr/user.lua"
+    echo 'return { kb_layout = "ch", kb_variant = "fr", scale = 2 }' > "$uhome/.config/hypr/hypr-shell-local.lua"
+    eigene() { sha256sum "$uhome/.config/hypr-shell/settings.json" "$uhome/.config/hypr/user.lua" "$uhome/.config/hypr/hypr-shell-local.lua"; }
+    eigen_vorher="$(eigene)"
+    # neuer Stand auf "GitHub"
+    echo "9.9.9" > "$quelle/VERSION"
+    echo "# neu" >> "$quelle/config/kitty/kitty.conf"
+    "${G[@]}" -C "$quelle" commit -qam "neuer Stand"
+    if HOME="$uhome" "$klon/install.sh" --update --yes --no-packages > "$TESTHOME/.ausgabe" 2>&1; then
+        pruefe '[ "$(cat "$uhome/.local/share/hypr-shell/VERSION")" = 9.9.9 ] && tail -n1 "$uhome/.config/kitty/kitty.conf" | grep -q "# neu"' "neuer Stand geholt und installiert"
+        pruefe '[ "$eigen_vorher" = "$(eigene)" ]' "settings.json, user.lua und hypr-shell-local.lua unverändert"
+    else
+        cat "$TESTHOME/.ausgabe"
+        pruefe 'false' "--update läuft durch"
+    fi
+    echo "lokale Änderung" >> "$klon/VERSION"
+    echo "8.8.8" > "$quelle/VERSION"; "${G[@]}" -C "$quelle" commit -qam "noch neuer"
+    pruefe '! HOME="$uhome" "$klon/install.sh" --update --yes --no-packages > "$TESTHOME/.ausgabe" 2>&1 && grep -q "git pull --ff-only ging nicht" "$TESTHOME/.ausgabe" && [ "$(cat "$uhome/.local/share/hypr-shell/VERSION")" = 9.9.9 ]' "--update bricht bei eigenen Änderungen ab, ohne zu installieren"
+else
+    echo "  Hinweis: git fehlt, --update nicht geprüft"
+fi
 
 if [ "$fehler" -ne 0 ]; then
     echo "Probeinstallation: FEHLER"

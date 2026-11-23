@@ -44,5 +44,6 @@ for k in sections apps toggles corner trigger width radius opacity; do
 done
 pruefe 'grep -q "watchChanges: true" quickshell/common/Settings.qml' "Änderungen an settings.json wirken ohne Neustart"
 pruefe 'grep -q "SUPER + A\|mod .. \" + A\"" config/hypr/hyprland.lua' "SUPER+A öffnet das Panel"
+pruefe 'grep -A4 "modelData === \"settings\"" quickshell/panel/PanelContent.qml | grep -q "\"kitty\"" && grep -q "EDITOR:-nano" quickshell/panel/PanelContent.qml && ! grep -q "xdg-open" quickshell/panel/PanelContent.qml' "Zahnrad öffnet settings.json in kitty mit \$EDITOR (sonst nano)"
 
 exit "$fehler"

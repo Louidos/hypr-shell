@@ -17,21 +17,37 @@ Danach **abmelden und im Login-Manager „Hyprland“ wählen**. Das ist alles.
 
 Der Installer
 
+- prüft zuerst die Hyprland-Version: Ist ein Hyprland älter als 0.55 installiert, bricht er
+  ab, bevor er etwas verändert, mit dem Hinweis `sudo pacman -Syu hyprland`,
+- bietet an, vorher das System zu aktualisieren (`sudo pacman -Syu`; mit `--yes` ohne Frage),
 - installiert die nötigen Pakete (pacman, den Rest mit paru) und prüft die Namen vorher,
 - kopiert die Dateien nach `~/.config`, `~/.local/bin`, `~/.local/share` und `~/Pictures/Wallpapers`,
 - sichert **jede** ersetzte Datei vorher nach `~/.config/hypr-shell-backup-<Zeit>/`,
 - übernimmt das Tastaturlayout aus `localectl` und Umgebungsvariablen der alten
   Hyprland-Konfiguration (z. B. für NVIDIA), damit Spiele wie vorher starten,
 - läuft nie als root; sudo wird nur für pacman verwendet,
-- listet am Ende auf, falls noch ein Programm fehlt.
+- listet am Ende auf, falls noch ein Programm fehlt, und sagt, was als Nächstes zu tun ist
+  (abmelden, Hyprland wählen, Wetter-Ort eintragen) und wie man alles zurücknimmt.
 
 | Option | Wirkung |
 | --- | --- |
 | `--yes` | keine Rückfrage |
 | `--dry-run` | nur anzeigen, was passieren würde – nichts wird verändert |
 | `--no-packages` | keine Pakete installieren, nur Dateien kopieren |
+| `--update` | neuen Stand holen (`git pull --ff-only`) und neu installieren; `settings.json`, `user.lua` und `hypr-shell-local.lua` bleiben unberührt |
 | `--restore [ORDNER]` | Stand vor der letzten Installation zurückholen |
 | `--uninstall` | alles von hypr-shell entfernen, Zustand vor der ersten Installation zurück |
+
+## Aktualisieren
+
+```bash
+./install.sh --update
+```
+
+holt den neuen Stand aus GitHub und installiert ihn. Eigene Einstellungen
+(`~/.config/hypr-shell/settings.json`, `~/.config/hypr/user.lua`,
+`~/.config/hypr/hypr-shell-local.lua`) bleiben, wie sie sind. Hat man im Ordner selbst etwas
+geändert, bricht `--update` ab, ohne etwas zu installieren.
 
 ## Rückgängig machen
 
@@ -149,7 +165,8 @@ App-Symbole kommen aus Papirus-Dark, dann aus hicolor, dann aus dem Pfad in der
 
 Alles Einstellbare steht in `~/.config/hypr-shell/settings.json` (Vorlage:
 [`settings/settings.example.json`](settings/settings.example.json)). Änderungen wirken
-sofort, ohne Neustart. Das Zahnrad im Panel öffnet die Datei.
+sofort, ohne Neustart. Das Zahnrad im Panel öffnet die Datei in kitty mit dem Editor aus
+`$EDITOR` (sonst nano).
 
 | Wert | Standard | Bedeutung |
 | --- | --- | --- |

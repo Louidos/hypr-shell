@@ -5,9 +5,12 @@
 #   ./install.sh --yes           ohne Rückfrage
 #   ./install.sh --dry-run       nur anzeigen, was passieren würde, nichts ändern
 #   ./install.sh --no-packages   keine Pakete installieren, nur Dateien kopieren
+#   ./install.sh --update        neuen Stand holen (git pull --ff-only) und neu installieren;
+#                                settings.json, user.lua und hypr-shell-local.lua bleiben unberührt
 #   ./install.sh --restore [DIR] Stand vor der letzten Installation wiederherstellen
 #   ./install.sh --uninstall     alle Dateien von hypr-shell entfernen, Ursprungszustand zurück
 #
+# Braucht Hyprland ab 0.55 (Lua-Konfiguration); ein älteres bricht vor jeder Änderung ab.
 # Jede Datei, die ersetzt wird, landet vorher in ~/.config/hypr-shell-backup-<Zeit>/.
 # Nie als root starten; sudo wird nur für pacman benutzt.
 # Meldungen zeigen Pfade bewusst mit ~ an:
@@ -28,8 +31,11 @@ MANIFEST="$DATA/installiert.txt"
 YES=0
 DRY=0
 NOPKG=0
+UPDATE=0
 MODE=install
 RESTORE_DIR=""
+HYPR_MIN="0.55.0"
+ARGS=("$@")
 
 # Pakete (Namen werden vor der Installation mit pacman -Si / paru -Si geprüft)
 PAKETE=(
@@ -83,7 +89,7 @@ fehler() { printf '%sFehler:%s %s\n' "$ROT" "$AUS" "$*" >&2; exit 1; }
 probe()  { printf '  [Probelauf] %s\n' "$*"; }
 
 hilfe() {
-    sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
 }
 
@@ -115,6 +121,7 @@ while [ $# -gt 0 ]; do
         --yes|-y) YES=1 ;;
         --dry-run|-n) DRY=1 ;;
         --no-packages) NOPKG=1 ;;
+        --update) UPDATE=1 ;;
         --restore)
             MODE=restore
             if [ $# -gt 1 ] && [ "${2#-}" = "$2" ]; then RESTORE_DIR="$2"; shift; fi
@@ -129,6 +136,60 @@ done
 if [ "$(id -u)" -eq 0 ] && [ "${HYPR_SHELL_ALLOW_ROOT:-0}" != 1 ]; then
     fehler "Bitte nicht als root starten. sudo wird nur für pacman verwendet."
 fi
+
+# ---------------------------------------------------------------- Hyprland-Version
+
+# installierte Version, z. B. "0.55.1" (leer, wenn Hyprland fehlt)
+hyprland_version() {
+    local v=""
+    if command -v Hyprland >/dev/null 2>&1; then
+        v="$( (Hyprland --version 2>/dev/null || true) | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+    fi
+    if [ -z "$v" ] && command -v hyprctl >/dev/null 2>&1; then
+        v="$( (hyprctl version 2>/dev/null || true) | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+    fi
+    printf '%s\n' "$v"
+}
+
+# mindestens HYPR_MIN? (Versionen wie 0.55.0 mit sort -V vergleichen)
+version_ok() { [ "$(printf '%s\n%s\n' "$HYPR_MIN" "$1" | sort -V | head -n1)" = "$HYPR_MIN" ]; }
+
+# Bricht ab, bevor irgendetwas verändert wird, wenn ein zu altes Hyprland installiert ist.
+pruefe_hyprland() {
+    local v
+    v="$(hyprland_version)"
+    if [ -z "$v" ]; then
+        if [ "$NOPKG" -eq 1 ]; then
+            warnung "Hyprland ist nicht installiert – hypr-shell braucht Hyprland ab ${HYPR_MIN%.0} (sudo pacman -S hyprland)"
+        fi
+        return 0
+    fi
+    if ! version_ok "$v"; then
+        printf '%sFehler:%s Hyprland %s ist zu alt. hypr-shell braucht Hyprland ab %s (Lua-Konfiguration).\n' "$ROT" "$AUS" "$v" "${HYPR_MIN%.0}" >&2
+        printf '       Zuerst aktualisieren:  sudo pacman -Syu hyprland\n' >&2
+        printf '       Danach ./install.sh erneut starten. Es wurde nichts verändert.\n' >&2
+        exit 1
+    fi
+    ok "Hyprland $v (mindestens ${HYPR_MIN%.0})"
+}
+
+# ---------------------------------------------------------------- Aktualisieren (--update)
+
+aktualisieren() {
+    command -v git >/dev/null 2>&1 || fehler "git fehlt – --update braucht git."
+    git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+        || fehler "$REPO ist kein git-Klon – bitte neu klonen: gh repo clone Louidos/hypr-shell"
+    info "Neuen Stand holen (git pull --ff-only)"
+    if [ "$DRY" -eq 1 ]; then
+        probe "git -C $REPO pull --ff-only"
+    else
+        git -C "$REPO" pull --ff-only || fehler "git pull --ff-only ging nicht (eigene Änderungen im Ordner?). Nichts wurde installiert."
+    fi
+    # die neue Fassung des Installers ausführen, ohne --update
+    local rest=() a
+    for a in "${ARGS[@]}"; do [ "$a" = --update ] || rest+=("$a"); done
+    exec "$REPO/install.sh" "${rest[@]}"
+}
 
 # ---------------------------------------------------------------- Dateien mit Sicherung
 
@@ -352,6 +413,14 @@ pakete() {
         warnung "pacman fehlt – Pakete bitte von Hand installieren: ${PAKETE[*]}"
         return 0
     fi
+    # zuerst das System aktualisieren (Arch: keine Teil-Updates), mit --yes ohne Frage
+    if [ "$DRY" -eq 1 ]; then
+        probe "sudo pacman -Syu (System aktualisieren, wird vorher gefragt)"
+    elif [ "$YES" -eq 1 ] || ja_nein "Zuerst das System aktualisieren (sudo pacman -Syu)? Empfohlen."; then
+        sudo pacman -Syu --noconfirm || warnung "Systemaktualisierung meldete einen Fehler"
+    else
+        warnung "System nicht aktualisiert – neue Pakete passen eventuell nicht zu alten"
+    fi
     local repo=() aur=() fehlend=() p art name
     for p in "${PAKETE[@]}"; do
         read -r art name < <(paket_quelle "$p")
@@ -411,12 +480,19 @@ dienste_pruefen() {
 installieren() {
     info "hypr-shell $VERSION installieren"
     [ "$DRY" -eq 1 ] && info "Probelauf: es wird nichts verändert"
+    pruefe_hyprland
     if [ "$DRY" -eq 0 ] && ! ja_nein "Dateien nach ~/.config, ~/.local/bin, ~/.local/share und ~/Pictures/Wallpapers kopieren (alte werden gesichert)?"; then
         echo "Abgebrochen."
         exit 1
     fi
 
-    if [ "$NOPKG" -eq 0 ]; then pakete; else info "Pakete übersprungen (--no-packages)"; fi
+    if [ "$NOPKG" -eq 0 ]; then
+        pakete
+        # Hyprland kam eventuell eben erst dazu: Version jetzt prüfen, bevor Dateien kopiert werden
+        [ "$DRY" -eq 1 ] || pruefe_hyprland
+    else
+        info "Pakete übersprungen (--no-packages)"
+    fi
 
     info "Dateien kopieren"
     [ "$DRY" -eq 0 ] && { mkdir -p "$DATA"; : > "$MANIFEST.neu"; }
@@ -485,10 +561,24 @@ installieren() {
     echo
     if [ "$DRY" -eq 1 ]; then
         info "Probelauf beendet – nichts wurde verändert."
-    else
-        info "Fertig. Jetzt abmelden und im Login-Manager Hyprland wählen."
-        echo "    Rückgängig: ./install.sh --restore   Entfernen: ./install.sh --uninstall"
+        return 0
     fi
+    info "Fertig. So geht es weiter:"
+    if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+        echo "    1. Die laufende Sitzung ist neu geladen. Für Autostart und Sperren einmal ab- und wieder anmelden."
+    else
+        echo "    1. Abmelden."
+        echo '    2. Im Login-Manager „Hyprland“ wählen und anmelden.'
+    fi
+    if ! grep -qE '"location"[[:space:]]*:[[:space:]]*"[^"]+"' "$CONF/hypr-shell/settings.json" 2>/dev/null; then
+        echo "    •  Wetter-Ort eintragen: ~/.config/hypr-shell/settings.json → \"weather\": { \"location\": \"Zürich\" }"
+        echo "       (oder im Panel unten rechts auf das Zahnrad klicken)"
+    fi
+    echo "    •  Eigenes Profilbild: ~/.face   Eigene Hintergrundbilder: ~/Pictures/Wallpapers"
+    echo
+    echo "    Später aktualisieren:     ./install.sh --update"
+    echo "    Alles zurücknehmen:       ./install.sh --restore     (Stand vor dieser Installation)"
+    echo "    Ganz entfernen:           ./install.sh --uninstall   (Stand vor der ersten Installation)"
 }
 
 # ---------------------------------------------------------------- Wiederherstellen
@@ -589,6 +679,13 @@ entfernen() {
         ok "hypr-shell entfernt. Sicherungen bleiben in ~/.config/hypr-shell-backup-*"
     fi
 }
+
+if [ "$UPDATE" -eq 1 ]; then
+    [ "$MODE" = install ] || fehler "--update passt nicht zu --restore oder --uninstall."
+    # vor dem Holen prüfen: ein zu altes Hyprland bricht ab, bevor etwas verändert wird
+    pruefe_hyprland
+    aktualisieren
+fi
 
 case "$MODE" in
     install) installieren ;;

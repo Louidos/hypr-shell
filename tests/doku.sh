@@ -11,7 +11,7 @@ pruefe() { if eval "$1"; then echo "  ok: $2"; else echo "  FEHLER: $2"; fehler=
 echo "== Installation"
 pruefe 'grep -qF "gh repo clone Louidos/hypr-shell && cd hypr-shell && ./install.sh" README.md' "Installation in einer Zeile"
 pruefe 'grep -q "Hyprland“ wählen" README.md' "Hinweis: abmelden und Hyprland wählen"
-for o in --yes --dry-run --no-packages --restore --uninstall; do
+for o in --yes --dry-run --no-packages --update --restore --uninstall; do
     pruefe 'grep -q -- "$o" README.md' "Option $o beschrieben"
 done
 

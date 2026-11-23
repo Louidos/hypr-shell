@@ -659,8 +659,10 @@ elif [ "$MODE" = apply ] && [ -e "$SETTINGS" ]; then
     cp "$T/raw.json" "$T/good" && schreibe "$LAST_GOOD" < "$T/good" || true
 fi
 
-# Ebene aus hypr-shell-local.lua (v1.1) unter settings.json
-local_json > "$T/local.json"
+# Ebene aus hypr-shell-local.lua (v1.1) unter settings.json – nur bis zum Umzug; danach steht
+# alles in settings.json (so führt auch "shell-set reset" wirklich zum Standardwert)
+if [ -e "$MIGRATED" ] && [ "$MODE" = apply ] && [ "$MIGRATE" -eq 1 ]; then echo '{}' > "$T/local.json"
+else local_json > "$T/local.json"; fi
 jq -s '.[0] * .[1]' "$T/local.json" "$T/raw.json" > "$T/merged.json"
 
 # einmaliger Umzug: Werte aus hypr-shell-local.lua, die in settings.json fehlen, dort eintragen

@@ -478,6 +478,19 @@ if command -v python3 >/dev/null 2>&1; then
             echo "  ok: gesprochener Satz steht im Chat und wird beantwortet (Sprechmodus)"
         else echo "  FEHLER: Sprechen: Zustand $zustand, Log: $(tail -n 2 "$T/missa.log")"; missa_ok=0; fi
         if [ -z "$(find "$XDG_RUNTIME_DIR" "$HOME" -name 'hypr-shell-voice-*.wav' 2>/dev/null)" ]; then echo "  ok: keine Audiodatei bleibt liegen"; else echo "  FEHLER: Audiodatei liegt noch"; missa_ok=0; fi
+        # Missa-Agent: Glas-Karte für die Rückfrage (Stufe ask) und Schalter "Missa access" im Panel
+        jq '.missa.agent_enabled = true' "$HOME/.config/hypr-shell/settings.json" > "$T/s.json" && mv "$T/s.json" "$HOME/.config/hypr-shell/settings.json"
+        KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload 2>/dev/null; sleep 2
+        ipc missaagent ask test-1 rechner_befehl "rm -rf ~/tmp/*.log"; sleep 1; bild missa-rueckfrage-karte
+        if [ "$("$qs" -p "$cfg" ipc call missaagent waiting 2>/dev/null)" = "rechner_befehl: rm -rf ~/tmp/*.log" ]; then echo "  ok: Glas-Karte zeigt den Befehl wörtlich"
+        else echo "  FEHLER: Rückfrage-Karte"; missa_ok=0; fi
+        ipc missaagent deny; sleep 0.5
+        if [ -z "$("$qs" -p "$cfg" ipc call missaagent waiting 2>/dev/null)" ] && [ "$(cat "$XDG_RUNTIME_DIR/hypr-shell-missa-answer-test-1" 2>/dev/null)" = no ]; then echo "  ok: Esc/Deny lehnt ab"
+        else echo "  FEHLER: Ablehnen"; missa_ok=0; fi
+        ipc panel open; sleep 2; bild panel-missa
+        if [[ ",$("$qs" -p "$cfg" ipc call panel toggles 2>/dev/null)," == *",missa,"* ]]; then echo "  ok: Schalter Missa access im Panel (Agent eingeschaltet)"
+        else echo "  FEHLER: Schalter Missa access fehlt"; missa_ok=0; fi
+        ipc panel close; sleep 1
         ipc dashboard open dashboard; sleep 3; bild dashboard-missa; ipc dashboard close; sleep 1
         missa_vorher="$("$qs" -p "$cfg" ipc call missa lastText 2>/dev/null)"
     else

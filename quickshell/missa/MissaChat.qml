@@ -19,6 +19,21 @@ Scope {
     property bool voice: false           // Antwort zum Vorlesen (vom Sprechen mit Missa)
     signal answered(string text)
 
+    // ---- Verlauf der Aktionen des Missa-Agenten (missa-actions.log), nur mit eingeschaltetem Agenten
+    property bool showActions: false
+    property var actions: []
+    FileView {
+        path: Settings.dataDir + "/missa-actions.log"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            const l = []
+            for (const z of text().split("\n").slice(-40)) { try { if (z.trim() !== "") l.push(JSON.parse(z)) } catch (e) { } }
+            mc.actions = l.reverse()
+        }
+    }
+
     // ---- mit Missa sprechen (missa.voice_enabled): Aufnahme → whisper.cpp → Chat → piper
     property string voiceState: ""       // "", "listening", "thinking", "speaking"
     property int level: 0
@@ -230,6 +245,7 @@ Scope {
                     Row {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                         spacing: 6
+                        IconButton { visible: Integrations.missaAgent; icon: "󰋚"; active: mc.showActions; onClicked: mc.showActions = !mc.showActions }
                         IconButton { icon: "󰐕"; onClicked: mc.newConversation() }
                         IconButton { icon: "󰅖"; onClicked: ov.hide() }
                     }
@@ -245,9 +261,41 @@ Scope {
                     wrapMode: Text.Wrap
                 }
 
+                // ---- Aktionen des Agenten (Zeit, Werkzeug, Kurzfassung, erlaubt oder abgelehnt)
+                ListView {
+                    visible: mc.showActions
+                    anchors { top: head.bottom; topMargin: 12; bottom: footer.top; bottomMargin: 8; left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14 }
+                    clip: true
+                    spacing: 6
+                    model: mc.actions
+                    header: Txt { text: "What Missa did on this computer"; size: 13; weight: Font.DemiBold; bottomPadding: 6 }
+                    delegate: GlassCard {
+                        required property var modelData
+                        width: ListView.view.width
+                        height: ac.implicitHeight + 16
+                        Column {
+                            id: ac
+                            x: 12; y: 8
+                            width: parent.width - 24
+                            Row {
+                                spacing: 8
+                                Txt { text: (modelData.zeit || "").slice(11, 16); size: 11; sub: true; font.family: Theme.mono }
+                                Txt { text: (modelData.werkzeug || "").replace("rechner_", ""); size: 12; weight: Font.DemiBold }
+                                Txt {
+                                    text: modelData.ergebnis === "erlaubt" ? "allowed" : modelData.ergebnis === "abgelehnt" ? "declined" : modelData.ergebnis
+                                    size: 11
+                                    color: modelData.ergebnis === "erlaubt" ? "#5cc98a" : Theme.warn
+                                }
+                            }
+                            Txt { width: parent.width; text: modelData.kurz || ""; size: 11; sub: true; wrapMode: Text.WrapAnywhere; maximumLineCount: 3 }
+                        }
+                    }
+                }
+
                 // ---- Verlauf
                 ListView {
                     id: list
+                    visible: !mc.showActions
                     anchors { top: head.bottom; topMargin: 12; bottom: footer.top; bottomMargin: 8; left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14 }
                     clip: true
                     spacing: 10

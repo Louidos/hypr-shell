@@ -47,6 +47,15 @@ pruefe 'grep -q "address:0x55d3c0a1b3d0" "$T/log2"' "Fokus auf das Fenster unter
 HYPRCTL_LOG="$T/log3" HYPRCTL_CURSOR='{"x": 5000, "y": 5000}' "$REPO/bin/shell-diag" freigeben >/dev/null
 pruefe '! grep -q "hl.dsp.focus" "$T/log3"' "kein Fenster unter der Maus: kein Fokuswechsel"
 pruefe 'grep -q "Oberfläche antwortet nicht" <<<"$aus"' "ohne laufende Oberfläche: Hinweis statt Fehler"
+# Oberfläche installiert, Quickshell vorhanden (Attrappe antwortet immer), aber nicht gestartet: kein
+# falsches "Panels zu" (shell-quickshell ipc prüft, ob die Oberfläche läuft)
+mkdir -p "$T/home/.config/quickshell/hypr-shell"
+: > "$T/home/.config/quickshell/hypr-shell/shell.qml"
+printf '#!/bin/sh\nexit 0\n' > "$T/bin/qs"; chmod +x "$T/bin/qs"
+aus2="$(HOME="$T/home" HYPRCTL_LOG="$T/log4" "$REPO/bin/shell-diag" freigeben)"
+pruefe 'grep -q "Oberfläche antwortet nicht" <<<"$aus2" && ! grep -q "Panels zu" <<<"$aus2"' "installiert, aber nicht gestartet: Hinweis, kein falsches Panels zu"
+pruefe '! HOME="$T/home" "$REPO/bin/shell-quickshell" ipc shell keyboard 2>/dev/null && ! HOME="$T/leer" "$REPO/bin/shell-quickshell" ipc shell keyboard 2>/dev/null' "shell-quickshell ipc: Fehler, wenn die Oberfläche nicht läuft oder fehlt"
+rm -f "$T/bin/qs"
 pruefe '(unset HYPRLAND_INSTANCE_SIGNATURE; "$REPO/bin/shell-diag" freigeben | grep -q "Hyprland läuft nicht")' "ohne Hyprland: Hinweis statt Fehler"
 
 echo "== 3. shell-diag tastatur"

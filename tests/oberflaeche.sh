@@ -60,9 +60,46 @@ done
 [ -n "${sock:-}" ] || { echo "FEHLER: sway startet nicht"; cat "$T/sway.log"; exit 1; }
 export WAYLAND_DISPLAY="${sock##*/}" QT_QUICK_BACKEND=software QT_QPA_PLATFORM=wayland
 
+# Hintergrundbild und Farben: buntes Testbild setzen (awww + matugen), erzeugte Dateien prüfen
+farben_ok=1
+if command -v awww >/dev/null 2>&1 && command -v matugen >/dev/null 2>&1; then
+    im="$(command -v magick || command -v convert || true)"
+    if [ -n "$im" ]; then
+        bunt="$HOME/Pictures/Wallpapers/test-bunt.png"
+        "$im" -size 1920x1080 gradient:'#1b3a8f'-'#e07a1f' "$bunt"
+        setsid awww-daemon > "$T/awww.log" 2>&1 &
+        pids+=("$!")
+        "$HOME/.local/bin/shell-wallpaper" "$bunt" > "$T/wallpaper.log" 2>&1 || { cat "$T/wallpaper.log"; farben_ok=0; }
+        echo "---- Farben aus dem Bild ----"
+        for f in .config/hypr/hypr-shell-colors.lua .config/hypr/hyprlock-colors.conf .config/waybar/colors.css \
+                 .config/swaync/colors.css .config/kitty/colors.conf .config/rofi/colors.rasi .config/hypr-shell/colors.json; do
+            if [ -f "$HOME/$f" ] && ! grep -q "Standardfarben" "$HOME/$f" && ! grep -q "{{" "$HOME/$f"; then
+                echo "  ok: $f"
+            else
+                echo "  FEHLER: $f nicht von matugen erzeugt"; farben_ok=0
+            fi
+        done
+        jq -e '.accent | test("^#[0-9a-fA-F]{6}$")' "$HOME/.config/hypr-shell/colors.json" >/dev/null || { echo "  FEHLER: colors.json"; farben_ok=0; }
+        luac_bin="$(command -v luac || command -v luac5.4 || true)"
+        [ -z "$luac_bin" ] || "$luac_bin" -p "$HOME/.config/hypr/hypr-shell-colors.lua" || farben_ok=0
+        echo "  Akzentfarbe: $(jq -r .accent "$HOME/.config/hypr-shell/colors.json")"
+        if awww query 2>/dev/null | grep -q "test-bunt"; then echo "  ok: awww zeigt das Bild"
+        else echo "  FEHLER: awww zeigt das Bild nicht"; farben_ok=0; fi
+        if [ "$(cat "$HOME/.local/share/hypr-shell/wallpaper")" = "$bunt" ]; then echo "  ok: Auswahl gespeichert"
+        else echo "  FEHLER: Auswahl nicht gespeichert"; farben_ok=0; fi
+    fi
+fi
+
+# Leiste (Waybar) – Hyprland-Module melden ohne Hyprland Fehler, das ist hier egal
+if command -v waybar >/dev/null 2>&1; then
+    waybar > "$T/waybar.log" 2>&1 &
+    pids+=("$!")
+fi
+
 cfg="$HOME/.config/quickshell/hypr-shell"
 "$qs" -p "$cfg" > "$T/qs.log" 2>&1 &
-pids+=("$!")
+qspid="$!"
+pids+=("$qspid")
 sleep 6
 
 bild() { grim "$OUT/$1.png" && echo "  Screenshot: $1.png"; }
@@ -99,7 +136,8 @@ fi
 echo "---- Quickshell-Log ----"
 cat "$T/qs.log"
 echo "------------------------"
-if ! kill -0 "${pids[1]}" 2>/dev/null; then
+[ "$farben_ok" -eq 1 ] || { echo "FEHLER: Farben aus dem Hintergrundbild"; exit 1; }
+if ! kill -0 "$qspid" 2>/dev/null; then
     echo "FEHLER: Quickshell ist abgestürzt"
     exit 1
 fi

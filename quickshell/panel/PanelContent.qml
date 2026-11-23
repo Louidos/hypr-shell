@@ -231,18 +231,58 @@ FocusScope {
         }
     }
 
-    // ---- Screenshot
+    // ---- Screenshot (wie die Vorlage): Kamera-Symbol, Titel, Hinweis, Ordner oben rechts,
+    // darunter die Knöpfe Screen und Region
     Component {
         id: shotCard
         GlassCard {
-            height: 60
-            Txt { anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter } text: "Screenshot"; size: 13; weight: Font.Bold; font.family: Theme.mono }
-            Row {
-                anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                spacing: 6
-                Pill { implicitHeight: 34; icon: "󰍹"; text: "Screen"; onClicked: pc.panel.run([pc.bin + "shell-screenshot", "screen"], true) }
-                Pill { implicitHeight: 34; icon: "󰒉"; text: "Region"; onClicked: pc.panel.run([pc.bin + "shell-screenshot", "region"], true) }
-                IconButton { icon: ""; onClicked: pc.panel.run([pc.bin + "shell-screenshot", "folder"], true) }
+            height: shotCol.implicitHeight + 28
+            Column {
+                id: shotCol
+                x: 14; y: 14
+                width: parent.width - 28
+                spacing: 12
+                Item {
+                    width: parent.width
+                    height: 44
+                    Rectangle {
+                        id: camBubble
+                        width: 44; height: 44; radius: 22
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: Qt.rgba(1, 1, 1, 0.07)
+                        Glyph { anchors.centerIn: parent; text: "󰄀"; size: 19 }
+                    }
+                    Column {
+                        anchors { left: camBubble.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                        spacing: 2
+                        Txt { text: "Screenshot"; size: 15; weight: Font.Bold; font.family: Theme.mono }
+                        Txt { text: "Saved and copied to clipboard"; size: 12; color: "#9a9aa4"; font.family: Theme.mono }
+                    }
+                    Glyph {
+                        anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                        text: "󰉋"
+                        size: 15
+                        color: folderHover.hovered ? "#F6F5F4" : "#8a8a8a"
+                        HoverHandler { id: folderHover; margin: 6; cursorShape: Qt.PointingHandCursor }
+                        TapHandler { margin: 6; onTapped: pc.panel.run([pc.bin + "shell-screenshot", "folder"], true) }
+                    }
+                }
+                Row {
+                    spacing: 8
+                    Pill {
+                        implicitHeight: 36
+                        icon: "󰊓"
+                        text: "Screen"
+                        active: true
+                        onClicked: pc.panel.run([pc.bin + "shell-screenshot", "screen"], true)
+                    }
+                    Pill {
+                        implicitHeight: 36
+                        icon: "󰆞"
+                        text: "Region"
+                        onClicked: pc.panel.run([pc.bin + "shell-screenshot", "region"], true)
+                    }
+                }
             }
         }
     }

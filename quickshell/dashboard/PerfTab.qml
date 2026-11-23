@@ -3,7 +3,9 @@ import Quickshell.Io
 import "../common"
 
 // Tab Performance: CPU, GPU, Datenträger, Netzwerk, Arbeitsspeicher (12 Spalten, 2 Zeilen).
-// Alles läuft nur, solange dieser Tab offen ist.
+// Aufbau wie die Vorlage: CPU/GPU mit Symbol im Ring, Modell, Temperatur mit Balken und der
+// Auslastung in einem gewellten Abzeichen; Storage mit Ring und Gerät als Pille; Network mit
+// gefüllter Verlaufslinie; Memory mit Ring. Alles läuft nur, solange dieser Tab offen ist.
 Grid12 {
     id: perf
     rows: 2
@@ -16,17 +18,19 @@ Grid12 {
     property real txTotal: 0
     property var last: null
     property var history: []
+    property var txHistory: []
 
     Usage { id: usage; running: true; interval: 1500 }
 
     function rate(b) {
-        if (b >= 1048576) return (b / 1048576).toFixed(1) + " MB/s"
-        if (b >= 1024) return (b / 1024).toFixed(0) + " KB/s"
-        return Math.round(b) + " B/s"
+        if (b < 1024) return b.toFixed(1) + " B/s"
+        if (b < 1048576) return (b / 1024).toFixed(1) + " KB/s"
+        return (b / 1048576).toFixed(1) + " MB/s"
     }
     function size(b) {
-        if (b >= 1073741824) return (b / 1073741824).toFixed(1) + " GB"
-        return (b / 1048576).toFixed(0) + " MB"
+        if (b < 1048576) return (b / 1024).toFixed(0) + "KB"
+        if (b < 1073741824) return (b / 1048576).toFixed(1) + "MB"
+        return (b / 1073741824).toFixed(2) + "GB"
     }
 
     Process {
@@ -73,6 +77,7 @@ Grid12 {
                     perf.rxRate = Math.max(0, (f[0] - perf.last.rx) / dt)
                     perf.txRate = Math.max(0, (f[8] - perf.last.tx) / dt)
                     const h = perf.history.slice(-59); h.push(perf.rxRate); perf.history = h
+                    const t = perf.txHistory.slice(-59); t.push(perf.txRate); perf.txHistory = t
                 }
             }
             perf.last = { t: now, rx: f[0], tx: f[8] }
@@ -83,151 +88,251 @@ Grid12 {
         onTriggered: { route.reload(); dev.reload() }
     }
 
-    component Head: Row {
-        property string icon
-        property string title
-        spacing: 8
-        Glyph { text: parent.icon; size: 16; color: Theme.subtext }
-        Txt { text: parent.title; size: 12; sub: true; weight: Font.DemiBold }
+    // ---- Bausteine
+    component Title: Txt {
+        size: 17
+        weight: Font.DemiBold
     }
-    component Bar: Rectangle {
-        property real value: 0
-        height: 6
-        radius: 3
-        color: Theme.track
-        Rectangle {
-            width: parent.width * Math.max(0, Math.min(100, parent.value)) / 100
-            height: parent.height
-            radius: 3
-            color: Theme.text
-            Behavior on width { NumberAnimation { duration: 500; easing.type: Easing.OutCubic } }
+    // gewelltes Abzeichen ("Cookie", Material 3 expressive)
+    component Cookie: Canvas {
+        id: ck
+        property color fill: Theme.container
+        property int bumps: 9
+        onFillChanged: requestPaint()
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
+        onPaint: {
+            const g = getContext("2d")
+            g.reset()
+            const cx = width / 2, cy = height / 2, R = Math.min(width, height) / 2 - 2
+            g.beginPath()
+            for (let i = 0; i <= 180; i++) {
+                const a = i / 180 * Math.PI * 2
+                const r = R * (0.9 + 0.1 * Math.cos(a * ck.bumps))
+                const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a)
+                if (i === 0) g.moveTo(x, y); else g.lineTo(x, y)
+            }
+            g.closePath()
+            g.fillStyle = ck.fill
+            g.fill()
+        }
+    }
+    // CPU oder GPU: Symbol im Ring links, Name, Modell, Temperatur mit Balken, rechts "Usage"
+    component Chipset: Cell {
+        id: cc
+        property string title: "CPU"
+        property string icon: ""
+        property string model: ""
+        property var temp: null
+        property real use: -1          // < 0: unbekannt ("–")
+        property string extra: ""      // z. B. Grafikspeicher
+        property string note: ""       // z. B. "Sleeping" statt Temperatur
+        readonly property real bs: Math.min(height - 40, width * 0.3, 104)
+        Item {
+            id: ico
+            x: 16; y: 16; width: 42; height: 42
+            Ring { anchors.fill: parent; value: Math.max(0, cc.use); thickness: 3 }
+            Glyph { anchors.centerIn: parent; text: cc.icon; size: 18 }
+        }
+        Column {
+            anchors { left: ico.right; leftMargin: 12; right: blob.left; rightMargin: 10 }
+            y: 16
+            spacing: 2
+            Txt { text: cc.title; size: 18; weight: Font.DemiBold; color: Theme.accent }
+            Txt { width: parent.width; text: cc.model || "–"; size: 12 }
+        }
+        Row {
+            x: 18; y: parent.height - 56
+            spacing: 6
+            Glyph { text: "󰔏"; size: 15; color: Theme.subtext; anchors.verticalCenter: parent.verticalCenter }
+            Txt {
+                anchors.verticalCenter: parent.verticalCenter
+                text: cc.note !== "" ? cc.note : (typeof cc.temp === "number" ? cc.temp + "°C" : "–")
+                size: 14
+            }
+            Txt { visible: cc.extra !== ""; anchors.verticalCenter: parent.verticalCenter; text: "·  " + cc.extra; size: 12; sub: true }
+        }
+        Item {
+            x: 18; y: parent.height - 28
+            width: blob.x - 34; height: 6
+            Rectangle { anchors.fill: parent; radius: 3; color: Theme.track }
+            Rectangle {
+                width: parent.width * Math.max(0, Math.min(1, (typeof cc.temp === "number" ? cc.temp : 0) / 100))
+                height: parent.height
+                radius: 3
+                color: (cc.temp || 0) >= 85 ? Theme.warn : Theme.accent
+                Behavior on width { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
+            }
+        }
+        Txt { anchors.horizontalCenter: blob.horizontalCenter; y: 12; text: "Usage"; size: 12; sub: true }
+        Cookie {
+            id: blob
+            anchors { right: parent.right; rightMargin: 16 }
+            y: 32 + (parent.height - 32 - height) / 2 - 6
+            width: cc.bs; height: cc.bs
+            Txt {
+                anchors.centerIn: parent
+                text: cc.use >= 0 ? Math.round(cc.use) + "%" : "–"
+                size: cc.bs * 0.27
+                weight: Font.DemiBold
+                color: Theme.containerText
+            }
         }
     }
 
     // ---- CPU (5×1 bei 1,0)
-    Cell {
+    Chipset {
         col: 1; row: 0; cs: 5; rs: 1
-        Column {
-            anchors { fill: parent; margins: 18 }
-            spacing: 10
-            Head { icon: ""; title: "CPU" }
-            Txt { width: parent.width; text: perf.cpuInfo.model || "–"; size: 15; weight: Font.Bold }
-            Row {
-                spacing: 18
-                Txt { text: Math.round(usage.cpu) + "%"; size: 28; weight: Font.Bold }
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    Txt { text: perf.cpuInfo.temp !== undefined && perf.cpuInfo.temp !== null ? perf.cpuInfo.temp + " °C" : "– °C"; size: 13 }
-                    Txt { text: (perf.cpuInfo.cores || "–") + " threads"; size: 11; sub: true }
-                }
-            }
-            Bar { width: parent.width; value: usage.cpu }
-        }
+        title: "CPU"
+        icon: "󰘚"
+        model: perf.cpuInfo.model || ""
+        temp: perf.cpuInfo.temp
+        use: usage.cpu
+        extra: perf.cpuInfo.cores ? perf.cpuInfo.cores + " threads" : ""
     }
 
-    // ---- GPU (5×1 bei 6,0)
-    Cell {
+    // ---- GPU (5×1 bei 6,0); eine schlafende NVIDIA-Karte wird nicht geweckt
+    Chipset {
         col: 6; row: 0; cs: 5; rs: 1
+        title: "GPU"
+        icon: "󰍹"
+        model: perf.gpu.name || ""
+        temp: perf.gpu.temp
+        use: perf.gpu.state === "sleeping" || typeof perf.gpu.util !== "number" ? -1 : perf.gpu.util
+        note: perf.gpu.state === "sleeping" ? "Sleeping" : ""
+        extra: perf.gpu.memTotal ? (perf.gpu.memUsed / 1024).toFixed(1) + " / " + (perf.gpu.memTotal / 1024).toFixed(1) + " GiB" : ""
+    }
+
+    // ---- Datenträger (4×1 bei 1,1): Ring "Used", Gerätename als Pille
+    Cell {
+        id: st
+        col: 1; row: 1; cs: 4; rs: 1
+        readonly property real rs2: Math.min(height - 36, 116)
+        Item {
+            id: sr
+            x: 16; anchors.verticalCenter: parent.verticalCenter
+            width: st.rs2; height: st.rs2
+            Ring { anchors.fill: parent; value: usage.disk; thickness: 8; gapped: true; color: Theme.accent }
+            Column {
+                anchors.centerIn: parent
+                Glyph { anchors.horizontalCenter: parent.horizontalCenter; text: "󰋊"; size: 15; color: Theme.subtext }
+                Txt { anchors.horizontalCenter: parent.horizontalCenter; text: usage.diskTotal > 0 ? Math.round(usage.disk) + "%" : "–"; size: st.rs2 * 0.2; weight: Font.DemiBold }
+                Txt { anchors.horizontalCenter: parent.horizontalCenter; text: "Used"; size: 11; sub: true }
+            }
+        }
         Column {
-            anchors { fill: parent; margins: 18 }
-            spacing: 10
-            Head { icon: "󰢮"; title: "GPU" }
-            Txt { width: parent.width; text: perf.gpu.name || "–"; size: 15; weight: Font.Bold }
-            Row {
-                spacing: 18
-                Txt {
-                    text: perf.gpu.state === "sleeping" ? "Sleeping"
-                        : perf.gpu.temp !== undefined && perf.gpu.temp !== null ? perf.gpu.temp + " °C" : "– °C"
-                    size: 28; weight: Font.Bold
-                }
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    Txt {
-                        text: perf.gpu.memTotal ? "VRAM " + (perf.gpu.memUsed / 1024).toFixed(1) + " / " + (perf.gpu.memTotal / 1024).toFixed(1) + " GiB"
-                            : perf.gpu.state === "sleeping" ? "power saving" : "VRAM –"
-                        size: 13
-                    }
-                    Txt { text: perf.gpu.util !== undefined && perf.gpu.util !== null ? perf.gpu.util + "% load" : ""; size: 11; sub: true }
+            anchors { left: sr.right; leftMargin: 16; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+            spacing: 4
+            Title { text: "Storage" }
+            Txt { width: parent.width; text: usage.diskTotal > 0 ? usage.gib(usage.diskUsed) + " / " + usage.gib(usage.diskTotal) + " GiB" : "–"; size: 13; sub: true }
+            Item { width: 1; height: 6 }
+            Rectangle {
+                width: Math.min(parent.width, dl.implicitWidth + 34)
+                height: 32
+                radius: 16
+                color: Theme.container
+                Row {
+                    id: dl
+                    anchors.centerIn: parent
+                    spacing: 6
+                    Glyph { text: "󰋊"; size: 14; color: Theme.containerText; anchors.verticalCenter: parent.verticalCenter }
+                    Txt { text: usage.diskDevice || "disk"; size: 12; color: Theme.containerText; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
-            Bar { width: parent.width; value: perf.gpu.memTotal ? 100 * perf.gpu.memUsed / perf.gpu.memTotal : 0 }
         }
     }
 
-    // ---- Datenträger (4×1 bei 1,1)
+    // ---- Netzwerk (4×1 bei 5,1): gefüllte Verlaufslinie, Download, Upload, Total
     Cell {
-        col: 1; row: 1; cs: 4; rs: 1
-        Head { anchors { left: parent.left; top: parent.top; margins: 18 } icon: ""; title: "Storage" }
-        Item {
-            id: diskRing
-            width: 84; height: 84
-            anchors { left: parent.left; leftMargin: 18; bottom: parent.bottom; bottomMargin: 18 }
-            Ring { anchors.fill: parent; value: usage.disk; thickness: 6 }
-            Txt { anchors.centerIn: parent; text: Math.round(usage.disk) + "%"; size: 16; weight: Font.Bold }
-        }
-        Column {
-            anchors { left: diskRing.right; leftMargin: 18; right: parent.right; rightMargin: 14; verticalCenter: diskRing.verticalCenter }
-            spacing: 4
-            Txt { text: usage.gib(usage.diskUsed) + " / " + usage.gib(usage.diskTotal) + " GiB"; size: 16; weight: Font.Bold }
-            Txt { width: parent.width; text: usage.diskDevice || "–"; sub: true; size: 12 }
-        }
-    }
-
-    // ---- Netzwerk (4×1 bei 5,1)
-    Cell {
+        id: net
         col: 5; row: 1; cs: 4; rs: 1
-        Head { id: netHead; anchors { left: parent.left; top: parent.top; margins: 18 } icon: "󰖩"; title: perf.iface ? "Network · " + perf.iface : "Network · offline" }
+        Row {
+            x: 16; y: 12
+            spacing: 8
+            Glyph { text: "󰓡"; size: 17; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
+            Title { text: "Network" }
+            Txt { text: perf.iface || "offline"; size: 10; sub: true; anchors.verticalCenter: parent.verticalCenter }
+        }
         Canvas {
-            id: spark
-            anchors { left: parent.left; right: parent.right; top: netHead.bottom; margins: 18; topMargin: 10 }
-            height: 46
-            property var data: perf.history
-            onDataChanged: requestPaint()
+            id: graph
+            x: 16; y: 40
+            width: parent.width - 32
+            height: Math.max(10, parent.height - 40 - 64)
+            property var rx: perf.history
+            property var tx: perf.txHistory
+            onRxChanged: requestPaint()
+            onWidthChanged: requestPaint()
             onPaint: {
                 const g = getContext("2d")
                 g.reset()
-                const d = data, n = d.length
-                if (n < 2) return
-                const max = Math.max(1024, Math.max.apply(null, d))
-                g.strokeStyle = Theme.text
-                g.lineWidth = 1.6
-                g.beginPath()
-                for (let i = 0; i < n; i++) {
-                    const x = width * i / 59, y = height - 2 - (height - 4) * d[i] / max
-                    if (i === 0) g.moveTo(x, y); else g.lineTo(x, y)
+                const W = width, H = height
+                const all = rx.concat(tx)
+                const mx = Math.max(1024, Math.max.apply(null, all.length ? all : [1]))
+                function linie(arr, col, fillA) {
+                    if (arr.length < 2) return
+                    g.beginPath()
+                    for (let i = 0; i < arr.length; i++) {
+                        const x = W - (arr.length - 1 - i) * (W / 59), y = H - (arr[i] / mx) * (H - 4)
+                        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y)
+                    }
+                    g.strokeStyle = col; g.lineWidth = 1.6; g.stroke()
+                    g.lineTo(W, H); g.lineTo(W - (arr.length - 1) * (W / 59), H); g.closePath()
+                    g.globalAlpha = fillA; g.fillStyle = col; g.fill(); g.globalAlpha = 1
                 }
-                g.stroke()
+                g.strokeStyle = Theme.track; g.lineWidth = 1
+                g.beginPath(); g.moveTo(0, H - 0.5); g.lineTo(W, H - 0.5); g.stroke()
+                linie(tx, Theme.subtext, 0.12)
+                linie(rx, Theme.accent, 0.25)
             }
         }
-        Row {
-            anchors { left: parent.left; bottom: parent.bottom; margins: 18 }
-            spacing: 22
-            Column {
-                Txt { text: "↓ " + perf.rate(perf.rxRate); size: 14; weight: Font.Bold }
-                Txt { text: perf.size(perf.rxTotal) + " total"; size: 11; sub: true }
-            }
-            Column {
-                Txt { text: "↑ " + perf.rate(perf.txRate); size: 14; weight: Font.Bold }
-                Txt { text: perf.size(perf.txTotal) + " total"; size: 11; sub: true }
+        Column {
+            x: 16; width: parent.width - 32
+            y: parent.height - 62
+            spacing: 2
+            Repeater {
+                model: [
+                    { icon: "󰇚", t: "Download", v: perf.iface ? perf.rate(perf.rxRate) : "–" },
+                    { icon: "󰕒", t: "Upload", v: perf.iface ? perf.rate(perf.txRate) : "–" },
+                    { icon: "󰋚", t: "Total", v: perf.iface ? "↓" + perf.size(perf.rxTotal) + "  ↑" + perf.size(perf.txTotal) : "–" }
+                ]
+                delegate: Item {
+                    required property var modelData
+                    width: parent.width; height: 19
+                    Glyph { text: modelData.icon; size: 14; color: Theme.subtext; anchors.verticalCenter: parent.verticalCenter }
+                    Txt { x: 22; text: modelData.t; size: 12; sub: true; anchors.verticalCenter: parent.verticalCenter }
+                    Txt { anchors.right: parent.right; text: modelData.v; size: 12; weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
+                }
             }
         }
     }
 
-    // ---- Arbeitsspeicher (2×1 bei 9,1)
+    // ---- Arbeitsspeicher (2×1 bei 9,1): Ring und belegt/gesamt
     Cell {
+        id: mem
         col: 9; row: 1; cs: 2; rs: 1
-        Head { id: memHead; anchors { left: parent.left; top: parent.top; margins: 16 } icon: ""; title: "Memory" }
+        readonly property real rs2: Math.min(height - 70, width - 40, 96)
+        Row {
+            x: 16; y: 12
+            spacing: 8
+            Glyph { text: "󰍛"; size: 17; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
+            Title { text: "Memory" }
+        }
         Item {
-            width: 72; height: 72
-            anchors { horizontalCenter: parent.horizontalCenter; top: memHead.bottom; topMargin: 10 }
-            Ring { anchors.fill: parent; value: usage.mem; thickness: 6 }
-            Txt { anchors.centerIn: parent; text: Math.round(usage.mem) + "%"; size: 14; weight: Font.Bold }
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 40
+            width: mem.rs2; height: mem.rs2
+            Ring { anchors.fill: parent; value: usage.mem; thickness: 7; gapped: true; color: Theme.accent }
+            Column {
+                anchors.centerIn: parent
+                Txt { anchors.horizontalCenter: parent.horizontalCenter; text: Math.round(usage.mem) + "%"; size: mem.rs2 * 0.22; weight: Font.DemiBold }
+                Txt { anchors.horizontalCenter: parent.horizontalCenter; text: "Used"; size: 10; sub: true }
+            }
         }
         Txt {
-            anchors { bottom: parent.bottom; bottomMargin: 14; horizontalCenter: parent.horizontalCenter }
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: parent.height - 24
             text: (usage.memUsed / 1048576).toFixed(1) + " / " + (usage.memTotal / 1048576).toFixed(1) + " GiB"
-            size: 11
-            sub: true
+            size: 12
         }
     }
 }

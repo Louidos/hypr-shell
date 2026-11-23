@@ -1,13 +1,18 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import "../common"
 
-// Drei runde Glas-Kacheln am linken Rand: CPU, RAM, Datenträger – je ein Ring mit Prozentzahl.
-// Fragt nur alle 2 s /proc ab, den Datenträger alle 30 s.
+// Drei runde Glas-Kacheln am linken Rand: CPU, RAM, GPU – je ein Ring mit Symbol und Prozentzahl
+// (Masse wie die Vorlage: 160 px breit, Ring 52 px). CPU und RAM kommen alle 2 s aus /proc, die GPU
+// alle 3 s aus "shell-sysinfo gpu-usage". Schläft die NVIDIA-Karte (Hybrid-Grafik), steht "–" da –
+// sie wird dafür nicht geweckt.
 PanelWindow {
     id: w
     readonly property real k: (screen ? screen.height : 1080) / 1080 * Settings.get("desktop.resources.scale", 1.0)
+    property var gpu: ({ state: "unknown", util: null })
+    readonly property real gpuUtil: gpu.state === "active" && typeof gpu.util === "number" ? gpu.util : -1
 
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
@@ -23,50 +28,68 @@ PanelWindow {
     implicitHeight: Math.ceil(col.implicitHeight)
     mask: Region { }
 
-    Usage { id: usage; running: w.visible }
+    Usage { id: usage; running: w.visible; withDisk: false }
+
+    Process {
+        id: gpuProc
+        command: [Settings.home + "/.local/bin/shell-sysinfo", "gpu-usage"]
+        stdout: StdioCollector { onStreamFinished: { try { w.gpu = JSON.parse(text) } catch (e) { } } }
+    }
+    Timer {
+        interval: 3000
+        running: w.visible
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: if (!gpuProc.running) gpuProc.running = true
+    }
 
     Column {
         id: col
-        spacing: 10 * w.k
+        spacing: 12 * w.k
         Repeater {
             model: [
-                { label: "CPU", icon: "", value: () => usage.cpu },
-                { label: "RAM", icon: "", value: () => usage.mem },
-                { label: "Disk", icon: "", value: () => usage.disk }
+                { label: "CPU", icon: "", value: () => usage.cpu },
+                { label: "RAM", icon: "󰍛", value: () => usage.mem },
+                { label: "GPU", icon: "", value: () => w.gpuUtil }
             ]
             delegate: GlassPanel {
                 id: tile
                 required property var modelData
                 readonly property real v: modelData.value()
-                width: 158 * w.k
-                height: 116 * w.k
-                radius: Theme.cardRadius * w.k
+                width: 160 * w.k
+                height: 118 * w.k
+                radius: 26 * w.k
                 Ring {
                     id: ring
-                    width: 44 * w.k
+                    width: 52 * w.k
                     height: width
-                    thickness: 4 * w.k
-                    value: tile.v
-                    anchors { top: parent.top; right: parent.right; margins: 14 * w.k }
+                    thickness: 5 * w.k
+                    value: Math.max(1, tile.v)
+                    color: "#F6F5F4"
+                    trackColor: Qt.rgba(1, 1, 1, 0.12)
+                    anchors { top: parent.top; right: parent.right; topMargin: 14 * w.k; rightMargin: 16 * w.k }
                 }
                 Glyph {
                     anchors.centerIn: ring
                     text: tile.modelData.icon
                     size: 15 * w.k
-                    color: Theme.subtext
+                    color: "#c8c8cc"
                 }
                 Column {
-                    anchors { left: parent.left; bottom: parent.bottom; margins: 16 * w.k }
+                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: 18 * w.k; bottomMargin: 14 * w.k }
                     spacing: 0
-                    Txt {
-                        text: Math.round(tile.v) + "%"
-                        size: 26 * w.k
-                        weight: Font.Bold
+                    Text {
+                        text: tile.v < 0 ? "–" : Math.round(tile.v) + "%"
+                        font.family: Theme.mono
+                        font.pixelSize: 26 * w.k
+                        font.bold: true
+                        color: "#F6F5F4"
                     }
-                    Txt {
+                    Text {
                         text: tile.modelData.label
-                        size: 11 * w.k
-                        sub: true
+                        font.family: Theme.mono
+                        font.pixelSize: 12 * w.k
+                        color: "#8a8a8f"
                     }
                 }
             }

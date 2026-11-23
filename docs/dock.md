@@ -82,6 +82,31 @@ Papierkorbs „Add Nextcloud folder“ bzw. „Add Missa folder“ an – angehe
 Starter und Fenster-Übersicht bieten kein Ziehen an; Programme kommen dort deshalb über
 „Keep in Dock“ ins Dock.
 
+## Bewegung und Verstecken
+
+- **Vergrösserung** (`dock.magnify`): Das Symbol unter der Maus wächst auf
+  `dock.magnify_factor`, die Nachbarn bis `dock.magnify_range` weniger stark – als Welle nach
+  dem Abstand zur Maus. Die Symbole wachsen von der Kante weg, das Glas wird nach beiden Seiten
+  gleich länger, die anderen Symbole springen nicht. Scrollt ein volles Dock, bleibt die
+  Vergrösserung aus.
+- **Hüpfen beim Start** (`dock.bounce_on_launch`): bis das erste Fenster der App erscheint,
+  höchstens 5 Sekunden.
+- **Verstecken** (`dock.autohide`):
+  - `never`: immer sichtbar
+  - `always`: weg, sobald die Maus das Dock verlässt (nach `dock.hide_delay_ms`)
+  - `smart` (Standard): nur weg, wenn ein Fenster der aktiven Arbeitsfläche die Fläche des Docks
+    überdeckt; geprüft bei Fenster-Ereignissen von Hyprland, nicht im Takt
+  - Ein schmaler, unsichtbarer Streifen an der Kante bleibt; Mauskontakt dort blendet das Dock nach
+    `dock.show_delay_ms` ein.
+  - Menü, Fensterliste, Ziehen, Tastatur (SUPER+B) und die offene Seite „Dock“ der Einstellungen
+    halten es sichtbar.
+- **Dashboard-Kante**: Die Mitte der unteren Kante öffnet sonst das Dashboard. Solange das Dock
+  unten versteckt ist (oder gerade über die Kante kam), blendet die Kante das Dock ein; ist das
+  Dock normal sichtbar, öffnet die Kante darunter wie bisher das Dashboard. `SUPER + D` öffnet es
+  immer.
+- `dock.anim_ms` 0 schaltet alle Dock-Animationen ab; ebenso im Gaming-Modus und wenn die
+  Animationen von hypr-shell (`look.animations.enabled`) aus sind.
+
 ## Werte
 
 | Name | Standard | Bereich / Werte | Wirkung |
@@ -114,6 +139,14 @@ Starter und Fenster-Übersicht bieten kein Ziehen an; Programme kommen dort desh
 | `dock.launcher_button` | `false` | bool | Startknopf links (öffnet den Starter) |
 | `dock.badges` | `true` | bool | Zähler für Benachrichtigungen |
 | `dock.previews` | `true` | bool | Fenstervorschau in der Fensterliste |
+| `dock.magnify` | `true` | bool | Vergrösserung beim Darüberfahren |
+| `dock.magnify_factor` | `1.6` | 1.0–2.5 | Stärke |
+| `dock.magnify_range` | `2` | 1–5 Symbole | Reichweite der Welle |
+| `dock.anim_ms` | `180` | 0–1000 ms | Animationsdauer (0 = aus) |
+| `dock.bounce_on_launch` | `true` | bool | Hüpfen beim Start |
+| `dock.autohide` | `smart` | never, always, smart | Verstecken |
+| `dock.show_delay_ms` | `150` | 0–2000 ms | Verzögerung beim Einblenden |
+| `dock.hide_delay_ms` | `400` | 0–5000 ms | Verzögerung beim Ausblenden |
 | `dock.items` | Standardliste | Liste | Reihenfolge und Art der Einträge |
 
 Zahlen ausserhalb des Bereichs werden auf die Grenze gesetzt (mit Hinweis), statt verworfen.

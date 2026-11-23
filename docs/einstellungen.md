@@ -177,6 +177,14 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dock.launcher_button` | `false` | `true`, `false` | Button at the start of the dock that opens the launcher | `shell-set dock.launcher_button true` |
 | `dock.badges` | `true` | `true`, `false` | Small number on an icon for notifications of that app (needs the notification service of hypr-shell) | `shell-set dock.badges false` |
 | `dock.previews` | `true` | `true`, `false` | Preview pictures in the window list when the mouse rests on an app with several windows | `shell-set dock.previews false` |
+| `dock.magnify` | `true` | `true`, `false` | Icons grow like a wave when the mouse moves over them | `shell-set dock.magnify false` |
+| `dock.magnify_factor` | `1.6` | Zahl 1.0 … 2.5, Schritt 0.05 | Size of the icon under the mouse relative to the normal size | `shell-set dock.magnify_factor 1.65` |
+| `dock.magnify_range` | `2` | ganze Zahl 1 … 5 | How many neighbouring icons grow with it | `shell-set dock.magnify_range 3` |
+| `dock.anim_ms` | `180` | ganze Zahl 0 … 1000 ms | Duration of the dock animations; 0 = no animations (also off in gaming mode or when animations are off) | `shell-set dock.anim_ms 190` |
+| `dock.bounce_on_launch` | `true` | `true`, `false` | The icon bounces until the first window of the app appears (at most 5 seconds) | `shell-set dock.bounce_on_launch false` |
+| `dock.autohide` | `smart` | `never`, `always`, `smart` | never, always (hide when the mouse leaves) or smart (hide only when a window covers the dock); touch the screen edge to show it again | `shell-set dock.autohide never` |
+| `dock.show_delay_ms` | `150` | ganze Zahl 0 … 2000 ms | Time the mouse must touch the edge before a hidden dock comes back | `shell-set dock.show_delay_ms 160` |
+| `dock.hide_delay_ms` | `400` | ganze Zahl 0 … 5000 ms | Time before the dock hides after the mouse left it | `shell-set dock.hide_delay_ms 450` |
 | `dock.items` | `[{"type":"app","desktop_id":"org.gnome.Nautilus","path":""},{"type":"app","desktop_id":"kitty","path":""},{"type":"app","desktop_id":"firefox","path":""},{"type":"separator","desktop_id":"","path":""},{"type":"folder","desktop_id":"","path":"~/Downloads"},{"type":"separator","desktop_id":"","path":""},{"type":"trash","desktop_id":"","path":""}]` | Liste von Einträgen mit `type`, `desktop_id`, `path` | Pinned apps, folders, separators, trash and launcher button in this order | `shell-set dock.items '[]'` |
 
 ## lock – Sperren und Standby

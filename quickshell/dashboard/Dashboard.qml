@@ -70,7 +70,8 @@ Scope {
     // Auslösestreifen an der Mitte der unteren Kante (unter Vollbild-Fenstern, stört also keine Spiele)
     PanelWindow {
         screen: dash.screen
-        visible: Settings.get("dashboard.edge", true) && !dash.open && dash.screen !== null
+        // liegt dort ein verstecktes Dock, blendet die Kante das Dock ein (siehe docs/dock.md)
+        visible: Settings.get("dashboard.edge", true) && !dash.open && dash.screen !== null && !Ui.dockOwnsEdge
         anchors { bottom: true }
         implicitWidth: 320
         implicitHeight: 2

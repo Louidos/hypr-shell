@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.9.0 – 2026-11-23
+
 ### Hinzugefügt
 - Bildschirme lassen sich in den Einstellungen (Seite Monitors) und mit `shell-set monitor <name> rotate 0|90|180|270` bzw. `mirror on|off` drehen und spiegeln, mit Bestätigung und automatischem Zurücksetzen nach 15 Sekunden; ein Touchscreen oder Stift dreht mit (#112)
 

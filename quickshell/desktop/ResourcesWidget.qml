@@ -31,9 +31,9 @@ PanelWindow {
     // Kacheln und Reihenfolge aus settings.json (desktop.resources.tiles: cpu, ram, gpu, disk)
     readonly property var tiles: Settings.get("desktop.resources.tiles", ["cpu", "ram", "gpu"])
     readonly property var tileInfo: ({
-        cpu: { label: "CPU", icon: "", value: () => usage.cpu },
+        cpu: { label: "CPU", icon: "\uf2db", value: () => usage.cpu },
         ram: { label: "RAM", icon: "󰍛", value: () => usage.mem },
-        gpu: { label: "GPU", icon: "", value: () => w.gpuUtil },
+        gpu: { label: "GPU", icon: "\uf26c", value: () => w.gpuUtil },
         disk: { label: "Disk", icon: "󰋊", value: () => usage.disk }
     })
 

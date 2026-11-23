@@ -57,6 +57,7 @@ pruefe '[ "$(raster quickshell/dashboard/HomeTab.qml)" = "col:0;row:0;cs:4;rs:1 
 pruefe '[ "$(raster quickshell/dashboard/PerfTab.qml)" = "col:1;row:0;cs:5;rs:1 col:1;row:1;cs:4;rs:1 col:5;row:1;cs:4;rs:1 col:6;row:0;cs:5;rs:1 col:9;row:1;cs:2;rs:1 " ]' "Tab Performance"
 
 echo "== Aufbau wie die Vorlage"
+pruefe '! grep -rnE "icon: \"\"[,}]" quickshell --include="*.qml"' "kein leeres Symbol in den Kachel- und Tab-Listen"
 d=quickshell/desktop; b=quickshell/dashboard
 pruefe 'grep -q "font.family: Theme.clock" $d/ClockWidget.qml && [ "$(jq -r ".keys[] | select(.key == \"theme.font.clock\") | .default" settings/schema.json)" = "JetBrainsMono Nerd Font" ] && grep -q "font.bold: true" $d/ClockWidget.qml && grep -q "150 \* k" $d/ClockWidget.qml && grep -q "opacity: 0.85" $d/ClockWidget.qml && grep -q "opacity: 0.45" $d/ClockWidget.qml && ! grep -q "Theme.display" $d/ClockWidget.qml' "Desktop-Uhr: JetBrainsMono fett, 150 px, 85 % / 45 %, kein Bebas Neue"
 pruefe '[ "$(grep -oE "label: \"[A-Za-z]+\"" $d/ResourcesWidget.qml | tr "\n" " ")" = "label: \"CPU\" label: \"RAM\" label: \"GPU\" label: \"Disk\" " ] && [ "$(jq -c ".keys[] | select(.key == \"desktop.resources.tiles\") | .default" settings/schema.json)" = "[\"cpu\",\"ram\",\"gpu\"]" ] && grep -q "gpu-usage" $d/ResourcesWidget.qml' "Desktop-Kacheln CPU, RAM, GPU (Disk wählbar)"

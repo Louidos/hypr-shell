@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.2.0 – 2026-11-23
+
 ### Hinzugefügt
 - Leiste, Abstände, Blur, Animationen, Farben, Schriften, Eingabe, Bildschirme, Sperrzeiten und Standard-Programme sind in settings.json einstellbar und wirken sofort; ein falscher Wert oder kaputtes JSON legt nichts lahm, eine Benachrichtigung nennt Schlüssel und Grund (#31)
 - Befehl `shell-set` zum Ändern, Zurücksetzen und Rückgängigmachen von Einstellungen, dazu Profile, Export/Import und Tab-Vervollständigung für bash und fish (#33)
@@ -13,6 +15,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Tastenkürzel ansehen, ändern und eigene anlegen (Einstellungs-App → Keybinds, `shell-set keybinds.…`); doppelte Belegungen werden abgelehnt und benannt, ohne Änderung gelten die bisherigen Kürzel (#37)
 - Uhr und Kacheln mit der Maus verschieben und skalieren (SUPER+ALT+W oder „Edit on desktop“), mit Hilfslinien, Done, Cancel und Reset positions (#38)
 - Vollständige Übersicht aller Einstellungen mit Beispielen (`docs/einstellungen.md`, aus dem Schema erzeugt); die Seite About der App öffnet settings.json und diese Übersicht (#39)
+
+### Geändert
+- Das Zahnrad im Panel öffnet die Einstellungs-App statt settings.json im Editor; neue Installationen tragen das Tastaturlayout direkt in settings.json ein, eine vorhandene `hypr-shell-local.lua` wird einmalig übernommen (#31, #35)
 
 ## 1.1.0 – 2026-11-23
 

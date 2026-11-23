@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Voreinstellungen für das Aussehen (Glas-Werte und Fenster): glass (Standard), minimal, gaming.
+#
+#   shell-look presets          Voreinstellungen als JSON [{"name", "description"}]
+#   shell-look preset <name>    anwenden: jeder Wert aus der Voreinstellung, ein Schritt im Verlauf
+#                               (shell-set undo nimmt ihn zurück); nur Aussehen, nichts anderes
+set -uo pipefail
+fehler() { echo "shell-look: $*" >&2; exit 2; }
+command -v jq >/dev/null 2>&1 || fehler "jq fehlt"
+HIER="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+DATA="$HOME/.local/share/hypr-shell"
+PRESETS="$DATA/presets/look"
+[ -d "$PRESETS" ] || PRESETS="$HIER/../settings/presets/look"
+SCHEMA="$("$HIER/shell-apply" --schema)"
+
+case "${1:-}" in
+    presets)
+        for f in "$PRESETS"/*.json; do [ -f "$f" ] && jq -c '{name: ._name, description: ._description}' "$f"; done | jq -s -c '.' ;;
+    preset)
+        name="${2:-}"; f="$PRESETS/$name.json"
+        if ! [[ "$name" =~ ^[a-z]+$ ]] || [ ! -f "$f" ]; then fehler "unbekannte Voreinstellung: ${name:-?} (glass, minimal, gaming)"; fi
+        # nur Schlüssel, die es im Schema gibt (eine veraltete Voreinstellung bricht nichts)
+        args=()
+        while IFS=$'\t' read -r k v; do args+=("$k" "$v"); done < <(
+            jq -r --slurpfile s "$SCHEMA" 'to_entries[] | select(.key | startswith("_") | not)
+                | select(.key as $k | any($s[0].keys[]; .key == $k))
+                | [.key, (.value | if type == "string" then . else tojson end)] | @tsv' "$f")
+        args+=(look.preset "$name")
+        "$HIER/shell-set" set "${args[@]}" ;;
+    ""|-h|--help|help) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) fehler "unbekannter Befehl: $1 (presets, preset <name>)" ;;
+esac

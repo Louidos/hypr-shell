@@ -258,6 +258,11 @@ erzeuge_waybar() { # eff
       position: $e.bar.position,
       height: $e.bar.height,
       spacing: 2,
+      # schwebende Leiste (bar.floating): Abstand zum Rand wie die Fenster (look.gaps.outer), oben 6 px
+      "margin-top": (if $e.bar.floating and $e.bar.position == "top" then 6 else 0 end),
+      "margin-bottom": (if $e.bar.floating and $e.bar.position == "bottom" then 6 else 0 end),
+      "margin-left": (if $e.bar.floating then $e.look.gaps.outer else 0 end),
+      "margin-right": (if $e.bar.floating then $e.look.gaps.outer else 0 end),
       exclusive: true,
       reload_style_on_change: true,
       "modules-left": mods($e.bar.modules.left),
@@ -306,6 +311,31 @@ erzeuge_waybar() { # eff
 }
 
 px() { awk -v a="$1" -v k="$2" 'BEGIN { printf "%d", a * k + 0.5 }'; }
+# Glas wie in der Oberfläche (Theme.qml): Farbe theme.glass_color, Deckkraft (−1 = theme.glass), so weit
+# dunkler, dass heller Text über dem Hintergrundbild lesbar bleibt (Kontrast 4.5:1)
+glas() { # deckkraft -> "rgba(r, g, b, a)"
+    local o="$1" luma
+    # Helligkeit des Hintergrundbilds (shell-wallpaper), ohne Angabe ein eher dunkles Bild (wie das mitgelieferte)
+    luma="$(cat "$DATA/wallpaper-luma" 2>/dev/null || true)"
+    [[ "$luma" =~ ^[0-9.]+$ ]] || luma=0.2
+    awk -v o="$o" -v std="$S_theme_glass" -v luma="$luma" -v hex="${S_theme_glass_color#\#}" 'function lin(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ^ 2.4 }
+        function hx(s,  i, n, c) { n = 0; for (i = 1; i <= 2; i++) { c = index("0123456789abcdef", tolower(substr(s, i, 1))) - 1; n = n * 16 + c }; return n }
+        BEGIN {
+            if (o < 0) o = std
+            r = hx(substr(hex, 1, 2)); g = hx(substr(hex, 3, 2)); b = hx(substr(hex, 5, 2))
+            t = 0.2126 * lin(230) + 0.7152 * lin(230) + 0.0722 * lin(230)
+            lg = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+            for (a = o; a < 0.95; a += 0.01) {
+                l = a * lg + (1 - a) * luma
+                if ((t > l ? t + 0.05 : l + 0.05) / (t > l ? l + 0.05 : t + 0.05) >= 4.5) break
+            }
+            printf "rgba(%d, %d, %d, %.2f)", r, g, b, a
+        }'
+}
+rand() { # deckkraft -> "rgba(…)" in theme.border.color
+    awk -v o="$1" -v hex="${S_theme_border_color#\#}" 'function hx(s,  i, n, c) { n = 0; for (i = 1; i <= 2; i++) { c = index("0123456789abcdef", tolower(substr(s, i, 1))) - 1; n = n * 16 + c }; return n }
+        BEGIN { printf "rgba(%d, %d, %d, %.2f)", hx(substr(hex, 1, 2)), hx(substr(hex, 3, 2)), hx(substr(hex, 5, 2)), o }'
+}
 # Text für eine CSS-Zeichenkette in "…": \ und " maskieren (das Schema lässt beides gar nicht erst durch)
 css() { local s="${1//\\/\\\\}"; printf '%s' "${s//\"/\\\"}"; }
 
@@ -330,14 +360,19 @@ erzeuge_waybar_style() {
 }
 
 window#waybar {
-  background: rgba(10, 10, 12, $S_bar_opacity);
+  background: $(glas "$S_bar_opacity");
   color: @text;
+$(if [ "$S_bar_floating" = true ]; then
+    printf '  border: %spx solid %s;\n  border-radius: %spx;\n' "$S_theme_border_width" "$(rand "$S_theme_border_opacity")" "$S_theme_radius_panel"
+  else
+    printf '  border-%s: %spx solid %s;\n' "$( [ "$S_bar_position" = bottom ] && echo top || echo bottom)" "$S_theme_border_width" "$(rand "$S_theme_border_opacity_inactive")"
+  fi)
 }
 
 tooltip {
-  background: rgba(12, 12, 14, 0.80);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 12px;
+  background: $(glas 0.86);
+  border: ${S_theme_border_width}px solid $(rand "$S_theme_border_opacity");
+  border-radius: ${S_theme_radius_card}px;
 }
 tooltip label { color: @text; font-weight: 500; }
 
@@ -653,8 +688,10 @@ configuration {
 }
 
 window {
-    border-radius:    $(( S_theme_radius_card ))px;
-    background-color: rgba(12, 12, 14, $S_theme_glass);
+    border-radius:    $(( S_theme_radius_panel ))px;
+    border:           ${S_theme_border_width}px;
+    border-color:     $(rand "$S_theme_border_opacity");
+    background-color: $(glas -1);
 }
 RASI
 }

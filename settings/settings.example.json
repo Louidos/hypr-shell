@@ -2,7 +2,8 @@
   "bar": {
     "position": "top",
     "height": 30,
-    "opacity": 0.25,
+    "opacity": -1,
+    "floating": true,
     "modules": {
       "left": [
         "distro",
@@ -27,12 +28,13 @@
     "battery": true
   },
   "look": {
+    "preset": "glass",
     "gaps": {
       "inner": 6,
       "outer": 12
     },
     "border": 1,
-    "rounding": 12,
+    "rounding": 14,
     "blur": {
       "enabled": true,
       "size": 10,
@@ -40,8 +42,28 @@
     },
     "shadow": true,
     "opacity": {
-      "inactive": 1.0
+      "inactive": 0.88,
+      "active": 0.95,
+      "exceptions": [
+        "steam_app_[0-9]+",
+        "gamescope",
+        "steam",
+        "battle.net.exe",
+        "heroic",
+        "lutris",
+        "mpv",
+        "vlc",
+        "celluloid",
+        "org.gnome.Totem",
+        "gimp",
+        "krita",
+        "inkscape",
+        "darktable",
+        "org.kde.kdenlive",
+        "blender"
+      ]
     },
+    "border_color": "white",
     "animations": {
       "enabled": true,
       "speed": "normal"
@@ -50,10 +72,17 @@
   "theme": {
     "colors": "auto",
     "accent": "#8ab4f8",
-    "glass": 0.44,
+    "glass": 0.55,
+    "glass_color": "#2a2a2f",
+    "border": {
+      "color": "#ffffff",
+      "opacity": 0.35,
+      "opacity_inactive": 0.15,
+      "width": 1
+    },
     "radius": {
-      "panel": 26,
-      "card": 18
+      "panel": 14,
+      "card": 10
     },
     "font": {
       "ui": "Inter",
@@ -111,7 +140,7 @@
   },
   "dashboard": {
     "width": 1000,
-    "opacity": 0.42,
+    "opacity": -1,
     "edge": true,
     "close_on_leave": true,
     "tabs": [
@@ -152,8 +181,8 @@
     "close_on_leave": true,
     "close_delay": 400,
     "width": 420,
-    "radius": 26,
-    "opacity": 0.44,
+    "radius": 14,
+    "opacity": -1,
     "sections": [
       "awake",
       "apps",
@@ -200,7 +229,7 @@
     "border_width": 1,
     "border_color": "auto",
     "shadow": "medium",
-    "color_mode": "wallpaper",
+    "color_mode": "glass",
     "custom_color": "#1e1e2e",
     "labels": "hover",
     "indicator": "dot",

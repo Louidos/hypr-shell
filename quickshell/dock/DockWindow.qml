@@ -443,7 +443,7 @@ PanelWindow {
         height: tipText.implicitHeight + 10
         radius: height / 2
         color: Theme.glass(0.82)
-        border.width: 1
+        border.width: Theme.borderWidth
         border.color: Theme.glassBorder
         x: win.vertical ? (win.pos === "left" ? Math.max(body.x + body.width, c.x + half) + 8 : Math.min(body.x, c.x - half) - width - 8)
                         : Math.max(2, Math.min(win.width - width - 2, c.x - width / 2))

@@ -35,13 +35,17 @@ local S = {
     look = {
         gaps = { inner = 6, outer = 12 },
         border = 1,
-        rounding = 12,
+        rounding = 14,
         blur = { enabled = true, size = 10, passes = 3 },
         shadow = true,
-        opacity = { inactive = 1.0 },
+        opacity = { active = 0.95, inactive = 0.88,
+            exceptions = { "steam_app_[0-9]+", "gamescope", "steam", "battle.net.exe", "heroic", "lutris", "mpv", "vlc",
+                "celluloid", "org.gnome.Totem", "gimp", "krita", "inkscape", "darktable", "org.kde.kdenlive", "blender" } },
+        border_color = "white",
         animations = { enabled = true, speed = "normal" },
     },
-    theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 }, apps = { gtk = true, qt = true } },
+    theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 }, apps = { gtk = true, qt = true },
+        border = { color = "#ffffff", opacity = 0.35, opacity_inactive = 0.15, width = 1 } },
     input = {
         layout = "us", variant = "", sensitivity = 0,
         touchpad = { natural_scroll = false, tap_to_click = true },
@@ -196,14 +200,29 @@ hl.env("BROWSER", S.apps.browser)
 ---- AUSSEHEN ----
 ------------------
 
+-- Fensterrand: fein weiss wie Glas (theme.border.*) oder in der Farbe des Hintergrundbilds
+-- (look.border_color = accent)
+local function rgba(hex, alpha)
+    local h = tostring(hex or "#ffffff"):gsub("^#", "")
+    if not h:match("^%x%x%x%x%x%x$") then h = "ffffff" end
+    local a = math.floor(math.max(0, math.min(1, tonumber(alpha) or 1)) * 255 + 0.5)
+    return string.format("rgba(%s%02x)", h:lower(), a)
+end
+local B = (S.theme and S.theme.border) or {}
+local rand_aktiv, rand_inaktiv = colors.accent, colors.inactive
+if S.look.border_color ~= "accent" then
+    rand_aktiv   = rgba(B.color, B.opacity or 0.35)
+    rand_inaktiv = rgba(B.color, B.opacity_inactive or 0.15)
+end
+
 hl.config({
     general = {
         gaps_in     = S.look.gaps.inner,
         gaps_out    = S.look.gaps.outer,
         border_size = S.look.border,
         col = {
-            active_border   = colors.accent,
-            inactive_border = colors.inactive,
+            active_border   = rand_aktiv,
+            inactive_border = rand_inaktiv,
         },
         resize_on_border = true,
         allow_tearing    = false,
@@ -213,8 +232,9 @@ hl.config({
     decoration = {
         rounding       = S.look.rounding,
         rounding_power = 2,
-        active_opacity   = 1.0,
+        active_opacity   = S.look.opacity.active or 1.0,
         inactive_opacity = S.look.opacity.inactive,
+        fullscreen_opacity = 1.0,
 
         shadow = {
             enabled      = S.look.shadow,
@@ -311,6 +331,22 @@ if not (S.dock ~= nil and S.dock.blur == false) then
 end
 
 hl.layer_rule({ name = "hypr-shell-slurp", match = { namespace = "^selection$" }, no_anim = true })
+
+-- immer undurchsichtig: Spiele, Videos, Bildbearbeitung (look.opacity.exceptions); Vollbild ohnehin
+-- (fullscreen_opacity = 1)
+do
+    local l = {}
+    for _, c in ipairs(S.look.opacity.exceptions or {}) do
+        if type(c) == "string" and c ~= "" then l[#l + 1] = c end
+    end
+    if #l > 0 then
+        hl.window_rule({
+            name    = "hypr-shell-opaque",
+            match   = { class = "^(" .. table.concat(l, "|") .. ")$" },
+            opacity = "1.0 override 1.0 override",
+        })
+    end
+end
 
 -- schwebende Hilfsfenster mittig
 hl.window_rule({

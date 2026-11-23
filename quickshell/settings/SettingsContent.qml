@@ -260,7 +260,8 @@ FocusScope {
                     : modelData.id === "dock" ? ["dock.items"]
                     : modelData.id === "integrations" ? (Settings.schema.keys || []).filter(k => k.page === "integrations").map(k => k.key) : []
                 extra: modelData.id === "home" ? homeC : modelData.id === "monitors" ? monitorsC : modelData.id === "laptop" ? laptopC : modelData.id === "integrations" ? integrationsC
-                     : modelData.id === "about" ? aboutC : modelData.id === "desktop" ? desktopC : modelData.id === "dock" ? dockC : null
+                     : modelData.id === "about" ? aboutC : modelData.id === "desktop" ? desktopC : modelData.id === "dock" ? dockC
+                     : modelData.id === "look" || modelData.id === "theme" ? lookC : null
                 footer: modelData.id === "dock" ? dockItemsC
                       : keys.length === 0 && ["home", "about", "monitors", "integrations"].indexOf(modelData.id) < 0 ? emptyC : null
                 Component.onCompleted: pageHolder.current = sp
@@ -273,6 +274,7 @@ FocusScope {
     Component { id: laptopC; LaptopPage { } }
     Component { id: integrationsC; IntegrationsPage { } }
     Component { id: dockC; DockPage { } }
+    Component { id: lookC; LookPage { } }
     Component { id: dockItemsC; DockItemsEditor { } }
     Component {
         id: desktopC

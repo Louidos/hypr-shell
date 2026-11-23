@@ -18,10 +18,39 @@ Singleton {
     readonly property color subtext: c.subtext
     readonly property color error: c.error
 
-    // Glas: dunkle, halbtransparente Fläche über dem Blur von Hyprland (theme.glass)
-    readonly property real glassOpacity: Settings.get("theme.glass", 0.44)
-    function glass(opacity) { return Qt.rgba(0.055, 0.055, 0.065, opacity === undefined ? glassOpacity : opacity) }
-    readonly property color glassBorder: Qt.rgba(1, 1, 1, 0.09)
+    // Glas: graue, halbtransparente Fläche über dem Blur von Hyprland (theme.glass_color, theme.glass),
+    // mit feinem Rand (theme.border.*). Alle Flächen der Shell nehmen diese Werte.
+    readonly property color glassColor: Settings.get("theme.glass_color", "#2a2a2f")
+    readonly property real glassOpacity: Settings.get("theme.glass", 0.55)
+    // Mindestkontrast: Text muss über dem Hintergrundbild lesbar bleiben (WCAG 4.5:1); reicht die
+    // Deckkraft dafür nicht (helles Bild), wird das Glas automatisch so weit dunkler wie nötig
+    function lum(c) {
+        const f = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+        return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b)
+    }
+    // Helligkeit des Hintergrundbilds (shell-wallpaper → wallpaper-luma), ohne Angabe eher dunkel
+    property real wallpaperLuma: 0.2
+    function readable(opacity) {
+        const lg = lum(Qt.color(glassColor)), tl = lum(Qt.color(c.text))
+        let a = Math.max(0, Math.min(1, opacity))
+        for (let i = 0; i < 100 && a < 0.95; i++) {
+            const bg = a * lg + (1 - a) * wallpaperLuma
+            if ((Math.max(tl, bg) + 0.05) / (Math.min(tl, bg) + 0.05) >= 4.5) break
+            a += 0.01
+        }
+        return a
+    }
+    readonly property real glassReadable: readable(glassOpacity)
+    // -1 oder fehlend = die gemeinsame Deckkraft; jede Deckkraft wird für die Lesbarkeit geprüft
+    function glass(opacity) {
+        const g = Qt.color(glassColor)
+        const o = opacity === undefined || opacity < 0 ? glassOpacity : opacity
+        return Qt.rgba(g.r, g.g, g.b, o === glassOpacity ? glassReadable : readable(o))
+    }
+    readonly property color borderBase: Settings.get("theme.border.color", "#ffffff")
+    readonly property real borderOpacity: Settings.get("theme.border.opacity", 0.35)
+    readonly property int borderWidth: Settings.get("theme.border.width", 1)
+    readonly property color glassBorder: Qt.rgba(Qt.color(borderBase).r, Qt.color(borderBase).g, Qt.color(borderBase).b, borderOpacity)
     // Karten innen: Weiss mit 5 % Deckkraft und feiner heller Kontur
     readonly property color card: Qt.rgba(1, 1, 1, 0.05)
     readonly property color cardHover: Qt.rgba(1, 1, 1, 0.08)
@@ -41,8 +70,8 @@ Singleton {
     }
 
     // Radien und Schriften aus settings.json (theme.radius.*, theme.font.*)
-    readonly property int panelRadius: Settings.get("theme.radius.panel", 26)
-    readonly property int cardRadius: Settings.get("theme.radius.card", 18)
+    readonly property int panelRadius: Settings.get("theme.radius.panel", 14)
+    readonly property int cardRadius: Settings.get("theme.radius.card", 10)
 
     readonly property string sans: Settings.get("theme.font.ui", "Inter")
     readonly property string mono: Settings.get("theme.font.mono", "JetBrainsMono Nerd Font")
@@ -53,6 +82,13 @@ Singleton {
     // Faktor für alle Schriftgrössen
     readonly property real fontScale: Settings.get("theme.font.scale", 1.0)
 
+    FileView {
+        path: Quickshell.env("HOME") + "/.local/share/hypr-shell/wallpaper-luma"
+        printErrors: false
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { const v = Number(text().trim()); if (!isNaN(v) && v >= 0 && v <= 1) t.wallpaperLuma = v }
+    }
     FontLoader { id: bebas; source: Qt.resolvedUrl("fonts/BebasNeue-Regular.ttf") }
 
     FileView {

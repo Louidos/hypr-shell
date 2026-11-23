@@ -68,14 +68,16 @@ Scope {
 
     function farbe(v, auto) { return /^#[0-9a-fA-F]{6}$/.test(String(v)) ? String(v) : auto }
     readonly property color glassColor: {
-        const m = Settings.get("dock.color_mode", "wallpaper"), o = glassOpacity
+        const m = Settings.get("dock.color_mode", "glass"), o = glassOpacity
+        // glass: dieselbe graue Glasfarbe wie alle Flächen (Theme)
+        if (m === "glass") { const g = Qt.color(Theme.glassColor); return Qt.rgba(g.r, g.g, g.b, Theme.readable(o)) }
         if (m === "light") return Qt.rgba(0.95, 0.95, 0.96, o)
         if (m === "dark") return Qt.rgba(0.055, 0.055, 0.065, o)
         if (m === "custom") { const c = Qt.color(farbe(Settings.get("dock.custom_color", "#1e1e2e"), "#1e1e2e")); return Qt.rgba(c.r, c.g, c.b, o) }
         // wallpaper: Glas der Panels, leicht in der Fläche des Hintergrundbilds getönt
         const c = Qt.color(Theme.mix(Theme.c.surface, "#0e0e10", 0.45)); return Qt.rgba(c.r, c.g, c.b, o)
     }
-    readonly property bool lightGlass: Settings.get("dock.color_mode", "wallpaper") === "light"
+    readonly property bool lightGlass: Settings.get("dock.color_mode", "glass") === "light"
     readonly property color borderColor: farbe(Settings.get("dock.border_color", "auto"), "") !== ""
         ? farbe(Settings.get("dock.border_color", "auto"), "#ffffff")
         : (lightGlass ? Qt.rgba(0, 0, 0, 0.12) : Theme.glassBorder)

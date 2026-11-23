@@ -45,9 +45,9 @@ PopupWindow {
 
     Rectangle {
         anchors.fill: parent
-        radius: 14
+        radius: Theme.panelRadius
         color: Theme.glass(0.86)
-        border.width: 1
+        border.width: Theme.borderWidth
         border.color: Theme.glassBorder
         HoverHandler { id: popHover }
     }

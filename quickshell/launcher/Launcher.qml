@@ -98,7 +98,7 @@ Scope {
         panelWidth: 640
         panelHeight: 76 + 7 * 56 + 14
         scroll: false
-        glassOpacity: Settings.get("theme.glass", 0.44)
+        glassOpacity: Theme.glassOpacity
         keyboardFocus: WlrKeyboardFocus.Exclusive
         onOpened: { la.query = ""; la.sel = 0; if (ov.item) ov.item.input.text = "" }
 

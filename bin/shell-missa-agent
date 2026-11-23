@@ -784,7 +784,7 @@ def main():
             s.update(connected=False, busy=False)
         s.pop("pid", None)
         print(json.dumps(s))
-    elif cmd == "answer" and len(sys.argv) == 4 and re.match(r"^[0-9a-fA-F-]{1,64}$", sys.argv[2]):
+    elif cmd == "answer" and len(sys.argv) == 4 and re.match(r"^[A-Za-z0-9_-]{1,64}$", sys.argv[2]):
         with open(os.path.join(RUN, "hypr-shell-missa-answer-" + sys.argv[2]), "w") as f:
             f.write("yes" if sys.argv[3] == "yes" else "no")
     elif cmd == "tools":

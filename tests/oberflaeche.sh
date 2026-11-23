@@ -484,7 +484,8 @@ if command -v python3 >/dev/null 2>&1; then
         ipc missaagent ask test-1 rechner_befehl "rm -rf ~/tmp/*.log"; sleep 1; bild missa-rueckfrage-karte
         if [ "$("$qs" -p "$cfg" ipc call missaagent waiting 2>/dev/null)" = "rechner_befehl: rm -rf ~/tmp/*.log" ]; then echo "  ok: Glas-Karte zeigt den Befehl wörtlich"
         else echo "  FEHLER: Rückfrage-Karte"; missa_ok=0; fi
-        ipc missaagent deny; sleep 0.5
+        ipc missaagent deny
+        for _ in $(seq 1 25); do [ "$(cat "$XDG_RUNTIME_DIR/hypr-shell-missa-answer-test-1" 2>/dev/null)" = no ] && break; sleep 0.2; done
         if [ -z "$("$qs" -p "$cfg" ipc call missaagent waiting 2>/dev/null)" ] && [ "$(cat "$XDG_RUNTIME_DIR/hypr-shell-missa-answer-test-1" 2>/dev/null)" = no ]; then echo "  ok: Esc/Deny lehnt ab"
         else echo "  FEHLER: Ablehnen"; missa_ok=0; fi
         ipc panel open; sleep 2; bild panel-missa

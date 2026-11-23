@@ -84,6 +84,7 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 | `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
 | `SUPER + F1` | Kürzel-Spickzettel |
 | `SUPER + I` | Chat mit Missa (nur mit `missa.enabled`, sonst tut das Kürzel nichts) |
+| `SUPER + SHIFT + I` | mit Missa sprechen; nochmal drücken beendet (nur mit `missa.voice_enabled` und whisper.cpp) |
 | `SUPER + M` | abmelden (Hyprland beenden) |
 | `SUPER + L` | sperren |
 | `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |
@@ -314,6 +315,15 @@ aus `~/Missa/Eingang` stehen als Knöpfe darüber. Die Sitzung heisst `hypr-shel
 nach einem Neustart weiter. Im Dashboard zeigt die Karte **Missa** die Kurzfassung des Lagebilds und die
 nächsten Erinnerungen; ein Klick öffnet den Chat.
 
+**Mit Missa sprechen** (zusätzlich `missa.voice_enabled`): `SUPER + SHIFT + I` nimmt auf, bis man
+nochmal drückt oder zwei Sekunden still ist; unten zeigt eine Glas-Pille den Pegel und „Listening“,
+„Thinking“, „Speaking“, in der Leiste steht ein Mikrofon. whisper.cpp erkennt den Satz lokal (Sprache
+`missa.voice_language`, Standard Deutsch), er erscheint im Chat und geht an Missa; ihre Antwort liest
+piper Satz für Satz vor (Stimme `missa.voice_voice`, Tempo `missa.voice_speed`). Esc, ein Klick auf die
+Pille oder die Taste stoppt. Aufgenommen wird nur nach Tastendruck, nichts wird gespeichert. Der
+Installer fragt, ob whisper.cpp, piper und die Modelle (etwa 250 MB) geholt werden sollen; ohne sie
+fehlen Taste und Mikrofon-Knopf.
+
 ## Laptop
 
 Auf ASUS-ROG-Laptops (z. B. Zephyrus M16) steuert hypr-shell über `asusctl` und `supergfxctl`
@@ -363,6 +373,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
 | `shell-games list\|launch <id>` | Spiele für den Tab Games |
 | `shell-laptop status\|profile\|gfx\|charge\|kbd …` | Laptop-Funktionen (asusctl, supergfxctl, power-profiles-daemon) |
+| `shell-voice available\|listen\|speak\|stop` | mit Missa sprechen (Aufnahme, whisper.cpp, piper) |
 | `shell-missa health\|chat\|get …` | Verbindung zu Missa-Core (Chat, Status, Lagebild) |
 | `shell-mount nextcloud\|missa up\|down\|status` | Ordner der Anbindungen einhängen / aufräumen |
 | `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |

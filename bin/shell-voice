@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Mit Missa sprechen: Aufnahme (PipeWire über sox/rec, sonst pw-record), Erkennen lokal mit
+# whisper.cpp, Vorlesen lokal mit piper. Nur mit missa.enabled und missa.voice_enabled.
+#   shell-voice available   {"ok": bool, "record": bool, "whisper": bool, "piper": bool, "model": bool, "voice": bool}
+#   shell-voice listen      aufnehmen bis 2 s Stille (oder shell-voice stop), dann erkennen; Ausgabe zeilenweise:
+#                             L <0-100>   Pegel     S   Aufnahme fertig, erkenne …
+#                             R <json-text>   erkannter Text     E <json-text>   Fehler
+#   shell-voice stop        laufende Aufnahme beenden (zweiter Tastendruck) bzw. Vorlesen stoppen
+#   shell-voice speak       Text von stdin vorlesen, Satz für Satz, sobald er da ist
+# Es wird nie ohne Aufruf aufgenommen; die Aufnahme liegt nur im Arbeitsspeicher-Ordner
+# ($XDG_RUNTIME_DIR) und wird gleich nach dem Erkennen gelöscht (auch bei Abbruch).
+# Befehle nach --help: rec … silence 1 0.1 2% 1 2.0 2% (sox), whisper-cli -m -l -nt -np -f,
+# piper-tts -m --length-scale --output-raw, aplay -r -f S16_LE -t raw -c 1.
+# Pfade aus den Einstellungen dürfen mit ~ beginnen:
+# shellcheck disable=SC2088
+set -uo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+EFF="$DATA/settings.effective.json"
+RUN="${XDG_RUNTIME_DIR:-/tmp}"
+STATE="$RUN/hypr-shell-voice.state"     # "listening" während der Aufnahme (für das Mikrofon in der Leiste)
+PIDS="$RUN/hypr-shell-voice.pids"
+hat() { command -v "$1" >/dev/null 2>&1; }
+wert() {
+    local v=""
+    if hat jq && [ -f "$EFF" ]; then v="$(jq -r "($1) | if . == null then empty else . end" "$EFF" 2>/dev/null || true)"; fi
+    printf '%s\n' "${v:-$2}"
+}
+pfad() { local p; p="$(wert "$1" "$2")"; case "$p" in "~/"*) p="$HOME/${p#\~/}" ;; esac; printf '%s\n' "$p"; }
+an() { [ "$(wert '.missa.enabled' false)" = true ] && [ "$(wert '.missa.voice_enabled' false)" = true ]; }
+whisper_bin() { if hat whisper-cli; then echo whisper-cli; fi; }
+piper_bin() { if hat piper-tts; then echo piper-tts; elif hat piper && piper --help 2>&1 | grep -q -- '--model'; then echo piper; fi; }
+modell() { pfad '.missa.voice_model' "~/.local/share/hypr-shell/whisper/ggml-base.bin"; }
+stimme() { pfad '.missa.voice_voice' "~/.local/share/hypr-shell/piper/de_DE-thorsten-medium.onnx"; }
+recorder() { if hat rec; then echo rec; elif hat pw-record; then echo pw-record; fi; }
+json() { jq -cn --arg t "$1" '$t'; }
+
+available() {
+    local r=false w=false p=false m=false v=false
+    [ -n "$(recorder)" ] && r=true
+    [ -n "$(whisper_bin)" ] && w=true
+    [ -n "$(piper_bin)" ] && p=true
+    [ -f "$(modell)" ] && m=true
+    [ -f "$(stimme)" ] && v=true
+    jq -cn --argjson r $r --argjson w $w --argjson p $p --argjson m $m --argjson v $v \
+        '{ok: ($r and $w and $m), record: $r, whisper: $w, piper: $p, model: $m, voice: $v, speak: ($p and $v)}'
+}
+
+listen() {
+    an || { echo "E $(json "Talking to Missa is switched off")"; return 1; }
+    local rec w
+    rec="$(recorder)"; w="$(whisper_bin)"
+    [ -n "$rec" ] || { echo "E $(json "No recorder (sox or pipewire) found")"; return 1; }
+    if [ -z "$w" ] || [ ! -f "$(modell)" ]; then echo "E $(json "whisper.cpp or its model is missing")"; return 1; fi
+    wav="$(mktemp "$RUN/hypr-shell-voice-XXXXXX.wav")"
+    chmod 600 "$wav"
+    # Aufnahme nie liegen lassen – auch nicht bei Abbruch
+    trap 'rm -f "${wav:-}" "$STATE" "$PIDS"' EXIT
+    trap 'kill "${pid:-}" 2>/dev/null' TERM INT
+    echo listening > "$STATE"
+    if [ "$rec" = rec ]; then
+        # bis 2 Sekunden Stille (höchstens 30 Sekunden); -S zeigt den Pegel als Balken [ ===|=== ]
+        rec -S -c 1 -r 16000 -b 16 "$wav" silence 1 0.1 2% 1 2.0 2% trim 0 30 2>&1 >/dev/null \
+            | stdbuf -oL tr '\r' '\n' | while IFS= read -r z; do
+                if [[ "$z" =~ \[([^]|]*\|[^]]*)\] ]]; then
+                    b="${BASH_REMATCH[1]}"; n="${b//[^=]/}"
+                    echo "L $(( ${#n} * 10 ))"
+                fi
+            done &
+        pid=$!
+    else
+        timeout 30 pw-record --rate 16000 --channels 1 --format s16 "$wav" >/dev/null 2>&1 &
+        pid=$!
+    fi
+    echo "$pid" > "$PIDS"
+    wait "$pid" 2>/dev/null
+    pkill -P "$pid" 2>/dev/null || true
+    pkill -f "rec -S -c 1 -r 16000 -b 16 $wav" 2>/dev/null || true
+    rm -f "$STATE"
+    echo S
+    if [ ! -s "$wav" ]; then echo "E $(json "Nothing recorded")"; return 1; fi
+    local text
+    text="$("$w" -m "$(modell)" -l "$(wert '.missa.voice_language' de)" -nt -np -f "$wav" 2>/dev/null \
+        | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+    rm -f "$wav"
+    if [ -z "$text" ]; then echo "E $(json "Nothing understood")"; return 1; fi
+    echo "R $(json "$text")"
+}
+
+stop() {
+    if [ -f "$PIDS" ]; then kill "$(cat "$PIDS")" 2>/dev/null || true; fi
+    pkill -f "hypr-shell-voice-speak" 2>/dev/null || true
+    pkill -f -- "--length-scale [0-9.]* --output-raw" 2>/dev/null || true
+    pkill -f "aplay -q -r [0-9]* -f S16_LE -t raw -c 1 -" 2>/dev/null || true
+    rm -f "$STATE"
+}
+
+speak() {
+    local p v rate tempo spieler
+    p="$(piper_bin)"; v="$(stimme)"
+    if [ -z "$p" ] || [ ! -f "$v" ]; then cat >/dev/null; return 0; fi
+    rate="$(jq -r '.audio.sample_rate // 22050' "$v.json" 2>/dev/null || echo 22050)"
+    # Tempo 1.0 = normal; piper: length-scale > 1 ist langsamer
+    tempo="$(awk -v s="$(wert '.missa.voice_speed' 1.0)" 'BEGIN { printf "%.2f", (s > 0 ? 1 / s : 1) }')"
+    if hat aplay; then spieler=(aplay -q -r "$rate" -f S16_LE -t raw -c 1 -)
+    else spieler=(pw-play --raw --rate "$rate" --channels 1 --format s16 -); fi
+    # Satz für Satz, sobald er da ist (Zeilen von stdin, an . ! ? getrennt)
+    sed -u 's/\([.!?]\)[[:space:]]\+/\1\n/g' | while IFS= read -r satz; do
+        [ -n "${satz// /}" ] || continue
+        printf '%s\n' "$satz" | "$p" -m "$v" --length-scale "$tempo" --output-raw 2>/dev/null | "${spieler[@]}" 2>/dev/null
+    done
+}
+
+case "${1:-}" in
+    available) available ;;
+    listen) listen ;;
+    stop) stop ;;
+    speak) exec -a hypr-shell-voice-speak bash "$0" _speak ;;
+    _speak) speak ;;
+    *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

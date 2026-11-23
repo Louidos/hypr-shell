@@ -509,6 +509,35 @@ fehlende_programme() {
     fi
 }
 
+# Sprechen mit Missa (freiwillig): whisper.cpp, piper und ihre Modelle nur nach Rückfrage holen.
+# Mit --yes wird nicht gefragt und nichts geholt; ohne die Programme fehlen Taste und Mikrofon-Knopf.
+STIMME_PAKETE=(whisper-cpp piper-tts-bin sox)
+declare -A STIMME_ALTERNATIVEN=([whisper-cpp]="whisper.cpp" [piper-tts-bin]="piper-tts")
+WHISPER_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin"
+PIPER_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx"
+stimme_einrichten() {
+    if [ "$DRY" -eq 1 ] || [ "$YES" -eq 1 ] || [ ! -t 0 ]; then return 0; fi
+    if command -v whisper-cli >/dev/null 2>&1 && [ -f "$DATA/whisper/ggml-base.bin" ]; then return 0; fi
+    ja_nein "Mit Missa sprechen einrichten (whisper.cpp, piper, deutsches Sprachmodell und Stimme, etwa 250 MB)? Nur nötig, wenn du Missa benutzt." || return 0
+    local p kandidat gefunden
+    for p in "${STIMME_PAKETE[@]}"; do
+        gefunden=""
+        # shellcheck disable=SC2086
+        for kandidat in "$p" ${STIMME_ALTERNATIVEN[$p]:-}; do
+            if pacman -Si "$kandidat" >/dev/null 2>&1; then sudo pacman -S --needed --noconfirm "$kandidat" && gefunden=1; break; fi
+            if command -v paru >/dev/null 2>&1 && paru -Si "$kandidat" >/dev/null 2>&1; then paru -S --needed --noconfirm "$kandidat" && gefunden=1; break; fi
+        done
+        [ -n "$gefunden" ] || warnung "Paket $p nicht gefunden – Sprechen mit Missa bleibt aus"
+    done
+    mkdir -p "$DATA/whisper" "$DATA/piper"
+    curl -fL --progress-bar -o "$DATA/whisper/ggml-base.bin" "$WHISPER_URL" || warnung "Sprachmodell konnte nicht geladen werden"
+    if ! curl -fL --progress-bar -o "$DATA/piper/de_DE-thorsten-medium.onnx" "$PIPER_URL" \
+        || ! curl -fL -s -o "$DATA/piper/de_DE-thorsten-medium.onnx.json" "$PIPER_URL.json"; then
+        warnung "Stimme konnte nicht geladen werden"
+    fi
+    ok "Sprechen mit Missa eingerichtet (einschalten: Einstellungen → Integrations → Talk to Missa)"
+}
+
 # ASUS-Laptop ohne asusctl: Pakete nur vorschlagen, nie ungefragt installieren
 laptop_hinweis() {
     local hersteller=""
@@ -618,6 +647,7 @@ installieren() {
     if [ "$NOPKG" -eq 0 ]; then fehlende_programme; fi
     dienste_pruefen
     laptop_hinweis
+    stimme_einrichten
 
     echo
     if [ "$DRY" -eq 1 ]; then

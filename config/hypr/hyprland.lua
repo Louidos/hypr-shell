@@ -54,7 +54,7 @@ local S = {
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
-        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1", missa_chat = "SUPER + I",
+        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1", missa_chat = "SUPER + I", missa_voice = "SUPER + SHIFT + I",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
     },
@@ -335,8 +335,19 @@ bind((K.settings ~= nil and K.settings ~= "") and K.settings or "SUPER + U", hl.
 -- Missa: nur mit missa.enabled belegt – ausgeschaltet tut das Kürzel still nichts (und steht nicht im
 -- Spickzettel)
 local missa_an = S.missa ~= nil and S.missa.enabled == true
+local function programm(name)
+    for dir in (os.getenv("PATH") or ""):gmatch("[^:]+") do
+        local f = io.open(dir .. "/" .. name, "r")
+        if f then f:close(); return true end
+    end
+    return false
+end
 if missa_an then
     bind(K.missa_chat, hl.dsp.exec_cmd(ui .. "missa toggle"), "Missa: Chat with Missa")
+    -- mit Missa sprechen: nur mit missa.voice_enabled und whisper.cpp (sonst fehlt die Taste)
+    if S.missa.voice_enabled == true and programm("whisper-cli") then
+        bind(K.missa_voice, hl.dsp.exec_cmd(ui .. "missa voice"), "Missa: Talk to Missa")
+    end
 end
 
 -- Kürzel-Spickzettel

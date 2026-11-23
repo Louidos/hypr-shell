@@ -41,7 +41,7 @@ ARGS=("$@")
 PAKETE=(
     hyprland hyprlock hypridle xdg-desktop-portal-hyprland hyprpolkitagent
     quickshell waybar rofi awww matugen kitty cava
-    grim slurp wl-clipboard libnotify jq playerctl brightnessctl pamixer wireplumber
+    grim slurp wl-clipboard cliphist libnotify jq playerctl brightnessctl pamixer wireplumber
     power-profiles-daemon networkmanager bluez bluez-utils nautilus xdg-user-dirs imagemagick
     papirus-icon-theme bibata-cursor-theme-bin
     ttf-jetbrains-mono-nerd inter-font noto-fonts noto-fonts-emoji
@@ -58,7 +58,7 @@ declare -A ALTERNATIVEN=(
 PROGRAMME=(
     Hyprland:hyprland hyprlock:hyprlock hypridle:hypridle qs:quickshell waybar:waybar
     rofi:rofi awww:awww awww-daemon:awww matugen:matugen kitty:kitty
-    grim:grim slurp:slurp wl-copy:wl-clipboard notify-send:libnotify jq:jq playerctl:playerctl
+    grim:grim slurp:slurp wl-copy:wl-clipboard cliphist:cliphist notify-send:libnotify jq:jq playerctl:playerctl
     brightnessctl:brightnessctl pamixer:pamixer wpctl:wireplumber
     powerprofilesctl:power-profiles-daemon nmcli:networkmanager bluetoothctl:bluez-utils
     nautilus:nautilus

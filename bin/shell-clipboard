@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Verlauf der Zwischenablage (cliphist) für hypr-shell.
+#   shell-clipboard daemon [start|stop|restart]  Verlauf aufzeichnen (Text und Bilder), Start beim Anmelden;
+#                                                nur wenn clipboard.enabled an ist
+#   shell-clipboard list                         Einträge als JSON, neueste zuerst:
+#                                                [{"id": "3", "text": "…", "image": "/pfad.png" | ""}]
+#   shell-clipboard copy <id>                    Eintrag in die Zwischenablage legen
+#   shell-clipboard paste <id>                   … und im aktiven Fenster einfügen (STRG+V über Hyprland)
+#   shell-clipboard delete <id>                  Eintrag löschen
+#   shell-clipboard clear                        ganzen Verlauf löschen
+# Fehlt cliphist, liefert list "[]" und die anderen Befehle tun still nichts.
+set -uo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+EFF="$DATA/settings.effective.json"
+PIDS="$DATA/clipboard.pids"
+CACHE="${XDG_RUNTIME_DIR:-/tmp}/hypr-shell-clipboard-$(id -u)"
+hat() { command -v "$1" >/dev/null 2>&1; }
+
+wert() { # jq-pfad standard
+    local v=""
+    if hat jq && [ -f "$EFF" ]; then v="$(jq -r "($1) | if . == null then empty else . end" "$EFF" 2>/dev/null)"; fi
+    printf '%s\n' "${v:-$2}"
+}
+
+zeile() { # id -> Zeile aus "cliphist list" (ID<Tab>Vorschau)
+    cliphist list 2>/dev/null | awk -F '\t' -v id="$1" '$1 == id { print; exit }'
+}
+
+stop() {
+    if [ -f "$PIDS" ]; then
+        while read -r p; do [ -n "$p" ] && kill "$p" 2>/dev/null; done < "$PIDS"
+        rm -f "$PIDS"
+    fi
+}
+
+start() {
+    [ "$(wert '.clipboard.enabled ' true)" = true ] || return 0
+    hat cliphist && hat wl-paste || return 0
+    [ -n "${WAYLAND_DISPLAY:-}" ] || return 0
+    local max
+    max="$(wert '.clipboard.max ' 50)"
+    mkdir -p "$DATA"
+    stop
+    setsid wl-paste --type text --watch cliphist -max-items "$max" store >/dev/null 2>&1 &
+    echo "$!" > "$PIDS"
+    setsid wl-paste --type image --watch cliphist -max-items "$max" store >/dev/null 2>&1 &
+    echo "$!" >> "$PIDS"
+}
+
+liste() {
+    if ! hat cliphist || ! hat jq; then echo '[]'; return 0; fi
+    local max n=0 id text bild
+    max="$(wert '.clipboard.max ' 50)"
+    mkdir -p "$CACHE"
+    chmod 700 "$CACHE"
+    while IFS=$'\t' read -r id text; do
+        [ -n "$id" ] || continue
+        n=$((n + 1)); [ "$n" -gt "$max" ] && break
+        bild=""
+        if [[ "$text" =~ binary\ data ]]; then
+            bild="$CACHE/$id.img"
+            [ -s "$bild" ] || printf '%s\t%s\n' "$id" "$text" | cliphist decode > "$bild" 2>/dev/null || bild=""
+        fi
+        jq -cn --arg id "$id" --arg text "$text" --arg image "$bild" '{id: $id, text: $text, image: $image}'
+    done < <(cliphist list 2>/dev/null) | jq -cs .
+}
+
+kopiere() {
+    local z
+    z="$(zeile "$1")"
+    [ -n "$z" ] && hat wl-copy || return 0
+    printf '%s\n' "$z" | cliphist decode | wl-copy
+}
+
+case "${1:-}" in
+    daemon)
+        case "${2:-start}" in
+            start) start ;;
+            stop) stop ;;
+            restart) stop; start ;;
+        esac ;;
+    list) liste ;;
+    copy) kopiere "${2:?id fehlt}" ;;
+    paste)
+        kopiere "${2:?id fehlt}"
+        # nach dem Schliessen des Panels hat das vorige Fenster wieder den Fokus
+        if hat hyprctl && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+            sleep 0.25
+            hyprctl dispatch 'hl.dsp.send_shortcut({ mods = "CTRL", key = "V" })' >/dev/null 2>&1 || true
+        fi ;;
+    delete)
+        z="$(zeile "${2:?id fehlt}")"
+        [ -n "$z" ] && printf '%s\n' "$z" | cliphist delete
+        rm -f "$CACHE/$2.img" ;;
+    clear)
+        hat cliphist && cliphist wipe
+        rm -rf "$CACHE" ;;
+    *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac
+exit 0

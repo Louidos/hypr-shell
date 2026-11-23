@@ -226,6 +226,26 @@ else
     echo "FEHLER: IPC-Ziel power fehlt"; power_ok=0
 fi
 
+# ---- Zwischenablage (SUPER+SHIFT+V): Reihenfolge, Bild mit Vorschau, Clear all
+clip_ok=1
+if command -v cliphist >/dev/null 2>&1 && "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target clipboard'; then
+    echo "---- Zwischenablage ----"
+    for t in "first copy" "second copy" "third copy"; do printf '%s' "$t" | cliphist store; done
+    [ -n "$im" ] && "$im" -size 160x90 gradient:'#e0457b'-'#2a7fd4' png:- | cliphist store
+    ipc clipboard open; sleep 2; bild zwischenablage
+    zahl="$("$qs" -p "$cfg" ipc call clipboard count 2>/dev/null)"
+    erst="$("$HOME/.local/bin/shell-clipboard" list | jq -r '[.[] | select(.image == "")][0].text')"
+    if [ "$zahl" -ge 4 ] && [ "$erst" = "third copy" ]; then echo "  ok: $zahl Einträge, neueste zuerst"
+    else echo "  FEHLER: $zahl Einträge, erster Text \"$erst\""; clip_ok=0; fi
+    ipc clipboard clear; sleep 1
+    if [ "$("$qs" -p "$cfg" ipc call clipboard count 2>/dev/null)" = 0 ] && [ "$("$HOME/.local/bin/shell-clipboard" list)" = "[]" ]; then
+        echo "  ok: Clear all leert den Verlauf"
+    else echo "  FEHLER: Verlauf nicht leer"; clip_ok=0; fi
+    ipc clipboard close; sleep 0.5
+else
+    echo "  Hinweis: cliphist fehlt, Zwischenablage nicht geprüft"
+fi
+
 # ---- Starter (SUPER+R): Suche, Rechner
 starter_ok=1
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target launcher'; then
@@ -349,6 +369,7 @@ bereich dashboard-wallpaper wallpaper-card "erste Wallpaper-Karte"
 bereich panel panel-avatar "Profilbild im Panel"
 bereich panel app-icon "erstes App-Symbol im Panel"
 bereich launcher launcher-first "erstes App-Symbol im Starter"
+if command -v cliphist >/dev/null 2>&1 && [ -n "$im" ]; then bereich zwischenablage clipboard-image "Bild-Vorschau in der Zwischenablage"; fi
 
 # ohne ~/.face: Anfangsbuchstabe statt Bild
 if [ -n "$im" ]; then
@@ -391,6 +412,7 @@ echo "------------------------"
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 [ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
+[ "$clip_ok" -eq 1 ] || { echo "FEHLER: Zwischenablage (siehe oben)"; exit 1; }
 [ "$power_ok" -eq 1 ] || { echo "FEHLER: Anzeige oder Power-Menü (siehe oben)"; exit 1; }
 [ "$note_ok" -eq 1 ] || { echo "FEHLER: Benachrichtigungen (siehe oben)"; exit 1; }
 [ "$starter_ok" -eq 1 ] || { echo "FEHLER: Starter (siehe oben)"; exit 1; }

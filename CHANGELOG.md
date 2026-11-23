@@ -7,6 +7,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Verlauf der Zwischenablage (SUPER+SHIFT+V): Text und Bilder mit Vorschau, Suche, Enter fügt ein, Entf löscht, Clear all; Anzahl einstellbar, abschaltbar (#50)
 - Anzeige für Lautstärke, Mikrofon, Bildschirm- und Tastaturhelligkeit sowie Power-Menü im Glas-Look (SUPER+Escape, Knopf in der Leiste); Restart und Shutdown brauchen einen zweiten Druck, swayosd wird nicht mehr gebraucht (#49)
 - Benachrichtigungen im Glas-Look mit Verlauf (SUPER+N oder Glocke in der Leiste): Karten oben rechts mit Knöpfen, Verlauf nach App gruppiert, einzeln oder alle löschen, Nicht stören; ersetzt swaync (#48)
 - App-Starter im Glas-Look mit Rechner (SUPER+R, SUPER+Space): Suche nach Name und Beschreibung, zuletzt benutzte zuerst, `=12*8` rechnet; mit `apps.launcher` lässt sich wieder rofi einstellen (#46)

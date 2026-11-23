@@ -166,6 +166,13 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `osd.enabled` | `true` | `true`, `false` | Show a small glass display at the bottom when volume or brightness changes | `shell-set osd.enabled false` |
 
+## clipboard – clipboard
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `clipboard.enabled` | `true` | `true`, `false` | Remember copied text and images (SUPER+SHIFT+V). Off: nothing is recorded | `shell-set clipboard.enabled false` |
+| `clipboard.max` | `50` | ganze Zahl 5 … 500 | How many copies the history keeps | `shell-set clipboard.max 55` |
+
 ## keybinds – Tastenkürzel
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
@@ -193,6 +200,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.edit_desktop` | `SUPER + ALT + W` | Tasten wie `SUPER + Q`, leer = keine Taste | Move and resize the clock and tiles with the mouse | `shell-set keybinds.edit_desktop "SUPER + B"` |
 | `keybinds.settings` | `SUPER + U` | Tasten wie `SUPER + Q` (nicht leer) | Open or close this settings app (cannot be empty) | `shell-set keybinds.settings "SUPER + B"` |
 | `keybinds.power` | `SUPER + Escape` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock, sleep, log out, restart or shut down | `shell-set keybinds.power "SUPER + B"` |
+| `keybinds.clipboard` | `SUPER + SHIFT + V` | Tasten wie `SUPER + Q`, leer = keine Taste | Show the last copies to paste them again | `shell-set keybinds.clipboard "SUPER + B"` |
 | `keybinds.lock` | `SUPER + L` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock the screen | `shell-set keybinds.lock "SUPER + B"` |
 | `keybinds.exit` | `SUPER + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Leave Hyprland | `shell-set keybinds.exit "SUPER + B"` |
 | `keybinds.screenshot_region` | `Print` | Tasten wie `SUPER + Q`, leer = keine Taste | Select a region; saved and copied | `shell-set keybinds.screenshot_region "SUPER + B"` |

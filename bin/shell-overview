@@ -5,6 +5,8 @@
 #   shell-overview move <adresse> <n>   Fenster auf Arbeitsfläche n verschieben, ohne ihm zu folgen
 # Ohne Hyprland liefert data leere Listen.
 set -uo pipefail
+# fehlendes Argument: klare Meldung und Ende (statt "Zeile N: 2: … fehlt" oder still weiter)
+fehlt() { echo "shell-overview: $1" >&2; exit 2; }
 
 hat() { command -v "$1" >/dev/null 2>&1; }
 adresse() { # 0x… (nur Hex-Ziffern), sonst Abbruch
@@ -24,12 +26,12 @@ case "${1:-}" in
             '{clients: [$c[] | select(.mapped != false and .hidden != true)], workspaces: $w, monitors: $m, active: ($a.id // 1)}'
         ;;
     focus)
-        a="$(adresse "${2:?adresse fehlt}")" || exit 2
+        [ -n "${2:-}" ] || fehlt "adresse fehlt"; a="$(adresse "${2}")" || exit 2
         hyprctl dispatch "hl.dsp.focus({ window = \"address:$a\" })" >/dev/null
         ;;
     move)
-        a="$(adresse "${2:?adresse fehlt}")" || exit 2
-        n="${3:?arbeitsfläche fehlt}"
+        [ -n "${2:-}" ] || fehlt "adresse fehlt"; a="$(adresse "${2}")" || exit 2
+        [ -n "${3:-}" ] || fehlt "arbeitsfläche fehlt"; n="${3}"
         [[ "$n" =~ ^[0-9]+$ ]] || { echo "shell-overview: ungültige Arbeitsfläche $n" >&2; exit 2; }
         hyprctl dispatch "hl.dsp.window.move({ window = \"address:$a\", workspace = $n, follow = false })" >/dev/null
         ;;

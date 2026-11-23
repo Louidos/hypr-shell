@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Behoben
+- Ein leerer Name oder einer mit Anführungszeichen für das Symbolthema wird wieder abgelehnt (die Prüfung war beim Zusammenführen verloren gegangen) (#100)
+
 ## 1.6.0 – 2026-11-23
 
 ### Hinzugefügt
@@ -13,6 +16,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Dateimanager und weitere Programme übernehmen die Farben des Hintergrundbilds: GTK und Qt standardmässig, Firefox, Discord (Vesktop) und Spotify (spicetify) einzeln einschaltbar, wenn installiert; Abschalten legt die gesicherten Dateien zurück (#70)
 
 ### Behoben
+- Ein Anführungszeichen, Backslash, `;` oder eine Klammer im Namen einer Schrift, eines Mauszeigers oder Symbolthemas wird abgelehnt statt die Leiste verschwinden zu lassen; leere Namen und Programme aus lauter Leerzeichen ebenso
 - Missa-Agent: Ein Auftrag direkt nach einer Änderung der Einstellungen fragt nicht mehr fälschlich nach (#91)
 
 ## 1.5.0 – 2026-11-23
@@ -23,9 +27,6 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Mit Missa sprechen und Antworten vorlesen lassen (SUPER+SHIFT+I), lokal mit whisper.cpp und piper, einschaltbar in den Einstellungen (#62)
 - Chat mit Missa direkt am Desktop (SUPER+I) und Missa-Karte im Dashboard, einschaltbar in den Einstellungen (#61)
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)
-
-### Behoben
-- Ein Anführungszeichen, Backslash, `;` oder eine Klammer im Namen einer Schrift, eines Mauszeigers oder Symbolthemas wird abgelehnt statt die Leiste verschwinden zu lassen; leere Namen und Programme aus lauter Leerzeichen ebenso
 
 ## 1.4.0 – 2026-11-23
 

@@ -61,7 +61,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `theme.font.scale` | `1.0` | Zahl 0.8 … 1.5, Schritt 0.05 | Factor for all font sizes | `shell-set theme.font.scale 1.05` |
 | `theme.cursor.name` | `Bibata-Modern-Ice` | Text (Format geprüft) | Name of the mouse cursor theme | `shell-set theme.cursor.name Adwaita` |
 | `theme.cursor.size` | `24` | ganze Zahl 16 … 64 px | Size of the mouse cursor | `shell-set theme.cursor.size 26` |
-| `theme.icons` | `Papirus-Dark` | Text | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |
+| `theme.icons` | `Papirus-Dark` | Text (Format geprüft) | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |
 | `theme.apps.gtk` | `true` | `true`, `false` | Files (Nautilus), dialogs and other GTK 3/4 apps take the wallpaper colors; off restores your own gtk.css. Open windows change after reopening | `shell-set theme.apps.gtk false` |
 | `theme.apps.qt` | `true` | `true`, `false` | Qt apps take the wallpaper colors through qt5ct/qt6ct; off restores your qt5ct/qt6ct settings | `shell-set theme.apps.qt false` |
 | `theme.apps.firefox` | `false` | `true`, `false` | Toolbar and tabs in the wallpaper colors (userChrome.css, backed up first); takes effect after restarting Firefox | `shell-set theme.apps.firefox true` |

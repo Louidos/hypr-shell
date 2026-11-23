@@ -123,7 +123,8 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 | `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
 | `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
 | `SUPER + F1` | Kürzel-Spickzettel |
-| `SUPER + B` | Dock mit der Tastatur bedienen (Pfeile, Enter, Menütaste oder `SHIFT + F10`, Esc) |
+| `SUPER + B` | Dock mit der Tastatur bedienen (Pfeile, Enter, Menütaste oder `SHIFT + F10`, Esc; jede andere Taste, ein Klick daneben oder 10 s ohne Taste geben die Tastatur zurück) |
+| `CTRL + SUPER + Escape` | Notfall: Tastatur zurück (siehe [Tastatur geht nicht](docs/tastenkuerzel.md#tastatur-geht-nicht)) |
 | `SUPER + I` | Chat mit Missa (nur mit `missa.enabled`, sonst tut das Kürzel nichts) |
 | `SUPER + SHIFT + I` | mit Missa sprechen; nochmal drücken beendet (nur mit `missa.voice_enabled` und whisper.cpp) |
 | `SUPER + M` | abmelden (Hyprland beenden) |
@@ -507,6 +508,7 @@ automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelte
 | `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
+| `shell-diag tastatur\|freigeben` | wer hat die Tastatur? bzw. Tastatur zurück (wie `CTRL + SUPER + Escape`) |
 | `shell-waechter <name> -- <befehl>` | hält Leiste und Oberfläche am Laufen: nach einem Absturz Neustart (höchstens 5-mal in 2 Minuten, dann Benachrichtigung); `shell-waechter stop <name>` beendet ohne Neustart |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |
 | `shell-clipboard list\|paste\|delete\|clear …` | Verlauf der Zwischenablage |

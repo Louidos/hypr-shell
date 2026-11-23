@@ -376,6 +376,15 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
         if [ "$(grep -c "hypr-shell-probe search-first" "$T/qs.log" || true)" -gt "$vorher" ]; then echo "  ok: Suche findet \"$q\""
         else echo "  FEHLER: Suche findet \"$q\" nicht"; app_ok=0; fi
     done
+    # Programme mitfärben: GTK steht immer da, Firefox nur, wenn installiert
+    ipc settings open theme; sleep 2
+    if test_ipc click setting-theme.apps.gtk && warte_auf .theme.apps.gtk false; then echo "  ok: Theme → Apps: GTK-Schalter landet in settings.json"
+    else echo "  FEHLER: Schalter theme.apps.gtk ($(wert .theme))"; app_ok=0; fi
+    if ! command -v firefox >/dev/null 2>&1; then
+        if test_ipc click setting-theme.apps.firefox; then echo "  FEHLER: Firefox-Zeile da, obwohl Firefox fehlt"; app_ok=0
+        else echo "  ok: ohne Firefox keine Firefox-Zeile"; fi
+    fi
+    test_ipc click setting-theme.apps.gtk && warte_auf .theme.apps.gtk true || true
     ipc settings close; sleep 0.5
     ipc settings open look; sleep 2
     # Schalter: Blur aus

@@ -14,17 +14,19 @@ Scope {
     property string tab: "dashboard"
     property var about: ({})
     // Tabs, Reihenfolge und Start-Tab aus settings.json (dashboard.tabs, dashboard.start)
-    readonly property var allTabs: ["dashboard", "wallpaper", "performance", "about"]
+    readonly property var allTabs: ["dashboard", "wallpaper", "performance", "games", "about"]
+    // Spiele (shell-games list, beim Öffnen gelesen); ohne Spiele bleibt der Tab Games weg
+    property var games: []
     readonly property var tabs: {
-        const l = Settings.get("dashboard.tabs", allTabs).filter(t => allTabs.indexOf(t) >= 0)
+        const l = Settings.get("dashboard.tabs", allTabs).filter(t => allTabs.indexOf(t) >= 0 && (t !== "games" || games.length > 0))
         return l.length > 0 ? l : ["dashboard"]
     }
     readonly property string startTab: {
         const t = Settings.get("dashboard.start", "dashboard")
         return tabs.indexOf(t) >= 0 ? t : tabs[0]
     }
-    readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", about: "About" })
-    readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", about: "󰋽" })
+    readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", games: "Games", about: "About" })
+    readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", games: "󰊗", about: "󰋽" })
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
     readonly property real panelW: Math.min(Settings.get("dashboard.width", 1000), (screen ? screen.width : 1920) - 40)
     // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px, Rand 18 px
@@ -33,7 +35,9 @@ Scope {
     readonly property real pageH: 330
     readonly property real panelH: headH + 4 + pageH + pad
 
+    property string wantTab: ""
     function show(t) {
+        wantTab = t || ""
         tab = tabs.indexOf(t) >= 0 ? t : startTab
         ov.show()
     }
@@ -46,6 +50,17 @@ Scope {
         function close(): void { dash.hide() }
     }
 
+    Process {
+        id: gamesProc
+        command: [Settings.home + "/.local/bin/shell-games", "list"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try { dash.games = JSON.parse(text) } catch (e) { dash.games = [] }
+                // "ipc dashboard open games": der Tab gibt es erst, wenn die Spiele gelesen sind
+                if (dash.wantTab === "games" && dash.games.length > 0) dash.tab = "games"
+            }
+        }
+    }
     Process {
         id: aboutProc
         command: [Settings.home + "/.local/bin/shell-sysinfo", "about"]
@@ -85,7 +100,7 @@ Scope {
         keyboardFocus: WlrKeyboardFocus.Exclusive
         leaveDelay: Settings.get("dashboard.close_on_leave", true) ? 350 : -1
         // von aussen geöffnet (z. B. Ui.openPanel): Start-Tab; Daten für About und Profil holen
-        onOpened: { if (dash.tabs.indexOf(dash.tab) < 0) dash.tab = dash.startTab; if (!aboutProc.running) aboutProc.running = true }
+        onOpened: { if (dash.tabs.indexOf(dash.tab) < 0) dash.tab = dash.startTab; if (!aboutProc.running) aboutProc.running = true; if (!gamesProc.running) gamesProc.running = true }
 
         content: Component {
             Item {
@@ -163,6 +178,7 @@ Scope {
                     height: dash.pageH
                     sourceComponent: dash.tab === "wallpaper" ? wallTab
                                    : dash.tab === "performance" ? perfTab
+                                   : dash.tab === "games" ? gamesTab
                                    : dash.tab === "about" ? aboutTab : homeTab
                 }
             }
@@ -171,6 +187,7 @@ Scope {
 
     Component { id: homeTab; HomeTab { about: dash.about } }
     Component { id: perfTab; PerfTab { } }
+    Component { id: gamesTab; GamesTab { games: dash.games; onCloseRequested: dash.hide() } }
     Component { id: wallTab; WallpaperTab { onCloseRequested: dash.hide() } }
     Component { id: aboutTab; AboutTab { about: dash.about } }
 }

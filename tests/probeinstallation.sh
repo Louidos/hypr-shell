@@ -59,6 +59,12 @@ envlua="$TESTHOME/.config/hypr/hypr-shell-env.lua"
 pruefe 'grep -qx "hl.env(\"LIBVA_DRIVER_NAME\", \"nvidia\")" "$envlua" && grep -qx "hl.env(\"__GLX_VENDOR_LIBRARY_NAME\", \"nvidia\")" "$envlua"' "alte Umgebungsvariablen (NVIDIA) übernommen"
 pruefe '! grep -q XCURSOR "$envlua"' "Mauszeiger-Variablen nicht doppelt"
 pruefe '[ -f "$TESTHOME/.config/hypr/hyprland.conf" ]' "alte hyprland.conf bleibt liegen (Lua hat Vorrang)"
+if command -v magick >/dev/null 2>&1 || command -v convert >/dev/null 2>&1; then
+    pruefe '[ -s "$TESTHOME/.local/share/hypr-shell/face.png" ]' "Ersatz-Profilbild für hyprlock (ohne ~/.face)"
+else
+    echo "  Hinweis: ImageMagick fehlt, Ersatz-Profilbild nicht geprüft"
+fi
+pruefe '[ ! -e "$TESTHOME/.face" ]' "~/.face wird nicht angelegt"
 
 echo "== 3. keine fremden Pfade"
 fremd="$(find "$TESTHOME" -type l -exec sh -c 'case "$(readlink -f "$1")" in "$2"/*) ;; *) echo "$1";; esac' _ {} "$TESTHOME" \; )"

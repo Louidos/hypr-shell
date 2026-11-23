@@ -72,6 +72,7 @@ Grid12 {
             anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
             source: "file://" + Settings.home + "/.face"
             fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
+            probe: "dashboard-avatar"
         }
         Column {
             anchors { left: avatar.right; leftMargin: 16; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }

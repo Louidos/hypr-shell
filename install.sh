@@ -289,6 +289,34 @@ erzeuge_env() {
     ok "Umgebungsvariablen der alten Konfiguration übernommen (~/.config/hypr/hypr-shell-env.lua)"
 }
 
+# Ersatz-Profilbild für den Sperrbildschirm, wenn ~/.face fehlt: Anfangsbuchstabe des
+# Benutzers in einem Kreis. ~/.face selbst wird nie angelegt oder verändert; hyprlock legt das
+# echte Bild über den Ersatz, sobald es da ist.
+erzeuge_ersatzbild() {
+    local ziel="$DATA/face.png" im buchstabe schrift
+    [ -e "$HOME/.face" ] && return 0
+    [ -e "$ziel" ] && return 0
+    im="$(command -v magick || command -v convert || true)"
+    if [ -z "$im" ]; then
+        warnung "ImageMagick fehlt – kein Ersatz-Profilbild für den Sperrbildschirm (eigenes Bild: ~/.face)"
+        return 0
+    fi
+    buchstabe="$(printf '%s' "${USER:-$(id -un)}" | cut -c1 | tr '[:lower:]' '[:upper:]')"
+    if [ "$DRY" -eq 1 ]; then probe "neu: ~/.local/share/hypr-shell/face.png (Ersatz-Profilbild mit $buchstabe)"; return 0; fi
+    mkdir -p "$DATA"
+    schrift="$( (fc-match -f '%{file}' 'Inter:bold' 2>/dev/null) || true)"
+    local args=(-size 256x256 xc:none -fill '#2a2a2e' -draw 'circle 128,128 128,2' -fill '#e6e6e6')
+    [ -n "$schrift" ] && [ -f "$schrift" ] && args+=(-font "$schrift")
+    args+=(-pointsize 120 -gravity center -annotate +0+4 "${buchstabe:-?}" "$ziel")
+    if "$im" "${args[@]}" 2>/dev/null; then
+        vermerke neu.txt "$ziel"
+        printf '%s\n' "$ziel" >> "$MANIFEST.neu"
+        ok "Ersatz-Profilbild für den Sperrbildschirm erzeugt (eigenes Bild: ~/.face)"
+    else
+        warnung "Ersatz-Profilbild konnte nicht erzeugt werden"
+    fi
+}
+
 # ---------------------------------------------------------------- Pakete
 
 paket_quelle() { # paket -> "installiert NAME" | "repo NAME" | "aur NAME" | "fehlt"
@@ -415,6 +443,7 @@ installieren() {
 
     erzeuge_lokal
     erzeuge_env
+    erzeuge_ersatzbild
     # kein fc-cache: das schriebe nach ~/.cache; fontconfig findet neue Schriften von selbst
 
     if [ "$DRY" -eq 0 ]; then

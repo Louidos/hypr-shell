@@ -7,6 +7,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Übersicht aller Tastenkürzel (SUPER+F1): in Gruppen, mit Suche, immer aus den aktuellen Belegungen; eigene Kürzel unter „Custom“ (#53)
 - WLAN, Bluetooth und Ton direkt im Panel (Unterseiten über einen Pfeil am Schalter oder Klick auf das Symbol in der Leiste), dazu Schalter für Leistungsprofil und Nachtlicht mit Zeitplan; fehlende Geräte blenden ihren Schalter aus (#52)
 - Fenster-Übersicht (SUPER+Tab): alle Arbeitsflächen mit ihren Fenstern, Klick springt hin, Ziehen verschiebt, Tippen filtert (#51)
 - Verlauf der Zwischenablage (SUPER+SHIFT+V): Text und Bilder mit Vorschau, Suche, Enter fügt ein, Entf löscht, Clear all; Anzahl einstellbar, abschaltbar (#50)

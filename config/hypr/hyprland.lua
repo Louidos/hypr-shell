@@ -54,7 +54,7 @@ local S = {
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
-        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab",
+        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
     },
@@ -247,7 +247,7 @@ end
 
 blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
-blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications|osd|power|clipboard|overview)$")
+blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications|osd|power|clipboard|overview|cheatsheet)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
 
 hl.layer_rule({ name = "hypr-shell-slurp", match = { namespace = "^selection$" }, no_anim = true })
@@ -274,90 +274,99 @@ local browser     = S.apps.browser
 -- apps.launcher = "builtin": der Starter von hypr-shell (Quickshell), sonst der eigene Befehl (z. B. rofi)
 local launcher    = (S.apps.launcher == "builtin" or S.apps.launcher == nil or S.apps.launcher == "")
     and (bin .. "shell-quickshell ipc launcher toggle") or S.apps.launcher
-local function bind(keys, action, flags)
-    if type(keys) == "string" and keys ~= "" then hl.bind(keys, action, flags) end
+-- desc = "Gruppe: Aktion" (Gruppen Windows, Workspaces, Apps, Panels, Missa, Screenshots, System,
+-- Custom): steht in "hyprctl binds -j" und im Kürzel-Spickzettel (SUPER + F1)
+local function bind(keys, action, desc, flags)
+    if type(keys) == "string" and keys ~= "" then
+        local f = { description = desc }
+        for k, v in pairs(flags or {}) do f[k] = v end
+        hl.bind(keys, action, f)
+    end
 end
 local function mit(m, key) return (m ~= nil and m ~= "") and (m .. " + " .. key) or "" end
 
-bind(K.terminal,     hl.dsp.exec_cmd(terminal))
-bind(K.close,        hl.dsp.window.close())
-bind(K.files,        hl.dsp.exec_cmd(fileManager))
-bind(K.browser,      hl.dsp.exec_cmd(browser))
-bind(K.launcher,     hl.dsp.exec_cmd(launcher))
-bind(K.launcher_alt, hl.dsp.exec_cmd(launcher))
-bind(K.launcher_space, hl.dsp.exec_cmd(launcher))
-bind(K.float,        hl.dsp.window.float({ action = "toggle" }))
-bind(K.exit,         hl.dsp.exit())
-bind(K.lock,         hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
+bind(K.terminal,     hl.dsp.exec_cmd(terminal), "Apps: Terminal")
+bind(K.close,        hl.dsp.window.close(), "Windows: Close window")
+bind(K.files,        hl.dsp.exec_cmd(fileManager), "Apps: File manager")
+bind(K.browser,      hl.dsp.exec_cmd(browser), "Apps: Browser")
+bind(K.launcher,     hl.dsp.exec_cmd(launcher), "Panels: Launcher")
+bind(K.launcher_alt, hl.dsp.exec_cmd(launcher), "Panels: Launcher")
+bind(K.launcher_space, hl.dsp.exec_cmd(launcher), "Panels: Launcher")
+bind(K.float,        hl.dsp.window.float({ action = "toggle" }), "Windows: Floating / tiled")
+bind(K.exit,         hl.dsp.exit(), "System: Log out (quit Hyprland)")
+bind(K.lock,         hl.dsp.exec_cmd("pidof hyprlock || hyprlock"), "System: Lock screen")
 
 -- Fokus mit SUPER + Pfeiltasten
-bind(K.focus_left,  hl.dsp.focus({ direction = "left" }))
-bind(K.focus_right, hl.dsp.focus({ direction = "right" }))
-bind(K.focus_up,    hl.dsp.focus({ direction = "up" }))
-bind(K.focus_down,  hl.dsp.focus({ direction = "down" }))
+bind(K.focus_left,  hl.dsp.focus({ direction = "left" }), "Windows: Focus left")
+bind(K.focus_right, hl.dsp.focus({ direction = "right" }), "Windows: Focus right")
+bind(K.focus_up,    hl.dsp.focus({ direction = "up" }), "Windows: Focus up")
+bind(K.focus_down,  hl.dsp.focus({ direction = "down" }), "Windows: Focus down")
 
 -- Arbeitsflächen: SUPER + 1…0 wechseln, SUPER + SHIFT + 1…0 Fenster verschieben
 for i = 1, 10 do
     local key = i % 10
-    bind(mit(K.workspace_mod, key), hl.dsp.focus({ workspace = i }))
-    bind(mit(K.move_mod, key),      hl.dsp.window.move({ workspace = i }))
+    bind(mit(K.workspace_mod, key), hl.dsp.focus({ workspace = i }), "Workspaces: Go to workspace " .. i)
+    bind(mit(K.move_mod, key),      hl.dsp.window.move({ workspace = i }), "Workspaces: Move window to workspace " .. i)
 end
-bind(mit(K.workspace_mod, "mouse_down"), hl.dsp.focus({ workspace = "e+1" }))
-bind(mit(K.workspace_mod, "mouse_up"),   hl.dsp.focus({ workspace = "e-1" }))
+bind(mit(K.workspace_mod, "mouse_down"), hl.dsp.focus({ workspace = "e+1" }), "Workspaces: Next workspace")
+bind(mit(K.workspace_mod, "mouse_up"),   hl.dsp.focus({ workspace = "e-1" }), "Workspaces: Previous workspace")
 
 -- SUPER + linke Maustaste ziehen, SUPER + rechte Maustaste Grösse ändern
-bind(mit(K.mouse_mod, "mouse:272"), hl.dsp.window.drag(),   { mouse = true })
-bind(mit(K.mouse_mod, "mouse:273"), hl.dsp.window.resize(), { mouse = true })
+bind(mit(K.mouse_mod, "mouse:272"), hl.dsp.window.drag(),   "Windows: Move window (drag)", { mouse = true })
+bind(mit(K.mouse_mod, "mouse:273"), hl.dsp.window.resize(), "Windows: Resize window (drag)", { mouse = true })
 
 -- Oberfläche (Quickshell): Dashboard, Panel, Einstellungs-App; SUPER + W öffnet den Tab Wallpaper.
 -- Es ist immer nur ein Panel offen: öffnet man eines, schliesst das andere.
 local ui = bin .. "shell-quickshell ipc "
-bind(K.dashboard, hl.dsp.exec_cmd(ui .. "dashboard toggle"))
-bind(K.dashboard_alt, hl.dsp.exec_cmd(ui .. "dashboard toggle"))
-bind(K.wallpaper, hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"))
-bind(K.panel,     hl.dsp.exec_cmd(ui .. "panel toggle"))
-bind(K.notifications, hl.dsp.exec_cmd(ui .. "notifications toggle"))
+bind(K.dashboard, hl.dsp.exec_cmd(ui .. "dashboard toggle"), "Panels: Dashboard")
+bind(K.dashboard_alt, hl.dsp.exec_cmd(ui .. "dashboard toggle"), "Panels: Dashboard")
+bind(K.wallpaper, hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"), "Panels: Wallpapers")
+bind(K.panel,     hl.dsp.exec_cmd(ui .. "panel toggle"), "Panels: Quick panel")
+bind(K.notifications, hl.dsp.exec_cmd(ui .. "notifications toggle"), "Panels: Notifications")
 -- Desktop-Widgets mit der Maus verschieben und skalieren
-bind(K.edit_desktop, hl.dsp.exec_cmd(ui .. "desktop edit"))
+bind(K.edit_desktop, hl.dsp.exec_cmd(ui .. "desktop edit"), "System: Move desktop widgets")
 -- die App bleibt immer erreichbar: ohne gültige Taste gilt SUPER + U
-bind((K.settings ~= nil and K.settings ~= "") and K.settings or "SUPER + U", hl.dsp.exec_cmd(ui .. "settings toggle"))
+bind((K.settings ~= nil and K.settings ~= "") and K.settings or "SUPER + U", hl.dsp.exec_cmd(ui .. "settings toggle"), "Panels: Settings")
+
+-- Kürzel-Spickzettel
+bind(K.cheatsheet, hl.dsp.exec_cmd(ui .. "cheatsheet toggle"), "Panels: Keyboard shortcuts")
 
 -- Fenster-Übersicht aller Arbeitsflächen
-bind(K.overview, hl.dsp.exec_cmd(ui .. "overview toggle"))
+bind(K.overview, hl.dsp.exec_cmd(ui .. "overview toggle"), "Panels: Window overview")
 
 -- Verlauf der Zwischenablage (SUPER + V bleibt "schwebend")
-bind(K.clipboard, hl.dsp.exec_cmd(ui .. "clipboard toggle"))
+bind(K.clipboard, hl.dsp.exec_cmd(ui .. "clipboard toggle"), "Panels: Clipboard history")
 
 -- Power-Menü (Lock, Sleep, Logout, Restart, Shutdown)
-bind(K.power, hl.dsp.exec_cmd(ui .. "power toggle"))
+bind(K.power, hl.dsp.exec_cmd(ui .. "power toggle"), "System: Power menu")
 
 -- Screenshots: speichern und in die Zwischenablage
-bind(K.screenshot_region, hl.dsp.exec_cmd(bin .. "shell-screenshot region"))
-bind(K.screenshot_screen, hl.dsp.exec_cmd(bin .. "shell-screenshot screen"))
+bind(K.screenshot_region, hl.dsp.exec_cmd(bin .. "shell-screenshot region"), "Screenshots: Region")
+bind(K.screenshot_screen, hl.dsp.exec_cmd(bin .. "shell-screenshot screen"), "Screenshots: Whole screen")
 
 -- eigene Kürzel (keybinds.custom)
 for _, c in ipairs(K.custom or {}) do
     if type(c) == "table" and type(c.command) == "string" and c.command ~= "" then
-        bind(c.keys, hl.dsp.exec_cmd(c.command))
+        bind(c.keys, hl.dsp.exec_cmd(c.command), "Custom: " .. c.command)
     end
 end
 
 -- Lautstärke und Helligkeit mit der Glas-Anzeige von hypr-shell (shell-osd), auch im Sperrbildschirm
 local osd = bin .. "shell-osd "
-hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(osd .. "volume up"),   { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(osd .. "volume down"), { locked = true, repeating = true })
-hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(osd .. "volume mute"), { locked = true })
-hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd(osd .. "mic mute"),    { locked = true })
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(osd .. "brightness up"),   { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(osd .. "brightness down"), { locked = true, repeating = true })
-hl.bind("XF86KbdBrightnessUp",   hl.dsp.exec_cmd(osd .. "kbd up"),   { locked = true, repeating = true })
-hl.bind("XF86KbdBrightnessDown", hl.dsp.exec_cmd(osd .. "kbd down"), { locked = true, repeating = true })
+hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(osd .. "volume up"),   { description = "System: Volume up", locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(osd .. "volume down"), { description = "System: Volume down", locked = true, repeating = true })
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(osd .. "volume mute"), { description = "System: Mute", locked = true })
+hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd(osd .. "mic mute"),    { description = "System: Mute microphone", locked = true })
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(osd .. "brightness up"),   { description = "System: Brightness up", locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(osd .. "brightness down"), { description = "System: Brightness down", locked = true, repeating = true })
+hl.bind("XF86KbdBrightnessUp",   hl.dsp.exec_cmd(osd .. "kbd up"),   { description = "System: Keyboard light up", locked = true, repeating = true })
+hl.bind("XF86KbdBrightnessDown", hl.dsp.exec_cmd(osd .. "kbd down"), { description = "System: Keyboard light down", locked = true, repeating = true })
 
 -- Medientasten
-hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true })
-hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
+hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { description = "System: Play / pause", locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { description = "System: Play / pause", locked = true })
+hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { description = "System: Next track", locked = true })
+hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { description = "System: Previous track", locked = true })
 
 -------------------------------
 ---- WEITERE TEILE, ZULETZT ----

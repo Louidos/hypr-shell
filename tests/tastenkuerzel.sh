@@ -46,6 +46,7 @@ SUPER + ALT + W
 SUPER + C
 SUPER + D
 SUPER + E
+SUPER + F1
 SUPER + Escape
 SUPER + L
 SUPER + M
@@ -90,6 +91,21 @@ pruefe 'binds "{}" | grep -qx "SUPER + Q	exec_cmd kitty"' "SUPER + Q startet das
 pruefe 'binds "{}" | grep -qx "SUPER + R	exec_cmd $T/h[0-9]*/.local/bin/shell-quickshell ipc launcher toggle" || binds "{}" | grep -q "^SUPER + R	exec_cmd .*shell-quickshell ipc launcher toggle$"' "SUPER + R öffnet den eingebauten Starter"
 pruefe 'binds "{}" | grep -q "^SUPER + Space	exec_cmd .*shell-quickshell ipc launcher toggle$"' "SUPER + Space öffnet den Starter"
 pruefe 'binds "{\"apps\": {\"launcher\": \"rofi -show drun\"}}" | grep -qx "SUPER + R	exec_cmd rofi -show drun"' "mit eigenem Befehl startet wieder rofi"
+
+echo "== jedes Kürzel hat eine Beschreibung mit Gruppe (für den Spickzettel SUPER + F1)"
+ohne="$(HOME="$T" "$lua" - <<'LUA'
+package.path = "./config/hypr/?.lua;./tests/?.lua;" .. package.path
+local A = require("hl-attrappe")
+_G.hl = A.hl
+dofile("config/hypr/hyprland.lua")
+local gruppen = { Windows = 1, Workspaces = 1, Apps = 1, Panels = 1, Missa = 1, Screenshots = 1, System = 1, Custom = 1 }
+for k, f in pairs(A.flags) do
+    local g = (f.description or ""):match("^(%a+): .+")
+    if not gruppen[g or ""] then print(k .. " (" .. tostring(f.description) .. ")") end
+end
+LUA
+)"
+pruefe '[ -z "$ohne" ]' "alle Kürzel beschrieben ($ohne)"
 
 echo "== ändern, leeren, eigene"
 b="$(binds '{"keybinds": {"terminal": "SUPER + T", "lock": "", "browser": "SUPER + B", "custom": [{"keys": "SUPER + SHIFT + Return", "command": "kitty -e htop"}]}}')"

@@ -18,7 +18,7 @@ local monitor_keys = { output=1, mode=1, position=1, scale=1, reserved=1, reserv
     transform=1, mirror=1, bitdepth=1, cm=1, sdr_eotf=1, sdrbrightness=1, sdrsaturation=1, vrr=1, icc=1,
     supports_wide_color=1, supports_hdr=1, sdr_min_luminance=1, sdr_max_luminance=1, min_luminance=1,
     max_luminance=1, max_avg_luminance=1 }
-local config_cats = { general=1, decoration=1, animations=1, input=1, gestures=1, group=1, misc=1,
+local config_cats = { plugin=1, general=1, decoration=1, animations=1, input=1, gestures=1, group=1, misc=1,
     binds=1, xwayland=1, opengl=1, render=1, cursor=1, ecosystem=1, debug=1, dwindle=1, master=1,
     scrolling=1, monocle=1, layout=1, quirks=1 }
 
@@ -68,6 +68,16 @@ local hl = {
         table.insert(M.layer, r)
     end,
 }
+-- Plugins: hl.plugin.load; mit HL_ATTRAPPE_HYPRBARS=1 ist hyprbars geladen (hl.plugin.hyprbars)
+hl.plugin = { load = merke("plugin_load") }
+if os.getenv("HL_ATTRAPPE_HYPRBARS") == "1" then
+    hl.plugin.hyprbars = { add_button = function(b)
+        for _, k in ipairs({ "bg_color", "fg_color", "size", "icon", "action" }) do
+            if b[k] == nil then error("hyprbars.add_button: " .. k .. " fehlt", 2) end
+        end
+        table.insert(M.aufrufe, { "hyprbars_button", b })
+    end }
+end
 hl.dsp = streng("hl.dsp", {
     exec_cmd = dsp("exec_cmd"), exec_raw = dsp("exec_raw"), exit = dsp("exit"), focus = dsp("focus"),
     layout = dsp("layout"), global = dsp("global"), submap = dsp("submap"), no_op = dsp("no_op"),

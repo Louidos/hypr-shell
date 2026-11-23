@@ -80,6 +80,22 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target panel'; then
     ipc panel close; sleep 1
 fi
 
+# Sperrbildschirm – nur in diesem unsichtbaren Test-Compositor, nie in einer echten Sitzung.
+# Kommt zuletzt, weil sway nach dem Beenden von hyprlock gesperrt bleibt.
+if command -v hyprlock >/dev/null 2>&1; then
+    hyprlock -c "$HOME/.config/hypr/hyprlock.conf" > "$T/hyprlock.log" 2>&1 &
+    lockpid="$!"
+    sleep 4
+    bild lockscreen
+    kill "$lockpid" 2>/dev/null || true
+    echo "---- hyprlock-Log ----"
+    cat "$T/hyprlock.log"
+    if grep -iE "config error|error in config|unknown|invalid" "$T/hyprlock.log"; then
+        echo "FEHLER: hyprlock meldet Konfigurationsfehler"
+        exit 1
+    fi
+fi
+
 echo "---- Quickshell-Log ----"
 cat "$T/qs.log"
 echo "------------------------"

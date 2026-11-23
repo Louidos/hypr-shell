@@ -13,3 +13,4 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Grosse Uhr und Ringe für CPU, RAM und Datenträger auf dem Desktop, Position über settings.json einstellbar (#4)
 - Dashboard mit Wetter, Kalender, Musik, Leistungswerten und Hintergrundbild-Auswahl; öffnet mit SUPER+ALT+D, SUPER+W oder an der Mitte der unteren Bildschirmkante (#5)
 - Panel in der Bildschirmecke unten rechts (auch SUPER+A) mit Keep Awake, Apps, Musik, Screenshot und Schnellschaltern für WLAN, Bluetooth, Nicht stören und Gaming-Modus (#6)
+- Sperrbildschirm mit grosser Uhr, Begrüssung und Power-Knöpfen; sperrt nach 5 Minuten automatisch, Standby nach 15 Minuten, Keep Awake setzt beides aus (#7)

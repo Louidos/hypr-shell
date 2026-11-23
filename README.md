@@ -76,6 +76,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `SUPER + E` | Dateien (Nautilus) |
 | `SUPER + R` / `SUPER + Space` / `ALT + Space` | Starter (Suche nach Apps, `=` rechnet) |
 | `SUPER + V` | Fenster schwebend / gekachelt |
+| `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
 | `SUPER + M` | abmelden (Hyprland beenden) |
 | `SUPER + L` | sperren |
 | `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |
@@ -176,6 +177,13 @@ Mitte eine kleine Glas-Pille mit Symbol und Balken, die nach 1,5 Sekunden versch
 abschalten mit `shell-set osd.enabled false`). Das Power-Menü (`SUPER + Escape` oder ⏻ in der Leiste)
 zeigt in der Mitte fünf grosse Knöpfe: **Lock**, **Sleep**, **Logout**, **Restart**, **Shutdown**.
 Pfeiltasten wählen, Enter löst aus, Esc schliesst; Restart und Shutdown verlangen einen zweiten Druck.
+
+### Zwischenablage
+
+`SUPER + SHIFT + V` zeigt die letzten Kopien (Text und Bilder, aufgezeichnet mit cliphist ab der
+Anmeldung): Suchfeld oben, Bilder mit Vorschau. Pfeiltasten wählen, **Enter** fügt den Eintrag im
+vorigen Fenster ein, **Entf** löscht ihn, **Clear all** leert den Verlauf. Wie viele Einträge bleiben,
+steht in `clipboard.max` (Standard 50); `shell-set clipboard.enabled false` schaltet die Aufzeichnung ab.
 
 ### Hot-Corner-Panel
 
@@ -294,6 +302,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-toggle <wifi\|bluetooth\|dnd\|gaming\|awake> [on\|off]` | Schnellschalter, `shell-toggle status` zeigt alle |
 | `shell-quickshell restart` | Oberfläche neu starten |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |
+| `shell-clipboard list\|paste\|delete\|clear …` | Verlauf der Zwischenablage |
 | `shell-osd volume\|mic\|brightness\|kbd …` | Lautstärke/Helligkeit ändern und anzeigen |
 
 ## Aufbau

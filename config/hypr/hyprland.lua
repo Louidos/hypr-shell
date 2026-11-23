@@ -54,7 +54,7 @@ local S = {
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
-        settings = "SUPER + U", power = "SUPER + Escape",
+        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
     },
@@ -122,6 +122,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("waybar")
     hl.exec_cmd("hypridle")
     hl.exec_cmd(bin .. "shell-quickshell")
+    -- Verlauf der Zwischenablage (nur mit clipboard.enabled, prüft shell-clipboard selbst)
+    hl.exec_cmd(bin .. "shell-clipboard daemon")
 end)
 
 ------------------------------
@@ -245,7 +247,7 @@ end
 
 blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
-blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications|osd|power)$")
+blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications|osd|power|clipboard)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
 
 hl.layer_rule({ name = "hypr-shell-slurp", match = { namespace = "^selection$" }, no_anim = true })
@@ -319,6 +321,9 @@ bind(K.notifications, hl.dsp.exec_cmd(ui .. "notifications toggle"))
 bind(K.edit_desktop, hl.dsp.exec_cmd(ui .. "desktop edit"))
 -- die App bleibt immer erreichbar: ohne gültige Taste gilt SUPER + U
 bind((K.settings ~= nil and K.settings ~= "") and K.settings or "SUPER + U", hl.dsp.exec_cmd(ui .. "settings toggle"))
+
+-- Verlauf der Zwischenablage (SUPER + V bleibt "schwebend")
+bind(K.clipboard, hl.dsp.exec_cmd(ui .. "clipboard toggle"))
 
 -- Power-Menü (Lock, Sleep, Logout, Restart, Shutdown)
 bind(K.power, hl.dsp.exec_cmd(ui .. "power toggle"))

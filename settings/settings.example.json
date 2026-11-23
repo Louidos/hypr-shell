@@ -181,6 +181,10 @@
   "osd": {
     "enabled": true
   },
+  "clipboard": {
+    "enabled": true,
+    "max": 50
+  },
   "keybinds": {
     "terminal": "SUPER + Q",
     "files": "SUPER + E",
@@ -205,6 +209,7 @@
     "edit_desktop": "SUPER + ALT + W",
     "settings": "SUPER + U",
     "power": "SUPER + Escape",
+    "clipboard": "SUPER + SHIFT + V",
     "lock": "SUPER + L",
     "exit": "SUPER + M",
     "screenshot_region": "Print",

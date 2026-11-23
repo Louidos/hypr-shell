@@ -1,9 +1,11 @@
 # hypr-shell
 
 Eigenes Hyprland-Setup im Glas-Look, angelehnt an „DarkShadow's Shell“:
-halbtransparente, unscharfe Flächen, stark gerundete Ecken und Farben,
-die automatisch aus dem Hintergrundbild entstehen. Gedacht für Arch-basierte
-Systeme (CachyOS) mit Hyprland ab 0.55 (Lua-Konfiguration).
+halbtransparente Flächen über unscharfem Hintergrund, stark gerundete Ecken und
+Farben, die automatisch aus dem Hintergrundbild entstehen. Gedacht für Arch-basierte
+Systeme (CachyOS) mit Hyprland ab 0.55 (Lua-Konfiguration) und Quickshell.
+
+![Dashboard](docs/screenshots/dashboard-dashboard.png)
 
 ## Installation
 
@@ -11,86 +13,176 @@ Systeme (CachyOS) mit Hyprland ab 0.55 (Lua-Konfiguration).
 gh repo clone Louidos/hypr-shell && cd hypr-shell && ./install.sh
 ```
 
-Der Installer installiert die nötigen Pakete (pacman, Rest mit paru), kopiert die
-Dateien nach `~/.config`, `~/.local/bin`, `~/.local/share/hypr-shell` und
-`~/Pictures/Wallpapers` und sichert jede ersetzte Datei vorher nach
-`~/.config/hypr-shell-backup-<Zeit>/`.
+Danach **abmelden und im Login-Manager „Hyprland“ wählen**. Das ist alles.
+
+Der Installer
+
+- installiert die nötigen Pakete (pacman, den Rest mit paru) und prüft die Namen vorher,
+- kopiert die Dateien nach `~/.config`, `~/.local/bin`, `~/.local/share` und `~/Pictures/Wallpapers`,
+- sichert **jede** ersetzte Datei vorher nach `~/.config/hypr-shell-backup-<Zeit>/`,
+- übernimmt das Tastaturlayout aus `localectl` und Umgebungsvariablen der alten
+  Hyprland-Konfiguration (z. B. für NVIDIA), damit Spiele wie vorher starten,
+- läuft nie als root; sudo wird nur für pacman verwendet,
+- listet am Ende auf, falls noch ein Programm fehlt.
 
 | Option | Wirkung |
 | --- | --- |
 | `--yes` | keine Rückfrage |
-| `--dry-run` | nur anzeigen, was passieren würde |
-| `--no-packages` | keine Pakete installieren, nur Dateien |
+| `--dry-run` | nur anzeigen, was passieren würde – nichts wird verändert |
+| `--no-packages` | keine Pakete installieren, nur Dateien kopieren |
 | `--restore [ORDNER]` | Stand vor der letzten Installation zurückholen |
-| `--uninstall` | alles von hypr-shell entfernen, Ursprungszustand zurück |
+| `--uninstall` | alles von hypr-shell entfernen, Zustand vor der ersten Installation zurück |
 
-## Start
+## Rückgängig machen
 
-Nach der Installation abmelden und im Login-Manager „Hyprland“ wählen.
-Eigene Hintergrundbilder gehören nach `~/Pictures/Wallpapers`; setzen mit
-`shell-wallpaper <bild>` – die Farben passen sich automatisch an.
-Eigene Hyprland-Anpassungen gehören nach `~/.config/hypr/user.lua`
-(wird nie überschrieben).
+```bash
+./install.sh --restore
+```
 
-## Leiste
+holt die Dateien zurück, die die letzte Installation ersetzt hat, und entfernt die neu
+hinzugekommenen. Mit `./install.sh --restore ~/.config/hypr-shell-backup-<Zeit>` lässt sich
+eine bestimmte Sicherung wählen.
 
-Oben sitzt eine flache, halbtransparente Waybar: links das Distro-Symbol (öffnet den
-Starter), die Arbeitsflächen 1–4 und das aktuelle Lied; rechts Lautstärke, Uhr,
-Bluetooth, WLAN, ein roter Punkt während einer Bildschirmaufnahme und der
-Ausschalt-Knopf (sperren, abmelden, neu starten, herunterfahren).
+```bash
+./install.sh --uninstall
+```
 
-## Desktop
+entfernt alle Dateien von hypr-shell und stellt den Zustand vor der ersten Installation
+her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 
-Hinter den Fenstern stehen eine grosse gestapelte Uhr (oben links) und drei
-Glas-Kacheln mit Ringen für CPU, Arbeitsspeicher und Datenträger (linker Rand).
-Position und Grösse stehen in `~/.config/hypr-shell/settings.json` unter `desktop`
-(`x`/`y` als Anteil der Bildschirmbreite/-höhe, `scale`, `enabled`); Änderungen
-wirken sofort.
+## Tastenkürzel
 
-## Dashboard
+| Kürzel | Wirkung |
+| --- | --- |
+| `SUPER + Q` | Terminal (kitty) |
+| `SUPER + C` | Fenster schliessen |
+| `SUPER + E` | Dateien (Nautilus) |
+| `SUPER + R` / `ALT + Space` | Starter (rofi) |
+| `SUPER + V` | Fenster schwebend / gekachelt |
+| `SUPER + M` | abmelden (Hyprland beenden) |
+| `SUPER + L` | sperren |
+| `SUPER + left` / `SUPER + right` / `SUPER + up` / `SUPER + down` | Fokus in diese Richtung |
+| `SUPER + 1` … `SUPER + 0` | zu Arbeitsfläche 1–10 |
+| `SUPER + SHIFT + 1` … `SUPER + SHIFT + 0` | Fenster auf Arbeitsfläche 1–10 verschieben |
+| `SUPER + mouse_down` / `SUPER + mouse_up` (Mausrad) | nächste / vorige Arbeitsfläche |
+| `SUPER + mouse:272` (linke Maustaste ziehen) | Fenster verschieben |
+| `SUPER + mouse:273` (rechte Maustaste ziehen) | Fenstergrösse ändern |
+| `SUPER + ALT + D` | Dashboard öffnen / schliessen |
+| `SUPER + W` | Dashboard im Tab Wallpaper |
+| `SUPER + A` | Hot-Corner-Panel öffnen / schliessen |
+| `Print` | Screenshot eines Bereichs (speichern + Zwischenablage) |
+| `SHIFT + Print` | Screenshot des ganzen Bildschirms (speichern + Zwischenablage) |
+| `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` | Lautstärke + / − |
+| `XF86AudioMute` / `XF86AudioMicMute` | Ton / Mikrofon stumm |
+| `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Helligkeit + / − |
+| `XF86AudioPlay` / `XF86AudioPause` / `XF86AudioNext` / `XF86AudioPrev` | Medien: Play/Pause, weiter, zurück |
+| `Esc` | Dashboard oder Panel schliessen |
+| Wischen mit drei Fingern | Arbeitsfläche wechseln |
 
-Ein Glas-Panel gleitet unten in der Mitte hoch – mit **SUPER+ALT+D**, wenn die Maus
-die Mitte der unteren Bildschirmkante berührt, oder mit **SUPER+W** direkt im Tab
-Wallpaper. **Esc** oder Maus weg schliesst es.
+Maus: Ecke **unten rechts** öffnet das Panel, die **Mitte der unteren Kante** das Dashboard.
+
+## Was ist dabei?
+
+### Leiste
+
+Oben eine flache, halbtransparente Waybar: links Distro-Symbol (öffnet den Starter),
+Arbeitsflächen 1–4 und das aktuelle Lied; rechts Lautstärke, Uhr, Bluetooth, WLAN, ein
+roter Punkt während einer Bildschirmaufnahme und der Ausschalt-Knopf (sperren, abmelden,
+neu starten, herunterfahren).
+
+### Desktop
+
+Hinter den Fenstern eine grosse gestapelte Uhr und drei Glas-Kacheln mit Ringen für CPU,
+Arbeitsspeicher und Datenträger.
+
+![Desktop](docs/screenshots/desktop.png)
+
+### Dashboard
+
+Gleitet unten in der Mitte hoch. Tabs:
 
 | Tab | Inhalt |
 | --- | --- |
 | Dashboard | Wetter, Profil mit Begrüssung, Musik, Uhr, Kalender, Ringe für CPU/RAM/Disk/Swap |
 | Wallpaper | alle Bilder aus `~/Pictures/Wallpapers` mit Suche; Klick setzt Bild und Farben |
-| Performance | CPU (Modell, Temperatur, Last), GPU (Modell, Temperatur, Grafikspeicher), Datenträger, Netzwerk, Arbeitsspeicher |
+| Performance | CPU, GPU (eine schlafende NVIDIA-Karte wird nicht geweckt), Datenträger, Netzwerk, Arbeitsspeicher |
 | About | System, Distribution, Version von hypr-shell, Hyprland und Quickshell |
 
-Das Wetter kommt ohne API-Schlüssel von open-meteo.com; den Ort einmal in
-`~/.config/hypr-shell/settings.json` unter `weather.location` eintragen (z. B. `"Zürich"`).
-Systemwerte werden nur abgefragt, solange das Dashboard offen ist; eine schlafende
-NVIDIA-Karte wird dafür nicht geweckt.
+Systemwerte werden nur abgefragt, solange das Dashboard offen ist.
 
-## Hot-Corner-Panel
+### Hot-Corner-Panel
 
-Berührt die Maus die Ecke unten rechts (oder **SUPER+A**), wächst ein schmales
-Glas-Panel heraus; es schliesst, sobald die Maus es verlässt.
+Wächst aus der Ecke unten rechts: Begrüssung mit Uhrzeit, **Keep Awake** (kein Sperren,
+kein Standby), **Apps** mit Suche, **Now playing**, **Screenshot** (Screen, Region,
+Ordner) und **Quick Toggles** für WLAN, Bluetooth, Nicht stören, Gaming-Modus (Blur,
+Animationen und Schatten aus) und Einstellungen.
 
-- **Kopf**: Profilbild (`~/.face`), „Good evening, <Benutzer>“, Datum, Uhrzeit
-- **Keep Awake**: verhindert Sperren und Standby (über `systemd-inhibit`, hypridle hält sich daran)
-- **Apps**: Suchfeld (Enter startet den ersten Treffer), „All“ öffnet rofi, Raster mit
-  den Apps aus `panel.apps` – nicht installierte fallen weg
-- **Now playing**: Titel oder „Nothing playing“, zurück / Play / weiter
-- **Screenshot**: Screen, Region, Ordner (`~/Pictures/Screenshots`, zusätzlich in der Zwischenablage)
-- **Quick Toggles**: WLAN, Bluetooth, Nicht stören, Gaming-Modus (Blur, Animationen und
-  Schatten aus – bleibt auch nach `hyprctl reload`), Einstellungen (öffnet `settings.json`)
+![Panel](docs/screenshots/panel.png)
 
-Reihenfolge und Sichtbarkeit der Karten (`panel.sections`), App-Liste (`panel.apps`) und
-Schalter (`panel.toggles`) stehen in `settings.json` und wirken sofort.
+### Sperrbildschirm
 
-## Sperrbildschirm
+Bildschirm unscharf und abgedunkelt, links Profilbild, grosse Uhr, Datum, Begrüssung,
+Passwort als Linie und Knöpfe für Standby, Neustart und Herunterfahren. hypridle sperrt
+nach 5 Minuten und geht nach 15 Minuten in den Standby (vorher wird gesperrt).
 
-**SUPER+L** sperrt. Der Sperrbildschirm zeigt den aktuellen Bildschirm unscharf und
-abgedunkelt, links Profilbild, grosse gestapelte Uhr, Datum, Begrüssung, das
-Passwortfeld als schlichte Linie und Knöpfe für Standby, Neustart und Herunterfahren.
-Farben kommen aus dem Hintergrundbild.
+![Sperrbildschirm](docs/screenshots/lockscreen.png)
 
-hypridle sperrt nach 5 Minuten ohne Eingabe und schickt den Rechner nach 15 Minuten
-in den Standby (vorher wird gesperrt). **Keep Awake** im Panel setzt beides aus.
+### Farben und Hintergrundbild
+
+Eigene Bilder nach `~/Pictures/Wallpapers` legen und im Dashboard (SUPER + W) anklicken
+oder `shell-wallpaper <bild>` aufrufen. matugen erzeugt daraus die Farben für Hyprland,
+Waybar, kitty, rofi, swaync, hyprlock und Quickshell; bei einem grauen Bild bleibt alles
+grau/weiss. Mitgeliefert ist ein schlichtes graues Verlaufsbild.
+
+![Farben aus einem bunten Bild](docs/screenshots/farben-aus-bild.png)
+
+Ein Profilbild wird aus `~/.face` gelesen (quadratisches Bild, z. B. PNG).
+
+## Anpassen
+
+Alles Einstellbare steht in `~/.config/hypr-shell/settings.json` (Vorlage:
+[`settings/settings.example.json`](settings/settings.example.json)). Änderungen wirken
+sofort, ohne Neustart. Das Zahnrad im Panel öffnet die Datei.
+
+| Wert | Standard | Bedeutung |
+| --- | --- | --- |
+| `weather.location` | `""` | Ort für das Wetter, z. B. `"Zürich"` – **einmal eintragen** |
+| `weather.units` | `"metric"` | `"metric"` (°C) oder `"imperial"` (°F) |
+| `desktop.screen` | `""` | Bildschirm für Widgets, Dashboard und Panel (Name aus `hyprctl monitors`); leer = erster |
+| `desktop.clock.enabled` | `true` | grosse Uhr an/aus |
+| `desktop.clock.x` | `0.02` | Abstand von links als Anteil der Bildschirmbreite |
+| `desktop.clock.y` | `0.045` | Abstand von oben als Anteil der Bildschirmhöhe |
+| `desktop.clock.scale` | `1.0` | Grösse |
+| `desktop.resources.enabled` | `true` | Kacheln CPU/RAM/Datenträger an/aus |
+| `desktop.resources.x` | `0.015` | Abstand von links (Anteil) |
+| `desktop.resources.y` | `0.56` | Abstand von oben (Anteil) |
+| `desktop.resources.scale` | `1.0` | Grösse |
+| `dashboard.width` | `1000` | Breite des Dashboards in Pixeln |
+| `dashboard.edge` | `true` | Öffnen über die Mitte der unteren Kante |
+| `dashboard.opacity` | `0.42` | Deckkraft der Glasfläche |
+| `panel.enabled` | `true` | Öffnen über die Ecke |
+| `panel.corner` | `"bottom-right"` | Ecke: `bottom-right`, `bottom-left`, `top-right`, `top-left` |
+| `panel.trigger` | `6` | Grösse des Auslösebereichs in Pixeln |
+| `panel.width` | `420` | Breite des Panels |
+| `panel.radius` | `26` | Eckenradius |
+| `panel.opacity` | `0.44` | Deckkraft der Glasfläche |
+| `panel.sections` | `["awake", "apps", "media", "shot", "toggles"]` | Karten und ihre Reihenfolge; weglassen = ausblenden |
+| `panel.apps` | `["kitty", "org.gnome.Nautilus", "firefox", "spotify", "discord", "steam"]` | Apps im Raster (Name der `.desktop`-Datei); nicht installierte fallen weg |
+| `panel.toggles` | `["wifi", "bluetooth", "dnd", "gaming", "settings"]` | Schnellschalter; zusätzlich möglich: `awake` |
+
+Eigene Hyprland-Einstellungen (Monitore, Tastenkürzel, Fensterregeln) gehören nach
+`~/.config/hypr/user.lua` – diese Datei überschreibt der Installer nie. Das Tastaturlayout
+steht in `~/.config/hypr/hypr-shell-local.lua`.
+
+## Hilfsprogramme
+
+| Befehl | Wirkung |
+| --- | --- |
+| `shell-wallpaper <bild>` | Hintergrundbild setzen und Farben erzeugen |
+| `shell-screenshot region\|screen\|folder` | Screenshot bzw. Ordner öffnen |
+| `shell-toggle <wifi\|bluetooth\|dnd\|gaming\|awake> [on\|off]` | Schnellschalter, `shell-toggle status` zeigt alle |
+| `shell-quickshell restart` | Oberfläche neu starten |
+| `shell-powermenu` | Ausschalt-Menü |
 
 ## Aufbau
 
@@ -101,10 +193,16 @@ in den Standby (vorher wird gesperrt). **Keep Awake** im Panel setzt beides aus.
 | `bin/` | Hilfsskripte für `~/.local/bin` |
 | `wallpapers/` | mitgelieferte Hintergrundbilder |
 | `settings/` | `settings.example.json` mit allen einstellbaren Werten |
-| `tests/` | Prüfskripte |
+| `tests/` | Prüfskripte (`tests/lint.sh`, `tests/probeinstallation.sh`, …) |
 | `docs/` | Doku und Screenshots |
+
+Die Screenshots stammen aus dem Oberflächentest der CI (unsichtbarer Compositor,
+Software-Rendering): Sie zeigen Aufbau und Masse, aber **ohne Blur** und ohne runde
+Bildausschnitte (Profilbild, Cover, Vorschaubilder).
 
 ## Projektstand
 
-Version: 0.0.0 – Grundstruktur, noch keine Funktion.
-Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
+Version: siehe [`VERSION`](VERSION). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
+Optik und Aufbau sind an „DarkShadow's Shell“ (MIT) angelehnt; der Code ist neu geschrieben.
+Die mitgelieferte Schrift Bebas Neue steht unter der SIL Open Font License
+(`quickshell/common/fonts/OFL.txt`).

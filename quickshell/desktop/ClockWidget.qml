@@ -28,7 +28,7 @@ PanelWindow {
 
     Column {
         id: stack
-        spacing: -w.size * 0.16
+        spacing: -w.size * 0.30
         Text {
             text: Qt.formatTime(clock.date, "HH")
             font.family: Theme.display

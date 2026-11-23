@@ -189,10 +189,12 @@ FocusScope {
                 showTitle: modelData.id !== "home"
                 // Monitors und Integrations zeigen ihre Werte selbst
                 skip: modelData.id === "monitors" ? ["monitors.outputs"]
+                    : modelData.id === "dock" ? ["dock.items"]
                     : modelData.id === "integrations" ? (Settings.schema.keys || []).filter(k => k.page === "integrations").map(k => k.key) : []
                 extra: modelData.id === "home" ? homeC : modelData.id === "monitors" ? monitorsC : modelData.id === "laptop" ? laptopC : modelData.id === "integrations" ? integrationsC
-                     : modelData.id === "about" ? aboutC : modelData.id === "desktop" ? desktopC : null
-                footer: keys.length === 0 && ["home", "about", "monitors", "integrations"].indexOf(modelData.id) < 0 ? emptyC : null
+                     : modelData.id === "about" ? aboutC : modelData.id === "desktop" ? desktopC : modelData.id === "dock" ? dockC : null
+                footer: modelData.id === "dock" ? dockItemsC
+                      : keys.length === 0 && ["home", "about", "monitors", "integrations"].indexOf(modelData.id) < 0 ? emptyC : null
                 Component.onCompleted: pageHolder.current = sp
             }
         }
@@ -202,6 +204,8 @@ FocusScope {
     Component { id: aboutC; AboutPage { } }
     Component { id: laptopC; LaptopPage { } }
     Component { id: integrationsC; IntegrationsPage { } }
+    Component { id: dockC; DockPage { } }
+    Component { id: dockItemsC; DockItemsEditor { } }
     Component {
         id: desktopC
         GlassCard {

@@ -666,6 +666,55 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
     bild dock-20
     "$HOME/.local/bin/shell-set" reset dock.items >/dev/null 2>&1; sleep 1
 
+    # ---- Einstellungen: Seite Dock, shell-set wirkt sofort, Voreinstellung aus der App, Export/Reset/Import
+    "$HOME/.local/bin/shell-set" dock.icon_size 64 >/dev/null 2>&1
+    for _ in $(seq 1 30); do [ "$(dk geometry | jq .icon)" = 64 ] && break; sleep 0.3; done
+    if [ "$(dk geometry | jq .icon)" = 64 ] && [ "$("$HOME/.local/bin/shell-set" get dock.icon_size)" = 64 ]; then echo "  ok: shell-set dock.icon_size 64 wirkt sofort am Dock"
+    else echo "  FEHLER: icon_size am Dock $(dk geometry | jq .icon)"; dock_ok=0; fi
+    ipc settings open dock; sleep 2; bild settings-dock
+    # Knopf da (Probe im Log); Klick über die Test-Schnittstelle, sonst derselbe Befehl, den der Knopf ausführt
+    knopf="$(grep -c 'hypr-shell-probe dock-preset-island' "$T/qs.log" || true)"
+    geklickt=nein; test_ipc click dock-preset-island && geklickt=ja
+    [ "$geklickt" = ja ] || "$HOME/.local/bin/shell-dock" preset island >/dev/null 2>&1
+    if [ "${knopf:-0}" -ge 1 ] && warte_auf .dock.preset '"island"' 60; then
+        for _ in $(seq 1 30); do [ "$(dk geometry | jq .icon)" = 56 ] && break; sleep 0.3; done
+        if [ "$(dk geometry | jq .icon)" = 56 ] && [ "$(wert '.dock.items')" = null ]; then echo "  ok: Knopf island auf der Seite, Voreinstellung wirkt sofort (Klick: $geklickt), dock.items unberührt"
+        else echo "  FEHLER: island: Symbol $(dk geometry | jq .icon), items $(wert '.dock.items')"; dock_ok=0; fi
+    else echo "  FEHLER: Knopf island (geklickt: $geklickt, preset: $(wert .dock.preset), Probe: $(grep -c 'hypr-shell-probe dock-preset-island' "$T/qs.log"))"; dock_ok=0; fi
+    sleep 1; bild dock-island
+    ipc settings close; sleep 1
+    sleep 2
+    if [ -n "$im" ]; then grim -g "$(dk geometry | jq -r '"\((1920 - .windowWidth) / 2 + .x - 20 | floor),\(1080 - .windowHeight + .y - 20 | floor) \(.width + 40)x\(.height + 40)"')" "$T/dock-vorher.png"; fi
+    g1="$(dk geometry)"
+    "$HOME/.local/bin/shell-dock" export "$T/dock-export.json" >/dev/null 2>&1
+    "$HOME/.local/bin/shell-dock" reset >/dev/null 2>&1; sleep 2
+    g2="$(dk geometry)"
+    "$HOME/.local/bin/shell-dock" import "$T/dock-export.json" >/dev/null 2>&1
+    for _ in $(seq 1 30); do [ "$(dk geometry)" = "$g1" ] && break; sleep 0.3; done
+    # Symbole laden asynchron: warten, bis alles gezeichnet ist
+    sleep 3
+    if [ "$(dk geometry)" = "$g1" ] && [ "$g2" != "$g1" ]; then echo "  ok: Export, Reset all und Import: dieselbe Lage und Grösse"
+    else echo "  FEHLER: nach Import $(dk geometry) statt $g1"; dock_ok=0; fi
+    if [ -n "$im" ]; then
+        grim -g "$(jq -r '"\((1920 - .windowWidth) / 2 + .x - 20 | floor),\(1080 - .windowHeight + .y - 20 | floor) \(.width + 40)x\(.height + 40)"' <<<"$g1")" "$T/dock-nachher.png"
+        # kleine Toleranz für Kantenglättung; die Lage prüft schon der Vergleich der Geometrie
+        abw="$(vergleich -metric AE -fuzz 8% "$T/dock-vorher.png" "$T/dock-nachher.png" null: 2>&1 | cut -d' ' -f1 | cut -d. -f1)"
+        flaeche="$("$im" "$T/dock-vorher.png" -format '%[fx:w*h]' info: 2>/dev/null || echo 100000)"
+        if [ -n "$abw" ] && [ "$abw" -le $(( ${flaeche%.*} / 200 )) ]; then echo "  ok: Screenshot nach dem Import gleicht dem davor ($abw Pixel abweichend)"
+        else echo "  FEHLER: Screenshot nach dem Import anders ($abw Pixel)"; dock_ok=0; fi
+    fi
+    echo '{"dock": {"icon_size": 9999' > "$T/kaputt.json"
+    if ! "$HOME/.local/bin/shell-dock" import "$T/kaputt.json" >/dev/null 2>&1 && [ "$(dk geometry)" = "$g1" ] && kill -0 "$qspid" 2>/dev/null; then
+        echo "  ok: kaputte Datei abgelehnt, Dock unverändert"
+    else echo "  FEHLER: kaputte Datei"; dock_ok=0; fi
+    for p in minimal compact full mac; do
+        "$HOME/.local/bin/shell-dock" preset "$p" >/dev/null 2>&1; sleep 2
+        # minimal versteckt sich ohne Maus: für das Bild mit der Tastatur sichtbar halten
+        [ "$p" = minimal ] && { dk focus >/dev/null; sleep 1; }
+        bild "dock-$p"
+        [ "$p" = minimal ] && dk key Escape >/dev/null
+    done
+
     # CPU in Ruhe: Quickshell 10 s messen, mit und ohne Dock
     cpu() { local a b; a=$(awk '{print $14+$15}' "/proc/$qspid/stat"); sleep 10; b=$(awk '{print $14+$15}' "/proc/$qspid/stat"); awk -v d=$((b - a)) -v hz="$(getconf CLK_TCK)" 'BEGIN { printf "%.2f", d / hz / 10 * 100 }'; }
     mit="$(cpu)"

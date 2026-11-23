@@ -231,7 +231,7 @@ clip_ok=1
 if command -v cliphist >/dev/null 2>&1 && "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target clipboard'; then
     echo "---- Zwischenablage ----"
     for t in "first copy" "second copy" "third copy"; do printf '%s' "$t" | cliphist store; done
-    [ -n "$im" ] && "$im" -size 160x90 gradient:'#e0457b'-'#2a7fd4' png:- | cliphist store
+    [ -n "$im" ] && "$im" -size 160x90 pattern:checkerboard -fill '#e0457b' -opaque black png:- | cliphist store
     ipc clipboard open; sleep 2; bild zwischenablage
     zahl="$("$qs" -p "$cfg" ipc call clipboard count 2>/dev/null)"
     erst="$("$HOME/.local/bin/shell-clipboard" list | jq -r '[.[] | select(.image == "")][0].text')"

@@ -124,6 +124,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(bin .. "shell-quickshell")
     -- Verlauf der Zwischenablage (nur mit clipboard.enabled, prüft shell-clipboard selbst)
     hl.exec_cmd(bin .. "shell-clipboard daemon")
+    -- Laptop: eingestellte Ladegrenze und Tastaturlicht anwenden (Standard: nichts ändern)
+    hl.exec_cmd(bin .. "shell-laptop apply")
 end)
 
 ------------------------------

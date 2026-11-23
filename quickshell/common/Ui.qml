@@ -24,6 +24,10 @@ Singleton {
     readonly property bool hyprland: (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "") !== ""
 
     readonly property bool settingsOpen: panel === "settings"
+    // was der Rechner kann (shell-laptop caps, später auch Anbindungen): Seiten und Zeilen mit
+    // "requires" im Schema erscheinen nur, wenn die Fähigkeit da ist
+    property var caps: ({})
+    function can(req) { return !req || caps[req] === true }
     property string settingsPage: "home"
     // Schlüssel, zu dem die App nach dem Öffnen springen soll (Suche)
     property string settingsFocus: ""

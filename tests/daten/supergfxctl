@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Attrappe von supergfxctl: Modus in $ASUS_STATE/gfx (Standard Hybrid)
+d="${ASUS_STATE:-/tmp/asus}"; mkdir -p "$d"
+case "$1" in
+    -g) cat "$d/gfx" 2>/dev/null || echo Hybrid ;;
+    -s) echo "[Integrated, Hybrid, AsusMuxDgpu]" ;;
+    -p) if [ -f "$d/pending" ]; then cat "$d/pending"; else echo "No action required"; fi ;;
+    -m) echo "$2" > "$d/gfx"; echo "Logout required to complete mode change" > "$d/pending"; echo "Graphics mode changed to $2. Required user action is: Logout required to complete mode change" ;;
+esac

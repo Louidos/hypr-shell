@@ -263,7 +263,7 @@ Datei überschreibt der Installer nie, und sie gilt zuletzt.
 
 ### Mit der Einstellungs-App
 
-Links stehen die Seiten Home, Bar, Look, Theme, Desktop, Dashboard, Panel, Lock & Idle, Input,
+Links stehen die Seiten Home, Bar, Look, Theme, Desktop, Dashboard, Panel, System, Laptop (nur auf Laptops mit asusctl, supergfxctl oder power-profiles-daemon), Lock & Idle, Input,
 Monitors, Apps, Keybinds und About; rechts jeder Wert mit Erklärung und dem passenden Bedienelement.
 Ein Regler wirkt schon beim Ziehen. Neben einem geänderten Wert steht **Reset**, oben auf jeder Seite
 **Reset page**, ganz oben **Undo** und **Redo**; die Suche findet Werte über Titel, Erklärung und
@@ -292,6 +292,21 @@ alten `~/.config/hypr/hypr-shell-local.lua` (Version 1.1) wandern beim ersten St
 `settings.json`; eine `settings.json` aus Version 1.0 oder 1.1 funktioniert unverändert.
 
 ## Laptop
+
+Auf ASUS-ROG-Laptops (z. B. Zephyrus M16) steuert hypr-shell über `asusctl` und `supergfxctl`
+(installiert der Installer nicht selbst, er schlägt sie nur vor):
+
+- **Leistungsprofil** – Schalter im Panel (Quiet → Balanced → Performance, über asusctl; ohne
+  asusctl über power-profiles-daemon) und auf der Seite **Laptop** der Einstellungs-App.
+- **Grafik-Modus** – Seite Laptop: Integrated, Hybrid, AsusMuxDgpu … mit Bestätigung, danach ab- oder
+  neu anmelden.
+- **Ladegrenze** – `laptop.charge_limit` (z. B. 80 %); asusd behält sie über Neustarts, hypr-shell setzt
+  sie beim Anmelden noch einmal.
+- **Tastaturlicht** – `laptop.kbd_light` (off/low/med/high) und `laptop.kbd_follow_wallpaper` (Farbe folgt
+  dem Hintergrundbild).
+
+Die Seite Laptop und jede Zeile darauf erscheinen nur, wenn der Rechner die Funktion hat; ohne
+asusctl taucht nichts davon auf. Befehl: `shell-laptop status`.
 
 Für Laptops sind vor allem diese Werte gedacht: `monitors.scale` (Skalierung, `"auto"` oder eine
 Zahl wie `"1.5"`), `input.touchpad.natural_scroll` und `input.touchpad.tap_to_click`. Ein Bildschirm
@@ -322,6 +337,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-wallpaper <bild>` | Hintergrundbild setzen und Farben erzeugen (Farbmodus aus `theme.colors`) |
 | `shell-screenshot region\|screen\|folder` | Screenshot bzw. Ordner öffnen |
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
+| `shell-laptop status\|profile\|gfx\|charge\|kbd …` | Laptop-Funktionen (asusctl, supergfxctl, power-profiles-daemon) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |

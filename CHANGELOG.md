@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Hinzugefügt
+- Leistungsprofil, Grafik-Modus, Ladegrenze und Tastaturlicht für ROG-Laptops (asusctl, supergfxctl) auf der neuen Einstellungsseite Laptop; sie erscheint nur, wenn der Rechner das kann (#56)
+
 ## 1.3.0 – 2026-11-23
 
 ### Hinzugefügt

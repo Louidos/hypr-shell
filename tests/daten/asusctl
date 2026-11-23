@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Attrappe von asusctl 6.3+ (ASUS_ALT=1: Schreibweise bis 6.2). Zustand in $ASUS_STATE/…
+d="${ASUS_STATE:-/tmp/asus}"; mkdir -p "$d"
+echo "$*" >> "$d/log"
+p="$(cat "$d/profile" 2>/dev/null || echo Balanced)"
+if [ "${ASUS_ALT:-0}" = 1 ]; then
+    case "$*" in
+        "profile get"*) echo "error: unknown subcommand" >&2; exit 1 ;;
+        "profile -p") echo "Active profile is $p" ;;
+        "profile -P "*) echo "$3" > "$d/profile" ;;
+        "-c "*) echo "$2" > "$d/charge" ;;
+        "-k "*) echo "$2" > "$d/kbd" ;;
+        "aura static -c "*) echo "$4" > "$d/color" ;;
+        *) exit 1 ;;
+    esac
+    exit 0
+fi
+case "$*" in
+    "profile get") printf 'Active profile: %s\n\nAC profile Performance\nBattery profile Quiet\n' "$p" ;;
+    "profile list") printf 'Quiet\nBalanced\nPerformance\n' ;;
+    "profile set "*) echo "$3" > "$d/profile" ;;
+    "battery limit "*) echo "$3" > "$d/charge" ;;
+    "battery info") echo "Current battery charge limit: $(cat "$d/charge" 2>/dev/null || echo 100)%" ;;
+    "leds set "*) echo "$3" > "$d/kbd" ;;
+    "aura effect static -c "*) echo "$5" > "$d/color" ;;
+    *) exit 1 ;;
+esac

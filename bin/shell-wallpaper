@@ -86,6 +86,10 @@ neu_laden() {
     pkill -SIGUSR2 -x waybar 2>/dev/null || true          # Waybar lädt sein Aussehen neu
     pkill -SIGUSR1 -x kitty 2>/dev/null || true           # kitty lädt seine Konfiguration neu
     # Quickshell beobachtet ~/.config/hypr-shell/colors.json selbst
+    # Tastaturfarbe folgt dem Hintergrundbild (laptop.kbd_follow_wallpaper; sonst tut shell-laptop nichts)
+    if [ -x "$(dirname "$(readlink -f "$0")")/shell-laptop" ]; then
+        "$(dirname "$(readlink -f "$0")")/shell-laptop" apply >/dev/null 2>&1 || true
+    fi
 }
 
 setzen() {

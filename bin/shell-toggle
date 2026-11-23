@@ -29,7 +29,9 @@ wifi_da() { hat nmcli && nmcli -t -f TYPE device 2>/dev/null | grep -qx wifi; }
 bt_da() { hat bluetoothctl && compgen -G "$SYSFS/class/bluetooth/hci*" >/dev/null; }
 audio_da() { hat wpctl || hat pamixer; }
 night_da() { hat hyprsunset; }
-profil_da() { hat powerprofilesctl && powerprofilesctl get >/dev/null 2>&1; }
+# Leistungsprofil über shell-laptop: asusctl (ROG), sonst power-profiles-daemon
+LAPTOP="$(dirname "$(readlink -f "$0")")/shell-laptop"
+profil_da() { [ -x "$LAPTOP" ] && "$LAPTOP" profile get >/dev/null 2>&1; }
 
 wifi_an() { hat nmcli && [ "$(nmcli radio wifi 2>/dev/null)" = enabled ]; }
 bt_an() { bt_da && timeout 3 bluetoothctl show 2>/dev/null | grep -q 'Powered: yes'; }
@@ -41,7 +43,7 @@ audio_an() { # an = Ton nicht stumm
     [ "$(pamixer --get-mute 2>/dev/null)" != true ]
 }
 night_an() { [ -f "$NIGHT_PID" ] && kill -0 "$(cat "$NIGHT_PID")" 2>/dev/null; }
-profil() { powerprofilesctl get 2>/dev/null; }
+profil() { "$LAPTOP" profile get 2>/dev/null; }
 # Nicht stören: Zustand in einer Datei, die der Benachrichtigungsdienst von hypr-shell (Quickshell) beobachtet
 DND="$DATA/dnd"
 dnd_an() { [ "$(cat "$DND" 2>/dev/null)" = true ]; }
@@ -119,20 +121,11 @@ nightlight() {
 
 # Leistungsprofil: ein Klick schaltet weiter (power-saver → balanced → performance → power-saver);
 # Profile, die der Rechner nicht hat, werden übersprungen
-PROFILE=(power-saver balanced performance)
 profile() {
     profil_da || { echo "kein Leistungsprofil verfügbar" >&2; return 1; }
-    local ziel="${1:-next}" jetzt i n
-    if [ "$ziel" = next ] || [ "$ziel" = toggle ]; then
-        jetzt="$(profil)"
-        for i in 0 1 2; do [ "${PROFILE[$i]}" = "$jetzt" ] && break; done
-        for n in 1 2 3; do
-            ziel="${PROFILE[$(( (i + n) % 3 ))]}"
-            powerprofilesctl set "$ziel" 2>/dev/null && return 0
-        done
-        return 1
-    fi
-    powerprofilesctl set "$ziel"
+    local ziel="${1:-next}"
+    if [ "$ziel" = next ] || [ "$ziel" = toggle ]; then "$LAPTOP" profile next
+    else "$LAPTOP" profile set "$ziel"; fi
 }
 
 # Keep Awake: verhindert Sperren und Standby (hypridle beachtet systemd-inhibit)

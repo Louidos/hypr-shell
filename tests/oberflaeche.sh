@@ -128,7 +128,12 @@ starte_qs
 
 # bild NAME: Screenshot, dazu den Stand des Logs (für die Lage der Bilder, siehe Probe.qml)
 bild() { grim "$OUT/$1.png" && cp "$T/qs.log" "$T/log-$1" && echo "  Screenshot: $1.png"; }
-ipc() { "$qs" -p "$cfg" ipc call "$@" >/dev/null 2>&1; }
+# IPC-Aufruf; schlägt er fehl, steht der Grund im Log und der Test läuft weiter (die Prüfungen danach melden es)
+ipc() {
+    "$qs" -p "$cfg" ipc call "$@" >/dev/null 2>"$T/ipc.err" && return 0
+    echo "  Hinweis: ipc call $* ging nicht: $(head -c 300 "$T/ipc.err" | tr '\n' ' ')"
+    return 0
+}
 
 # bereich SCREENSHOT PROBE TEXT: der Ausschnitt (Rand je 20 % weggelassen) darf nicht einfarbig sein.
 # So fällt auf, wenn Profilbild, Vorschaubild oder App-Symbol leer bleiben.

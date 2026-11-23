@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Begrüssung je nach Tageszeit, z. B. "Good evening, louis" (für Sperrbildschirm und Skripte).
+set -euo pipefail
+h=$((10#$(date +%H)))
+if [ "$h" -lt 5 ]; then g="Good night"
+elif [ "$h" -lt 12 ]; then g="Good morning"
+elif [ "$h" -lt 18 ]; then g="Good afternoon"
+else g="Good evening"; fi
+echo "$g, ${USER:-$(id -un)}"

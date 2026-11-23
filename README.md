@@ -82,6 +82,16 @@ Glas-Panel heraus; es schliesst, sobald die Maus es verlässt.
 Reihenfolge und Sichtbarkeit der Karten (`panel.sections`), App-Liste (`panel.apps`) und
 Schalter (`panel.toggles`) stehen in `settings.json` und wirken sofort.
 
+## Sperrbildschirm
+
+**SUPER+L** sperrt. Der Sperrbildschirm zeigt den aktuellen Bildschirm unscharf und
+abgedunkelt, links Profilbild, grosse gestapelte Uhr, Datum, Begrüssung, das
+Passwortfeld als schlichte Linie und Knöpfe für Standby, Neustart und Herunterfahren.
+Farben kommen aus dem Hintergrundbild.
+
+hypridle sperrt nach 5 Minuten ohne Eingabe und schickt den Rechner nach 15 Minuten
+in den Standby (vorher wird gesperrt). **Keep Awake** im Panel setzt beides aus.
+
 ## Aufbau
 
 | Ordner | Inhalt |

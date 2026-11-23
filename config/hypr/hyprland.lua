@@ -41,7 +41,7 @@ local S = {
         opacity = { inactive = 1.0 },
         animations = { enabled = true, speed = "normal" },
     },
-    theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 } },
+    theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 }, apps = { gtk = true, qt = true } },
     input = {
         layout = "us", variant = "", sensitivity = 0,
         touchpad = { natural_scroll = false, tap_to_click = true },

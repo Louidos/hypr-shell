@@ -25,7 +25,7 @@ printf '#!/bin/sh\necho "$*" >> "%s/xdg-open.log"\n' "$T" > "$T/bin/xdg-open"
 printf '#!/bin/sh\necho "$*" >> "%s/notify.log"\n' "$T" > "$T/bin/notify-send"
 ln -s "$REPO/tests/daten/hyprctl" "$T/bin/hyprctl"
 ln -s "$(command -v sleep)" "$T/bin/hyprlock"
-chmod +x "$T/bin/"*
+chmod +x "$T/bin/xdg-open" "$T/bin/notify-send"
 export PATH="$T/bin:$PATH"
 port=$(( 23000 + RANDOM % 20000 ))
 S="http://127.0.0.1:$port"

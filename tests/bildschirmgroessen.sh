@@ -59,32 +59,41 @@ unset WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CONFIG_HOME SWAYSO
 jq '.weather.location = "Zurich" | .missa.enabled = true | .missa.url = "http://127.0.0.1:9"' \
     "$REPO/settings/settings.example.json" > "$HOME/.config/hypr-shell/settings.json"
 
-cat > "$T/sway.conf" <<CONF
-output HEADLESS-1 resolution 1920x1080 position 0 0
-output * bg $REPO/wallpapers/hypr-shell-grau.png fill
-default_border none
-CONF
 cp "$(command -v sway)" "$T/sway"
-WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 "$T/sway" -c "$T/sway.conf" > "$T/sway.log" 2>&1 &
-swaypid="$!"
-pids+=("$swaypid")
-for _ in $(seq 1 100); do
-    sock="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'wayland-*' ! -name '*.lock' -print -quit)"
-    [ -n "$sock" ] && break
-    sleep 0.1
-done
-[ -n "${sock:-}" ] || { echo "FEHLER: sway startet nicht"; cat "$T/sway.log"; exit 1; }
-export WAYLAND_DISPLAY="${sock##*/}" QT_QUICK_BACKEND=software QT_QPA_PLATFORM=wayland QS_ICON_THEME=Papirus-Dark
-export SWAYSOCK
-SWAYSOCK="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'sway-ipc.*.sock' -print -quit)"
-
 cfg="$HOME/.config/quickshell/hypr-shell"
 mkdir -p "$T/fake"
 for p in hyprctl nmcli bluetoothctl; do ln -sf "$REPO/tests/daten/$p" "$T/fake/$p"; done
-PATH="$T/fake:$PATH" HYPRCTL_LOG="$T/hyprctl.log" HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
-qspid="$!"
-pids+=("$qspid")
-sleep 6
+
+# sitzung MODUS SKALIERUNG: sway (headless) mit einem Bildschirm und Quickshell starten
+sitzung() {
+    [ -n "${qspid:-}" ] && kill "$qspid" 2>/dev/null
+    [ -n "${swaypid:-}" ] && kill "$swaypid" 2>/dev/null
+    sleep 1
+    rm -f "$XDG_RUNTIME_DIR"/wayland-* "$XDG_RUNTIME_DIR"/sway-ipc.*
+    cat > "$T/sway.conf" <<CONF
+output HEADLESS-1 resolution $1 scale $2 position 0 0
+output * bg $REPO/wallpapers/hypr-shell-grau.png fill
+default_border none
+CONF
+    WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 "$T/sway" -c "$T/sway.conf" >> "$T/sway.log" 2>&1 &
+    swaypid="$!"
+    pids+=("$swaypid")
+    sock=""
+    for _ in $(seq 1 100); do
+        sock="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'wayland-*' ! -name '*.lock' -print -quit)"
+        [ -n "$sock" ] && break
+        sleep 0.1
+    done
+    [ -n "${sock:-}" ] || { echo "FEHLER: sway startet nicht"; tail -n 20 "$T/sway.log"; exit 1; }
+    export WAYLAND_DISPLAY="${sock##*/}" QT_QUICK_BACKEND=software QT_QPA_PLATFORM=wayland QS_ICON_THEME=Papirus-Dark
+    SWAYSOCK="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'sway-ipc.*.sock' -print -quit)"
+    export SWAYSOCK
+    PATH="$T/fake:$PATH" HYPRCTL_LOG="$T/hyprctl.log" HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
+    qspid="$!"
+    pids+=("$qspid")
+    sleep 6
+}
+sitzung 1920x1080 1
 
 ipc() { "$qs" -p "$cfg" ipc call "$@" >/dev/null 2>&1 || true; }
 # letzte Lage einer Probe seit Zeile $2 des Logs: "x y b h"
@@ -198,7 +207,13 @@ else
     "$HOME/.local/bin/shell-set" reset desktop.screen >/dev/null 2>&1; sleep 2
 fi
 
-# ---- 4K zuletzt (braucht im Container den meisten Speicher)
+if ! kill -0 "$qspid" 2>/dev/null; then echo "FEHLER: Quickshell ist abgestürzt"; fehler=1; fi
+
+# ---- 4K in einer frischen Sitzung (sway stürzt nach dem Abstecken eines Bildschirms beim nächsten
+# Moduswechsel ab – ein Fehler in sway, nicht in hypr-shell); auch hier ohne Neustart von Quickshell
+# zwischen Skalierung 2 und 1
+echo "== 4. 4K"
+sitzung 3840x2160 2
 groesse 4k-skalierung2 3840x2160 2 normal
 breite_1080="$(lage overlay-dashboard 1 | awk '{print $3}')"
 groesse 4k 3840x2160 1 normal

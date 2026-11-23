@@ -134,7 +134,10 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 | `CTRL + SUPER + M` | abmelden (Hyprland beenden; bis 1.9 `SUPER + M`) |
 | `SUPER + L` | sperren |
 | `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |
-| `SUPER + left` / `SUPER + right` / `SUPER + up` / `SUPER + down` | Fokus in diese Richtung |
+| `SUPER + left` / `SUPER + right` | Fenster an die linke/rechte Hälfte andocken (danach `SUPER + up`/`down`: Viertel) |
+| `SUPER + up` / `SUPER + down` | maximieren zwischen Leiste und Dock / wiederherstellen (nicht angedockt: minimieren) |
+| `SUPER + ALT + left` / `SUPER + ALT + right` / `SUPER + ALT + up` / `SUPER + ALT + down` | Fokus in diese Richtung (bis 1.9 `SUPER + Pfeile`) |
+| `SUPER + SHIFT + T` | Fenster-Modus: schwebend ↔ kacheln |
 | `SUPER + 1` … `SUPER + 0` | zu Arbeitsfläche 1–10 |
 | `SUPER + SHIFT + 1` … `SUPER + SHIFT + 0` | Fenster auf Arbeitsfläche 1–10 verschieben |
 | `SUPER + mouse_down` / `SUPER + mouse_up` (Mausrad) | nächste / vorige Arbeitsfläche |
@@ -291,6 +294,20 @@ nach 5 Minuten und geht nach 15 Minuten in den Standby (vorher wird gesperrt); d
 in `lock.after`, `lock.screen_off` und `lock.suspend`.
 
 ![Sperrbildschirm](docs/screenshots/lockscreen.png)
+
+### Fenster andocken und Fenster-Modus
+
+Fenster sind jetzt standardmässig **frei verschiebbar** wie bei Windows und macOS: neue Fenster
+öffnen schwebend und mittig (`fenster.modus = schwebend`; `kacheln` = automatisch gekachelt wie
+bisher, umschalten mit `SUPER + SHIFT + T` – wirkt sofort, auch auf offene Fenster). Ein Fenster mit
+`SUPER` + linker Maustaste an den **oberen Rand** ziehen: maximiert zwischen Leiste und Dock; an den
+**linken oder rechten Rand**: halbe Breite; in eine **Ecke**: ein Viertel. Beim Ziehen zeigt eine
+Glas-Fläche vorher, wo es landet; Wegziehen bringt die alte Grösse zurück. Zwischen zwei
+Bildschirmen wird nicht angedockt (das Fenster wechselt den Bildschirm). Per Tastatur:
+`SUPER + Pfeile` (siehe Tastenkürzel). Einstellungen → Look → Snapping (`andocken.*`: an/aus,
+Randabstand 8 px, Ecken 60 px, Vorschau, Animation). Im Kacheln-Modus wird ein Fenster beim
+Andocken schwebend. Hinweis: Ziehen an der Titelleiste (hyprbars) startet das Plugin selbst und dockt
+noch nicht an – dafür `SUPER` + Ziehen oder die Tastatur.
 
 ### Fenster wechseln (ALT + Tab)
 
@@ -555,6 +572,7 @@ automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelte
 | `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
+| `shell-snap key <richtung>\|modus [schwebend\|kacheln\|toggle]` | Andocken per Tastatur, Fenster-Modus |
 | `shell-switcher next\|prev\|commit\|cancel\|close` | ALT + Tab (von den Kürzeln aufgerufen) |
 | `shell-window minimize\|restore\|list` | Fenster minimieren, zurückholen, minimierte zeigen |
 | `shell-look presets\|preset <name>` | Voreinstellungen für das Aussehen: glass, minimal, gaming |

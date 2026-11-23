@@ -63,6 +63,17 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `fenster.knoepfe.stil` | `windows` | `windows`, `mac` | windows = minimize, maximize, close as quiet symbols; mac = red, yellow and green dots | `shell-set fenster.knoepfe.stil mac` |
 | `fenster.knoepfe.seite` | `auto` | `auto`, `rechts`, `links` | auto = right for windows style, left for mac style | `shell-set fenster.knoepfe.seite rechts` |
 | `fenster.titelleiste_ausnahmen` | `["org.gnome.*","firefox","chromium","google-chrome","code","code-oss","vesktop","discord","steam","steam_app_[0-9]+","gamescope","mpv","vlc","celluloid"]` | Liste von Texten | Window classes (regular expressions) that draw their own title bar (GNOME apps, browsers) or need all the space (games, videos) | `shell-set fenster.titelleiste_ausnahmen org.gnome.*,firefox,chromium,google-chrome,code,code-oss,vesktop,discord,steam,steam_app_[0-9]+,gamescope,mpv,vlc,celluloid,code` |
+| `fenster.modus` | `schwebend` | `schwebend`, `kacheln` | schwebend = windows open floating and centered and can be moved freely (like Windows/macOS), kacheln = windows tile automatically; switch with SUPER + SHIFT + T | `shell-set fenster.modus kacheln` |
+
+## andocken – andocken
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `andocken.enabled` | `true` | `true`, `false` | Drag a window (SUPER + left mouse button) to the top edge: maximized; left or right edge: half; into a corner: a quarter | `shell-set andocken.enabled false` |
+| `andocken.rand` | `8` | ganze Zahl 2 … 40 px | How close to the edge the mouse has to be | `shell-set andocken.rand 9` |
+| `andocken.ecke` | `60` | ganze Zahl 20 … 200 px | Area at the corners that snaps to a quarter | `shell-set andocken.ecke 65` |
+| `andocken.vorschau` | `true` | `true`, `false` | Glass area showing where the window will land | `shell-set andocken.vorschau false` |
+| `andocken.animation` | `true` | `true`, `false` | The preview grows smoothly into place | `shell-set andocken.animation false` |
 
 ## theme – Farben, Glas, Schriften, Mauszeiger
 
@@ -362,10 +373,15 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.restore` | `SUPER + SHIFT + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Bring back the window minimized last | `shell-set keybinds.restore "SUPER + B"` |
 | `keybinds.switcher` | `ALT + Tab` | Tasten wie `SUPER + Q`, leer = keine Taste | Hold the modifier and press Tab: next window, release to switch; Esc cancels, Q or Delete closes the chosen window | `shell-set keybinds.switcher "SUPER + B"` |
 | `keybinds.switcher_back` | `ALT + SHIFT + Tab` | Tasten wie `SUPER + Q`, leer = keine Taste | Like Switch windows, in the other direction | `shell-set keybinds.switcher_back "SUPER + B"` |
-| `keybinds.focus_left` | `SUPER + left` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the left | `shell-set keybinds.focus_left "SUPER + B"` |
-| `keybinds.focus_right` | `SUPER + right` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the right | `shell-set keybinds.focus_right "SUPER + B"` |
-| `keybinds.focus_up` | `SUPER + up` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window above | `shell-set keybinds.focus_up "SUPER + B"` |
-| `keybinds.focus_down` | `SUPER + down` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window below | `shell-set keybinds.focus_down "SUPER + B"` |
+| `keybinds.snap_left` | `SUPER + left` | Tasten wie `SUPER + Q`, leer = keine Taste | Window to the left half; from a half, up/down makes a quarter | `shell-set keybinds.snap_left "SUPER + B"` |
+| `keybinds.snap_right` | `SUPER + right` | Tasten wie `SUPER + Q`, leer = keine Taste | Window to the right half | `shell-set keybinds.snap_right "SUPER + B"` |
+| `keybinds.snap_up` | `SUPER + up` | Tasten wie `SUPER + Q`, leer = keine Taste | Maximize between bar and dock; from a half: the upper quarter | `shell-set keybinds.snap_up "SUPER + B"` |
+| `keybinds.snap_down` | `SUPER + down` | Tasten wie `SUPER + Q`, leer = keine Taste | Back to the old size; when not snapped: minimize; from a half: the lower quarter | `shell-set keybinds.snap_down "SUPER + B"` |
+| `keybinds.window_mode` | `SUPER + SHIFT + T` | Tasten wie `SUPER + Q`, leer = keine Taste | Switch the window mode for all windows (fenster.modus) | `shell-set keybinds.window_mode "SUPER + B"` |
+| `keybinds.focus_left` | `SUPER + ALT + left` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the left | `shell-set keybinds.focus_left "SUPER + B"` |
+| `keybinds.focus_right` | `SUPER + ALT + right` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the right | `shell-set keybinds.focus_right "SUPER + B"` |
+| `keybinds.focus_up` | `SUPER + ALT + up` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window above | `shell-set keybinds.focus_up "SUPER + B"` |
+| `keybinds.focus_down` | `SUPER + ALT + down` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window below | `shell-set keybinds.focus_down "SUPER + B"` |
 | `keybinds.workspace_mod` | `SUPER` | Tasten wie `SUPER + Q`, leer = keine Taste | Modifier for 1 … 0 (go to workspace) and the mouse wheel; empty = off | `shell-set keybinds.workspace_mod "ALT"` |
 | `keybinds.move_mod` | `SUPER + SHIFT` | Tasten wie `SUPER + Q`, leer = keine Taste | Modifier for 1 … 0 (move the window there); empty = off | `shell-set keybinds.move_mod "ALT"` |
 | `keybinds.mouse_mod` | `SUPER` | Tasten wie `SUPER + Q`, leer = keine Taste | Modifier for dragging (left button) and resizing (right button) windows; empty = off | `shell-set keybinds.mouse_mod "ALT"` |

@@ -22,8 +22,14 @@ fi
 
 T="$(mktemp -d)"
 pids=()
+# alle Ausgaben mitschreiben; am Ende stehen die FEHLER-Zeilen gesammelt da (das Log ist lang)
+exec 3>&1
+exec > >(tee -a "$T/ausgabe") 2>&1
 aufraeumen() {
     local p
+    if grep -q "FEHLER" "$T/ausgabe" 2>/dev/null; then
+        { echo "---- Zusammenfassung: FEHLER ----"; grep "FEHLER" "$T/ausgabe"; } >&3
+    fi
     for p in "${pids[@]}"; do kill "$p" 2>/dev/null || true; done
     rm -rf "$T"
 }
@@ -178,8 +184,9 @@ if command -v notify-send >/dev/null 2>&1 && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}
     if command -v dbus-send >/dev/null 2>&1; then
         besitzer="$(dbus-send --session --print-reply --dest=org.freedesktop.DBus / org.freedesktop.DBus.GetConnectionUnixProcessID \
             string:org.freedesktop.Notifications 2>/dev/null | awk '/uint32/ {print $2}')"
-        if [ "$besitzer" = "$qspid" ]; then echo "  ok: genau ein Benachrichtigungsdienst, und zwar hypr-shell (PID $besitzer)"
-        else echo "  FEHLER: Benachrichtigungsdienst gehört PID ${besitzer:-?}, nicht Quickshell ($qspid)"; note_ok=0; fi
+        wer="$(tr '\0' ' ' < "/proc/${besitzer:-0}/cmdline" 2>/dev/null)"
+        if [[ "$wer" == *"-p $cfg"* ]]; then echo "  ok: genau ein Benachrichtigungsdienst, und zwar hypr-shell (PID $besitzer)"
+        else echo "  FEHLER: Benachrichtigungsdienst gehört PID ${besitzer:-?} ($wer), nicht Quickshell"; note_ok=0; fi
     fi
     pgrep -x swaync >/dev/null && { echo "  FEHLER: swaync läuft"; note_ok=0; }
 else
@@ -313,7 +320,7 @@ bereich launcher launcher-first "erstes App-Symbol im Starter"
 
 # ohne ~/.face: Anfangsbuchstabe statt Bild
 if [ -n "$im" ]; then
-    kill "$qspid" 2>/dev/null || true
+    pkill -f -- "-p $cfg" 2>/dev/null || true   # auch den Kindprozess von Quickshell
     sleep 1
     rm -f "$HOME/.face"
     starte_qs

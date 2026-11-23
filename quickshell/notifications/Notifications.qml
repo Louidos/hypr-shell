@@ -21,6 +21,7 @@ Scope {
     readonly property int timeout: Settings.get("notifications.timeout", 6)
     readonly property int keep: Settings.get("notifications.history", 100)
     readonly property bool enabled: Settings.get("notifications.enabled", true)
+    readonly property var scr: Settings.screenFor(Settings.get("desktop.screen", ""))
 
     function entry(nid) { return history.find(e => e.nid === nid) }
     function add(n) {
@@ -116,8 +117,8 @@ Scope {
     // ---- Karten oben rechts (unter der Leiste), nur so gross wie die Karten selbst
     PanelWindow {
         id: cards
-        screen: Settings.screenFor(Settings.get("desktop.screen", ""))
-        visible: nc.popups.length > 0 && screen !== null
+        screen: nc.scr
+        visible: nc.popups.length > 0 && nc.scr !== null
         anchors { top: true; right: true }
         margins { top: 8; right: 12 }
         implicitWidth: 380

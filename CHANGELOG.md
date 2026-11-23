@@ -14,6 +14,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Passender Login-Bildschirm (SDDM) im Stil des Sperrbildschirms, installierbar mit `./install.sh --login-theme`, zurück mit `--login-theme-remove`; ohne SDDM wird nichts geändert (#71)
 - Dateimanager und weitere Programme übernehmen die Farben des Hintergrundbilds: GTK und Qt standardmässig, Firefox, Discord (Vesktop) und Spotify (spicetify) einzeln einschaltbar, wenn installiert; Abschalten legt die gesicherten Dateien zurück (#70)
 
+### Geändert
+- Das Dock weicht der Leiste aus, verschwindet bei Vollbild und Spielen und passt sich Bildschirmen und Hintergrundbild an (#81)
+
 ### Behoben
 - Missa-Agent: Ein Auftrag direkt nach einer Änderung der Einstellungen fragt nicht mehr fälschlich nach (#91)
 

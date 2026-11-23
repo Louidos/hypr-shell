@@ -100,16 +100,34 @@ PanelWindow {
     }
     implicitWidth: vertical ? d.margin + thickness + outward : Math.min(screenLen, bodyLen + 2 * sideRoom)
     implicitHeight: vertical ? Math.min(screenLen, bodyLen + 2 * sideRoom) : d.margin + thickness + outward
-    visible: d.on && d.shown
+    // Vollbild oder Gaming-Modus (dock.hide_on_fullscreen): kein Dock, auch die Kante zeigt es nicht
+    readonly property bool fullscreenHere: {
+        if (!d.hideOnFullscreen) return false
+        if (Ui.gaming) return true
+        if (monitor && monitor.activeWorkspace && monitor.activeWorkspace.hasFullscreen === true) return true
+        const tl = d.toplevels
+        // ohne Hyprland (oder ohne hasFullscreen): ein Vollbild-Fenster auf diesem Bildschirm; unter
+        // Hyprland nur das aktive, weil ein Vollbild auf einer anderen Arbeitsfläche nicht stört
+        for (let i = 0; i < tl.length; i++)
+            if (tl[i] && tl[i].fullscreen && (!Ui.hyprland || tl[i].activated) && d.onScreen(tl[i], screen)) return true
+        return false
+    }
+    visible: d.on && d.shown && !fullscreenHere
     color: "transparent"
-    exclusionMode: d.reserve ? ExclusionMode.Normal : ExclusionMode.Ignore
+    // reserve: Fenster weichen aus. Leiste auf derselben Kante (dock.avoid_bar): das Dock beachtet
+    // deren reservierten Platz (exclusive zone 0 = nichts reservieren, aber anderen ausweichen)
+    exclusionMode: d.reserve || (d.avoidBar && d.barSameEdge) ? ExclusionMode.Normal : ExclusionMode.Ignore
     exclusiveZone: d.reserve ? d.margin + thickness : 0
+    readonly property string exclusionText: d.reserve ? "reserve" : d.avoidBar && d.barSameEdge ? "avoid" : "ignore"
     WlrLayershell.layer: d.topLayer ? WlrLayer.Top : WlrLayer.Bottom
     WlrLayershell.namespace: "hypr-shell-dock"
     WlrLayershell.keyboardFocus: keyboard ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    mask: hidden ? edgeRegion : bodyRegion
+    // ist ein Panel offen (Dashboard, Starter, Power-Menü …), nimmt das Dock keine Eingaben an
+    readonly property bool inputOn: Ui.panel === "" || Ui.panel === "settings"
+    mask: !inputOn ? noRegion : hidden ? edgeRegion : bodyRegion
     Region { id: bodyRegion; item: body }
     Region { id: edgeRegion; item: edgeStrip }
+    Region { id: noRegion }
 
     // ---- Verstecken (dock.autohide): never, always (Maus geht), smart (ein Fenster überdeckt das Dock).
     // Versteckt bleibt ein schmaler, unsichtbarer Streifen an der Kante; Mauskontakt dort blendet
@@ -419,7 +437,9 @@ PanelWindow {
             color: win.d.glassColor
             border.width: win.d.borderWidth
             border.color: win.d.borderColor
+            // Bildwechsel: Glas und Rand färben sanft um
             Behavior on color { ColorAnimation { duration: 400 } }
+            Behavior on border.color { ColorAnimation { duration: 400 } }
         }
 
         Flickable {

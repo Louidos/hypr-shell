@@ -290,3 +290,34 @@ Sensor) und der echte SDDM-Anmeldebildschirm.
 | `--login-theme-remove` stellt den vorherigen Zustand her | automatisch in einer Wurzel-Attrappe |
 | Thema startet im Testmodus ohne Fehler | automatisch (`sddm-greeter-qt6 --test-mode` in der CI) |
 | Anmelden mit dem neuen Bildschirm, Sitzung „Hyprland“ wählbar | von Hand |
+
+## Dock (Version 1.7.0)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Dock mittig unten, 10 px vom Rand, abgerundet, Glas | Lage und Masse automatisch (`tests/oberflaeche.sh`); Blur von Hand |
+| Angeheftete Programme starten, laufende zeigen einen Punkt, Klick holt nach vorn | Punkt automatisch (Testfenster); Starten und nach vorn holen von Hand |
+| kitty, Firefox, Flatpak, Steam-Spiel bekommen das richtige Symbol | automatisch (`tests/fixtures/dock/`) |
+| Klicks neben dem Dock erreichen das Fenster darunter | von Hand (Eingabefläche = Glas) |
+| `dock.enabled` false: kein Dock-Fenster, Bildschirm wie vorher | automatisch |
+| In Ruhe höchstens 1 % CPU | automatisch (Unterschied mit/ohne Dock über 10 s); auf dem Gerät mit `pidstat 30 1 -p $(pgrep -f hypr-shell)` |
+| Rechtsklick-Menü mit Desktop-Aktionen | automatisch |
+| Umsortiert bleibt nach `shell-quickshell restart` gleich | automatisch |
+| Herausziehen löst an, Programm bleibt offen | automatisch (Lösen); Ziehen mit der Maus von Hand |
+| Ordner, Trenner, Papierkorb nur, wenn eingetragen und vorhanden | automatisch |
+| Ganz mit der Tastatur bedienbar (SUPER+B) | automatisch (Tasten über IPC); echte Tastatur von Hand |
+| Ohne Benachrichtigungsdienst keine Zähler, kein Fehler | automatisch |
+| Vergrösserung als Welle, andere springen nicht | Rechenweg automatisch; Aussehen von Hand |
+| smart: weg bei überdeckendem Fenster, zurück über die Kante | Logik automatisch; mit echten Fenstern und Maus von Hand |
+| `anim_ms` 0: keine Bewegung | automatisch |
+| 20 Symbole ohne Ruckeln | Rechenzeit automatisch; flüssige Darstellung von Hand (GPU) |
+| Jeder Wert in der App, wirkt sofort | automatisch (Schema, `shell-set`, Voreinstellung aus der App) |
+| Voreinstellungen lassen `dock.items` in Ruhe | automatisch (`tests/dock.sh`) |
+| Export, Reset all, Import: gleiche Darstellung | automatisch (Lage und Screenshot) |
+| Werte ausserhalb begrenzt, kaputte Datei abgelehnt | automatisch |
+| Leiste und Dock überdecken sich nicht | automatisch (Leiste unten, vier Voreinstellungen); Leiste oben mit Dock oben von Hand |
+| Vollbild-Spiel: Dock weg und danach wieder da | automatisch (Vollbild-Testfenster, Gaming-Modus); echtes Spiel von Hand |
+| Zweiter Bildschirm, Abstecken | automatisch (sway headless); echter Monitor und Skalierung 1.25/2.0 von Hand |
+| Bildwechsel färbt das Dock um | automatisch |
+| Nach `hyprctl reload` ein Dock pro Bildschirm, `hyprctl configerrors` leer | von Hand (echtes Hyprland); `Hyprland --verify-config` automatisch |
+

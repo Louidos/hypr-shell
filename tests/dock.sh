@@ -25,7 +25,7 @@ set_() { "$HOME/.local/bin/shell-set" "$@" >/dev/null 2>&1; }
 "$HOME/.local/bin/shell-apply" --no-reload >/dev/null 2>&1
 
 echo "== Schema"
-tabelle="enabled position monitor running_per_monitor mode layer margin icon_size icon_min_size padding spacing radius max_length glass_opacity blur border_width border_color shadow color_mode custom_color icon_style labels indicator indicator_color show_running badges previews magnify magnify_factor magnify_range anim_ms bounce_on_launch autohide show_delay_ms hide_delay_ms launcher_button trash items preset"
+tabelle="enabled position monitor running_per_monitor mode layer margin icon_size icon_min_size padding spacing radius max_length glass_opacity blur border_width border_color shadow color_mode custom_color icon_style labels indicator indicator_color show_running badges previews magnify magnify_factor magnify_range anim_ms bounce_on_launch autohide show_delay_ms hide_delay_ms hide_on_fullscreen avoid_bar launcher_button trash items preset"
 fehlt=""
 for k in $tabelle; do jq -e --arg k "dock.$k" 'any(.keys[]; .key == $k)' "$S" >/dev/null || fehlt="$fehlt $k"; done
 pruefe '[ -z "$fehlt" ]' "jeder Wert aus der Tabelle steht im Schema (${fehlt:-alle})"

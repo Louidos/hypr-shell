@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Attrappe von hyprsunset: merkt sich die Argumente und wartet
+echo "$*" > "${HYPRSUNSET_LOG:-/dev/null}"
+exec sleep 300

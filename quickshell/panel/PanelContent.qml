@@ -9,9 +9,14 @@ FocusScope {
     id: pc
     property var panel
     property string query: ""
+    // Unterseite: "" (Übersicht), "wifi", "bluetooth" oder "audio"
+    property string page: ""
+    readonly property var pageTitles: ({ wifi: "Wi-Fi", bluetooth: "Bluetooth", audio: "Sound" })
     readonly property bool typing: query.length > 0
     readonly property var sections: Settings.get("panel.sections", ["awake", "apps", "media", "shot", "toggles"])
-    implicitHeight: col.implicitHeight + 28
+    implicitHeight: (page === "" ? col.implicitHeight : sub.implicitHeight) + 28
+    // Esc auf einer Unterseite: zurück zur Übersicht (erst danach schliesst Esc das Panel)
+    Keys.onEscapePressed: event => { if (page !== "") { page = ""; event.accepted = true } else event.accepted = false }
 
     SystemClock { id: clock; precision: SystemClock.Minutes }
 
@@ -21,8 +26,45 @@ FocusScope {
     }
     readonly property string bin: Settings.home + "/.local/bin/"
 
+    // ---- Unterseite: Zurück-Pfeil, Titel, Inhalt
+    Column {
+        id: sub
+        visible: pc.page !== ""
+        x: 14
+        y: 14
+        width: parent.width - 28
+        spacing: 10
+        Item {
+            width: parent.width
+            height: 36
+            IconButton {
+                id: back
+                anchors.verticalCenter: parent.verticalCenter
+                icon: "󰁍"
+                onClicked: pc.page = ""
+                Probe { name: "panel-back" }
+            }
+            Txt {
+                anchors { left: back.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                text: pc.pageTitles[pc.page] || ""
+                size: 16
+                weight: Font.Bold
+                font.family: Theme.mono
+            }
+        }
+        Loader {
+            width: parent.width
+            active: pc.page !== ""
+            sourceComponent: pc.page === "wifi" ? wifiPage : pc.page === "bluetooth" ? btPage : pc.page === "audio" ? audioPage : null
+        }
+    }
+    Component { id: wifiPage; WifiPage { panel: pc.panel } }
+    Component { id: btPage; BluetoothPage { panel: pc.panel } }
+    Component { id: audioPage; AudioPage { panel: pc.panel } }
+
     Column {
         id: col
+        visible: pc.page === ""
         x: 14
         y: 14
         width: parent.width - 28
@@ -292,36 +334,74 @@ FocusScope {
         }
     }
 
-    // ---- Quick Toggles
+    // ---- Quick Toggles: bis zu vier je Reihe; Schalter, die der Rechner nicht hat (Zustand null),
+    // fehlen. WLAN, Bluetooth und Ton haben einen kleinen Pfeil zur Unterseite (auch Rechtsklick).
     Component {
         id: togglesCard
         GlassCard {
             id: tg
-            readonly property var items: Settings.get("panel.toggles", ["wifi", "bluetooth", "dnd", "gaming", "settings"])
-            readonly property var icons: ({ wifi: "󰤨", bluetooth: "󰂯", dnd: "󰂚", gaming: "󰊗", settings: "", awake: "󰅶" })
-            height: 16 + 20 + 10 + 44 + 16
+            readonly property var items: pc.panel.toggles
+            readonly property var icons: ({ wifi: "󰤨", bluetooth: "󰂯", audio: "󰕾", dnd: "󰂚", gaming: "󰊗", settings: "", awake: "󰅶", nightlight: "󰖔" })
+            readonly property var profileIcons: ({ "power-saver": "󰌪", balanced: "󰾅", performance: "󰓅" })
+            readonly property var pages: ["wifi", "bluetooth", "audio"]
+            readonly property int perRow: Math.min(4, Math.max(1, items.length))
+            readonly property real bw: (tg.width - 24 - 8 * (perRow - 1)) / perRow
+            height: 16 + 20 + 10 + grid.implicitHeight + 16
             Txt { x: 16; y: 16; text: "Quick Toggles"; size: 13; weight: Font.Bold; font.family: Theme.mono }
-            Row {
+            Txt {
+                anchors { right: parent.right; rightMargin: 16; top: parent.top; topMargin: 17 }
+                visible: pc.panel.st.profile !== null && pc.panel.st.profile !== undefined
+                text: ({ "power-saver": "Power saver", balanced: "Balanced", performance: "Performance" })[pc.panel.st.profile] || ""
+                size: 11
+                sub: true
+                font.family: Theme.mono
+            }
+            Grid {
+                id: grid
                 x: 12
                 anchors { bottom: parent.bottom; bottomMargin: 16 }
+                columns: tg.perRow
                 spacing: 8
                 Repeater {
                     model: tg.items
                     delegate: IconButton {
+                        id: tb
                         required property string modelData
-                        width: (tg.width - 24 - 8 * (tg.items.length - 1)) / tg.items.length
+                        readonly property bool hasPage: tg.pages.indexOf(modelData) >= 0
+                        width: tg.bw
                         height: 44
                         radius: 14
                         iconSize: 17
-                        icon: tg.icons[modelData] || ""
-                        active: modelData !== "settings" && pc.panel.st[modelData] === true
+                        icon: modelData === "profile" ? (tg.profileIcons[pc.panel.st.profile] || "󰾅") : (tg.icons[modelData] || "")
+                        active: modelData === "profile" ? pc.panel.st.profile === "performance"
+                              : modelData !== "settings" && pc.panel.st[modelData] === true
                         onClicked: {
+                            if (arrowHover.hovered) return   // Klick auf den Pfeil öffnet nur die Unterseite
                             if (modelData === "settings") {
                                 // Zahnrad: Einstellungs-App öffnen
                                 pc.panel.hide()
                                 Ui.openSettings("home")
-                            } else
+                            } else if (modelData === "profile")
+                                pc.panel.run([pc.bin + "shell-toggle", "profile", "next"], false)
+                            else
                                 pc.panel.toggle(modelData)
+                        }
+                        TapHandler { acceptedButtons: Qt.RightButton; enabled: tb.hasPage; onTapped: pc.page = tb.modelData }
+                        // Pfeil zur Unterseite
+                        Rectangle {
+                            visible: tb.hasPage
+                            anchors { right: parent.right; bottom: parent.bottom; margins: 3 }
+                            width: 18; height: 18; radius: 9
+                            color: arrowHover.hovered ? Theme.cardHover : "transparent"
+                            Glyph {
+                                anchors.centerIn: parent
+                                text: "󰅂"
+                                size: 10
+                                color: tb.active ? Theme.pillText : Theme.subtext
+                            }
+                            HoverHandler { id: arrowHover; cursorShape: Qt.PointingHandCursor }
+                            TapHandler { onTapped: pc.page = tb.modelData }
+                            Probe { name: "arrow-" + tb.modelData }
                         }
                     }
                 }

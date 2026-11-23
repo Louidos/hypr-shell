@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Attrappe von nmcli für Tests: drei Netze (eines verbunden), connect/disconnect landen in $NMCLI_LOG.
+case "$*" in
+    "radio wifi") echo enabled ;;
+    "-t -f TYPE device") printf 'wifi\nethernet\nloopback\n' ;;
+    "-t -f DEVICE,TYPE,STATE device") printf 'wlan0:wifi:connected\nlo:loopback:connected (externally)\n' ;;
+    "-t -f IN-USE,SSID,SIGNAL,SECURITY device wifi list --rescan auto")
+        printf '*:Heimnetz:82:WPA2\n :Café\\: Gäste:54:\n :Nachbar:31:WPA1 WPA2\n :Heimnetz:40:WPA2\n :::\n' ;;
+    "device wifi connect"*)
+        echo "$*" >> "${NMCLI_LOG:-/dev/null}"
+        case "$*" in *"password falsch"*) echo "Error: Connection activation failed: Secrets were required, but not provided." >&2; exit 4 ;; esac
+        echo "Device 'wlan0' successfully activated" ;;
+    "device disconnect wlan0") echo "$*" >> "${NMCLI_LOG:-/dev/null}"; echo "Device 'wlan0' successfully disconnected." ;;
+    *) echo "$*" >> "${NMCLI_LOG:-/dev/null}" ;;
+esac

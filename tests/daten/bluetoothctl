@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Attrappe von bluetoothctl für Tests: ein verbundenes Gerät mit Akku, ein gekoppeltes, ein neues.
+case "$1" in
+    devices) printf 'Device AA:BB:CC:DD:EE:01 Kopfhörer\nDevice AA:BB:CC:DD:EE:02 Maus\nDevice AA:BB:CC:DD:EE:03 Lautsprecher\n' ;;
+    info)
+        case "$2" in
+            AA:BB:CC:DD:EE:01) printf 'Device AA:BB:CC:DD:EE:01\n\tPaired: yes\n\tConnected: yes\n\tBattery Percentage: 0x55 (85)\n' ;;
+            AA:BB:CC:DD:EE:02) printf 'Device AA:BB:CC:DD:EE:02\n\tPaired: yes\n\tConnected: no\n' ;;
+            *) printf 'Device %s\n\tPaired: no\n\tConnected: no\n' "$2" ;;
+        esac ;;
+    show) printf 'Controller 00:11:22:33:44:55\n\tPowered: yes\n' ;;
+    *) echo "$*" >> "${BT_LOG:-/dev/null}"; echo "Connection successful" ;;
+esac

@@ -129,7 +129,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `panel.opacity` | `0.44` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the glass | `shell-set panel.opacity 0.45` |
 | `panel.sections` | `["awake","apps","media","shot","toggles"]` | Liste aus `awake`, `apps`, `media`, `shot`, `toggles` | Cards and their order | `shell-set panel.sections awake,apps` |
 | `panel.apps` | `["kitty","org.gnome.Nautilus","firefox","spotify","discord","steam"]` | Liste von Texten | Apps in the grid (name of the .desktop file); missing ones are skipped | `shell-set panel.apps kitty,org.gnome.Nautilus,firefox,spotify,discord,steam,code` |
-| `panel.toggles` | `["wifi","bluetooth","dnd","gaming","settings"]` | Liste aus `wifi`, `bluetooth`, `dnd`, `gaming`, `awake`, `settings` | Quick toggles and their order | `shell-set panel.toggles wifi,bluetooth` |
+| `panel.toggles` | `["wifi","bluetooth","audio","dnd","gaming","profile","nightlight","settings"]` | Liste aus `wifi`, `bluetooth`, `audio`, `dnd`, `gaming`, `awake`, `profile`, `nightlight`, `settings` | Quick toggles in the panel, in this order (toggles the computer cannot use are hidden) | `shell-set panel.toggles wifi,bluetooth` |
 
 ## lock – Sperren und Standby
 
@@ -172,6 +172,15 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `clipboard.enabled` | `true` | `true`, `false` | Remember copied text and images (SUPER+SHIFT+V). Off: nothing is recorded | `shell-set clipboard.enabled false` |
 | `clipboard.max` | `50` | ganze Zahl 5 … 500 | How many copies the history keeps | `shell-set clipboard.max 55` |
+
+## nightlight – nightlight
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `nightlight.temperature` | `4000` | ganze Zahl 2500 … 6500 K | Color temperature of the night light (lower = warmer) | `shell-set nightlight.temperature 4100` |
+| `nightlight.schedule` | `false` | `true`, `false` | Switch the night light on and off at the times below (the panel toggle still works in between) | `shell-set nightlight.schedule true` |
+| `nightlight.from` | `20:00` | Text (Format geprüft) | Time the night light switches on, like 20:00 | `shell-set nightlight.from 20:00` |
+| `nightlight.to` | `07:00` | Text (Format geprüft) | Time the night light switches off, like 07:00 | `shell-set nightlight.to 07:00` |
 
 ## keybinds – Tastenkürzel
 

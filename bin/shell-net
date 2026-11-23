@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# WLAN und Bluetooth für die Unterseiten im Panel (Ausgabe als JSON, Fehler als {"ok": false, "error": "…"}).
+#   shell-net wifi list                 Netze mit Stärke: [{"ssid", "signal", "secure", "active"}]
+#   shell-net wifi connect <ssid>       verbinden; ein Passwort wird von stdin gelesen (eine Zeile)
+#   shell-net wifi disconnect           aktives WLAN trennen
+#   shell-net bt list                   Geräte: [{"mac", "name", "paired", "connected", "battery"}]
+#   shell-net bt scan                   8 Sekunden nach neuen Geräten suchen, danach wie list
+#   shell-net bt pair|connect|disconnect|forget <mac>
+# nmcli (NetworkManager) und bluetoothctl (BlueZ); fehlt eins, liefert list "[]".
+set -uo pipefail
+
+hat() { command -v "$1" >/dev/null 2>&1; }
+SYSFS="${HYPR_SHELL_SYSFS:-/sys}"
+fehler() { jq -cn --arg e "$1" '{ok: false, error: $e}'; exit 1; }
+ok() { echo '{"ok": true}'; }
+
+# nmcli -t trennt mit ":" und schützt ":" im Wert als "\:"
+wifi_liste() {
+    hat nmcli || { echo '[]'; return; }
+    nmcli -t -f IN-USE,SSID,SIGNAL,SECURITY device wifi list --rescan auto 2>/dev/null \
+        | sed 's/\\:/\x01/g' \
+        | awk -F: '$2 != "" { gsub(/\x01/, ":", $2); printf "%s\t%s\t%s\t%s\n", ($1 == "*"), $2, $3, $4 }' \
+        | jq -R -s -c '
+            split("\n") | map(select(. != "") | split("\t")
+              | {active: (.[0] == "1"), ssid: .[1], signal: (.[2] | tonumber? // 0), secure: (.[3] != "" and .[3] != "--")})
+            | group_by(.ssid) | map(max_by(.signal) + {active: (map(.active) | any)})
+            | sort_by(if .active then 0 else 1 end, -.signal)'
+}
+
+wifi_verbinden() {
+    local ssid="$1" pw="" out
+    hat nmcli || fehler "nmcli is missing (package networkmanager)"
+    [ -t 0 ] || IFS= read -r pw || true
+    if [ -n "$pw" ]; then out="$(nmcli device wifi connect "$ssid" password "$pw" 2>&1)"
+    else out="$(nmcli device wifi connect "$ssid" 2>&1)"; fi
+    # shellcheck disable=SC2181
+    if [ $? -eq 0 ]; then ok; else fehler "$(printf '%s' "$out" | tail -n1 | sed 's/^Error: //')"; fi
+}
+
+wifi_trennen() {
+    hat nmcli || fehler "nmcli is missing"
+    local dev
+    dev="$(nmcli -t -f DEVICE,TYPE,STATE device 2>/dev/null | awk -F: '$2 == "wifi" && $3 == "connected" { print $1; exit }')"
+    [ -n "$dev" ] || { ok; return; }
+    if nmcli device disconnect "$dev" >/dev/null 2>&1; then ok; else fehler "could not disconnect $dev"; fi
+}
+
+adapter() { compgen -G "$SYSFS/class/bluetooth/hci*" >/dev/null; }
+
+bt_liste() {
+    if ! hat bluetoothctl || ! adapter; then echo '[]'; return; fi
+    local mac name info paired connected battery
+    while read -r _ mac name; do
+        [[ "$mac" =~ ^([0-9A-F]{2}:){5}[0-9A-F]{2}$ ]] || continue
+        info="$(timeout 3 bluetoothctl info "$mac" 2>/dev/null)"
+        paired="$(grep -q 'Paired: yes' <<<"$info" && echo true || echo false)"
+        connected="$(grep -q 'Connected: yes' <<<"$info" && echo true || echo false)"
+        battery="$(sed -n 's/.*Battery Percentage: .*(\([0-9]*\)).*/\1/p' <<<"$info" | head -n1)"
+        jq -cn --arg mac "$mac" --arg name "$name" --argjson p "$paired" --argjson c "$connected" --arg b "$battery" \
+            '{mac: $mac, name: $name, paired: $p, connected: $c, battery: ($b | tonumber? // null)}'
+    done < <(timeout 3 bluetoothctl devices 2>/dev/null) | jq -cs 'sort_by(if .connected then 0 elif .paired then 1 else 2 end, .name)'
+}
+
+bt_aktion() { # befehl mac
+    if ! hat bluetoothctl || ! adapter; then fehler "no Bluetooth adapter"; fi
+    [[ "$2" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]] || fehler "invalid device address"
+    local out
+    case "$1" in
+        pair) out="$(timeout 25 bluetoothctl pair "$2" 2>&1)" && timeout 5 bluetoothctl trust "$2" >/dev/null 2>&1 \
+                  && out="$(timeout 15 bluetoothctl connect "$2" 2>&1)" ;;
+        connect) out="$(timeout 15 bluetoothctl connect "$2" 2>&1)" ;;
+        disconnect) out="$(timeout 10 bluetoothctl disconnect "$2" 2>&1)" ;;
+        forget) out="$(timeout 10 bluetoothctl remove "$2" 2>&1)" ;;
+    esac
+    # shellcheck disable=SC2181
+    if [ $? -eq 0 ]; then ok; else fehler "$(printf '%s' "$out" | grep -v '^\[' | tail -n1)"; fi
+}
+
+case "${1:-} ${2:-}" in
+    "wifi list") wifi_liste ;;
+    "wifi connect") wifi_verbinden "${3:?SSID fehlt}" ;;
+    "wifi disconnect") wifi_trennen ;;
+    "bt list") bt_liste ;;
+    "bt scan")
+        if hat bluetoothctl && adapter; then timeout 10 bluetoothctl --timeout 8 scan on >/dev/null 2>&1 || true; fi
+        bt_liste ;;
+    "bt pair"|"bt connect"|"bt disconnect"|"bt forget") bt_aktion "$2" "${3:?Adresse fehlt}" ;;
+    *) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

@@ -1,20 +1,47 @@
 #!/usr/bin/env bash
 # Schnellschalter für Panel und Tastenkürzel.
-#   shell-toggle status                     Zustand aller Schalter als JSON
+#   shell-toggle status                     Zustand aller Schalter als JSON (null = nicht verfügbar)
 #   shell-toggle <name> [on|off|toggle]     Schalter ändern (Standard: toggle)
-# Namen: wifi, bluetooth, dnd (Nicht stören), gaming (Blur/Animationen/Schatten aus), awake (Keep Awake)
+#   shell-toggle profile [next|<profil>]    Leistungsprofil weiterschalten oder setzen
+# Namen: wifi, bluetooth, audio (Ton stumm), dnd (Nicht stören), gaming (Blur/Animationen/Schatten aus),
+# awake (Keep Awake), nightlight (Nachtlicht, hyprsunset), profile (power-saver → balanced → performance)
 set -euo pipefail
 
 DATA="$HOME/.local/share/hypr-shell"
 GAMING="$DATA/gaming"
 AWAKE_PID="$DATA/awake.pid"
+NIGHT_PID="$DATA/nightlight.pid"
+EFF="$DATA/settings.effective.json"
+SYSFS="${HYPR_SHELL_SYSFS:-/sys}"
 mkdir -p "$DATA"
 
 hat() { command -v "$1" >/dev/null 2>&1; }
 meldung() { hat notify-send && notify-send -a "hypr-shell" -t 2500 "$@" || true; }
 
+wert() { # jq-pfad standard (false bleibt false)
+    local v=""
+    if hat jq && [ -f "$EFF" ]; then v="$(jq -r "($1) | if . == null then empty else . end" "$EFF" 2>/dev/null || true)"; fi
+    printf '%s\n' "${v:-$2}"
+}
+
+# verfügbar? (sonst steht der Schalter nicht im Panel)
+wifi_da() { hat nmcli && nmcli -t -f TYPE device 2>/dev/null | grep -qx wifi; }
+bt_da() { hat bluetoothctl && compgen -G "$SYSFS/class/bluetooth/hci*" >/dev/null; }
+audio_da() { hat wpctl || hat pamixer; }
+night_da() { hat hyprsunset; }
+profil_da() { hat powerprofilesctl && powerprofilesctl get >/dev/null 2>&1; }
+
 wifi_an() { hat nmcli && [ "$(nmcli radio wifi 2>/dev/null)" = enabled ]; }
-bt_an() { hat bluetoothctl && bluetoothctl show 2>/dev/null | grep -q 'Powered: yes'; }
+bt_an() { bt_da && timeout 3 bluetoothctl show 2>/dev/null | grep -q 'Powered: yes'; }
+audio_an() { # an = Ton nicht stumm
+    if hat wpctl; then
+        if wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | grep -q MUTED; then return 1; fi
+        return 0
+    fi
+    [ "$(pamixer --get-mute 2>/dev/null)" != true ]
+}
+night_an() { [ -f "$NIGHT_PID" ] && kill -0 "$(cat "$NIGHT_PID")" 2>/dev/null; }
+profil() { powerprofilesctl get 2>/dev/null; }
 # Nicht stören: Zustand in einer Datei, die der Benachrichtigungsdienst von hypr-shell (Quickshell) beobachtet
 DND="$DATA/dnd"
 dnd_an() { [ "$(cat "$DND" 2>/dev/null)" = true ]; }
@@ -23,9 +50,14 @@ awake_an() { [ -f "$AWAKE_PID" ] && kill -0 "$(cat "$AWAKE_PID")" 2>/dev/null; }
 
 bool() { if "$@"; then echo true; else echo false; fi; }
 
+wenn() { if "$1"; then bool "$2"; else echo null; fi; }   # verfügbar-funktion zustand-funktion
+
 status() {
-    printf '{"wifi": %s, "bluetooth": %s, "dnd": %s, "gaming": %s, "awake": %s}\n' \
-        "$(bool wifi_an)" "$(bool bt_an)" "$(bool dnd_an)" "$(bool gaming_an)" "$(bool awake_an)"
+    local p=null
+    profil_da && p="\"$(profil)\""
+    printf '{"wifi": %s, "bluetooth": %s, "audio": %s, "dnd": %s, "gaming": %s, "awake": %s, "nightlight": %s, "profile": %s}\n' \
+        "$(wenn wifi_da wifi_an)" "$(wenn bt_da bt_an)" "$(wenn audio_da audio_an)" "$(bool dnd_an)" \
+        "$(bool gaming_an)" "$(bool awake_an)" "$(wenn night_da night_an)" "$p"
 }
 
 ziel() { # aktueller-zustand-funktion aktion -> on|off
@@ -64,6 +96,45 @@ gaming() {
     fi
 }
 
+# Ton stumm an/aus (an = hörbar)
+audio() {
+    if [ "$(ziel audio_an "$1")" = on ]; then
+        if hat wpctl; then wpctl set-mute @DEFAULT_AUDIO_SINK@ 0; else pamixer -u; fi
+    else
+        if hat wpctl; then wpctl set-mute @DEFAULT_AUDIO_SINK@ 1; else pamixer -m; fi
+    fi
+}
+
+# Nachtlicht: hyprsunset mit der Farbtemperatur aus nightlight.temperature
+nightlight() {
+    night_da || { echo "hyprsunset fehlt" >&2; return 1; }
+    if [ "$(ziel night_an "$1")" = on ]; then
+        night_an && return 0
+        setsid hyprsunset -t "$(wert '.nightlight.temperature' 4000)" >/dev/null 2>&1 &
+        echo "$!" > "$NIGHT_PID"
+    else
+        if [ -f "$NIGHT_PID" ]; then kill "$(cat "$NIGHT_PID")" 2>/dev/null || true; rm -f "$NIGHT_PID"; fi
+    fi
+}
+
+# Leistungsprofil: ein Klick schaltet weiter (power-saver → balanced → performance → power-saver);
+# Profile, die der Rechner nicht hat, werden übersprungen
+PROFILE=(power-saver balanced performance)
+profile() {
+    profil_da || { echo "kein Leistungsprofil verfügbar" >&2; return 1; }
+    local ziel="${1:-next}" jetzt i n
+    if [ "$ziel" = next ] || [ "$ziel" = toggle ]; then
+        jetzt="$(profil)"
+        for i in 0 1 2; do [ "${PROFILE[$i]}" = "$jetzt" ] && break; done
+        for n in 1 2 3; do
+            ziel="${PROFILE[$(( (i + n) % 3 ))]}"
+            powerprofilesctl set "$ziel" 2>/dev/null && return 0
+        done
+        return 1
+    fi
+    powerprofilesctl set "$ziel"
+}
+
 # Keep Awake: verhindert Sperren und Standby (hypridle beachtet systemd-inhibit)
 awake() {
     if [ "$(ziel awake_an "$1")" = on ]; then
@@ -80,6 +151,7 @@ name="${1:-status}"
 aktion="${2:-toggle}"
 case "$name" in
     status) status ;;
-    wifi|bluetooth|dnd|gaming|awake) "$name" "$aktion" ;;
+    wifi|bluetooth|audio|dnd|gaming|awake|nightlight) "$name" "$aktion" ;;
+    profile) profile "${2:-next}" ;;
     *) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

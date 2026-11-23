@@ -310,7 +310,10 @@ px() { awk -v a="$1" -v k="$2" 'BEGIN { printf "%d", a * k + 0.5 }'; }
 css() { local s="${1//\\/\\\\}"; printf '%s' "${s//\"/\\\"}"; }
 
 erzeuge_waybar_style() {
-    local fs="$S_theme_font_scale" ui mono
+    local fs ui mono
+    # Schriftfaktor theme.font.scale, aber nie grösser, als die Leiste hoch ist (bar.height 20 mit
+    # Faktor 1.5 liesse die Schrift sonst über die Leiste ragen); bei 30 px und mehr unverändert
+    fs="$(awk -v f="$S_theme_font_scale" -v h="$S_bar_height" 'BEGIN { m = (h - 4) / 20; printf "%.3f", (f < m ? f : m) }')"
     ui="$(css "$S_theme_font_ui")"; mono="$(css "$S_theme_font_mono")"
     cat <<CSS
 /* $HEADER */

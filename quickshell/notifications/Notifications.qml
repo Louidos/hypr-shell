@@ -148,19 +148,27 @@ Scope {
         visible: nc.popups.length > 0 && nc.scr !== null
         anchors { top: true; right: true }
         margins { top: 8; right: 12 }
-        implicitWidth: 380
-        implicitHeight: Math.max(1, stack.implicitHeight)
+        // Breite mit dem Grössenfaktor, höchstens Bildschirm minus Rand; zu viele Karten werden
+        // unten abgeschnitten statt über den Bildschirm hinaus zu ragen
+        ScreenFit { id: cardFit; screen: nc.scr }
+        readonly property real k: cardFit.factor
+        implicitWidth: Math.min(380 * k, cardFit.availWidth - 24)
+        implicitHeight: Math.max(1, Math.min(stack.implicitHeight * k, cardFit.availHeight - 16))
         color: "transparent"
         exclusionMode: ExclusionMode.Normal
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "hypr-shell-notifications"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-        mask: Region { item: stack }
+        mask: Region { item: stackArea }
+        Item { id: stackArea; width: cards.width; height: cards.height }
 
         Column {
             id: stack
-            width: parent.width
+            width: parent.width / cards.k
+            scale: cards.k
+            transformOrigin: Item.TopLeft
             spacing: 8
+            Probe { name: "notification-cards"; visible: false }   // unsichtbar: kein Platz in der Spalte
             Repeater {
                 model: nc.popups
                 delegate: NotificationCard {
@@ -182,7 +190,9 @@ Scope {
         ipc: false
         place: "top-right"
         panelWidth: 420
-        panelHeight: Math.min(item ? item.implicitHeight : 200, Settings.screenHeight(screen) - 80)
+        panelHeight: item ? item.implicitHeight : 200
+        // die Liste rollt selbst; das Panel bekommt höchstens die Höhe, die auf den Bildschirm passt
+        scroll: false
         keyboardFocus: WlrKeyboardFocus.OnDemand
         content: Component { NotificationPanel { center: nc } }
     }

@@ -445,6 +445,28 @@ ihrer eigenen Grösse. Ein Akku erscheint in der Leiste rechts vor der Uhr (Symb
 unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen Akku hat
 (abschalten mit `bar.battery`).
 
+## Bildschirme
+
+Leiste, Dock, Desktop-Widgets und alle Panels richten sich nach dem Bildschirm, auf dem sie
+erscheinen – bei mehreren Bildschirmen jedes nach seinem eigenen. Gerechnet wird in der Grösse nach
+der Skalierung von Hyprland (2560×1600 mit Skalierung 1.6 sind also 1600×1000):
+
+- **Grösse:** Zwischen 1080 und 1440 Pixeln kürzerer Seite sieht alles aus wie entworfen. Darunter
+  (bis 1280×720) wird die Oberfläche etwas kleiner (höchstens auf 85 %), darüber grösser (4K mit
+  Skalierung 1: anderthalbmal, höchstens doppelt) – nichts wird winzig.
+- **Platz:** Kein Panel ragt über den Bildschirm, über die Leiste oder über ein Dock mit
+  `dock.mode = reserve`. Was nicht in die Höhe passt, lässt sich rollen statt abgeschnitten zu werden.
+- **Hochformat:** Das Dashboard ordnet seine Karten in 6 statt 12 Spalten, die Einstellungs-App
+  zeigt die Seiten oben statt links, der Spickzettel und die Fenster-Übersicht nehmen weniger Spalten,
+  das Power-Menü bricht in Reihen um.
+- **Widgets:** Die Lage bleibt ein Anteil des Bildschirms; nach einem Wechsel von Auflösung oder
+  Ausrichtung ragt ein Widget nie über den Rand (es wird begrenzt, die gespeicherte Lage bleibt).
+- **Ohne Neustart:** Ändern sich Auflösung, Skalierung oder Ausrichtung, ordnet sich alles sofort neu.
+  Ist der unter Desktop → Screen eingestellte Bildschirm abgesteckt, erscheint alles auf dem ersten.
+
+Die Schrift der Leiste wird nie grösser, als die Leiste hoch ist (`bar.height`); Sperr- und
+Login-Bildschirm passen ab 1280×720.
+
 ## Hilfsprogramme
 
 | Befehl | Wirkung |

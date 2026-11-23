@@ -131,7 +131,8 @@ Column {
                     }
                 }
                 Txt { text: "Scale"; size: 12; weight: Font.DemiBold; color: Theme.subtext }
-                Row {
+                Flow {
+                    width: parent.width
                     spacing: 6
                     Repeater {
                         model: ["", "1", "1.25", "1.5", "1.75", "2"]

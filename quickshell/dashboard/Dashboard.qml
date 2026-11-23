@@ -28,11 +28,14 @@ Scope {
     readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", games: "Games", lab: "Lab", about: "About" })
     readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", games: "󰊗", lab: "󰒋", about: "󰋽" })
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
-    readonly property real panelW: Math.min(Settings.get("dashboard.width", 1000), Settings.screenWidth(screen) - 40)
-    // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px, Rand 18 px
+    // Breite aus dashboard.width; Overlay begrenzt sie auf den Bildschirm (mit Grössenfaktor)
+    readonly property real panelW: Settings.get("dashboard.width", 1000)
+    // Hochformat oder schmal: Karten in 6 statt 12 Spalten, dafür höher (Overlay rollt, wenn nötig)
+    readonly property bool narrow: ov.portrait || ov.fitWidth < 760
+    // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px (schmal 5 Zeilen: 555 px), Rand 18 px
     readonly property real headH: 64
     readonly property real pad: 18
-    readonly property real pageH: 330
+    readonly property real pageH: narrow ? 555 : 330
     readonly property real panelH: headH + 4 + pageH + pad
 
     property string wantTab: ""
@@ -156,6 +159,7 @@ Scope {
                                     }
                                     Txt {
                                         anchors.horizontalCenter: parent.horizontalCenter
+                                        visible: tabBar.tw >= 64
                                         text: dash.tabNames[tb.modelData]
                                         size: 12
                                         weight: tb.active ? Font.DemiBold : Font.Medium
@@ -187,10 +191,10 @@ Scope {
         }
     }
 
-    Component { id: homeTab; HomeTab { about: dash.about } }
-    Component { id: perfTab; PerfTab { } }
+    Component { id: homeTab; HomeTab { about: dash.about; narrow: dash.narrow } }
+    Component { id: perfTab; PerfTab { narrow: dash.narrow } }
     Component { id: labTab; LabTab { } }
     Component { id: gamesTab; GamesTab { games: dash.games; onCloseRequested: dash.hide() } }
     Component { id: wallTab; WallpaperTab { onCloseRequested: dash.hide() } }
-    Component { id: aboutTab; AboutTab { about: dash.about } }
+    Component { id: aboutTab; AboutTab { about: dash.about; narrow: dash.narrow } }
 }

@@ -66,8 +66,9 @@ PanelWindow {
             readonly property string which: modelData.which
             readonly property var win: modelData.win
             visible: win !== undefined && win !== null && win.visible
-            x: Ui.widget(which, "x", 0) * ov.sw
-            y: Ui.widget(which, "y", 0) * ov.sh
+            // wo das Widget wirklich steht (auf den Bildschirm begrenzt, siehe ClockWidget.qml)
+            x: win ? win.margins.left : Ui.widget(which, "x", 0) * ov.sw
+            y: win ? win.margins.top : Ui.widget(which, "y", 0) * ov.sh
             width: win ? win.implicitWidth : 100
             height: win ? win.implicitHeight : 100
             color: drag.pressed ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.04)

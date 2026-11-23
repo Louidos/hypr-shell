@@ -4,10 +4,12 @@ import Quickshell.Io
 import "../common"
 
 // Inhalt der Einstellungs-App: links Profil und Seiten, rechts Suche, Undo/Redo und die Seite.
+// compact (Hochformat oder schmales Fenster): die Seiten stehen oben als waagrechte Leiste.
 // Wird erst erzeugt, wenn das Fenster offen ist (Systemwerte und Seiten laden erst dann).
 FocusScope {
     id: sc
     focus: true
+    property bool compact: false
     property var about: ({})
     readonly property var pages: (Settings.schema.pages || []).filter(p => Ui.can(p.requires))
     readonly property var page: pages.find(p => p.id === Ui.settingsPage) || pages[0] || ({ id: "home", title: "Home" })
@@ -77,8 +79,9 @@ FocusScope {
     // ---- Seitenleiste
     Item {
         id: side
+        visible: !sc.compact
         x: 14; y: 14
-        width: 236
+        width: sc.compact ? 0 : Math.min(236, Math.max(180, sc.width * 0.24))
         height: parent.height - 28
 
         GlassCard { anchors.fill: parent }
@@ -107,7 +110,7 @@ FocusScope {
                 width: parent.width
                 spacing: 2
                 Repeater {
-                    model: sc.pages
+                    model: sc.compact ? [] : sc.pages
                     delegate: Rectangle {
                         id: navItem
                         required property var modelData
@@ -141,16 +144,80 @@ FocusScope {
         }
     }
 
+    // ---- Seiten als waagrechte Leiste (compact): Profilbild, dann die Seiten, rollt seitlich
+    Item {
+        id: topNav
+        visible: sc.compact
+        x: 14; y: 14
+        width: parent.width - 28
+        height: sc.compact ? 52 : 0
+        GlassCard { anchors.fill: parent }
+        RoundImage {
+            id: topFace
+            x: 8; anchors.verticalCenter: parent.verticalCenter
+            width: 36; height: 36; radius: 18
+            source: Settings.face
+            Component.onCompleted: Settings.checkFace()
+            fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
+        }
+        Flickable {
+            id: topFlick
+            anchors { left: topFace.right; leftMargin: 8; right: parent.right; rightMargin: 8; top: parent.top; bottom: parent.bottom }
+            contentWidth: topRow.implicitWidth
+            flickableDirection: Flickable.HorizontalFlick
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
+            Row {
+                id: topRow
+                height: topFlick.height
+                spacing: 2
+                Repeater {
+                    model: sc.compact ? sc.pages : []
+                    delegate: Rectangle {
+                        id: topItem
+                        required property var modelData
+                        readonly property bool active: sc.page.id === modelData.id
+                        anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+                        width: topLabel.implicitWidth + 46
+                        height: 36
+                        radius: 18
+                        color: active ? Theme.pill : (topHov.hovered ? Theme.cardHover : "transparent")
+                        // die gewählte Seite sichtbar halten
+                        onActiveChanged: if (active) topFlick.contentX = Math.max(0, Math.min(x - 40, topFlick.contentWidth - topFlick.width))
+                        Glyph {
+                            id: topIcon
+                            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                            text: topItem.modelData.icon
+                            size: 14
+                            color: topItem.active ? Theme.pillText : Theme.text
+                        }
+                        Txt {
+                            id: topLabel
+                            anchors { left: topIcon.right; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                            text: topItem.modelData.title
+                            size: 13
+                            weight: topItem.active ? Font.DemiBold : Font.Medium
+                            color: topItem.active ? Theme.pillText : Theme.text
+                        }
+                        HoverHandler { id: topHov; cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: Ui.settingsPage = topItem.modelData.id }
+                        Probe { name: "nav-" + topItem.modelData.id }
+                    }
+                }
+            }
+        }
+    }
+
     // ---- Kopf: Suche, Fehler, Undo/Redo, Schliessen
     Item {
         id: head
-        anchors { left: side.right; leftMargin: 18; right: parent.right; rightMargin: 18 }
-        y: 18
+        anchors { left: sc.compact ? parent.left : side.right; leftMargin: sc.compact ? 14 : 18; right: parent.right; rightMargin: sc.compact ? 14 : 18 }
+        y: sc.compact ? topNav.y + topNav.height + 12 : 18
         height: 40
 
         Field {
             id: search
-            width: Math.min(360, parent.width - 220)
+            width: Math.max(140, Math.min(360, parent.width - 220))
             height: 40
             radius: 20
             placeholder: "Search settings, e.g. blur, clock, battery"
@@ -177,7 +244,7 @@ FocusScope {
     // ---- Seite (bei jedem Seitenwechsel neu erzeugt, oben beginnend)
     Item {
         id: pageHolder
-        anchors { top: head.bottom; topMargin: 14; left: side.right; leftMargin: 18; right: parent.right; rightMargin: 14; bottom: parent.bottom; bottomMargin: 14 }
+        anchors { top: head.bottom; topMargin: 14; left: sc.compact ? parent.left : side.right; leftMargin: sc.compact ? 14 : 18; right: parent.right; rightMargin: 14; bottom: parent.bottom; bottomMargin: 14 }
         property var current: null
         Repeater {
             model: [sc.page]
@@ -234,7 +301,7 @@ FocusScope {
         x: head.x
         y: head.y + head.height + 6
         z: 10
-        width: Math.max(search.width, 420)
+        width: Math.min(Math.max(search.width, 420), sc.width - x - 14)
         height: resCol.implicitHeight + 16
         radius: 18
         glassOpacity: 0.92

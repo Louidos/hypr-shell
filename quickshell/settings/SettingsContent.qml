@@ -175,7 +175,8 @@ FocusScope {
                 page: modelData
                 showTitle: modelData.id !== "home"
                 skip: modelData.id === "monitors" ? ["monitors.outputs"] : []
-                extra: modelData.id === "home" ? homeC : modelData.id === "monitors" ? monitorsC : modelData.id === "about" ? aboutC : null
+                extra: modelData.id === "home" ? homeC : modelData.id === "monitors" ? monitorsC
+                     : modelData.id === "about" ? aboutC : modelData.id === "desktop" ? desktopC : null
                 footer: keys.length === 0 && ["home", "about", "monitors"].indexOf(modelData.id) < 0 ? emptyC : null
                 Component.onCompleted: pageHolder.current = sp
             }
@@ -184,6 +185,25 @@ FocusScope {
     Component { id: homeC; HomePage { } }
     Component { id: monitorsC; MonitorsPage { } }
     Component { id: aboutC; AboutPage { } }
+    Component {
+        id: desktopC
+        GlassCard {
+            height: 64
+            Txt {
+                anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+                text: "Move and resize the clock and tiles with the mouse (SUPER + ALT + W)"
+                size: 13
+            }
+            Pill {
+                anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                icon: "󰆾"
+                text: "Edit on desktop"
+                active: true
+                onClicked: Ui.startEdit()
+                Probe { name: "edit-on-desktop" }
+            }
+        }
+    }
     Component { id: emptyC; Txt { text: "Nothing to set on this page yet."; sub: true; size: 13 } }
 
     // ---- Treffer der Suche

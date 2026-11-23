@@ -10,7 +10,7 @@ import "../common"
 // sie wird dafür nicht geweckt.
 PanelWindow {
     id: w
-    readonly property real k: (screen ? screen.height : 1080) / 1080 * Settings.get("desktop.resources.scale", 1.0)
+    readonly property real k: (screen ? screen.height : 1080) / 1080 * Ui.widget("resources", "scale", 1.0)
     property var gpu: ({ state: "unknown", util: null })
     readonly property real gpuUtil: gpu.state === "active" && typeof gpu.util === "number" ? gpu.util : -1
 
@@ -21,12 +21,12 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     anchors { top: true; left: true }
     margins {
-        left: Math.round(Settings.get("desktop.resources.x", 0.015) * (screen ? screen.width : 1920))
-        top: Math.round(Settings.get("desktop.resources.y", 0.56) * (screen ? screen.height : 1080))
+        left: Math.round(Ui.widget("resources", "x", 0.015) * (screen ? screen.width : 1920))
+        top: Math.round(Ui.widget("resources", "y", 0.56) * (screen ? screen.height : 1080))
     }
     implicitWidth: Math.ceil(col.implicitWidth)
     implicitHeight: Math.ceil(col.implicitHeight)
-    mask: Region { }
+    mask: Region { }   // nimmt keine Klicks an (auch nicht im Bearbeiten-Modus: dort liegt eine eigene Fläche darüber)
 
     // Kacheln und Reihenfolge aus settings.json (desktop.resources.tiles: cpu, ram, gpu, disk)
     readonly property var tiles: Settings.get("desktop.resources.tiles", ["cpu", "ram", "gpu"])

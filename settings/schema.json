@@ -116,6 +116,7 @@
     {"key": "keybinds.dashboard", "type": "keybind", "default": "SUPER + ALT + D", "title": "Dashboard", "description": "Open or close the dashboard", "page": "keybinds", "section": "Shell", "icon": "󰕮"},
     {"key": "keybinds.wallpaper", "type": "keybind", "default": "SUPER + W", "title": "Wallpapers", "description": "Open the dashboard on the Wallpaper tab", "page": "keybinds", "section": "Shell", "icon": "󰋩"},
     {"key": "keybinds.panel", "type": "keybind", "default": "SUPER + A", "title": "Panel", "description": "Open or close the hot corner panel", "page": "keybinds", "section": "Shell", "icon": "󰘮"},
+    {"key": "keybinds.edit_desktop", "type": "keybind", "default": "SUPER + ALT + W", "title": "Edit desktop widgets", "description": "Move and resize the clock and tiles with the mouse", "page": "keybinds", "section": "Shell", "icon": "󰍹"},
     {"key": "keybinds.settings", "type": "keybind", "default": "SUPER + U", "title": "Settings", "description": "Open or close this settings app (cannot be empty)", "page": "keybinds", "section": "Shell", "icon": "󰒓", "required": true},
     {"key": "keybinds.lock", "type": "keybind", "default": "SUPER + L", "title": "Lock", "description": "Lock the screen", "page": "keybinds", "section": "Shell", "icon": "󰌾"},
     {"key": "keybinds.exit", "type": "keybind", "default": "SUPER + M", "title": "Log out", "description": "Leave Hyprland", "page": "keybinds", "section": "Shell", "icon": "󰐥"},

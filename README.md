@@ -88,6 +88,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `SUPER + W` | Dashboard im Tab Wallpaper |
 | `SUPER + A` | Hot-Corner-Panel öffnen / schliessen |
 | `SUPER + U` | Einstellungs-App öffnen / schliessen |
+| `SUPER + ALT + W` | Uhr und Kacheln auf dem Desktop verschieben und skalieren |
 | `Print` | Screenshot eines Bereichs (speichern + Zwischenablage) |
 | `SHIFT + Print` | Screenshot des ganzen Bildschirms (speichern + Zwischenablage) |
 | `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` | Lautstärke + / − |
@@ -119,6 +120,13 @@ neu starten, herunterfahren).
 Hinter den Fenstern eine grosse gestapelte Uhr (JetBrainsMono, Stunden kräftig, Minuten
 blasser) und drei Glas-Kacheln mit Ringen für CPU, Arbeitsspeicher und Grafikkarte. Schläft
 die NVIDIA-Karte (Hybrid-Grafik), zeigt die GPU-Kachel „–“ – sie wird dafür nicht geweckt.
+
+**Verschieben:** `SUPER + ALT + W` (oder „Edit on desktop“ auf der Seite Desktop der
+Einstellungs-App) schaltet in den Bearbeiten-Modus: Uhr und Kacheln bekommen einen Rahmen, lassen sich
+mit der Maus ziehen und mit dem Mausrad grösser oder kleiner machen; an den Rändern und der Mitte
+rasten sie an Hilfslinien ein. Oben stehen **Done** (speichern), **Cancel** und **Reset positions**;
+`Esc` bricht ab. Gespeichert wird die Lage als Anteil der Bildschirmgrösse (`desktop.clock.x` …), die
+Grösse als Faktor (`desktop.clock.scale`). Ausserhalb des Modus nehmen die Widgets keine Klicks an.
 
 ![Desktop](docs/screenshots/desktop.png)
 
@@ -332,6 +340,7 @@ Die Tab-Taste vervollständigt in bash und fish Befehle, Schlüssel und erlaubte
 | `keybinds.dashboard` | `"SUPER + ALT + D"` | Open or close the dashboard |
 | `keybinds.wallpaper` | `"SUPER + W"` | Open the dashboard on the Wallpaper tab |
 | `keybinds.panel` | `"SUPER + A"` | Open or close the hot corner panel |
+| `keybinds.edit_desktop` | `"SUPER + ALT + W"` | Move and resize the clock and tiles with the mouse |
 | `keybinds.settings` | `"SUPER + U"` | Open or close this settings app (cannot be empty) |
 | `keybinds.lock` | `"SUPER + L"` | Lock the screen |
 | `keybinds.exit` | `"SUPER + M"` | Leave Hyprland |

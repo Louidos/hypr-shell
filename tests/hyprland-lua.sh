@@ -30,7 +30,7 @@ local pflicht = { "SUPER + Q", "SUPER + C", "SUPER + E", "SUPER + R", "ALT + Spa
     "SUPER + mouse:272", "SUPER + mouse:273", "Print", "SHIFT + Print",
     "XF86AudioRaiseVolume", "XF86AudioLowerVolume", "XF86AudioMute",
     "XF86MonBrightnessUp", "XF86MonBrightnessDown", "XF86AudioPlay", "XF86AudioNext", "XF86AudioPrev",
-    "SUPER + ALT + D", "SUPER + W", "SUPER + A", "SUPER + U" }
+    "SUPER + ALT + D", "SUPER + W", "SUPER + A", "SUPER + U", "SUPER + ALT + W" }
 for i = 0, 9 do
     table.insert(pflicht, "SUPER + " .. i)
     table.insert(pflicht, "SUPER + SHIFT + " .. i)

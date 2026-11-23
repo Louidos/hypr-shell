@@ -117,3 +117,12 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | Eine doppelte Belegung wird abgelehnt und benannt | automatisch (`shell-set`, beide Richtungen); in der App wird die Aktion genannt und nicht gespeichert – Aufnehmen per Tastendruck von Hand |
 | Ohne Einträge in `keybinds` gelten alle bisherigen Kürzel | automatisch (genau die bisherigen Kürzel) |
 | SUPER+U lässt sich nicht leeren | automatisch |
+
+## Widgets verschieben
+
+| Punkt | Prüfung |
+| --- | --- |
+| Eine verschobene Uhr steht nach Done und nach Neuanmeldung am neuen Platz | automatisch: Done speichert, nach Neustart der Oberfläche steht die Uhr dort (`tests/oberflaeche.sh`); Ziehen mit der echten Maus von Hand |
+| Cancel und Esc lassen alles wie vorher | Cancel automatisch, Esc (gleiche Funktion) über `ipc desktop cancel`; die Taste selbst von Hand |
+| Ausserhalb des Modus nehmen die Widgets keine Klicks an | leere Eingabefläche (`mask`) automatisch; von Hand |
+| Mausrad skaliert, Hilfslinien rasten ein | von Hand |

@@ -53,7 +53,8 @@ local S = {
         launcher_alt = "ALT + Space", close = "SUPER + C", float = "SUPER + V",
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
-        dashboard = "SUPER + ALT + D", wallpaper = "SUPER + W", panel = "SUPER + A", settings = "SUPER + U",
+        dashboard = "SUPER + ALT + D", wallpaper = "SUPER + W", panel = "SUPER + A", edit_desktop = "SUPER + ALT + W",
+        settings = "SUPER + U",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
     },
@@ -313,6 +314,8 @@ local ui = bin .. "shell-quickshell ipc "
 bind(K.dashboard, hl.dsp.exec_cmd(ui .. "dashboard toggle"))
 bind(K.wallpaper, hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"))
 bind(K.panel,     hl.dsp.exec_cmd(ui .. "panel toggle"))
+-- Desktop-Widgets mit der Maus verschieben und skalieren
+bind(K.edit_desktop, hl.dsp.exec_cmd(ui .. "desktop edit"))
 -- die App bleibt immer erreichbar: ohne gültige Taste gilt SUPER + U
 bind((K.settings ~= nil and K.settings ~= "") and K.settings or "SUPER + U", hl.dsp.exec_cmd(ui .. "settings toggle"))
 

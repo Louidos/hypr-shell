@@ -4,6 +4,7 @@
 #   shell-set list [bereich]                Schlüssel, aktueller Wert, Standard und Erklärung
 #   shell-set get <schlüssel>               aktueller Wert
 #   shell-set <schlüssel> <wert>            Wert setzen (wird vorher gegen das Schema geprüft)
+#   shell-set set <s1> <w1> <s2> <w2> …     mehrere Werte in einem Schritt setzen
 #   shell-set reset <schlüssel|bereich|all> auf den Standard zurücksetzen
 #   shell-set undo | redo                   letzte Änderung zurücknehmen / wiederholen (20 Schritte)
 #   shell-set history                       gespeicherte Schritte anzeigen
@@ -31,7 +32,7 @@ command -v jq >/dev/null 2>&1 || { echo "shell-set: jq fehlt" >&2; exit 1; }
 SCHEMA="$("$APPLY" --schema)"
 
 fehler() { printf 'shell-set: %s\n' "$*" >&2; exit 1; }
-hilfe() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+hilfe() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
@@ -164,13 +165,20 @@ cmd_get() { # key
     "$APPLY" --effective | jq --arg k "$k" 'getpath($k | split("."))' | zeige
 }
 
-cmd_set() { # key value live
-    local k="$1" v="$2" live="${3:-0}" s
-    s="$(schluessel "$k")"
-    [ -n "$s" ] || fehler "unknown setting: $k (see: shell-set list)"
+cmd_set() { # live key value [key value …] (mehrere Werte = ein Schritt im Verlauf)
+    local live="$1" k="$2" s
+    shift
     roh > "$T/raw.json"
-    umwandeln "$s" "$v" > "$T/wert.json"
-    jq --arg k "$k" --slurpfile w "$T/wert.json" 'setpath($k | split("."); $w[0])' "$T/raw.json" > "$T/neu.json"
+    cp "$T/raw.json" "$T/neu.json"
+    while [ $# -ge 2 ]; do
+        s="$(schluessel "$1")"
+        [ -n "$s" ] || fehler "unknown setting: $1 (see: shell-set list)"
+        umwandeln "$s" "$2" > "$T/wert.json"
+        jq --arg k "$1" --slurpfile w "$T/wert.json" 'setpath($k | split("."); $w[0])' "$T/neu.json" > "$T/neu2.json"
+        mv "$T/neu2.json" "$T/neu.json"
+        shift 2
+    done
+    [ $# -eq 0 ] || fehler "every setting needs a value: shell-set set <setting> <value> [<setting> <value> …]"
     # abgelehnt wird, was neu falsch wäre – auch bei einem anderen Schlüssel (z. B. doppelt belegte Taste)
     "$APPLY" --check "$T/raw.json" > "$T/alt" 2>&1 || true
     "$APPLY" --check "$T/neu.json" > "$T/neu" 2>&1 || true
@@ -188,7 +196,7 @@ cmd_set() { # key value live
     sichern "$live"
     schreibe < "$T/neu.json"
     anwenden
-    [ "$live" = 1 ] || printf '%s = %s\n' "$k" "$(zeige < "$T/wert.json")"
+    [ "$live" = 1 ] || jq -r --slurpfile a "$T/raw.json" '. as $n | [paths(scalars, arrays)] | map(select(. as $p | ($n | getpath($p)) != ($a[0] | try getpath($p) catch null))) | .[] | . as $p | "\($p | map(tostring) | join(".")) = \($n | getpath($p) | if type == "string" then . else tojson end)"' "$T/neu.json" | grep -vE '\.[0-9]+ = ' || true
 }
 
 cmd_reset() { # key|bereich|all … (mehrere Schlüssel = ein Schritt im Verlauf)
@@ -328,6 +336,7 @@ case "$befehl" in
     undo) cmd_undo undo ;;
     redo) cmd_undo redo ;;
     history) cmd_history ;;
+    set) shift; [ $# -ge 2 ] || fehler "shell-set set <setting> <value> [<setting> <value> …]"; cmd_set "$LIVE" "$@" ;;
     profile|profiles) cmd_profile "${2:-list}" "${3:-}" ;;
     export) cmd_export "${2:-}" ;;
     import) cmd_import "${2:-}" ;;
@@ -335,6 +344,6 @@ case "$befehl" in
     *)
         [ $# -ge 2 ] || { [ -n "$(schluessel "$befehl")" ] && { cmd_get "$befehl"; exit 0; }; hilfe 2; }
         [ $# -eq 2 ] || fehler "too many arguments – put values with spaces in quotes: shell-set $befehl \"…\""
-        cmd_set "$befehl" "$2" "$LIVE"
+        cmd_set "$LIVE" "$befehl" "$2"
         ;;
 esac

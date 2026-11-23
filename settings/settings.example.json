@@ -209,6 +209,14 @@
     "launcher_button": false,
     "badges": true,
     "previews": true,
+    "magnify": true,
+    "magnify_factor": 1.6,
+    "magnify_range": 2,
+    "anim_ms": 180,
+    "bounce_on_launch": true,
+    "autohide": "smart",
+    "show_delay_ms": 150,
+    "hide_delay_ms": 400,
     "items": [
       {
         "type": "app",

@@ -8,6 +8,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Behoben
 - Missa-Agent: Ein Auftrag direkt nach einer Änderung der Einstellungen fragt nicht mehr fälschlich nach (#91)
+- Abnahme-Checkliste: Dashboard mit fünf statt vier Tabs, das Zahnrad im Panel öffnet die Einstellungs-App (nicht mehr settings.json); Tippfehler in der Anleitung zu den Anbindungen; die README erklärt, was bei doppelt belegten Tasten in einer von Hand bearbeiteten settings.json passiert
 
 ## 1.5.0 – 2026-11-23
 
@@ -19,16 +20,13 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)
 
 ### Behoben
-- Abnahme-Checkliste: Dashboard mit fünf statt vier Tabs, das Zahnrad im Panel öffnet die Einstellungs-App (nicht mehr settings.json); Tippfehler in der Anleitung zu den Anbindungen
+- Die Ladegrenze lässt sich wieder auf 100 % zurückstellen (Regler, `shell-set laptop.charge_limit 100` oder Reset); eine nur mit asusctl gesetzte Grenze lässt hypr-shell weiterhin in Ruhe
 
 ## 1.4.0 – 2026-11-23
 
 ### Hinzugefügt
 - Spiele-Tab im Dashboard (zuletzt gespielte Steam-Spiele mit Cover, eigene Einträge einschaltbar) und automatischer Gaming-Modus, solange ein Spiel im Vollbild läuft (#57)
 - Leistungsprofil, Grafik-Modus, Ladegrenze und Tastaturlicht für ROG-Laptops (asusctl, supergfxctl) auf der neuen Einstellungsseite Laptop; sie erscheint nur, wenn der Rechner das kann (#56)
-
-### Behoben
-- Die Ladegrenze lässt sich wieder auf 100 % zurückstellen (Regler, `shell-set laptop.charge_limit 100` oder Reset); eine nur mit asusctl gesetzte Grenze lässt hypr-shell weiterhin in Ruhe
 
 ## 1.3.0 – 2026-11-23
 

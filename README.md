@@ -113,7 +113,10 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 Alle Kürzel lassen sich in der Einstellungs-App auf der Seite **Keybinds** ändern (Klick, dann die
 neue Kombination drücken) oder mit `shell-set keybinds.<aktion> "SUPER + T"`; ein leeres Kürzel heisst
 „keine Taste“. Eigene Kürzel stehen in `keybinds.custom`. Eine Kombination, die schon belegt ist, wird
-abgelehnt und die belegende Aktion genannt. `SUPER + U` (Einstellungs-App) lässt sich nicht leeren.
+abgelehnt und die belegende Aktion genannt (`shell-set` und die Einstellungs-App schon bei der Eingabe).
+Steht in einer von Hand bearbeiteten settings.json eine Taste doppelt, verliert das im Schema spätere
+Kürzel seine Taste – ist das eine Gruppe wie die Arbeitsflächen-Kürzel, die ganze Gruppe –, und eine
+Benachrichtigung nennt beide. `SUPER + U` (Einstellungs-App) lässt sich nicht leeren.
 Die Medien-, Lautstärke- und Helligkeitstasten bleiben fest.
 
 Maus: Ecke **unten rechts** öffnet das Panel, die **Mitte der unteren Kante** das Dashboard.

@@ -171,8 +171,14 @@ cmd_set() { # key value live
     roh > "$T/raw.json"
     umwandeln "$s" "$v" > "$T/wert.json"
     jq --arg k "$k" --slurpfile w "$T/wert.json" 'setpath($k | split("."); $w[0])' "$T/raw.json" > "$T/neu.json"
-    if ! pruefen "$T/neu.json" "$k" > "$T/grund"; then
-        fehler "$(sed 's/^[^:]*: //' "$T/grund" | head -n1) – nothing changed"
+    # abgelehnt wird, was neu falsch wäre – auch bei einem anderen Schlüssel (z. B. doppelt belegte Taste)
+    "$APPLY" --check "$T/raw.json" > "$T/alt" 2>&1 || true
+    "$APPLY" --check "$T/neu.json" > "$T/neu" 2>&1 || true
+    grep -vxF -f "$T/alt" "$T/neu" > "$T/grund" || true
+    if [ -s "$T/grund" ]; then
+        # die Meldung zum gesetzten Schlüssel zuerst
+        { grep -F "$k: " "$T/grund" || true; cat "$T/grund"; } > "$T/grund2"
+        fehler "$(head -n1 "$T/grund2" | sed "s/^$(printf '%s' "$k" | sed 's/[.[\*^$]/\\&/g'): //") – nothing changed"
     fi
     if jq -e --slurpfile a "$T/raw.json" '. == $a[0]' "$T/neu.json" > /dev/null; then
         # gleicher Wert: nichts zu tun (ein abschliessender Schritt der App legt pending trotzdem ab)

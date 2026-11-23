@@ -80,7 +80,7 @@ def problem($s; $v):
     else null end
   elif $s.type == "keybind" then
     if ($v | type) != "string" then "expected a key combination like SUPER + Q (empty = no key)"
-    elif ($v | test("^$|^((SUPER|SHIFT|CTRL|ALT|CONTROL|MOD[1-5]) \\+ )*[A-Za-z0-9_:.+-]+$") | not) then "expected a key combination like SUPER + Q (empty = no key)"
+    elif ($v | test("^$|^((SUPER|SHIFT|CTRL|ALT|CONTROL|MOD[1-5]) \\+ )*[A-Za-z0-9_:.-]+$") | not) then "expected a key combination like SUPER + Q (empty = no key)"
     elif $s.required == true and $v == "" then "this shortcut must not be empty"
     else null end
   elif $s.type == "objectlist" then
@@ -103,6 +103,40 @@ def norm($s; $v):
   if $s.type == "objectlist" then
     [ $v[] | . as $o | reduce $s.fields[] as $fs ({}; .[$fs.key] = (($o[$fs.key] // $fs.default) | num)) ]
   else ($v | num) end;
+# Tastenkürzel: dieselbe Kombination darf nur einmal vorkommen. In Schema-Reihenfolge gewinnt die
+# erste; eine spätere bekommt keine Taste (bzw. der eigene Eintrag fällt weg) und wird gemeldet.
+def norm_combo:
+  split("+") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != ""))
+  | if length == 0 then "" else
+      ((.[:-1] | map(ascii_upcase | if . == "CONTROL" then "CTRL" else . end) | unique) + [.[-1] | ascii_upcase]) | join(" + ")
+    end;
+def combos_of($k; $v; $e):
+  if $k == "workspace_mod" then [range(0; 10) | "\($v) + \(.)"] + ["\($v) + mouse_down", "\($v) + mouse_up"]
+  elif $k == "move_mod" then [range(0; 10) | "\($v) + \(.)"]
+  elif $k == "mouse_mod" then ["\($v) + mouse:272", "\($v) + mouse:273"]
+  else [$v] end;
+def keybind_conflicts($schema):
+  if (.eff.keybinds | type) != "object" then . else
+    . as $r
+    | ($schema.keys | map({key: .key, value: .title}) | from_entries) as $titles
+    | reduce ($r.eff.keybinds | to_entries[] | select(.key != "custom" and .value != "")) as $b
+        ({r: $r, seen: {}};
+         [combos_of($b.key; $b.value; $r.eff)[] | norm_combo] as $cs
+         | ([$cs[] as $c | .seen[$c] // empty] | first // null) as $other
+         | if $other != null then
+             .r.eff.keybinds[$b.key] = ""
+             | .r.err += [{key: "keybinds.\($b.key)", reason: "\($b.value) is already used by \($titles[$other] // $other) (\($other))"},
+                          {key: $other, reason: "\($b.value) is also used by \($titles["keybinds.\($b.key)"] // $b.key) (keybinds.\($b.key))"}]
+           else reduce $cs[] as $c (.; .seen[$c] = "keybinds.\($b.key)") end)
+    | .seen as $seen
+    | reduce (.r.eff.keybinds.custom // [] | to_entries[]) as $c
+        ({r: (.r | .eff.keybinds.custom = []), seen: $seen};
+         ($c.value.keys | norm_combo) as $n
+         | if .seen[$n] != null then
+             .r.err += [{key: "keybinds.custom", reason: "entry \($c.key + 1): \($c.value.keys) is already used by \($titles[.seen[$n]] // .seen[$n]) (\(.seen[$n]))"}]
+           else .r.eff.keybinds.custom += [$c.value] | .seen[$n] = "keybinds.custom" end)
+    | .r
+  end;
 # Eingabe: rohe Einstellungen. Ausgabe: {eff, err}
 def evaluate($schema):
   . as $raw
@@ -120,7 +154,9 @@ def evaluate($schema):
               | select(any($schema.keys[]; .key as $sk | $k == $sk or ($k | startswith($sk + "."))) | not)
               | if any($schema.keys[]; .key | startswith($k + ".")) then {key: $k, reason: "expected a group of settings, not a single value"}
                 else {key: $k, reason: "unknown setting"} end ]
-  | .err |= unique_by(.key);
+  | .err |= unique_by(.key)
+  | keybind_conflicts($schema);
+
 '
 
 # rohe Einstellungen + Ebene aus hypr-shell-local.lua -> {eff, err}

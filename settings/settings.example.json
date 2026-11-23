@@ -171,5 +171,30 @@
     "files": "nautilus",
     "browser": "firefox",
     "launcher": "rofi -show drun"
+  },
+  "keybinds": {
+    "terminal": "SUPER + Q",
+    "files": "SUPER + E",
+    "browser": "",
+    "launcher": "SUPER + R",
+    "launcher_alt": "ALT + Space",
+    "close": "SUPER + C",
+    "float": "SUPER + V",
+    "focus_left": "SUPER + left",
+    "focus_right": "SUPER + right",
+    "focus_up": "SUPER + up",
+    "focus_down": "SUPER + down",
+    "workspace_mod": "SUPER",
+    "move_mod": "SUPER + SHIFT",
+    "mouse_mod": "SUPER",
+    "dashboard": "SUPER + ALT + D",
+    "wallpaper": "SUPER + W",
+    "panel": "SUPER + A",
+    "settings": "SUPER + U",
+    "lock": "SUPER + L",
+    "exit": "SUPER + M",
+    "screenshot_region": "Print",
+    "screenshot_screen": "SHIFT + Print",
+    "custom": []
   }
 }

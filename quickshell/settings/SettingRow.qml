@@ -79,7 +79,8 @@ GlassCard {
                                : row.spec.type === "int" || row.spec.type === "number" ? sliderC
                                : row.spec.type === "enum" ? choiceC
                                : row.spec.type === "color" ? colorC
-                               : row.spec.type === "string" || row.spec.type === "keybind" ? textC
+                               : row.spec.type === "keybind" ? keyC
+                               : row.spec.type === "string" ? textC
                                : row.wide ? countC : null
             }
         }
@@ -91,7 +92,7 @@ GlassCard {
         x: 64
         y: head.height
         width: row.width - 64 - 14
-        sourceComponent: row.spec.type === "objectlist" ? jsonC : listC
+        sourceComponent: row.key === "keybinds.custom" ? customC : row.spec.type === "objectlist" ? jsonC : listC
     }
 
     Component {
@@ -195,6 +196,31 @@ GlassCard {
             allowed: row.spec.type === "list" ? row.spec.values : null
             sortable: row.spec.sortable !== false
             probePrefix: "setting-" + row.key + ":"
+            onChangedList: l => row.write(l)
+        }
+    }
+    // Tastenkürzel: doppelte Belegung wird gezeigt und nicht gespeichert
+    function writeKey(combo) {
+        const name = key.replace("keybinds.", "")
+        const other = combo === "" ? "" : Ui.usedBy(name, combo)
+        if (other !== "") { Ui.lastError = combo + " is already used by " + other + " – not saved"; return }
+        Ui.lastError = ""
+        write(combo)
+    }
+    Component {
+        id: keyC
+        KeyRecorder {
+            value: typeof row.shown === "string" ? row.shown : ""
+            required: row.spec.required === true
+            modifiersOnly: /_mod$/.test(row.key)
+            probe: "setting-" + row.key
+            onPicked: combo => row.writeKey(combo)
+        }
+    }
+    Component {
+        id: customC
+        CustomBinds {
+            value: Array.isArray(row.shown) ? row.shown : []
             onChangedList: l => row.write(l)
         }
     }

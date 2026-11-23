@@ -77,6 +77,41 @@ Singleton {
         }
     }
 
+    // ---- Tastenkürzel: gleiche Regeln wie shell-apply (Modifikatoren sortiert, Grossschreibung)
+    function normCombo(c) {
+        const p = String(c).split("+").map(x => x.trim()).filter(x => x !== "")
+        if (p.length === 0) return ""
+        const mods = p.slice(0, -1).map(m => m.toUpperCase() === "CONTROL" ? "CTRL" : m.toUpperCase())
+        const u = mods.filter((m, i) => mods.indexOf(m) === i).sort()
+        return u.concat([p[p.length - 1].toUpperCase()]).join(" + ")
+    }
+    function combosOf(name, v) {
+        if (!v) return []
+        const r = []
+        if (name === "workspace_mod") { for (let i = 0; i < 10; i++) r.push(v + " + " + i); r.push(v + " + mouse_down", v + " + mouse_up") }
+        else if (name === "move_mod") { for (let i = 0; i < 10; i++) r.push(v + " + " + i) }
+        else if (name === "mouse_mod") r.push(v + " + mouse:272", v + " + mouse:273")
+        else r.push(v)
+        return r
+    }
+    // Wer benutzt diese Kombination schon? (Titel der Aktion oder "" wenn frei). self = eigener Name.
+    function usedBy(self, value) {
+        const kb = Settings.get("keybinds", {})
+        const mine = combosOf(self, value).map(normCombo)
+        for (const name in kb) {
+            if (name === self || name === "custom" || !kb[name]) continue
+            const theirs = combosOf(name, kb[name]).map(normCombo)
+            if (mine.some(c => theirs.indexOf(c) >= 0)) {
+                const s = Settings.schemaKey("keybinds." + name)
+                return s ? s.title : name
+            }
+        }
+        const custom = kb.custom || []
+        for (let i = 0; i < custom.length; i++)
+            if (self !== "custom#" + i && mine.indexOf(normCombo(custom[i].keys)) >= 0) return "own shortcut \"" + custom[i].command + "\""
+        return ""
+    }
+
     function next() {
         if (proc.running) return
         let args = null

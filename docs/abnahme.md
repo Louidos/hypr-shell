@@ -108,3 +108,12 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | Die Suche findet „blur“, „clock“ und „battery“ | automatisch |
 | Monitors: neue Auflösung ohne Bestätigung nach 15 s zurück | von Hand (braucht echte Bildschirme und Hyprland) |
 | Blur hinter dem Fenster | von Hand (die CI hat keinen Blur) |
+
+## Tastenkürzel einstellen
+
+| Punkt | Prüfung |
+| --- | --- |
+| Ein geändertes Kürzel wirkt sofort, das alte ist frei | erzeugte Belegung automatisch (`tests/tastenkuerzel.sh`); Wirkung nach dem automatischen `hyprctl reload` von Hand |
+| Eine doppelte Belegung wird abgelehnt und benannt | automatisch (`shell-set`, beide Richtungen); in der App wird die Aktion genannt und nicht gespeichert – Aufnehmen per Tastendruck von Hand |
+| Ohne Einträge in `keybinds` gelten alle bisherigen Kürzel | automatisch (genau die bisherigen Kürzel) |
+| SUPER+U lässt sich nicht leeren | automatisch |

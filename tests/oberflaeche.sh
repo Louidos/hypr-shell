@@ -660,6 +660,22 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
     done
     if [ "$langsam" = 0 ] && [ "$falsch" = 0 ]; then echo "  ok: 25-mal geöffnet und geschlossen: Liste stimmt jedes Mal innert 1 s, kein Verweis, Dock nimmt Klicks an"
     else echo "  FEHLER: 25-mal öffnen/schliessen: $langsam-mal zu langsam, $falsch-mal Popup/Eingabe falsch ($(dk popup))"; dock_ok=0; fi
+    # ---- ALT+Tab: Umschalter mit zwei Fenstern (ohne Hyprland in der Reihenfolge der Fenster)
+    swc() { "$qs" -p "$cfg" ipc call switcher "$@" 2>/dev/null; }
+    g1="$(fenster)"; g2="$(fenster)"; pids+=("$g1" "$g2")
+    for _ in $(seq 1 40); do [ -n "$(lauf_index 2)" ] && break; sleep 0.25; done
+    swc next; sleep 0.8; s1="$(swc state)"; kb1="$("$qs" -p "$cfg" ipc call shell keyboard 2>/dev/null)"
+    bild umschalter
+    swc next; sleep 0.3; s2="$(swc state)"
+    swc cancel; sleep 0.6; s3="$(swc state)"
+    swc next; sleep 5.8; s4="$(swc state)"
+    swc next; sleep 0.5; swc commit; sleep 0.6; s5="$(swc state)"
+    echo "  Umschalter: $s1 → Tab $s2 → Esc $s3 → 5 s $s4 → wechseln $s5 (Tastatur: \"$kb1\")"
+    if [[ "$s1" == open:1:* ]] && [[ "$s2" == open:0:2 || "$s2" == open:2:* ]] && [ "$s3" = closed ] && [ "$s4" = closed ] && [ "$s5" = closed ] \
+        && [[ "$kb1" != *switcher* ]] && grep -q "hypr-shell-probe switcher-1" "$T/qs.log"; then
+        echo "  ok: ALT+Tab: zweites Fenster gewählt, Tab wählt weiter, Esc bricht ab, nach 5 s zu, Wechseln schliesst; nimmt nie die Tastatur"
+    else echo "  FEHLER: Umschalter (siehe oben)"; dock_ok=0; fi
+    kill "$g1" "$g2" 2>/dev/null; sleep 1
     # ein Panel, das es nicht gibt (z. B. Missa aus), darf Ui.panel nie besetzen
     "$qs" -p "$cfg" ipc call shell open missa-gibt-es-nicht >/dev/null 2>&1
     if [ -z "$(offen)" ] && [[ "$(dk popup)" == *:input ]]; then echo "  ok: unbekanntes Panel besetzt Ui.panel nicht, Dock nimmt weiter Klicks an"

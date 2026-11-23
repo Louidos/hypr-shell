@@ -40,8 +40,10 @@ LUA
 
 echo "== ohne Einträge: die bisherigen Kürzel"
 # seit 1.9.1 dazu: CTRL + SUPER + Escape (Tastatur zurück, Notfall); seit 1.10: SUPER + M minimiert,
-# SUPER + SHIFT + M holt zurück, Abmelden liegt auf CTRL + SUPER + M
-erwartet="ALT + Space
+# SUPER + SHIFT + M holt zurück, Abmelden liegt auf CTRL + SUPER + M, ALT + Tab wechselt Fenster
+erwartet="ALT + SHIFT + Tab
+ALT + Space
+ALT + Tab
 CTRL + SUPER + Escape
 CTRL + SUPER + M
 CTRL + SUPER + Return
@@ -95,7 +97,7 @@ SUPER + $i
 SUPER + SHIFT + $i"; done
 erwartet="$(sort <<<"$erwartet")"
 std="$(binds '{}' | cut -f1)"
-pruefe '[ "$std" = "$erwartet" ]' "genau die bisherigen $(wc -l <<<"$erwartet") Kürzel (mit Notfall-Kürzel und Minimieren)"
+pruefe '[ "$std" = "$erwartet" ]' "genau die bisherigen $(wc -l <<<"$erwartet") Kürzel (mit Notfall-Kürzel, Minimieren und ALT + Tab)"
 [ "$std" = "$erwartet" ] || diff <(echo "$erwartet") <(echo "$std") | head
 pruefe '[ "$(binds "{\"weather\": {\"location\": \"Bern\"}}" | cut -f1)" = "$erwartet" ]' "settings.json ohne keybinds (v1.1): gleiche Kürzel"
 std_binds="$(binds "{}")"

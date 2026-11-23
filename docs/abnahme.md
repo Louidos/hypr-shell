@@ -346,3 +346,14 @@ Sensor) und der echte SDDM-Anmeldebildschirm.
 | Zwei Bildschirme mit fester Lage: Hinweis bei Überlappung | Rechenweg automatisch (`tests/monitore.sh`); Anzeige mit echtem zweitem Monitor von Hand |
 | Lokal ohne Hyprland/Quickshell | nicht lokal getestet, CI entscheidet |
 
+## Dock und Leiste nach dem Schliessen von Programmen (#117)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Liste der laufenden Programme stimmt nach jedem Schliessen innert 1 s | automatisch (`tests/oberflaeche.sh`: 25-mal öffnen und schliessen, auch mit offenem Menü) |
+| Schliessen bei offener Fensterliste/Vorschau: Popup zu, kein Verweis, keine Meldung im Log | automatisch (Fensterliste und Menü, Prüfung auf tote Verweise, Log ohne Warnungen) |
+| Ein Panel ohne Fenster (Bildschirm weg, Missa aus) blockiert das Dock nicht | automatisch (unbekanntes Panel, Rückfall nach 1.5 s) |
+| Leiste/Oberfläche starten nach einem Absturz neu, ohne Endlosschleife | automatisch (`tests/waechter.sh`) |
+| **50-mal Programm öffnen und schliessen am echten Laptop** | von Hand: kitty, Dateimanager, Firefox, ein Fenster mit Dialog, ein Vollbild-Programm; schliessen per SUPER+Q, Rechtsklick im Dock („Close“), im Programm selbst, bei offener Fensterliste und bei verstecktem Dock – danach reagieren Dock und Leiste sofort, `journalctl --user -b \| grep -i quickshell` ohne Fehler |
+| Lokal ohne Quickshell/Hyprland | nicht lokal getestet, CI entscheidet |
+

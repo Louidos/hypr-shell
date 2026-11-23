@@ -84,6 +84,19 @@ Singleton {
         }
         return list[0]
     }
+    // Grösse eines Bildschirms (logische Pixel nach Skalierung); ohne Bildschirm der erste, den es
+    // gibt, sonst die kleinste unterstützte Grösse 1280×720
+    function screenWidth(sc) {
+        if (sc && sc.width > 0) return sc.width
+        const l = Quickshell.screens
+        return l && l.length > 0 && l[0].width > 0 ? l[0].width : 1280
+    }
+    function screenHeight(sc) {
+        if (sc && sc.height > 0) return sc.height
+        const l = Quickshell.screens
+        return l && l.length > 0 && l[0].height > 0 ? l[0].height : 720
+    }
+
     // shell-apply anstossen (entprellt; läuft er schon, folgt genau ein weiterer Lauf)
     property bool applyAgain: false
     function apply() { applyTimer.restart() }

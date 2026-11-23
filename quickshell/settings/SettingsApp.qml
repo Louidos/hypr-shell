@@ -26,8 +26,8 @@ Scope {
         glass: false
         margin: 0
         screen: app.screen
-        panelWidth: Math.min(1100, (app.screen ? app.screen.width : 1920) - 40)
-        panelHeight: Math.min(700, (app.screen ? app.screen.height : 1080) - 60)
+        panelWidth: Math.min(1100, Settings.screenWidth(app.screen) - 40)
+        panelHeight: Math.min(700, Settings.screenHeight(app.screen) - 60)
         keyboardFocus: WlrKeyboardFocus.Exclusive
         // Esc behandelt die App selbst (erst die Suche leeren, dann schliessen)
         closeOnEscape: false

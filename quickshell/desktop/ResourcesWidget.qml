@@ -10,7 +10,7 @@ import "../common"
 // sie wird dafür nicht geweckt.
 PanelWindow {
     id: w
-    readonly property real k: (screen ? screen.height : 1080) / 1080 * Ui.widget("resources", "scale", 1.0)
+    readonly property real k: Settings.screenHeight(screen) / 1080 * Ui.widget("resources", "scale", 1.0)
     property var gpu: ({ state: "unknown", util: null })
     readonly property real gpuUtil: gpu.state === "active" && typeof gpu.util === "number" ? gpu.util : -1
 
@@ -21,8 +21,8 @@ PanelWindow {
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     anchors { top: true; left: true }
     margins {
-        left: Math.round(Ui.widget("resources", "x", 0.015) * (screen ? screen.width : 1920))
-        top: Math.round(Ui.widget("resources", "y", 0.56) * (screen ? screen.height : 1080))
+        left: Math.round(Ui.widget("resources", "x", 0.015) * Settings.screenWidth(screen))
+        top: Math.round(Ui.widget("resources", "y", 0.56) * Settings.screenHeight(screen))
     }
     implicitWidth: Math.ceil(col.implicitWidth)
     implicitHeight: Math.ceil(col.implicitHeight)

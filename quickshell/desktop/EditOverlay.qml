@@ -14,8 +14,8 @@ PanelWindow {
     // gibt es den Bildschirm? (von Desktop.qml gesetzt; "screen" selbst hier abzufragen ergäbe eine
     // Bindungsschleife, weil Quickshell screen beim Ein- und Ausblenden neu meldet)
     property bool hasScreen: true
-    readonly property real sw: screen ? screen.width : 1920
-    readonly property real sh: screen ? screen.height : 1080
+    readonly property real sw: Settings.screenWidth(screen)
+    readonly property real sh: Settings.screenHeight(screen)
     readonly property real snap: 10
     // aktive Hilfslinien (beim Ziehen): Liste von {v: true/false, pos}
     property var guides: []

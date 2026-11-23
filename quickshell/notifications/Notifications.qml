@@ -182,7 +182,7 @@ Scope {
         ipc: false
         place: "top-right"
         panelWidth: 420
-        panelHeight: Math.min(item ? item.implicitHeight : 200, (screen ? screen.height : 1080) - 80)
+        panelHeight: Math.min(item ? item.implicitHeight : 200, Settings.screenHeight(screen) - 80)
         keyboardFocus: WlrKeyboardFocus.OnDemand
         content: Component { NotificationPanel { center: nc } }
     }

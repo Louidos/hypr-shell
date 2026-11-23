@@ -67,10 +67,17 @@ Grid12 {
         }
     }
 
+    // ---- Missa (nur mit missa.enabled): nimmt den Platz des Profils ein (5×1 bei 4,0)
+    Cell {
+        col: 4; row: 0; cs: 5; rs: 1
+        visible: Integrations.missa
+        Loader { anchors.fill: parent; active: Integrations.missa; source: "../missa/MissaCard.qml" }
+    }
+
     // ---- Profil (5×1 bei 4,0)
     Cell {
         col: 4; row: 0; cs: 5; rs: 1
-        visible: home.shown("profile")
+        visible: home.shown("profile") && !Integrations.missa
         RoundImage {
             id: avatar
             width: 62; height: 62; radius: 31

@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Verbindung zu Missa-Core (OpenAI-Chat-Format) für hypr-shell – nur wenn missa.enabled an ist.
+#   shell-missa health              {"state": "ok"|"gestoert"|"unreachable"|"setup"|"off", "text": "…"}
+#   shell-missa chat [--voice]      Nachricht von stdin senden (Streaming); Ausgabe zeilenweise:
+#                                     T <json-text>   ein Stück der Antwort
+#                                     E <art> <json-text>   Fehler (art: 401, 429, 502, 503, netz, …)
+#                                     D               fertig
+#                                   --voice setzt "X-Missa-Modus: sprache" (Antworten zum Vorlesen)
+#                                   MISSA_NEU=1: neues Gespräch (eigener Verlauf aus $MISSA_VERLAUF, JSON-Liste)
+#   shell-missa get <pfad>          GET mit Anmeldung, z. B. /api/lagebild (JSON, 8 s Zeitlimit)
+#   shell-missa session             Sitzungs-ID: hypr-shell-<Rechnername>
+# Der API-Schlüssel (MISSA_API_KEY in secrets.env) geht curl nur über eine Konfiguration auf einem
+# Dateideskriptor zu – nie in die Befehlszeile, eine Datei oder ein Log.
+# Pfade aus den Einstellungen dürfen mit ~ beginnen:
+# shellcheck disable=SC2088
+set -uo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+EFF="$DATA/settings.effective.json"
+HIER="$(dirname "$(readlink -f "$0")")"
+hat() { command -v "$1" >/dev/null 2>&1; }
+wert() {
+    local v=""
+    if hat jq && [ -f "$EFF" ]; then v="$(jq -r "($1) | if . == null then empty else . end" "$EFF" 2>/dev/null || true)"; fi
+    printf '%s\n' "${v:-$2}"
+}
+an() { [ "$(wert '.missa.enabled' false)" = true ]; }
+basis() { local u; u="$(wert '.missa.url' "")"; printf '%s\n' "${u%/}"; }
+schluessel() { "$HIER/shell-secrets" get MISSA_API_KEY 2>/dev/null; }
+session() { printf 'hypr-shell-%s\n' "$(hostname 2>/dev/null || cat /etc/hostname 2>/dev/null || echo rechner)" | tr -c 'A-Za-z0-9_.\n-' '-' | head -c 200; }
+ca() { local c; c="$(wert '.integrations.ca_file' "")"; case "$c" in "~/"*) c="$HOME/${c#\~/}" ;; esac; [ -n "$c" ] && [ -f "$c" ] && printf '%s\n' "$c"; }
+
+# curl-Konfiguration mit dem Schlüssel (für -K über einen Dateideskriptor)
+konfig() {
+    local k
+    k="$(schluessel)"
+    [[ "$k" =~ ^[^\"[:cntrl:]]+$ ]] || return 1
+    printf 'header = "Authorization: Bearer %s"\n' "$k"
+    local c; c="$(ca)"; [ -n "$c" ] && printf 'cacert = "%s"\n' "$c"
+    return 0
+}
+
+health() {
+    an || { echo '{"state": "off", "text": "Off"}'; return; }
+    local b out code c=()
+    b="$(basis)"
+    [ -n "$b" ] || { echo '{"state": "setup", "text": "Enter the Missa-Core address"}'; return; }
+    "$HIER/shell-secrets" has MISSA_API_KEY || { echo '{"state": "setup", "text": "Enter the API key"}'; return; }
+    local cert; cert="$(ca)"; [ -n "$cert" ] && c=(--cacert "$cert")
+    out="$(curl -sS --max-time 5 "${c[@]}" -w '\n%{http_code}' "$b/health" 2>/dev/null)"
+    code="$(tail -n1 <<<"$out")"
+    case "$code" in
+        200) echo '{"state": "ok", "text": "Missa is ready"}' ;;
+        503) echo '{"state": "gestoert", "text": "Missa is disturbed (language model not reachable)"}' ;;
+        000|"") echo '{"state": "unreachable", "text": "Missa-Core not reachable"}' ;;
+        *) jq -cn --arg c "$code" '{state: "gestoert", text: ("Missa-Core answered with " + $c)}' ;;
+    esac
+}
+
+get() {
+    an || { echo '{"error": "off"}'; return 1; }
+    local b
+    b="$(basis)"; [ -n "$b" ] || return 1
+    curl -sS --fail-with-body --max-time 8 --connect-timeout 3 -K <(konfig) "$b$1"
+}
+
+chat() {
+    local voice=0
+    [ "${1:-}" = --voice ] && voice=1
+    an || { printf 'E off %s\n' '"Missa is switched off"'; return 1; }
+    local b nachricht hdr body status
+    b="$(basis)"
+    [ -n "$b" ] || { printf 'E setup %s\n' '"Enter the Missa-Core address in Settings → Integrations"'; return 1; }
+    "$HIER/shell-secrets" has MISSA_API_KEY || { printf 'E setup %s\n' '"Enter the Missa API key in Settings → Integrations"'; return 1; }
+    nachricht="$(cat)"
+    [ -n "$nachricht" ] || return 1
+    hdr="$(mktemp)"; body="$(mktemp)"
+    trap 'rm -f "$hdr" "$body"' RETURN
+    # neues Gespräch: eigener Verlauf (mehrere Nachrichten) – dann nimmt Missa-Core genau diesen
+    if [ "${MISSA_NEU:-0}" = 1 ]; then
+        jq -cn --arg m "$nachricht" --argjson v "${MISSA_VERLAUF:-[]}" \
+            '{model: "missa", stream: true, messages: ([{role: "system", content: "Neues Gespräch: frühere Nachrichten dieser Sitzung nicht berücksichtigen."}] + $v + [{role: "user", content: $m}])}'
+    else
+        jq -cn --arg m "$nachricht" '{model: "missa", stream: true, messages: [{role: "user", content: $m}]}'
+    fi > "$body"
+    local extra=()
+    [ "$voice" = 1 ] && extra=(-H "X-Missa-Modus: sprache")
+    local fertig=0 fehlertext="" zeile daten rest=""
+    while IFS= read -r zeile; do
+        zeile="${zeile%$'\r'}"
+        case "$zeile" in
+            "data: [DONE]") fertig=1 ;;
+            "data: "*)
+                daten="${zeile#data: }"
+                if jq -e '.error' >/dev/null 2>&1 <<<"$daten"; then
+                    printf 'E fehler %s\n' "$(jq -c '.error.message // "Error"' <<<"$daten")"; fehlertext=1
+                else
+                    t="$(jq -c '.choices[0].delta.content // empty' <<<"$daten" 2>/dev/null)"
+                    [ -n "$t" ] && [ "$t" != '""' ] && printf 'T %s\n' "$t"
+                fi ;;
+            "") ;;
+            *) rest+="$zeile" ;;
+        esac
+    done < <(curl -sS -N --max-time "${MISSA_TIMEOUT:-600}" --connect-timeout 5 -K <(konfig) -D "$hdr" \
+                -H "Content-Type: application/json" -H "X-Missa-Session: $(session)" "${extra[@]}" \
+                --data-binary @"$body" "$b/v1/chat/completions" 2>/dev/null)
+    status="$(awk 'toupper($1) ~ /^HTTP/ { s = $2 } END { print s }' "$hdr")"
+    if [ -z "$status" ]; then printf 'E netz %s\n' '"No connection to Missa-Core (network or address)"'; return 1; fi
+    if [ "$status" != 200 ]; then
+        local msg
+        msg="$(jq -c '.error.message // empty' <<<"$rest" 2>/dev/null)"
+        case "$status" in
+            401) msg='"Wrong API key – check it in Settings → Integrations"' ;;
+            429) msg="$(jq -cn --arg w "$(awk 'tolower($1) == "retry-after:" { print $2 }' "$hdr" | tr -d '\r')" '"Locked after too many wrong keys – wait " + (if $w != "" then ($w | tostring) + " seconds" else "15 minutes" end)')" ;;
+            502|503) [ -n "$msg" ] || msg='"The language model is not reachable"' ;;
+        esac
+        printf 'E %s %s\n' "$status" "${msg:-\"Error\"}"
+        return 1
+    fi
+    [ -n "$fehlertext" ] && return 1
+    [ "$fertig" = 1 ] && echo D
+    return 0
+}
+
+case "${1:-}" in
+    health) health ;;
+    chat) shift; chat "$@" ;;
+    get) get "${2:?Pfad fehlt}" ;;
+    session) session ;;
+    *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

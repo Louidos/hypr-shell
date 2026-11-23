@@ -54,7 +54,7 @@ local S = {
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
-        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1",
+        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1", missa_chat = "SUPER + I",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
     },
@@ -331,6 +331,13 @@ bind(K.notifications, hl.dsp.exec_cmd(ui .. "notifications toggle"), "Panels: No
 bind(K.edit_desktop, hl.dsp.exec_cmd(ui .. "desktop edit"), "System: Move desktop widgets")
 -- die App bleibt immer erreichbar: ohne gültige Taste gilt SUPER + U
 bind((K.settings ~= nil and K.settings ~= "") and K.settings or "SUPER + U", hl.dsp.exec_cmd(ui .. "settings toggle"), "Panels: Settings")
+
+-- Missa: nur mit missa.enabled belegt – ausgeschaltet tut das Kürzel still nichts (und steht nicht im
+-- Spickzettel)
+local missa_an = S.missa ~= nil and S.missa.enabled == true
+if missa_an then
+    bind(K.missa_chat, hl.dsp.exec_cmd(ui .. "missa toggle"), "Missa: Chat with Missa")
+end
 
 -- Kürzel-Spickzettel
 bind(K.cheatsheet, hl.dsp.exec_cmd(ui .. "cheatsheet toggle"), "Panels: Keyboard shortcuts")

@@ -95,6 +95,12 @@ ja_nein() {
     [[ "$antwort" =~ ^[jJyY] ]]
 }
 
+# gleicher Inhalt? (cmp gehört zu diffutils und fehlt manchmal, sha256sum ist immer da)
+gleich() {
+    if command -v cmp >/dev/null 2>&1; then cmp -s "$1" "$2"; return; fi
+    [ "$(sha256sum < "$1")" = "$(sha256sum < "$2")" ]
+}
+
 enthaelt() {
     local x="$1"; shift
     local e
@@ -167,7 +173,7 @@ installiere_datei() { # quelle ziel [modus]
     if enthaelt "$ziel" "${NUR_WENN_FEHLT[@]}" && { [ -e "$ziel" ] || [ -L "$ziel" ]; }; then
         return 0
     fi
-    if [ -f "$ziel" ] && [ ! -L "$ziel" ] && cmp -s "$quelle" "$ziel"; then
+    if [ -f "$ziel" ] && [ ! -L "$ziel" ] && gleich "$quelle" "$ziel"; then
         GLEICH=$((GLEICH + 1))
         [ "$DRY" -eq 0 ] && printf '%s\n' "$ziel" >> "$MANIFEST.neu"
         return 0

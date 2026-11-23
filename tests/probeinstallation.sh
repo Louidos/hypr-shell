@@ -51,7 +51,7 @@ for e in "${erwartet[@]}"; do
 done
 pruefe '[ $fehlend -eq 0 ]' "alle ${#erwartet[@]} Dateien angekommen"
 pruefe '[ -x "$TESTHOME/.local/bin/shell-wallpaper" ]' "Skripte in ~/.local/bin sind ausführbar"
-pruefe 'cmp -s config/kitty/kitty.conf "$TESTHOME/.config/kitty/kitty.conf"' "kitty.conf ersetzt"
+pruefe '[ "$(sha256sum < config/kitty/kitty.conf)" = "$(sha256sum < "$TESTHOME/.config/kitty/kitty.conf")" ]' "kitty.conf ersetzt"
 backup="$(find "$TESTHOME/.config" -maxdepth 1 -name 'hypr-shell-backup-*' | head -n1)"
 pruefe '[ -n "$backup" ] && grep -q "meine alte" "$backup/dateien/.config/kitty/kitty.conf"' "alte kitty.conf gesichert"
 pruefe '[ -f "$TESTHOME/Pictures/Wallpapers/hypr-shell-grau.png" ]' "Startbild in ~/Pictures/Wallpapers"

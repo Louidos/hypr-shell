@@ -1,0 +1,9 @@
+/* Standardfarben (grau). matugen überschreibt diese Datei beim ersten Hintergrundbild. */
+@define-color accent #d4d4d4;
+@define-color on_accent #1b1b1b;
+@define-color surface #131313;
+@define-color surface_container #1f1f1f;
+@define-color text #e6e6e6;
+@define-color subtext #a0a0a0;
+@define-color outline #474747;
+@define-color error #dc5050;

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Ausschalt-Menü (rofi): sperren, abmelden, neu starten, herunterfahren.
+#   shell-powermenu            Menü zeigen
+#   shell-powermenu <aktion>   direkt: lock | logout | reboot | shutdown | suspend
+set -euo pipefail
+
+ausfuehren() {
+    case "$1" in
+        lock) loginctl lock-session 2>/dev/null; pidof hyprlock >/dev/null || hyprlock ;;
+        logout) hyprctl dispatch 'hl.dsp.exit()' ;;
+        reboot) systemctl reboot ;;
+        shutdown) systemctl poweroff ;;
+        suspend) systemctl suspend ;;
+        *) echo "Unbekannte Aktion: $1" >&2; exit 2 ;;
+    esac
+}
+
+if [ $# -gt 0 ]; then
+    ausfuehren "$1"
+    exit 0
+fi
+
+wahl="$(printf '%s\n' "󰌾  Lock" "󰍃  Log out" "󰜉  Reboot" "󰐥  Shut down" \
+    | rofi -dmenu -i -p "Power" -no-custom -theme-str 'window { width: 280px; } listview { lines: 4; } inputbar { enabled: false; }' || true)"
+case "$wahl" in
+    *Lock) ausfuehren lock ;;
+    *"Log out") ausfuehren logout ;;
+    *Reboot) ausfuehren reboot ;;
+    *"Shut down") ausfuehren shutdown ;;
+esac

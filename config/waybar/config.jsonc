@@ -1,0 +1,86 @@
+// hypr-shell: flache Leiste im Glas-Look (Blur über die Hyprland-Layer-Regel "waybar")
+{
+  "layer": "top",
+  "position": "top",
+  "height": 30,
+  "spacing": 2,
+  "exclusive": true,
+  "reload_style_on_change": true,
+
+  "modules-left": ["custom/distro", "hyprland/workspaces", "mpris"],
+  "modules-center": [],
+  "modules-right": ["pulseaudio", "clock", "bluetooth", "network", "custom/recording", "custom/power"],
+
+  "custom/distro": {
+    "exec": "$HOME/.local/bin/shell-distro icon",
+    "interval": "once",
+    "tooltip": false,
+    "on-click": "rofi -show drun"
+  },
+
+  "hyprland/workspaces": {
+    "format": "{name}",
+    "persistent-workspaces": { "*": [1, 2, 3, 4] },
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'",
+    "sort-by-number": true
+  },
+
+  "mpris": {
+    "format": "{status_icon}  {title}",
+    "format-paused": "{status_icon}  {title}",
+    "status-icons": { "playing": "󰎈", "paused": "󰏤" },
+    "title-len": 40,
+    "tooltip-format": "{artist} – {title}",
+    "on-click": "playerctl play-pause"
+  },
+
+  "pulseaudio": {
+    "format": "󰕾  {volume}%",
+    "format-muted": "󰝟  muted",
+    "scroll-step": 5,
+    "on-click": "pamixer -t",
+    "tooltip-format": "{desc}"
+  },
+
+  "clock": {
+    "format": "{:%H:%M}",
+    "tooltip-format": "<big>{:%A, %d %B %Y}</big>\n<tt>{calendar}</tt>",
+    "calendar": { "mode": "month", "weeks-pos": "", "on-scroll": 1 }
+  },
+
+  "bluetooth": {
+    "format": "󰂯",
+    "format-off": "󰂲",
+    "format-disabled": "󰂲",
+    "format-connected": "󰂱",
+    "tooltip-format": "{controller_alias}: {status}",
+    "tooltip-format-connected": "{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}",
+    "on-click": "kitty --class hypr-shell-tui -e bluetoothctl"
+  },
+
+  "network": {
+    "format-wifi": "󰤨",
+    "format-ethernet": "󰈀",
+    "format-linked": "󰈀",
+    "format-disconnected": "󰤭",
+    "tooltip-format-wifi": "{essid} · {signalStrength}%",
+    "tooltip-format-ethernet": "{ifname} · {ipaddr}",
+    "tooltip-format-disconnected": "offline",
+    "on-click": "kitty --class hypr-shell-tui -e nmtui"
+  },
+
+  "custom/recording": {
+    "exec": "$HOME/.local/bin/shell-recording status",
+    "return-type": "json",
+    "interval": 2,
+    "tooltip": true
+  },
+
+  "custom/power": {
+    "format": "⏻",
+    "tooltip": false,
+    "on-click": "$HOME/.local/bin/shell-powermenu"
+  }
+}

@@ -32,6 +32,13 @@ Eigene Hintergrundbilder gehören nach `~/Pictures/Wallpapers`; setzen mit
 Eigene Hyprland-Anpassungen gehören nach `~/.config/hypr/user.lua`
 (wird nie überschrieben).
 
+## Leiste
+
+Oben sitzt eine flache, halbtransparente Waybar: links das Distro-Symbol (öffnet den
+Starter), die Arbeitsflächen 1–4 und das aktuelle Lied; rechts Lautstärke, Uhr,
+Bluetooth, WLAN, ein roter Punkt während einer Bildschirmaufnahme und der
+Ausschalt-Knopf (sperren, abmelden, neu starten, herunterfahren).
+
 ## Aufbau
 
 | Ordner | Inhalt |

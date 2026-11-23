@@ -42,7 +42,8 @@ if [ -n "$(find quickshell -name '*.qml' -print -quit)" ]; then
     while IFS= read -r -d '' f; do erwartet+=(".config/quickshell/hypr-shell/${f#quickshell/}"); done < <(find quickshell -type f ! -name .gitkeep -print0)
 fi
 while IFS= read -r -d '' f; do erwartet+=(".local/share/fonts/hypr-shell/$(basename "$f")"); done < <(find quickshell/common/fonts -type f -print0)
-erwartet+=(".local/share/hypr-shell/VERSION" ".config/hypr/hypr-shell-local.lua" ".config/hypr-shell/settings.json")
+erwartet+=(".local/share/hypr-shell/VERSION" ".local/share/hypr-shell/schema.json" ".config/hypr-shell/settings.json"
+          ".config/hypr/hypr-shell-settings.lua" ".local/share/hypr-shell/settings.effective.json")
 
 echo "== 1. alte Datei anlegen"
 mkdir -p "$TESTHOME/.config/kitty"
@@ -73,6 +74,9 @@ else
     echo "  Hinweis: ImageMagick fehlt, Ersatz-Profilbild nicht geprüft"
 fi
 pruefe '[ ! -e "$TESTHOME/.face" ]' "~/.face wird nicht angelegt"
+pruefe 'jq -e ".input.layout | test(\"^[a-z]+$\")" "$TESTHOME/.config/hypr-shell/settings.json" >/dev/null && jq -e ".bar.height == 30" "$TESTHOME/.config/hypr-shell/settings.json" >/dev/null' "settings.json aus der Vorlage, Tastaturlayout eingetragen"
+pruefe '[ ! -e "$TESTHOME/.config/hypr/hypr-shell-local.lua" ]' "keine hypr-shell-local.lua mehr (alles in settings.json)"
+pruefe 'head -n1 "$TESTHOME/.config/hypr/hypr-shell-settings.lua" | grep -q "erzeugt von hypr-shell"' "shell-apply hat die Dateien erzeugt"
 
 echo "== 3. keine fremden Pfade"
 fremd="$(find "$TESTHOME" -type l -exec sh -c 'case "$(readlink -f "$1")" in "$2"/*) ;; *) echo "$1";; esac' _ {} "$TESTHOME" \; )"
@@ -94,14 +98,14 @@ pruefe '[ "$vorher" = "$(zustand)" ]' "Probelauf von --restore hat nichts verän
 echo "== 5. --restore"
 inst --restore --yes
 pruefe 'grep -q "meine alte" "$TESTHOME/.config/kitty/kitty.conf"' "alte kitty.conf zurück"
-pruefe '[ ! -e "$TESTHOME/.config/hypr/hyprland.lua" ]' "neu hinzugekommene hyprland.lua entfernt"
+pruefe '[ ! -e "$TESTHOME/.config/hypr/hyprland.lua" ] && [ ! -e "$TESTHOME/.config/hypr/hypr-shell-settings.lua" ]' "neu hinzugekommene hyprland.lua und hypr-shell-settings.lua entfernt"
 
 echo "== 6. erneut installieren, dann --uninstall"
 inst --yes --no-packages
 pruefe '[ -f "$TESTHOME/.config/hypr/hyprland.lua" ]' "zweite Installation"
 inst --uninstall --yes
 pruefe 'grep -q "meine alte" "$TESTHOME/.config/kitty/kitty.conf"' "Ursprungszustand nach --uninstall"
-pruefe '[ ! -e "$TESTHOME/.config/hypr/hyprland.lua" ] && [ ! -e "$TESTHOME/.local/bin/shell-wallpaper" ]' "Dateien von hypr-shell entfernt"
+pruefe '[ ! -e "$TESTHOME/.config/hypr/hyprland.lua" ] && [ ! -e "$TESTHOME/.local/bin/shell-wallpaper" ] && [ ! -e "$TESTHOME/.config/hypr/hypr-shell-settings.lua" ]' "Dateien von hypr-shell entfernt"
 pruefe '[ ! -d "$TESTHOME/.local/share/hypr-shell" ]' "Datenordner entfernt"
 
 echo "== 7. Symlink-Ordner wird nicht durchschrieben"

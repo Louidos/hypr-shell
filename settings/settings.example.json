@@ -1,18 +1,100 @@
 {
-  "weather": {
-    "location": "",
-    "units": "metric"
+  "bar": {
+    "position": "top",
+    "height": 30,
+    "opacity": 0.25,
+    "modules": {
+      "left": [
+        "distro",
+        "workspaces",
+        "media"
+      ],
+      "center": [],
+      "right": [
+        "volume",
+        "battery",
+        "clock",
+        "bluetooth",
+        "network",
+        "recording",
+        "power"
+      ]
+    },
+    "workspaces": 4,
+    "clock": "24h",
+    "battery": true
+  },
+  "look": {
+    "gaps": {
+      "inner": 6,
+      "outer": 12
+    },
+    "border": 1,
+    "rounding": 12,
+    "blur": {
+      "enabled": true,
+      "size": 10,
+      "passes": 3
+    },
+    "shadow": true,
+    "opacity": {
+      "inactive": 1.0
+    },
+    "animations": {
+      "enabled": true,
+      "speed": "normal"
+    }
+  },
+  "theme": {
+    "colors": "auto",
+    "accent": "#8ab4f8",
+    "glass": 0.44,
+    "radius": {
+      "panel": 26,
+      "card": 18
+    },
+    "font": {
+      "ui": "Inter",
+      "mono": "JetBrainsMono Nerd Font",
+      "clock": "JetBrainsMono Nerd Font",
+      "display": "Bebas Neue",
+      "scale": 1.0
+    },
+    "cursor": {
+      "name": "Bibata-Modern-Ice",
+      "size": 24
+    },
+    "icons": "Papirus-Dark"
+  },
+  "input": {
+    "layout": "us",
+    "variant": "",
+    "sensitivity": 0,
+    "touchpad": {
+      "natural_scroll": false,
+      "tap_to_click": true
+    }
+  },
+  "monitors": {
+    "scale": "auto",
+    "outputs": []
   },
   "desktop": {
     "screen": "",
     "clock": {
       "enabled": true,
+      "format": "24h",
       "x": 0.02,
       "y": 0.045,
       "scale": 1.0
     },
     "resources": {
       "enabled": true,
+      "tiles": [
+        "cpu",
+        "ram",
+        "gpu"
+      ],
       "x": 0.015,
       "y": 0.56,
       "scale": 1.0
@@ -20,13 +102,35 @@
   },
   "dashboard": {
     "width": 1000,
+    "opacity": 0.42,
     "edge": true,
-    "opacity": 0.42
+    "close_on_leave": true,
+    "tabs": [
+      "dashboard",
+      "wallpaper",
+      "performance",
+      "about"
+    ],
+    "start": "dashboard",
+    "cards": [
+      "weather",
+      "profile",
+      "media",
+      "clock",
+      "calendar",
+      "rings"
+    ]
+  },
+  "weather": {
+    "location": "",
+    "units": "metric"
   },
   "panel": {
     "enabled": true,
     "corner": "bottom-right",
     "trigger": 6,
+    "close_on_leave": true,
+    "close_delay": 400,
     "width": 420,
     "radius": 26,
     "opacity": 0.44,
@@ -52,5 +156,20 @@
       "gaming",
       "settings"
     ]
+  },
+  "lock": {
+    "after": 5,
+    "screen_off": 0,
+    "suspend": 15,
+    "blur": 3,
+    "dim": 0.5,
+    "avatar": true,
+    "clock": "24h"
+  },
+  "apps": {
+    "terminal": "kitty",
+    "files": "nautilus",
+    "browser": "firefox",
+    "launcher": "rofi -show drun"
   }
 }

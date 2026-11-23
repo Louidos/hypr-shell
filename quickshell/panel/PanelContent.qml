@@ -144,7 +144,7 @@ FocusScope {
                         anchors { left: lens.right; leftMargin: 10; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
                         color: Theme.text
                         font.family: Theme.mono
-                        font.pixelSize: 12
+                        font.pixelSize: 12 * Theme.fontScale
                         clip: true
                         onTextChanged: pc.query = text
                         Keys.onEscapePressed: text.length > 0 ? text = "" : pc.panel.hide()

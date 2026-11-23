@@ -77,6 +77,18 @@ NUR_WENN_FEHLT=(
     "$CONF/hypr-shell/settings.json"
 )
 
+# Dateien, die shell-apply aus settings.json erzeugt: der Installer legt nur die Fassung mit den
+# Standardwerten an, wenn sie fehlt (oder noch nicht von hypr-shell erzeugt wurde), danach
+# schreibt shell-apply sie passend zu den Einstellungen
+ERZEUGT=(
+    "$CONF/waybar/config.jsonc"
+    "$CONF/waybar/style.css"
+    "$CONF/hypr/hypridle.conf"
+    "$CONF/hypr/hyprlock.conf"
+    "$CONF/rofi/hypr-shell-settings.rasi"
+)
+ERZEUGT_KOPF="erzeugt von hypr-shell"
+
 # ---------------------------------------------------------------- Hilfsfunktionen
 
 if [ -t 1 ]; then FETT=$'\e[1m'; GRUEN=$'\e[32m'; GELB=$'\e[33m'; ROT=$'\e[31m'; AUS=$'\e[0m'
@@ -234,6 +246,12 @@ installiere_datei() { # quelle ziel [modus]
     if enthaelt "$ziel" "${NUR_WENN_FEHLT[@]}" && { [ -e "$ziel" ] || [ -L "$ziel" ]; }; then
         return 0
     fi
+    # von shell-apply erzeugt: bleibt, wie es ist (shell-apply schreibt es am Ende neu)
+    if enthaelt "$ziel" "${ERZEUGT[@]}" && [ -f "$ziel" ] && [ ! -L "$ziel" ] && grep -q "$ERZEUGT_KOPF" "$ziel"; then
+        [ "$DRY" -eq 0 ] && printf '%s\n' "$ziel" >> "$MANIFEST.neu"
+        GLEICH=$((GLEICH + 1))
+        return 0
+    fi
     if [ -f "$ziel" ] && [ ! -L "$ziel" ] && gleich "$quelle" "$ziel"; then
         GLEICH=$((GLEICH + 1))
         [ "$DRY" -eq 0 ] && printf '%s\n' "$ziel" >> "$MANIFEST.neu"
@@ -295,25 +313,42 @@ tastatur() {
     printf '%s\n%s\n' "${layout:-us}" "$variante"
 }
 
-erzeuge_lokal() {
-    local ziel="$CONF/hypr/hypr-shell-local.lua" layout variante
-    [ -e "$ziel" ] && return 0
+# settings.json beim ersten Mal aus der Vorlage anlegen, mit dem Tastaturlayout aus localectl.
+# Eine vorhandene settings.json wird nie verändert.
+erzeuge_settings() {
+    local ziel="$CONF/hypr-shell/settings.json" vorlage="$REPO/settings/settings.example.json" layout variante
+    [ -e "$ziel" ] || [ -L "$ziel" ] && return 0
     { read -r layout; read -r variante; } < <(tastatur)
-    if [ "$DRY" -eq 1 ]; then probe "neu: ~/.config/hypr/hypr-shell-local.lua (Tastatur: $layout ${variante:-})"; return 0; fi
-    mkdir -p "$CONF/hypr"
-    {
-        echo "-- erzeugt von install.sh; darf von Hand geändert werden (wirkt nach hyprctl reload)"
-        echo "return {"
-        echo "    kb_layout      = $(lua_text "$layout"),   -- Tastaturlayout (aus localectl)"
-        echo "    kb_variant     = $(lua_text "$variante"),"
-        echo "    scale          = \"auto\",   -- Bildschirm-Skalierung: \"auto\" oder z. B. 1.25, 1.5, 2"
-        echo "    natural_scroll = false,    -- Touchpad: Inhalt folgt den Fingern"
-        echo "    tap_to_click   = true,     -- Touchpad: Tippen klickt"
-        echo "}"
-    } > "$ziel"
+    if [ "$DRY" -eq 1 ]; then probe "neu: ~/.config/hypr-shell/settings.json (Tastatur: $layout ${variante:-})"; return 0; fi
+    mkdir -p "$CONF/hypr-shell"
+    jq --indent 2 --arg l "$layout" --arg v "$variante" '.input.layout = $l | .input.variant = $v' "$vorlage" > "$ziel.neu" \
+        || cp "$vorlage" "$ziel.neu"
+    mv "$ziel.neu" "$ziel"
     vermerke neu.txt "$ziel"
     printf '%s\n' "$ziel" >> "$MANIFEST.neu"
-    ok "Tastaturlayout übernommen: $layout${variante:+ ($variante)}"
+    ok "Einstellungen angelegt, Tastaturlayout übernommen: $layout${variante:+ ($variante)}"
+}
+
+# Dateien aus settings.json erzeugen (Waybar, Hyprland, hypridle, hyprlock, rofi)
+einstellungen_anwenden() {
+    local extra="$CONF/hypr/hypr-shell-settings.lua" neu=0
+    if [ "$DRY" -eq 1 ]; then probe "shell-apply: Dateien aus ~/.config/hypr-shell/settings.json erzeugen"; return 0; fi
+    command -v jq >/dev/null 2>&1 || { warnung "jq fehlt – Einstellungen werden erst angewendet, wenn jq installiert ist"; return 0; }
+    [ -e "$extra" ] || neu=1
+    if "$BIN/shell-apply" --no-reload --no-migrate 2> "$DATA/.apply.log"; then
+        ok "Einstellungen angewendet"
+    else
+        warnung "shell-apply meldete einen Fehler: $(tail -n1 "$DATA/.apply.log")"
+    fi
+    if [ -s "$DATA/.apply.log" ]; then
+        warnung "settings.json enthält Werte, die nicht passen (es gelten die Standardwerte):"
+        sed 's/^shell-apply: /      /' "$DATA/.apply.log" >&2
+    fi
+    rm -f "$DATA/.apply.log"
+    if [ -e "$extra" ]; then
+        [ "$neu" -eq 1 ] && vermerke neu.txt "$extra"
+        printf '%s\n' "$extra" >> "$MANIFEST.neu"
+    fi
 }
 
 # Umgebungsvariablen der alten Konfiguration (z. B. für NVIDIA) übernehmen,
@@ -512,10 +547,8 @@ installieren() {
     installiere_baum "$REPO/quickshell/common/fonts" "$HOME/.local/share/fonts/hypr-shell"
     installiere_baum "$REPO/wallpapers" "$DATA/wallpapers"
     installiere_datei "$REPO/VERSION" "$DATA/VERSION"
-    if [ -f "$REPO/settings/settings.example.json" ]; then
-        installiere_datei "$REPO/settings/settings.example.json" "$DATA/settings.example.json"
-        installiere_datei "$REPO/settings/settings.example.json" "$CONF/hypr-shell/settings.json"
-    fi
+    installiere_datei "$REPO/settings/settings.example.json" "$DATA/settings.example.json"
+    installiere_datei "$REPO/settings/schema.json" "$DATA/schema.json"
     # mitgelieferte Bilder nur nach ~/Pictures/Wallpapers, wenn sie dort fehlen
     local w
     for w in "$REPO"/wallpapers/*; do
@@ -526,9 +559,10 @@ installieren() {
         fi
     done
 
-    erzeuge_lokal
+    erzeuge_settings
     erzeuge_env
     erzeuge_ersatzbild
+    einstellungen_anwenden
     # kein fc-cache: das schriebe nach ~/.cache; fontconfig findet neue Schriften von selbst
 
     if [ "$DRY" -eq 0 ]; then
@@ -549,6 +583,7 @@ installieren() {
         info "Laufende Hyprland-Sitzung neu laden"
         "$BIN/shell-wallpaper" --restore >/dev/null 2>&1 || true
         hyprctl reload >/dev/null 2>&1 || true
+        pkill -SIGUSR2 -x waybar 2>/dev/null || true
         "$BIN/shell-quickshell" restart >/dev/null 2>&1 || true
         local err
         err="$(hyprctl configerrors 2>/dev/null || true)"

@@ -5,7 +5,9 @@
 #   shell-weather --fresh  Zwischenspeicher ignorieren
 set -euo pipefail
 
-SETTINGS="$HOME/.config/hypr-shell/settings.json"
+# gültige Werte von shell-apply, sonst settings.json direkt
+SETTINGS="$HOME/.local/share/hypr-shell/settings.effective.json"
+[ -f "$SETTINGS" ] || SETTINGS="$HOME/.config/hypr-shell/settings.json"
 CACHE="$HOME/.local/share/hypr-shell/weather.json"
 MAX_ALTER=900
 

@@ -1,3 +1,4 @@
+/* erzeugt von hypr-shell – nicht von Hand ändern (Quelle: ~/.config/hypr-shell/settings.json) */
 /* hypr-shell: Leiste im Glas-Look. Farben aus dem Hintergrundbild (colors.css von matugen). */
 @import "colors.css";
 
@@ -24,12 +25,14 @@ tooltip label { color: @text; font-weight: 500; }
 
 #custom-distro,
 #workspaces button,
+#window,
 #mpris,
 #pulseaudio,
 #battery,
 #clock,
 #bluetooth,
 #network,
+#tray,
 #custom-recording,
 #custom-power {
   padding: 0 8px;
@@ -54,7 +57,7 @@ tooltip label { color: @text; font-weight: 500; }
 #workspaces button.urgent { color: @error; }
 #workspaces button:hover { color: @accent; background: transparent; }
 
-#mpris { color: @subtext; font-weight: 500; }
+#mpris, #window { color: @subtext; font-weight: 500; }
 
 /* Akku: Warnfarbe unter 15 %, solange nicht geladen wird */
 #battery.critical:not(.charging):not(.plugged) { color: @error; }

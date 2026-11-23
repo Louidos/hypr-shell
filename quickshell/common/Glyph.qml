@@ -4,7 +4,7 @@ import QtQuick
 Text {
     property real size: 14
     font.family: Theme.mono
-    font.pixelSize: size
+    font.pixelSize: size * Theme.fontScale
     color: Theme.text
     verticalAlignment: Text.AlignVCenter
     horizontalAlignment: Text.AlignHCenter

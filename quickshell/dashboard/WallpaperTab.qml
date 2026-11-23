@@ -31,7 +31,7 @@ Item {
             anchors { left: lens.right; leftMargin: 10; right: count.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
             color: Theme.text
             font.family: Theme.sans
-            font.pixelSize: 13
+            font.pixelSize: 13 * Theme.fontScale
             clip: true
             selectByMouse: true
             Keys.onEscapePressed: text.length > 0 ? text = "" : wt.closeRequested()

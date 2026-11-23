@@ -377,6 +377,22 @@ hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { description
 -- Teile späterer Ausbaustufen (Dashboard, Panel, …) legen hier ihre Datei ab
 optional("hypr-shell-extra")
 
+-- Automatischer Gaming-Modus: geht ein Spiel in den Vollbildmodus, schaltet shell-games den
+-- Gaming-Modus an und danach wieder aus (games.auto_gaming; ob es ein Spiel ist, entscheidet
+-- games.auto_classes, Standard steam_app_… und gamescope)
+local function sicher(s) return (tostring(s or ""):gsub("[^%w%._%-]", "_")) end
+if not (S.games and S.games.auto_gaming == false) then
+    hl.on("window.fullscreen", function(w)
+        if not w then return end
+        hl.exec_cmd(bin .. "shell-games auto fullscreen " .. sicher(w.fullscreen) .. " "
+            .. sicher(w.class) .. " " .. sicher(w.address))
+    end)
+    hl.on("window.close", function(w)
+        if not w then return end
+        hl.exec_cmd(bin .. "shell-games auto close " .. sicher(w.address))
+    end)
+end
+
 -- eigene Anpassungen des Benutzers
 optional("user")
 

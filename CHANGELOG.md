@@ -7,6 +7,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Spiele-Tab im Dashboard (zuletzt gespielte Steam-Spiele mit Cover, eigene Einträge einschaltbar) und automatischer Gaming-Modus, solange ein Spiel im Vollbild läuft (#57)
 - Leistungsprofil, Grafik-Modus, Ladegrenze und Tastaturlicht für ROG-Laptops (asusctl, supergfxctl) auf der neuen Einstellungsseite Laptop; sie erscheint nur, wenn der Rechner das kann (#56)
 
 ## 1.3.0 – 2026-11-23

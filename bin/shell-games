@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# Spiele für hypr-shell: zuletzt gespielte Steam-Spiele (aus den lokalen Steam-Dateien) und eigene
+# Einträge (games.custom, nur mit games.custom_enabled), dazu der automatische Gaming-Modus.
+#   shell-games list                       JSON, zuletzt gespielte zuerst:
+#                                          [{"id", "name", "last", "cover", "source": "steam"|"custom"}]
+#   shell-games launch <id>                Spiel starten (Steam-ID oder custom:<nr>)
+#   shell-games auto fullscreen <modus> <klasse> <adresse>
+#   shell-games auto close <adresse>       von hyprland.lua bei Vollbild-Wechsel bzw. Schliessen aufgerufen:
+#                                          ein Spiel im Vollbild schaltet den Gaming-Modus an, danach wieder aus
+#                                          (games.auto_gaming; ein von Hand eingeschalteter Modus bleibt)
+set -uo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+EFF="$DATA/settings.effective.json"
+MARKE="$DATA/gaming-auto"
+HIER="$(dirname "$(readlink -f "$0")")"
+hat() { command -v "$1" >/dev/null 2>&1; }
+wert() {
+    local v=""
+    if hat jq && [ -f "$EFF" ]; then v="$(jq -c "($1) | if . == null then empty else . end" "$EFF" 2>/dev/null || true)"; fi
+    printf '%s\n' "${v:-$2}"
+}
+
+steam_dir() {
+    local d
+    for d in "${HYPR_SHELL_STEAM:-}" "$HOME/.local/share/Steam" "$HOME/.steam/steam" "$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam"; do
+        [ -n "$d" ] && [ -d "$d/steamapps" ] && { printf '%s\n' "$d"; return 0; }
+    done
+    return 1
+}
+
+# Bibliotheken aus libraryfolders.vdf ("path"  "/pfad"), dazu der Steam-Ordner selbst
+bibliotheken() {
+    local s="$1"
+    printf '%s\n' "$s"
+    [ -f "$s/steamapps/libraryfolders.vdf" ] && sed -n 's/^[[:space:]]*"path"[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' "$s/steamapps/libraryfolders.vdf"
+}
+
+# zuletzt gespielt aus userdata/*/config/localconfig.vdf: "id<TAB>zeit" (Schlüssel auf Ebene apps)
+localconfig() {
+    local s="$1" f
+    for f in "$s"/userdata/*/config/localconfig.vdf; do
+        [ -f "$f" ] || continue
+        awk '
+            /^[[:space:]]*"[0-9]+"[[:space:]]*$/ { gsub(/[[:space:]"]/, ""); id = $0; next }
+            /"LastPlayed"/ && id != "" { v = $0; gsub(/.*"LastPlayed"[[:space:]]*"|".*/, "", v); print id "\t" v }
+            /^[[:space:]]*}[[:space:]]*$/ { id = "" }' "$f"
+    done
+}
+
+cover() { # steam-ordner id
+    local c="$1/appcache/librarycache" f
+    for f in "$c/${2}_library_600x900.jpg" "$c/$2/library_600x900.jpg" "$c/$2"/*/library_600x900.jpg "$c/$2/library_capsule.jpg"; do
+        [ -f "$f" ] && { printf '%s\n' "$f"; return 0; }
+    done
+    printf '\n'
+}
+
+steam_liste() {
+    local s lib f id name last zeiten l2
+    s="$(steam_dir)" || return 0
+    zeiten="$(localconfig "$s")"
+    while IFS= read -r lib; do
+        for f in "$lib"/steamapps/appmanifest_*.acf; do
+            [ -f "$f" ] || continue
+            id="$(sed -n 's/^[[:space:]]*"appid"[[:space:]]*"\([0-9]*\)".*/\1/p' "$f" | head -n1)"
+            name="$(sed -n 's/^[[:space:]]*"name"[[:space:]]*"\(.*\)"[[:space:]]*$/\1/p' "$f" | head -n1)"
+            last="$(sed -n 's/^[[:space:]]*"LastPlayed"[[:space:]]*"\([0-9]*\)".*/\1/p' "$f" | head -n1)"
+            if [ -z "$id" ] || [ -z "$name" ]; then continue; fi
+            # Werkzeuge sind keine Spiele
+            case "$name" in Proton*|"Steam Linux Runtime"*|"Steamworks Common"*|"SteamVR"*) continue ;; esac
+            l2="$(awk -F'\t' -v id="$id" '$1 == id { print $2 }' <<<"$zeiten" | sort -n | tail -n1)"
+            if [ -n "${l2:-}" ] && [ "${l2:-0}" -gt "${last:-0}" ]; then last="$l2"; fi
+            jq -cn --arg id "$id" --arg name "$name" --argjson last "${last:-0}" --arg cover "$(cover "$s" "$id")" \
+                '{id: $id, name: $name, last: $last, cover: $cover, source: "steam"}'
+        done
+    done < <(bibliotheken "$s" | sort -u)
+}
+
+eigene_liste() {
+    [ "$(wert '.games.custom_enabled' false)" = true ] || return 0
+    wert '.games.custom' '[]' | jq -c 'to_entries[] | select(.value.name != "" and .value.command != "")
+        | {id: "custom:\(.key)", name: .value.name, last: 0, cover: (.value.image // ""), source: "custom"}'
+}
+
+liste() {
+    hat jq || { echo '[]'; return 0; }
+    { steam_liste; eigene_liste; } | jq -cs 'sort_by(-.last) | (map(select(.last > 0)) + map(select(.last == 0)))[:18]'
+}
+
+starten() {
+    local id="$1"
+    if [[ "$id" =~ ^[0-9]+$ ]]; then
+        hat steam || { echo "steam fehlt" >&2; return 1; }
+        setsid -f steam "steam://rungameid/$id" >/dev/null 2>&1
+    elif [[ "$id" =~ ^custom:([0-9]+)$ ]]; then
+        [ "$(wert '.games.custom_enabled' false)" = true ] || return 1
+        local cmd
+        cmd="$(wert '.games.custom' '[]' | jq -r --argjson i "${BASH_REMATCH[1]}" '.[$i].command // empty')"
+        [ -n "$cmd" ] && setsid -f bash -c "$cmd" >/dev/null 2>&1
+    else
+        echo "shell-games: unbekanntes Spiel $id" >&2; return 2
+    fi
+}
+
+ist_spiel() { # klasse
+    local muster
+    while IFS= read -r muster; do
+        [ -n "$muster" ] && [[ "$1" =~ ^($muster)$ ]] && return 0
+    done < <(wert '.games.auto_classes' '["steam_app_[0-9]+","gamescope"]' | jq -r '.[]')
+    return 1
+}
+
+auto() {
+    [ "$(wert '.games.auto_gaming' true)" = true ] || return 0
+    local toggle="$HIER/shell-toggle"
+    case "$1" in
+        fullscreen)
+            local modus="$2" klasse="$3" adresse="$4"
+            if [ "$modus" = 2 ] && ist_spiel "$klasse"; then
+                # nur einschalten, wenn der Modus aus ist (ein von Hand eingeschalteter bleibt in Ruhe)
+                if [ ! -e "$DATA/gaming" ]; then "$toggle" gaming on >/dev/null 2>&1; echo "$adresse" > "$MARKE"; fi
+            elif [ "$modus" = 0 ] && [ "$(cat "$MARKE" 2>/dev/null)" = "$adresse" ]; then
+                rm -f "$MARKE"; "$toggle" gaming off >/dev/null 2>&1
+            fi ;;
+        close)
+            if [ "$(cat "$MARKE" 2>/dev/null)" = "$2" ]; then rm -f "$MARKE"; "$toggle" gaming off >/dev/null 2>&1; fi ;;
+    esac
+}
+
+case "${1:-}" in
+    list) liste ;;
+    launch) starten "${2:?Spiel fehlt}" ;;
+    auto) shift; auto "$@" ;;
+    *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

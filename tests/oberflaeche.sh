@@ -56,6 +56,12 @@ if [ -n "$im" ]; then
     "$im" -size 1920x1080 -seed 5 plasma:'#6a3d8f'-'#41d98a' "$HOME/Pictures/Wallpapers/02-test-wiese.png"
     "$im" -size 64x64 xc:'#5865f2' -fill white -draw 'circle 32,32 32,14' "$HOME/.local/share/test-icons/discord.png"
 fi
+# Beispiel-Steam-Ordner für den Tab Games (zwei Spiele, eines mit Cover)
+st="$HOME/.local/share/Steam"
+mkdir -p "$st/steamapps" "$st/appcache/librarycache"
+printf '"AppState"\n{\n\t"appid"\t\t"570"\n\t"name"\t\t"Dota 2"\n\t"LastPlayed"\t\t"1700000000"\n}\n' > "$st/steamapps/appmanifest_570.acf"
+printf '"AppState"\n{\n\t"appid"\t\t"620"\n\t"name"\t\t"Portal 2"\n\t"LastPlayed"\t\t"1600000000"\n}\n' > "$st/steamapps/appmanifest_620.acf"
+[ -n "$im" ] && "$im" -size 300x450 -seed 11 plasma:'#c23b22'-'#1d1d6b' "$st/appcache/librarycache/570_library_600x900.jpg"
 mkdir -p "$HOME/.local/share/applications"
 for app in kitty:Kitty:kitty firefox:Firefox:firefox org.gnome.Nautilus:Files:org.gnome.Nautilus steam:Steam:steam \
            "discord:Discord:$HOME/.local/share/test-icons/discord.png"; do
@@ -160,7 +166,7 @@ bereich() {
 
 bild desktop
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dashboard'; then
-    for tab in dashboard wallpaper performance about; do
+    for tab in dashboard wallpaper performance games about; do
         ipc dashboard open "$tab"; sleep 3; bild "dashboard-$tab"
     done
     ipc dashboard close; sleep 1
@@ -433,6 +439,7 @@ fi
 echo "---- Bilder und Symbole ----"
 bereich dashboard-dashboard dashboard-avatar "Profilbild im Dashboard"
 bereich dashboard-wallpaper wallpaper-card "erste Wallpaper-Karte"
+[ -n "$im" ] && bereich dashboard-games games-cover "Cover im Tab Games"
 bereich panel panel-avatar "Profilbild im Panel"
 bereich panel app-icon "erstes App-Symbol im Panel"
 bereich launcher launcher-first "erstes App-Symbol im Starter"

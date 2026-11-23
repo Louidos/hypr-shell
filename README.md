@@ -144,7 +144,7 @@ Grösse als Faktor (`desktop.clock.scale`). Ausserhalb des Modus nehmen die Widg
 
 ### Dashboard
 
-Gleitet unten in der Mitte hoch. Oben vier gleich breite Tabs (Symbol über dem Text, der
+Gleitet unten in der Mitte hoch. Oben gleich breite Tabs (Symbol über dem Text, der
 aktive als weisse Pille):
 
 | Tab | Inhalt |
@@ -152,9 +152,14 @@ aktive als weisse Pille):
 | Dashboard | Wetter, Profil mit Begrüssung, Musik, Uhr, Kalender, drei Ringe für CPU/RAM/Disk |
 | Wallpaper | alle Bilder aus `~/Pictures/Wallpapers` mit Suche; Klick setzt Bild und Farben |
 | Performance | CPU und GPU mit Modell, Temperatur und Auslastung („Usage“; eine schlafende NVIDIA-Karte wird nicht geweckt), Datenträger, Netzwerk mit Verlauf, Arbeitsspeicher |
+| Games | zuletzt gespielte Steam-Spiele mit Cover, Klick startet; eigene Einträge (GOG, Battle.net …) mit `games.custom_enabled` und `games.custom`. Ohne Spiele fehlt der Tab |
 | About | System, Distribution, Version von hypr-shell, Hyprland und Quickshell |
 
 Systemwerte werden nur abgefragt, solange das Dashboard offen ist.
+
+**Gaming-Modus automatisch:** Läuft ein Spiel im Vollbild (Steam-Spiele, gamescope; weitere über
+`games.auto_classes`), schaltet hypr-shell Blur, Animationen und Schatten aus und danach wieder an. Ein
+von Hand eingeschalteter Gaming-Modus bleibt, wie er ist; abschalten mit `shell-set games.auto_gaming false`.
 
 ### Starter
 
@@ -337,6 +342,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-wallpaper <bild>` | Hintergrundbild setzen und Farben erzeugen (Farbmodus aus `theme.colors`) |
 | `shell-screenshot region\|screen\|folder` | Screenshot bzw. Ordner öffnen |
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
+| `shell-games list\|launch <id>` | Spiele für den Tab Games |
 | `shell-laptop status\|profile\|gfx\|charge\|kbd …` | Laptop-Funktionen (asusctl, supergfxctl, power-profiles-daemon) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |

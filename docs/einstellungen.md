@@ -104,8 +104,8 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dashboard.opacity` | `0.42` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the glass | `shell-set dashboard.opacity 0.43` |
 | `dashboard.edge` | `true` | `true`, `false` | Open when the mouse touches the middle of the bottom edge | `shell-set dashboard.edge false` |
 | `dashboard.close_on_leave` | `true` | `true`, `false` | Close when the mouse leaves the dashboard | `shell-set dashboard.close_on_leave false` |
-| `dashboard.tabs` | `["dashboard","wallpaper","performance","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `about` | Tabs and their order | `shell-set dashboard.tabs dashboard,wallpaper` |
-| `dashboard.start` | `dashboard` | `dashboard`, `wallpaper`, `performance`, `about` | Tab shown when the dashboard opens | `shell-set dashboard.start wallpaper` |
+| `dashboard.tabs` | `["dashboard","wallpaper","performance","games","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `games`, `about` | Tabs and their order (Games only appears when Steam games or own entries exist) | `shell-set dashboard.tabs dashboard,wallpaper` |
+| `dashboard.start` | `dashboard` | `dashboard`, `wallpaper`, `performance`, `games`, `about` | Tab shown when the dashboard opens | `shell-set dashboard.start wallpaper` |
 | `dashboard.cards` | `["weather","profile","media","clock","calendar","rings"]` | Liste aus `weather`, `profile`, `media`, `clock`, `calendar`, `rings` | Cards on the Dashboard tab | `shell-set dashboard.cards weather,profile` |
 
 ## weather – Wetter
@@ -114,6 +114,15 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `weather.location` | `""` | Text | Place for the weather, e.g. Zürich | `shell-set weather.location "Zürich"` |
 | `weather.units` | `metric` | `metric`, `imperial` | metric = °C, imperial = °F | `shell-set weather.units imperial` |
+
+## games – games
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `games.auto_gaming` | `true` | `true`, `false` | Switch the gaming mode on while a game runs in fullscreen, and off again afterwards | `shell-set games.auto_gaming false` |
+| `games.auto_classes` | `["steam_app_[0-9]+","gamescope"]` | Liste von Texten | Window classes (regular expressions) that count as games for the automatic gaming mode | `shell-set games.auto_classes steam_app_[0-9]+,gamescope,code` |
+| `games.custom_enabled` | `false` | `true`, `false` | Show your own entries (GOG, Battle.net …) in the Games tab | `shell-set games.custom_enabled true` |
+| `games.custom` | `[]` | Liste von Einträgen mit `name`, `command`, `image` | Name, command and picture of own games, e.g. for GOG or Battle.net | `shell-set games.custom '[]'` |
 
 ## panel – Hot-Corner-Panel
 

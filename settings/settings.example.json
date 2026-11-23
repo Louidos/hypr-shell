@@ -110,6 +110,7 @@
       "dashboard",
       "wallpaper",
       "performance",
+      "games",
       "about"
     ],
     "start": "dashboard",
@@ -125,6 +126,15 @@
   "weather": {
     "location": "",
     "units": "metric"
+  },
+  "games": {
+    "auto_gaming": true,
+    "auto_classes": [
+      "steam_app_[0-9]+",
+      "gamescope"
+    ],
+    "custom_enabled": false,
+    "custom": []
   },
   "panel": {
     "enabled": true,

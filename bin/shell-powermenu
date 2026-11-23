@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
-# Ausschalt-Menü (rofi): sperren, abmelden, neu starten, herunterfahren.
-#   shell-powermenu            Menü zeigen
+# Ausschalt-Menü: sperren, Standby, abmelden, neu starten, herunterfahren.
+#   shell-powermenu            Menü zeigen (Glas-Überlagerung von hypr-shell, ohne Oberfläche rofi)
 #   shell-powermenu <aktion>   direkt: lock | logout | reboot | shutdown | suspend
+# HYPR_SHELL_POWER_DRYRUN=1: nichts ausführen, nur die Aktion nach
+# ~/.local/share/hypr-shell/power-dryrun.log schreiben (für Tests).
 set -euo pipefail
 
 ausfuehren() {
+    if [ "${HYPR_SHELL_POWER_DRYRUN:-0}" = 1 ]; then
+        mkdir -p "$HOME/.local/share/hypr-shell"
+        echo "$1" >> "$HOME/.local/share/hypr-shell/power-dryrun.log"
+        return 0
+    fi
     case "$1" in
         lock) loginctl lock-session 2>/dev/null; pidof hyprlock >/dev/null || hyprlock ;;
         logout) hyprctl dispatch 'hl.dsp.exit()' ;;
@@ -19,6 +26,12 @@ if [ $# -gt 0 ]; then
     ausfuehren "$1"
     exit 0
 fi
+
+# Glas-Menü der Oberfläche; läuft sie nicht, das einfache Menü mit rofi
+if "$(dirname "$(readlink -f "$0")")/shell-quickshell" ipc power open >/dev/null 2>&1; then
+    exit 0
+fi
+command -v rofi >/dev/null 2>&1 || exit 0
 
 wahl="$(printf '%s\n' "󰌾  Lock" "󰍃  Log out" "󰜉  Reboot" "󰐥  Shut down" \
     | rofi -dmenu -i -p "Power" -no-custom -theme-str 'window { width: 280px; } listview { lines: 4; } inputbar { enabled: false; }' || true)"

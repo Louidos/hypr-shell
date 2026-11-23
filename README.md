@@ -78,6 +78,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `SUPER + V` | Fenster schwebend / gekachelt |
 | `SUPER + M` | abmelden (Hyprland beenden) |
 | `SUPER + L` | sperren |
+| `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |
 | `SUPER + left` / `SUPER + right` / `SUPER + up` / `SUPER + down` | Fokus in diese Richtung |
 | `SUPER + 1` … `SUPER + 0` | zu Arbeitsfläche 1–10 |
 | `SUPER + SHIFT + 1` … `SUPER + SHIFT + 0` | Fenster auf Arbeitsfläche 1–10 verschieben |
@@ -95,6 +96,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` | Lautstärke + / − |
 | `XF86AudioMute` / `XF86AudioMicMute` | Ton / Mikrofon stumm |
 | `XF86MonBrightnessUp` / `XF86MonBrightnessDown` | Helligkeit + / − |
+| `XF86KbdBrightnessUp` / `XF86KbdBrightnessDown` | Tastaturbeleuchtung + / − |
 | `XF86AudioPlay` / `XF86AudioPause` / `XF86AudioNext` / `XF86AudioPrev` | Medien: Play/Pause, weiter, zurück |
 | `Esc` | Dashboard, Panel oder Einstellungs-App schliessen (auch ein Klick daneben schliesst) |
 | Wischen mit drei Fingern | Arbeitsfläche wechseln |
@@ -166,6 +168,14 @@ disturb** (auch Rechtsklick auf die Glocke oder `shell-toggle dnd`). Mit Nicht s
 Karten, der Verlauf füllt sich trotzdem. hypr-shell ist dabei selbst der Benachrichtigungsdienst
 (swaync wird nicht mehr gestartet); mit `shell-set notifications.enabled false` lässt sich ein anderer
 Dienst verwenden.
+
+### Lautstärke-Anzeige und Power-Menü
+
+Lautstärke-, Stumm-, Mikrofon- und Helligkeitstasten (auch die Tastaturbeleuchtung) zeigen unten in der
+Mitte eine kleine Glas-Pille mit Symbol und Balken, die nach 1,5 Sekunden verschwindet (`shell-osd`;
+abschalten mit `shell-set osd.enabled false`). Das Power-Menü (`SUPER + Escape` oder ⏻ in der Leiste)
+zeigt in der Mitte fünf grosse Knöpfe: **Lock**, **Sleep**, **Logout**, **Restart**, **Shutdown**.
+Pfeiltasten wählen, Enter löst aus, Esc schliesst; Restart und Shutdown verlangen einen zweiten Druck.
 
 ### Hot-Corner-Panel
 
@@ -283,7 +293,8 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-screenshot region\|screen\|folder` | Screenshot bzw. Ordner öffnen |
 | `shell-toggle <wifi\|bluetooth\|dnd\|gaming\|awake> [on\|off]` | Schnellschalter, `shell-toggle status` zeigt alle |
 | `shell-quickshell restart` | Oberfläche neu starten |
-| `shell-powermenu` | Ausschalt-Menü |
+| `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |
+| `shell-osd volume\|mic\|brightness\|kbd …` | Lautstärke/Helligkeit ändern und anzeigen |
 
 ## Aufbau
 

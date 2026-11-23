@@ -306,7 +306,8 @@ Auf ASUS-ROG-Laptops (z. B. Zephyrus M16) steuert hypr-shell über `asusctl` und
 - **Grafik-Modus** – Seite Laptop: Integrated, Hybrid, AsusMuxDgpu … mit Bestätigung, danach ab- oder
   neu anmelden.
 - **Ladegrenze** – `laptop.charge_limit` (z. B. 80 %); asusd behält sie über Neustarts, hypr-shell setzt
-  sie beim Anmelden noch einmal.
+  sie beim Anmelden noch einmal. Zurück auf 100 (oder Reset) stellt auch asusd wieder auf 100; eine nur mit
+  asusctl gesetzte Grenze bleibt unberührt.
 - **Tastaturlicht** – `laptop.kbd_light` (off/low/med/high) und `laptop.kbd_follow_wallpaper` (Farbe folgt
   dem Hintergrundbild).
 

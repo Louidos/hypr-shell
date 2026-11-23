@@ -77,6 +77,7 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | XWayland-Fenster (Steam) bei Skalierung über 1 scharf | von Hand |
 | GPU-Kachel zeigt „–“, solange die NVIDIA-Karte schläft, und weckt sie nicht | automatisch mit nachgebauter Karte (`tests/dashboard.sh`); echte Karte von Hand: `cat /sys/bus/pci/devices/*/power/runtime_status` |
 | Zahnrad im Panel öffnet settings.json im Terminal | von Hand |
+| Ladegrenze auf 80, dann wieder auf 100 stellen: `cat /sys/class/power_supply/BAT*/charge_control_end_threshold` zeigt 100 | Schreiben über asusctl automatisch mit Attrappe (`tests/laptop.sh`), auch nach Reset und mit der alten Schreibweise; echter Akku von Hand |
 
 ## Einstellungen in settings.json (Schema, shell-apply)
 

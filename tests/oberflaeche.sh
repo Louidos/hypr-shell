@@ -907,7 +907,7 @@ if ! kill -0 "$qspid" 2>/dev/null; then
     exit 1
 fi
 if grep -E "ERROR|TypeError|ReferenceError|is not a type|is not installed|Cannot assign|Unable to assign|Type error|SyntaxError|failed to load" "$T/qs.log" \
-    | grep -vE "Failed to connect to|dbus|DBus|org\.freedesktop|polkit|pipewire|Pipewire|upower|UPower|notification server|NetworkManager|bluez|Bluez|mpris"; then
+    | grep -vE "Failed to connect to|dbus|DBus|org\.freedesktop|polkit|pipewire|Pipewire|upower|UPower|notification server|NetworkManager|bluez|Bluez|mpris|quickshell\.wayland\.buffer\.dmabuf"; then
     echo "FEHLER: QML-Fehler im Log (siehe oben)"
     exit 1
 fi

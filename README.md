@@ -464,7 +464,7 @@ haben Profilbild, Cover und Vorschaubilder dort eckige statt runde Ecken.
 
 ## Projektstand
 
-Version: **1.5.0** (siehe [`VERSION`](VERSION)). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
+Version: **1.6.0** (siehe [`VERSION`](VERSION)). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
 Was nur auf dem echten Rechner geprüft werden kann, steht in [docs/abnahme.md](docs/abnahme.md).
 Optik und Aufbau sind an „DarkShadow's Shell“ (MIT) angelehnt; der Code ist neu geschrieben,
 übernommene Masse und Formen sind in [NOTICE](NOTICE) vermerkt.

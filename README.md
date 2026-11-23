@@ -268,7 +268,7 @@ Datei überschreibt der Installer nie, und sie gilt zuletzt.
 
 ### Mit der Einstellungs-App
 
-Links stehen die Seiten Home, Bar, Look, Theme, Desktop, Dashboard, Panel, System, Laptop (nur auf Laptops mit asusctl, supergfxctl oder power-profiles-daemon), Lock & Idle, Input,
+Links stehen die Seiten Home, Bar, Look, Theme, Desktop, Dashboard, Panel, System, Integrations, Laptop (nur auf Laptops mit asusctl, supergfxctl oder power-profiles-daemon), Lock & Idle, Input,
 Monitors, Apps, Keybinds und About; rechts jeder Wert mit Erklärung und dem passenden Bedienelement.
 Ein Regler wirkt schon beim Ziehen. Neben einem geänderten Wert steht **Reset**, oben auf jeder Seite
 **Reset page**, ganz oben **Undo** und **Redo**; die Suche findet Werte über Titel, Erklärung und
@@ -295,6 +295,15 @@ gilt wieder die alte. **About** öffnet `settings.json` und diese Übersicht. We
 Die Tab-Taste vervollständigt in bash und fish Befehle, Schlüssel und erlaubte Werte. Werte aus der
 alten `~/.config/hypr/hypr-shell-local.lua` (Version 1.1) wandern beim ersten Start einmalig in
 `settings.json`; eine `settings.json` aus Version 1.0 oder 1.1 funktioniert unverändert.
+
+## Anbindungen (Nextcloud, Missa, Homelab, Kalender, Sensor)
+
+Alle persönlichen Anbindungen sind nach der Installation **aus** – wer hypr-shell ohne Nextcloud, Missa
+oder Homelab benutzt, sieht nichts davon. Einschalten in der Einstellungs-App auf der Seite
+**Integrations** (Schalter, Statuspunkt, Felder; Passwörter landen nur in
+`~/.config/hypr-shell/secrets.env`). Nextcloud erscheint dann als Ordner `~/Nextcloud`, Missa als
+`~/Missa` mit `Eingang/` und `Ausgabe/`, beide mit Lesezeichen in der Seitenleiste des Dateimanagers.
+Alles Weitere steht in [docs/anbindungen.md](docs/anbindungen.md).
 
 ## Laptop
 
@@ -344,6 +353,8 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
 | `shell-games list\|launch <id>` | Spiele für den Tab Games |
 | `shell-laptop status\|profile\|gfx\|charge\|kbd …` | Laptop-Funktionen (asusctl, supergfxctl, power-profiles-daemon) |
+| `shell-mount nextcloud\|missa up\|down\|status` | Ordner der Anbindungen einhängen / aufräumen |
+| `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |
@@ -360,7 +371,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `wallpapers/` | mitgelieferte Hintergrundbilder |
 | `settings/` | `schema.json` (Beschreibung aller Werte) und `settings.example.json` (Standardwerte) |
 | `tests/` | Prüfskripte (`tests/lint.sh`, `tests/probeinstallation.sh`, …) |
-| `docs/` | Doku: [einstellungen.md](docs/einstellungen.md) (alle Werte, aus dem Schema erzeugt), [abnahme.md](docs/abnahme.md), Screenshots |
+| `docs/` | Doku: [einstellungen.md](docs/einstellungen.md) (alle Werte, aus dem Schema erzeugt), [anbindungen.md](docs/anbindungen.md), [abnahme.md](docs/abnahme.md), Screenshots |
 
 Die Screenshots stammen aus dem Oberflächentest der CI (unsichtbarer Compositor,
 Software-Rendering): Sie zeigen Aufbau und Masse, aber **ohne Blur**. Ohne Grafikkarte

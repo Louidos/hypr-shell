@@ -199,6 +199,54 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `laptop.kbd_light` | `unchanged` | `unchanged`, `off`, `low`, `med`, `high` | Brightness of the keyboard backlight (unchanged = leave it as it is) | `shell-set laptop.kbd_light off` |
 | `laptop.kbd_follow_wallpaper` | `false` | `true`, `false` | Keyboard color follows the accent color of the wallpaper | `shell-set laptop.kbd_follow_wallpaper true` |
 
+## nextcloud – nextcloud
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `nextcloud.enabled` | `false` | `true`, `false` | Mount your Nextcloud as a normal folder (WebDAV, rclone) with a bookmark in the file manager | `shell-set nextcloud.enabled true` |
+| `nextcloud.url` | `""` | Text (Format geprüft) | Address of the Nextcloud, like https://cloud.example.org | `shell-set nextcloud.url ` |
+| `nextcloud.user` | `""` | Text (Format geprüft) | Nextcloud user name (the app password is stored separately in secrets.env) | `shell-set nextcloud.user ` |
+| `nextcloud.mount_path` | `~/Nextcloud` | Text (Format geprüft) | Where the Nextcloud appears | `shell-set nextcloud.mount_path ~/Nextcloud` |
+| `nextcloud.cache_mb` | `1024` | ganze Zahl 128 … 20480 MB | Space for the local copy of opened files | `shell-set nextcloud.cache_mb 1152` |
+| `nextcloud.read_only` | `false` | `true`, `false` | Only read files from the Nextcloud, never change them | `shell-set nextcloud.read_only true` |
+
+## missa – missa
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `missa.enabled` | `false` | `true`, `false` | Your assistant Missa: chat (SUPER+I), dashboard card and the folder ~/Missa | `shell-set missa.enabled true` |
+| `missa.url` | `""` | Text (Format geprüft) | Base address of Missa-Core, like https://missa.example.org (the key is stored in secrets.env) | `shell-set missa.url ` |
+| `missa.folder` | `~/Missa` | Text (Format geprüft) | Local folder with Eingang (files for Missa) and Ausgabe (files from Missa) | `shell-set missa.folder ~/Missa` |
+| `missa.agent_enabled` | `false` | `true`, `false` | Missa can find and open files, control apps and windows and, after confirmation, run commands | `shell-set missa.agent_enabled true` |
+| `missa.voice_enabled` | `false` | `true`, `false` | Speak with Missa (SUPER+SHIFT+I) and hear her answers, locally with whisper.cpp and piper | `shell-set missa.voice_enabled true` |
+
+## lab – lab
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `lab.enabled` | `false` | `true`, `false` | Dashboard tab Lab with VMs, servers, containers and alarms (read through Missa-Core) | `shell-set lab.enabled true` |
+
+## calendar – calendar
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `calendar.enabled` | `false` | `true`, `false` | Appointments from a CalDAV calendar (e.g. Nextcloud) in the dashboard calendar | `shell-set calendar.enabled true` |
+| `calendar.url` | `""` | Text (Format geprüft) | Address of the calendar, like https://cloud.example.org/remote.php/dav/calendars/user/personal/ | `shell-set calendar.url ` |
+| `calendar.user` | `""` | Text (Format geprüft) | CalDAV user name (the password is stored in secrets.env) | `shell-set calendar.user ` |
+
+## sensor – sensor
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `sensor.enabled` | `false` | `true`, `false` | Dashboard tile with a value from a JSON address, e.g. air quality | `shell-set sensor.enabled true` |
+| `sensor.url` | `""` | Text (Format geprüft) | Address that returns JSON | `shell-set sensor.url ` |
+
+## integrations – integrations
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `integrations.ca_file` | `""` | Text (Format geprüft) | Certificate of your own certificate authority for self-signed servers (checking is never switched off) | `shell-set integrations.ca_file ` |
+
 ## keybinds – Tastenkürzel
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |

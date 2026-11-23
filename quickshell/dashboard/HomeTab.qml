@@ -34,11 +34,43 @@ Grid12 {
     }
     Timer { interval: 15 * 60 * 1000; running: true; repeat: true; onTriggered: if (!weatherProc.running) weatherProc.running = true }
 
+    // ---- Sensor (nur mit sensor.enabled): teilt sich die Zelle des Wetters (rechte Hälfte)
+    property var sensor: ({ ok: false })
+    Process {
+        running: Integrations.sensor
+        command: [Settings.bin + "shell-fetch", "sensor"]
+        stdout: StdioCollector { onStreamFinished: { try { home.sensor = JSON.parse(text) } catch (e) { } } }
+    }
+
     // ---- Wetter (4×1 bei 0,0)
     Cell {
         col: 0; row: 0; cs: 4; rs: 1
-        visible: home.shown("weather")
+        visible: home.shown("weather") || Integrations.sensor
+        Item {
+            visible: Integrations.sensor
+            anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+            width: parent.width * 0.42
+            Rectangle { width: 1; height: parent.height - 24; anchors.verticalCenter: parent.verticalCenter; color: Theme.cardBorder }
+            Column {
+                anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                spacing: 2
+                Txt {
+                    text: home.sensor.data ? home.sensor.data.value + " " + (home.sensor.data.unit || "") : "–"
+                    size: 20
+                    weight: Font.Bold
+                    color: home.sensor.data && home.sensor.data.warn ? Theme.warn : Theme.text
+                    Probe { name: "sensor-tile" }
+                }
+                Txt {
+                    text: (home.sensor.data ? home.sensor.data.title : Settings.get("sensor.title", "Sensor"))
+                          + (home.sensor.ok === false && home.sensor.error === "not reachable" ? " · not reachable" : home.sensor.error === "setup" ? " · set the address" : "")
+                    size: 11
+                    sub: true
+                }
+            }
+        }
         Row {
+            visible: home.shown("weather")
             anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
             spacing: 14
             Glyph {

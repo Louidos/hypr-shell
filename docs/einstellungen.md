@@ -104,8 +104,8 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dashboard.opacity` | `0.42` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the glass | `shell-set dashboard.opacity 0.43` |
 | `dashboard.edge` | `true` | `true`, `false` | Open when the mouse touches the middle of the bottom edge | `shell-set dashboard.edge false` |
 | `dashboard.close_on_leave` | `true` | `true`, `false` | Close when the mouse leaves the dashboard | `shell-set dashboard.close_on_leave false` |
-| `dashboard.tabs` | `["dashboard","wallpaper","performance","games","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `games`, `about` | Tabs and their order (Games only appears when Steam games or own entries exist) | `shell-set dashboard.tabs dashboard,wallpaper` |
-| `dashboard.start` | `dashboard` | `dashboard`, `wallpaper`, `performance`, `games`, `about` | Tab shown when the dashboard opens | `shell-set dashboard.start wallpaper` |
+| `dashboard.tabs` | `["dashboard","wallpaper","performance","games","lab","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `games`, `lab`, `about` | Tabs in this order (Games only with Steam games or own entries, Lab only with lab.enabled) | `shell-set dashboard.tabs dashboard,wallpaper` |
+| `dashboard.start` | `dashboard` | `dashboard`, `wallpaper`, `performance`, `games`, `lab`, `about` | Tab shown when the dashboard opens | `shell-set dashboard.start wallpaper` |
 | `dashboard.cards` | `["weather","profile","media","clock","calendar","rings"]` | Liste aus `weather`, `profile`, `media`, `clock`, `calendar`, `rings` | Cards on the Dashboard tab | `shell-set dashboard.cards weather,profile` |
 
 ## weather – Wetter
@@ -247,6 +247,10 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `sensor.enabled` | `false` | `true`, `false` | Dashboard tile with a value from a JSON address, e.g. air quality | `shell-set sensor.enabled true` |
 | `sensor.url` | `""` | Text (Format geprüft) | Address that returns JSON | `shell-set sensor.url ` |
+| `sensor.field` | `value` | Text (Format geprüft) | Which value of the JSON to show, as a path like luft.co2 | `shell-set sensor.field value` |
+| `sensor.title` | `Air quality` | Text (Format geprüft) | Title of the tile | `shell-set sensor.title Air quality` |
+| `sensor.unit` | `ppm` | Text (Format geprüft) | Unit shown after the value | `shell-set sensor.unit ppm` |
+| `sensor.warn` | `1000` | Zahl 0 … 100000, Schritt 1 | From this value on, the tile shows the warning color | `shell-set sensor.warn 1001` |
 
 ## integrations – integrations
 

@@ -39,8 +39,10 @@ output HEADLESS-1 resolution 1920x1080 position 0 0
 output * bg $REPO/wallpapers/hypr-shell-grau.png fill
 default_border none
 CONF
+# Kopie ohne Datei-Capabilities (sway hat cap_sys_nice, das ist in Containern verboten)
+cp "$(command -v sway)" "$T/sway"
 WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
-    sway -c "$T/sway.conf" > "$T/sway.log" 2>&1 &
+    "$T/sway" -c "$T/sway.conf" > "$T/sway.log" 2>&1 &
 pids+=("$!")
 for _ in $(seq 1 100); do
     sock="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'wayland-*' ! -name '*.lock' -print -quit)"

@@ -98,7 +98,8 @@ Scope {
         path: Settings.dataDir + "/dnd"
         watchChanges: true
         onFileChanged: reload()
-        onLoaded: { const on = text().trim() === "true"; if (on !== nc.dnd) { nc.dnd = on; nc.writeBar() } }
+        // auch über shell-toggle dnd: mit Nicht stören verschwinden offene Karten sofort
+        onLoaded: { const on = text().trim() === "true"; if (on !== nc.dnd) { nc.dnd = on; if (on) nc.popups = []; nc.writeBar() } }
     }
     FileView { id: barFile; path: Settings.dataDir + "/notifications-bar.json" }
     Component.onCompleted: writeBar()

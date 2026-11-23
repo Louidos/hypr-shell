@@ -19,6 +19,8 @@ C="$HOME/.config"
 mkdir -p "$DATA" "$T/bin" "$C"
 fehler=0
 pruefe() { if eval "$1"; then echo "  ok: $2"; else echo "  FEHLER: $2"; fehler=1; fi; }
+# gleicher Inhalt? (cmp aus diffutils fehlt manchmal, sha256sum ist immer da)
+gleich() { [ -e "$1" ] && [ -e "$2" ] && [ "$(sha256sum < "$1")" = "$(sha256sum < "$2")" ]; }
 printf '#!/bin/sh\nexit 0\n' > "$T/bin/qt6ct"
 printf '#!/bin/sh\nexit 0\n' > "$T/bin/firefox"
 printf '#!/bin/sh\nexit 0\n' > "$T/bin/vesktop"
@@ -82,15 +84,15 @@ pruefe 'grep -qxF "@import url(\"hypr-shell-colors.css\"); /* hypr-shell */" "$C
 pruefe '[ "$(head -n1 "$C/gtk-4.0/gtk.css")" = "@import url(\"hypr-shell-colors.css\"); /* hypr-shell */" ] && grep -q "@define-color accent_bg_color" "$C/gtk-4.0/hypr-shell-colors.css"' "GTK 4 (Nautilus): libadwaita-Farben"
 pruefe 'grep -q "^custom_palette=true" "$C/qt6ct/qt6ct.conf" && grep -q "^color_scheme_path=$C/qt6ct/colors/hypr-shell.conf" "$C/qt6ct/qt6ct.conf" && grep -q "^icon_theme=Papirus" "$C/qt6ct/qt6ct.conf" && [ "$(grep -c "^\[Appearance\]" "$C/qt6ct/qt6ct.conf")" = 1 ]' "Qt: Farbschema in qt6ct, eigene Werte bleiben"
 pruefe '[ ! -e "$C/qt5ct" ]' "Qt: qt5ct fehlt, wird nicht angelegt"
-pruefe 'cmp -s "$HOME/.mozilla/firefox/abc.default-release/chrome/userChrome.css" "$T/vorher/.mozilla/firefox/abc.default-release/chrome/userChrome.css" && cmp -s "$C/vesktop/settings/settings.json" "$T/vorher/.config/vesktop/settings/settings.json" && [ ! -f "$HOME/spicetify.log" ]' "Firefox, Vesktop und Spotify bleiben aus"
+pruefe 'gleich "$HOME/.mozilla/firefox/abc.default-release/chrome/userChrome.css" "$T/vorher/.mozilla/firefox/abc.default-release/chrome/userChrome.css" && gleich "$C/vesktop/settings/settings.json" "$T/vorher/.config/vesktop/settings/settings.json" && [ ! -f "$HOME/spicetify.log" ]' "Firefox, Vesktop und Spotify bleiben aus"
 pruefe '[ "$(ac status | jq -c "[.gtk.applied, .qt.applied, .firefox.applied]")" = "[true,true,false]" ]' "Status"
 
 echo "== Bildwechsel"
 alt="$(cat "$C/gtk-4.0/hypr-shell-colors.css")"
 rendern 2; ac apply
-pruefe '[ "$(cat "$C/gtk-4.0/hypr-shell-colors.css")" != "$alt" ] && cmp -s "$C/gtk-4.0/hypr-shell-colors.css" "$DATA/app-colors/gtk.css"' "Dateimanager (GTK 4) hat die neuen Farben"
+pruefe '[ "$(cat "$C/gtk-4.0/hypr-shell-colors.css")" != "$alt" ] && gleich "$C/gtk-4.0/hypr-shell-colors.css" "$DATA/app-colors/gtk.css"' "Dateimanager (GTK 4) hat die neuen Farben"
 pruefe '[ "$(grep -c "hypr-shell-colors.css" "$C/gtk-3.0/gtk.css")" = 1 ]' "Einbindung nur einmal"
-pruefe 'cmp -s "$C/qt6ct/colors/hypr-shell.conf" "$DATA/app-colors/qt.conf"' "Qt hat die neuen Farben"
+pruefe 'gleich "$C/qt6ct/colors/hypr-shell.conf" "$DATA/app-colors/qt.conf"' "Qt hat die neuen Farben"
 
 echo "== Firefox, Vesktop und Spotify einschalten"
 einstellen '{"firefox": true, "vesktop": true, "spotify": true}'
@@ -106,7 +108,7 @@ echo "== alles ausschalten: Ursprungszustand"
 einstellen '{"gtk": false, "qt": false, "firefox": false, "vesktop": false, "spotify": false}'
 ac sync
 pruefe '[ "$(liste "$HOME")" = "$(liste "$T/vorher")" ]' "keine Datei mehr da, die vorher fehlte"
-pruefe 'for f in .config/gtk-3.0/gtk.css .config/qt6ct/qt6ct.conf .mozilla/firefox/abc.default-release/chrome/userChrome.css .config/vesktop/settings/settings.json .config/spicetify/config-xpui.ini; do cmp -s "$HOME/$f" "$T/vorher/$f" || { echo "    anders: $f"; exit 1; }; done' "jede geänderte Datei ist wieder wie vorher"
+pruefe '( for f in .config/gtk-3.0/gtk.css .config/qt6ct/qt6ct.conf .mozilla/firefox/abc.default-release/chrome/userChrome.css .config/vesktop/settings/settings.json .config/spicetify/config-xpui.ini; do gleich "$HOME/$f" "$T/vorher/$f" || { echo "    anders: $f"; exit 1; }; done )' "jede geänderte Datei ist wieder wie vorher"
 pruefe '[ "$(tail -n1 "$HOME/spicetify.log")" = apply ]' "Spotify: spicetify apply nach dem Zurücklegen"
 pruefe '[ ! -d "$DATA/app-colors/backup/gtk" ] && [ "$(ac status | jq -c "[.gtk.applied, .spotify.applied]")" = "[false,false]" ]' "Sicherungen aufgeräumt"
 
@@ -137,6 +139,6 @@ printf '#!/bin/sh\nexit 0\n' > "$T/bin/firefox"; chmod +x "$T/bin/firefox"
 einstellen '{"gtk": true, "qt": true, "firefox": true}'
 ac sync
 ac restore
-pruefe 'cmp -s "$P/chrome/userChrome.css" "$T/vorher/.mozilla/firefox/abc.default-release/chrome/userChrome.css" && [ -L "$C/gtk-3.0/gtk.css" ] && [ ! -e "$C/gtk-4.0" ]' "restore: Ursprungszustand"
+pruefe 'gleich "$P/chrome/userChrome.css" "$T/vorher/.mozilla/firefox/abc.default-release/chrome/userChrome.css" && [ -L "$C/gtk-3.0/gtk.css" ] && [ ! -e "$C/gtk-4.0" ]' "restore: Ursprungszustand"
 pruefe 'grep -q "shell-appcolors\" restore" "$REPO/install.sh"' "install.sh --uninstall ruft restore"
 exit "$fehler"

@@ -39,7 +39,7 @@ ersatzbild_ok=1
 if [ -n "$im" ]; then
     # der Installer lief ohne ~/.face: Ersatzbild für hyprlock muss da sein
     [ -s "$HOME/.local/share/hypr-shell/face.png" ] || { echo "FEHLER: kein Ersatz-Profilbild für hyprlock"; ersatzbild_ok=0; }
-    "$im" -size 256x256 -seed 7 plasma:'#e0457b'-'#2a7fd4' "$HOME/.face"
+    "$im" -size 256x256 -seed 7 plasma:'#e0457b'-'#2a7fd4' "png:$HOME/.face"
     mkdir -p "$HOME/Pictures/Wallpapers" "$HOME/.local/share/test-icons"
     "$im" -size 1920x1080 -seed 3 plasma:'#3b6e8f'-'#d9a441' "$HOME/Pictures/Wallpapers/01-test-wolken.png"
     "$im" -size 1920x1080 -seed 5 plasma:'#6a3d8f'-'#41d98a' "$HOME/Pictures/Wallpapers/02-test-wiese.png"

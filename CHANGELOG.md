@@ -11,3 +11,4 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Installation mit einem Befehl, inklusive Sicherung und Wiederherstellung der alten Einstellungen; Hyprland mit Blur, runden Ecken, Tastenkürzeln, Hintergrundbild und daraus erzeugten Farben (#2)
 - Leiste oben mit Arbeitsflächen, aktuellem Lied, Uhr, Lautstärke, WLAN, Bluetooth, Aufnahme-Punkt und Ausschalt-Menü; Farben passen sich dem Hintergrundbild an (#3)
 - Grosse Uhr und Ringe für CPU, RAM und Datenträger auf dem Desktop, Position über settings.json einstellbar (#4)
+- Dashboard mit Wetter, Kalender, Musik, Leistungswerten und Hintergrundbild-Auswahl; öffnet mit SUPER+ALT+D, SUPER+W oder an der Mitte der unteren Bildschirmkante (#5)

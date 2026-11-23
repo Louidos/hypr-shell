@@ -17,5 +17,10 @@
       "y": 0.56,
       "scale": 1.0
     }
+  },
+  "dashboard": {
+    "width": 1000,
+    "edge": true,
+    "opacity": 0.42
   }
 }

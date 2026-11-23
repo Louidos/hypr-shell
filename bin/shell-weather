@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Wetter ohne API-Schlüssel (open-meteo.com) als JSON. Ort aus settings.json (weather.location).
+# Ergebnis wird 15 Minuten zwischengespeichert; ohne Netz kommt der alte Wert oder {"ok": false}.
+#   shell-weather          aktuelles Wetter
+#   shell-weather --fresh  Zwischenspeicher ignorieren
+set -euo pipefail
+
+SETTINGS="$HOME/.config/hypr-shell/settings.json"
+CACHE="$HOME/.local/share/hypr-shell/weather.json"
+MAX_ALTER=900
+
+ort=""; einheit="metric"
+if [ -r "$SETTINGS" ]; then
+    ort="$(jq -r '.weather.location // ""' "$SETTINGS" 2>/dev/null || true)"
+    einheit="$(jq -r '.weather.units // "metric"' "$SETTINGS" 2>/dev/null || echo metric)"
+fi
+
+leer() { jq -n --arg reason "$1" --arg location "$ort" '{ok: false, reason: $reason, location: $location}'; }
+
+if [ -z "$ort" ]; then leer no-location; exit 0; fi
+
+if [ "${1:-}" != --fresh ] && [ -r "$CACHE" ]; then
+    alter=$(( $(date +%s) - $(stat -c %Y "$CACHE") ))
+    if [ "$alter" -lt "$MAX_ALTER" ] && [ "$(jq -r '.query // ""' "$CACHE" 2>/dev/null)" = "$ort|$einheit" ]; then
+        cat "$CACHE"; exit 0
+    fi
+fi
+
+alt_oder_leer() {
+    if [ -r "$CACHE" ] && [ "$(jq -r '.query // ""' "$CACHE" 2>/dev/null)" = "$ort|$einheit" ]; then
+        jq '.stale = true' "$CACHE"
+    else
+        leer offline
+    fi
+    exit 0
+}
+
+command -v curl >/dev/null 2>&1 || alt_oder_leer
+q="$(jq -rn --arg s "$ort" '$s | @uri')"
+geo="$(curl -fsS --max-time 6 "https://geocoding-api.open-meteo.com/v1/search?name=$q&count=1&language=en&format=json" 2>/dev/null)" || alt_oder_leer
+lat="$(jq -r '.results[0].latitude // empty' <<<"$geo")"
+lon="$(jq -r '.results[0].longitude // empty' <<<"$geo")"
+name="$(jq -r '.results[0].name // empty' <<<"$geo")"
+[ -n "$lat" ] && [ -n "$lon" ] || { leer unknown-location; exit 0; }
+
+tu=celsius; [ "$einheit" = imperial ] && tu=fahrenheit
+wx="$(curl -fsS --max-time 6 "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code,is_day&temperature_unit=$tu" 2>/dev/null)" || alt_oder_leer
+
+mkdir -p "$(dirname "$CACHE")"
+jq --arg name "$name" --arg query "$ort|$einheit" --arg unit "$([ "$tu" = fahrenheit ] && echo '°F' || echo '°C')" '
+  def info(c; day):
+    if c == 0 then {d: (if day then "Clear sky" else "Clear night" end), i: (if day then "󰖙" else "󰖔" end)}
+    elif c <= 2 then {d: "Partly cloudy", i: (if day then "󰖕" else "󰼱" end)}
+    elif c == 3 then {d: "Overcast", i: "󰖐"}
+    elif c == 45 or c == 48 then {d: "Fog", i: "󰖑"}
+    elif c >= 51 and c <= 57 then {d: "Drizzle", i: "󰖗"}
+    elif (c >= 61 and c <= 67) or (c >= 80 and c <= 82) then {d: (if c == 65 or c == 82 then "Heavy rain" else "Rain" end), i: "󰖖"}
+    elif (c >= 71 and c <= 77) or c == 85 or c == 86 then {d: "Snow", i: "󰖘"}
+    elif c >= 95 then {d: "Thunderstorm", i: "󰖓"}
+    else {d: "–", i: "󰖐"} end;
+  (.current.weather_code) as $c | (.current.is_day == 1) as $day | info($c; $day) as $w |
+  {ok: true, location: $name, query: $query, temp: (.current.temperature_2m | round), unit: $unit,
+   code: $c, description: $w.d, icon: $w.i, time: (now | floor)}' <<<"$wx" > "$CACHE.tmp" && mv "$CACHE.tmp" "$CACHE"
+cat "$CACHE"

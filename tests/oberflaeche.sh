@@ -150,6 +150,68 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target panel'; then
     ipc panel close; sleep 1
 fi
 
+# ---- Einstellungs-App: jede Seite, Suche, Bedienung. Im unsichtbaren Compositor gibt es kein
+# Zeigegerät; "ipc call test …" löst deshalb die Signale der Bedienelemente aus (toggled/clicked,
+# beim Regler moved … released) – derselbe Weg wie ein Mausklick.
+app_ok=1
+wert() { jq -c "$1" "$HOME/.config/hypr-shell/settings.json"; }
+warte_auf() { # jq-ausdruck erwartet [versuche à 0.25 s]
+    local _
+    for _ in $(seq 1 "${3:-24}"); do [ "$(wert "$1")" = "$2" ] && return 0; sleep 0.25; done
+    return 1
+}
+test_ipc() { [ "$("$qs" -p "$cfg" ipc call test "$@" 2>/dev/null)" = true ]; }
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
+    echo "---- Einstellungs-App ----"
+    for seite in home bar look theme desktop dashboard panel lock input monitors apps keybinds about; do
+        ipc settings open "$seite"; sleep 2; bild "settings-$seite"
+    done
+    for q in blur clock battery; do
+        vorher="$(grep -c "hypr-shell-probe search-first" "$T/qs.log" || true)"
+        ipc settings search "$q"; sleep 1.5
+        [ "$q" = blur ] && bild settings-suche
+        if [ "$(grep -c "hypr-shell-probe search-first" "$T/qs.log" || true)" -gt "$vorher" ]; then echo "  ok: Suche findet \"$q\""
+        else echo "  FEHLER: Suche findet \"$q\" nicht"; app_ok=0; fi
+    done
+    ipc settings close; sleep 0.5
+    ipc settings open look; sleep 2
+    # Schalter: Blur aus
+    if test_ipc click setting-look.blur.enabled && warte_auf .look.blur.enabled false; then echo "  ok: Schalter in der App landet in settings.json"
+    else echo "  FEHLER: Schalter kam nicht in settings.json an ($(wert .look))"; app_ok=0; fi
+    sleep 1
+    # Regler ziehen: schon während des Ziehens wirkt der Wert
+    rund_vorher="$(wert .look.rounding)"
+    if test_ipc dragStart setting-look.rounding 0.8; then
+        sleep 2
+        r="$(grep -o '\["rounding"\] = [0-9]*' "$HOME/.config/hypr/hypr-shell-settings.lua" | grep -o '[0-9]*$')"
+        if [ "${r:-12}" -eq 24 ]; then echo "  ok: Regler wirkt schon beim Ziehen (Hyprland-Rundung jetzt $r)"
+        else echo "  FEHLER: Regler wirkt beim Ziehen nicht (Rundung ${r:-?})"; app_ok=0; fi
+    else
+        echo "  FEHLER: Regler look.rounding nicht gefunden"; app_ok=0
+    fi
+    if test_ipc drag setting-look.rounding 1 && warte_auf .look.rounding 30; then echo "  ok: Regler losgelassen: look.rounding = 30"
+    else echo "  FEHLER: Regler-Wert $(wert .look.rounding)"; app_ok=0; fi
+    sleep 2.5; bild settings-look-geaendert
+    # Undo nimmt das ganze Ziehen in einem Schritt zurück, Reset page die ganze Seite
+    if test_ipc click settings-undo && warte_auf .look.rounding "$rund_vorher" && [ "$(wert .look.blur.enabled)" = false ]; then echo "  ok: Undo nimmt das Ziehen in einem Schritt zurück"
+    else echo "  FEHLER: Undo: $(wert .look)"; app_ok=0; fi
+    sleep 2.5
+    # Reset page setzt die geänderten Werte der Seite zurück (hier: Blur wieder Standard)
+    if test_ipc click reset-page && warte_auf .look.blur.enabled null && [ "$(wert .look.rounding)" = "$rund_vorher" ]; then echo "  ok: Reset page setzt die Seite zurück"
+    else echo "  FEHLER: Reset page: $(wert .look)"; app_ok=0; fi
+    sleep 1
+    # Reset neben einem Wert
+    ipc settings open bar; sleep 1.5
+    if test_ipc click "setting-bar.position=bottom" && warte_auf .bar.position '"bottom"'; then
+        sleep 2.5
+        if test_ipc click reset-bar.position && warte_auf .bar.position null; then echo "  ok: Auswahl und Reset neben dem Wert"
+        else echo "  FEHLER: Reset neben dem Wert: $(wert .bar)"; app_ok=0; fi
+    else
+        echo "  FEHLER: Auswahl bar.position: $(wert .bar)"; app_ok=0
+    fi
+    ipc settings close; sleep 0.5
+fi
+
 echo "---- Bilder und Symbole ----"
 bereich dashboard-dashboard dashboard-avatar "Profilbild im Dashboard"
 bereich dashboard-wallpaper wallpaper-card "erste Wallpaper-Karte"
@@ -183,12 +245,13 @@ if command -v hyprlock >/dev/null 2>&1; then
     fi
 fi
 
-echo "---- Quickshell-Log ----"
-cat "$T/qs.log"
+echo "---- Quickshell-Log (ohne Lage-Meldungen) ----"
+grep -v "hypr-shell-probe" "$T/qs.log" || true
 echo "------------------------"
 [ "$farben_ok" -eq 1 ] || { echo "FEHLER: Farben aus dem Hintergrundbild"; exit 1; }
 [ "$bereiche_ok" -eq 1 ] || { echo "FEHLER: Bilder oder Symbole fehlen (siehe oben)"; exit 1; }
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
+[ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then
     echo "FEHLER: Quickshell ist abgestürzt"
     exit 1

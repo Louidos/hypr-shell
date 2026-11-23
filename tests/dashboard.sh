@@ -19,7 +19,9 @@ echo "== Systemwerte"
 about="$("$REPO/bin/shell-sysinfo" about)"
 pruefe 'jq -e ".kernel != \"\" and .user != \"\" and (.uptime | type == \"number\") and (.memTotal > 0)" <<<"$about" >/dev/null' "shell-sysinfo about"
 pruefe '"$REPO/bin/shell-sysinfo" cpu | jq -e ".model != null and (.cores | type == \"number\")" >/dev/null' "shell-sysinfo cpu"
-pruefe '"$REPO/bin/shell-sysinfo" gpu | jq -e "(.name | type == \"string\") and (.state == \"active\" or .state == \"sleeping\")" >/dev/null' "shell-sysinfo gpu"
+gpu="$("$REPO/bin/shell-sysinfo" gpu 2>&1 || true)"
+pruefe 'jq -e "(.name | type == \"string\") and (.state == \"active\" or .state == \"sleeping\")" <<<"$gpu" >/dev/null' "shell-sysinfo gpu"
+jq -e . <<<"$gpu" >/dev/null 2>&1 || { echo "  Ausgabe: $gpu"; bash -x "$REPO/bin/shell-sysinfo" gpu 2>&1 | tail -n 25 | sed 's/^/    /'; }
 
 echo "== Wetter"
 pruefe '"$REPO/bin/shell-weather" | jq -e ".ok == false and .reason == \"no-location\"" >/dev/null' "ohne Ort ruhig (ok: false)"

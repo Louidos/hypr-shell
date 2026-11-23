@@ -84,9 +84,9 @@ gpu() {
         for card in /sys/class/drm/card[0-9]; do
             d="$card/device"
             [ -r "$d/vendor" ] || continue
-            vendor="$(cat "$d/vendor")"
+            vendor="$(cat "$d/vendor" 2>/dev/null || true)"
             if command -v lspci >/dev/null 2>&1; then
-                name="$(lspci -s "$(basename "$(readlink -f "$d")")" 2>/dev/null | sed -E 's/^[^:]*: *[^:]*: *//; s/ \(rev.*//' | head -n1)"
+                name="$( (lspci -s "$(basename "$(readlink -f "$d")")" 2>/dev/null || true) | sed -E 's/^[^:]*: *[^:]*: *//; s/ \(rev.*//' | head -n1)"
             fi
             case "$vendor" in
                 0x8086) name="${name:-Intel Graphics}" ;;
@@ -97,12 +97,13 @@ gpu() {
                 *) name="${name:-GPU}" ;;
             esac
             for line in "$d"/hwmon/hwmon*/temp1_input; do
-                [ -r "$line" ] && temp=$(( $(cat "$line") / 1000 )) && break
+                if [ -r "$line" ]; then temp=$(( $(cat "$line") / 1000 )); break; fi
             done
             break
         done
     fi
     name="$(echo "${name:-–}" | sed -E 's/^NVIDIA //; s/Corporation //')"
+    temp="$(zahl "$temp")"; used="$(zahl "$used")"; total="$(zahl "$total")"; util="$(zahl "$util")"
     jq -n --arg name "$name" --arg state "$state" --argjson temp "$temp" --argjson memUsed "$used" \
         --argjson memTotal "$total" --argjson util "$util" \
         '{name: $name, state: $state, temp: $temp, memUsed: $memUsed, memTotal: $memTotal, util: $util}'

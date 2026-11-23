@@ -28,7 +28,7 @@ fi
 # Python (Missa-Agent, Testserver)
 if command -v python3 >/dev/null; then
     for f in bin/* tests/daten/*; do
-        [ -f "$f" ] && head -n1 "$f" | grep -q python || continue
+        if [ ! -f "$f" ] || ! head -n1 "$f" | grep -q python; then continue; fi
         python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$f" || melde "Python: $f"
     done
 fi

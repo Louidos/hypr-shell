@@ -1,0 +1,51 @@
+/* hypr-shell: rofi im Glas-Look (Blur kommt von der Hyprland-Layer-Regel) */
+configuration {
+    modi:               "drun,run,window";
+    show-icons:         true;
+    icon-theme:         "Papirus-Dark";
+    display-drun:       "";
+    drun-display-format: "{name}";
+    font:               "Inter 11";
+}
+
+@import "colors.rasi"
+
+* {
+    background-color: transparent;
+    text-color:       @text;
+}
+
+window {
+    width:            620px;
+    location:         center;
+    border:           1px;
+    border-color:     rgba(255, 255, 255, 0.10);
+    border-radius:    18px;
+    background-color: rgba(12, 12, 14, 0.44);
+    padding:          14px;
+}
+
+mainbox { spacing: 10px; children: [ inputbar, listview ]; }
+
+inputbar {
+    padding:          10px 14px;
+    border-radius:    12px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border:           1px;
+    border-color:     rgba(255, 255, 255, 0.08);
+    children:         [ prompt, entry ];
+    spacing:          10px;
+}
+prompt { text-color: @subtext; }
+entry  { placeholder: "Search apps"; placeholder-color: @subtext; }
+
+listview { lines: 8; columns: 1; spacing: 4px; scrollbar: false; fixed-height: true; }
+
+element { padding: 8px 12px; border-radius: 12px; spacing: 12px; }
+element-icon { size: 24px; }
+element-text { vertical-align: 0.5; }
+element selected.normal {
+    background-color: rgba(255, 255, 255, 0.92);
+    text-color:       #121214;
+}
+element-text selected { text-color: #121214; }

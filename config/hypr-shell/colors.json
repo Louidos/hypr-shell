@@ -1,0 +1,10 @@
+{
+  "accent": "#d4d4d4",
+  "onAccent": "#1b1b1b",
+  "surface": "#131313",
+  "container": "#1f1f1f",
+  "text": "#e6e6e6",
+  "subtext": "#a0a0a0",
+  "outline": "#474747",
+  "error": "#dc5050"
+}

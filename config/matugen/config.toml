@@ -1,0 +1,31 @@
+# hypr-shell: Farben aus dem Hintergrundbild (matugen)
+# Aufruf über ~/.local/bin/shell-wallpaper, das danach alle Programme neu lädt.
+[config]
+
+[templates.hyprland]
+input_path = '~/.config/matugen/templates/hypr-shell-colors.lua'
+output_path = '~/.config/hypr/hypr-shell-colors.lua'
+
+[templates.hyprlock]
+input_path = '~/.config/matugen/templates/hyprlock-colors.conf'
+output_path = '~/.config/hypr/hyprlock-colors.conf'
+
+[templates.waybar]
+input_path = '~/.config/matugen/templates/colors.css'
+output_path = '~/.config/waybar/colors.css'
+
+[templates.swaync]
+input_path = '~/.config/matugen/templates/colors.css'
+output_path = '~/.config/swaync/colors.css'
+
+[templates.kitty]
+input_path = '~/.config/matugen/templates/kitty-colors.conf'
+output_path = '~/.config/kitty/colors.conf'
+
+[templates.rofi]
+input_path = '~/.config/matugen/templates/colors.rasi'
+output_path = '~/.config/rofi/colors.rasi'
+
+[templates.quickshell]
+input_path = '~/.config/matugen/templates/colors.json'
+output_path = '~/.config/hypr-shell/colors.json'

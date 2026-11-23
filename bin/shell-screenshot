@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Screenshot speichern (Bilder/Screenshots) und in die Zwischenablage legen.
+#
+#   shell-screenshot region   Bereich mit der Maus wählen
+#   shell-screenshot screen   ganzer Bildschirm (der, auf dem die Maus ist)
+#   shell-screenshot folder   Screenshot-Ordner öffnen
+set -euo pipefail
+
+bilder="$(xdg-user-dir PICTURES 2>/dev/null || true)"
+[ -n "$bilder" ] && [ "$bilder" != "$HOME" ] || bilder="$HOME/Pictures"
+ordner="$bilder/Screenshots"
+mkdir -p "$ordner"
+datei="$ordner/Screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"
+
+fertig() {
+    wl-copy --type image/png < "$datei"
+    command -v notify-send >/dev/null 2>&1 && \
+        notify-send -a "Screenshot" -i "$datei" "Screenshot saved" "$(basename "$datei") · copied to clipboard" || true
+}
+
+case "${1:-region}" in
+    region)
+        bereich="$(slurp -d 2>/dev/null)" || exit 0   # Esc bricht ab
+        grim -g "$bereich" "$datei"
+        fertig
+        ;;
+    screen)
+        monitor=""
+        if command -v hyprctl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+            monitor="$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.focused) | .name' | head -n1)"
+        fi
+        if [ -n "$monitor" ]; then grim -o "$monitor" "$datei"; else grim "$datei"; fi
+        fertig
+        ;;
+    folder)
+        setsid -f xdg-open "$ordner" >/dev/null 2>&1
+        ;;
+    *)
+        sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'
+        exit 2
+        ;;
+esac

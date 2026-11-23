@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Setzt ein Hintergrundbild (awww) und erzeugt daraus die Farben (matugen)
+# für Hyprland, Waybar, kitty, rofi, swaync, hyprlock und Quickshell.
+#
+#   shell-wallpaper <bild>     Bild setzen und Farben erzeugen
+#   shell-wallpaper --restore  zuletzt gewähltes Bild (oder das Startbild) wieder setzen
+#   shell-wallpaper --current  Pfad des aktuellen Bildes ausgeben
+set -euo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+STATE="$DATA/wallpaper"
+FARBEN_FUER="$DATA/colors-for"
+STANDARD="$DATA/wallpapers/hypr-shell-grau.png"
+
+meldung() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Wallpaper" "$@" || true; }
+
+aktuelles() {
+    local b=""
+    [ -f "$STATE" ] && b="$(cat "$STATE")"
+    [ -n "$b" ] && [ -f "$b" ] || b="$STANDARD"
+    printf '%s\n' "$b"
+}
+
+# awww-daemon muss laufen
+daemon() {
+    command -v awww >/dev/null 2>&1 || { echo "awww fehlt" >&2; return 1; }
+    awww query >/dev/null 2>&1 && return 0
+    pgrep -x awww-daemon >/dev/null || setsid -f awww-daemon >/dev/null 2>&1
+
+    for _ in $(seq 1 50); do
+        awww query >/dev/null 2>&1 && return 0
+        sleep 0.1
+    done
+    return 1
+}
+
+# graues Bild (wenig Sättigung) -> graue Farben wie in der Vorlage
+schema() {
+    local im s
+    im="$(command -v magick || command -v convert || true)"
+    if [ -n "$im" ]; then
+        s="$("$im" "$1[0]" -resize 64x64! -colorspace HSL -channel G -separate +channel -format '%[fx:mean]' info: 2>/dev/null || echo 1)"
+        if awk -v s="$s" 'BEGIN { exit !(s < 0.10) }'; then echo scheme-monochrome; return; fi
+    fi
+    echo scheme-tonal-spot
+}
+
+farben() {
+    local bild="$1" args
+    command -v matugen >/dev/null 2>&1 || { echo "matugen fehlt, Farben bleiben" >&2; return 0; }
+    args=(image "$bild" --mode dark --type "$(schema "$bild")")
+    # neuere matugen-Versionen fragen sonst nach der Grundfarbe
+    if matugen --help 2>&1 | grep -q -- '--source-color-index'; then args+=(--source-color-index 0); fi
+    matugen "${args[@]}" >/dev/null
+    printf '%s\n' "$bild" > "$FARBEN_FUER"
+}
+
+neu_laden() {
+    if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl >/dev/null 2>&1; then
+        hyprctl reload >/dev/null 2>&1 || true
+    fi
+    pkill -SIGUSR2 -x waybar 2>/dev/null || true          # Waybar lädt sein Aussehen neu
+    pkill -SIGUSR1 -x kitty 2>/dev/null || true           # kitty lädt seine Konfiguration neu
+    command -v swaync-client >/dev/null 2>&1 && swaync-client --reload-css >/dev/null 2>&1 || true
+    # Quickshell beobachtet ~/.config/hypr-shell/colors.json selbst
+}
+
+setzen() {
+    local bild="$1" nur_wiederherstellen="${2:-0}"
+    [ -f "$bild" ] || { echo "Bild nicht gefunden: $bild" >&2; exit 1; }
+    bild="$(realpath "$bild")"
+    mkdir -p "$DATA"
+    if daemon; then
+        awww img "$bild" --transition-type grow --transition-duration 1.2 --transition-fps 60 >/dev/null 2>&1 \
+            || awww img "$bild" >/dev/null 2>&1 || true
+    else
+        echo "awww-daemon antwortet nicht – Bild nicht gesetzt" >&2
+    fi
+    printf '%s\n' "$bild" > "$STATE"
+    # beim Anmelden nur dann neu rechnen, wenn die Farben nicht schon zu diesem Bild passen
+    if [ "$nur_wiederherstellen" = 1 ] && [ -f "$FARBEN_FUER" ] && [ "$(cat "$FARBEN_FUER")" = "$bild" ]; then
+        return 0
+    fi
+    farben "$bild"
+    neu_laden
+    [ "$nur_wiederherstellen" = 1 ] || meldung "Wallpaper changed" "$(basename "$bild")"
+}
+
+case "${1:-}" in
+    --restore) setzen "$(aktuelles)" 1 ;;
+    --current) aktuelles ;;
+    -h|--help|"") sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) setzen "$1" ;;
+esac

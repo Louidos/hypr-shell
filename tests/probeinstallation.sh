@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Probeinstallation in einem leeren HOME:
+#   1. eine "alte" Datei liegt schon da (kitty.conf)
+#   2. ./install.sh --yes --no-packages: alle Dateien kommen an, alte Datei ist gesichert
+#   3. keine Datei zeigt auf einen fremden Pfad (Symlinks, feste Pfade)
+#   4. --dry-run ändert nichts
+#   5. --restore holt die alte Datei zurück und entfernt neue Dateien
+#   6. --uninstall entfernt alles wieder
+# Prüfungen werden als Text an pruefe übergeben und dort ausgewertet:
+# shellcheck disable=SC2016,SC2034,SC2088
+set -euo pipefail
+cd "$(dirname "$0")/.." || exit 1
+REPO="$(pwd)"
+
+TESTHOME="$(mktemp -d)"
+trap 'rm -rf "$TESTHOME"' EXIT
+unset HYPRLAND_INSTANCE_SIGNATURE XDG_CONFIG_HOME XDG_DATA_HOME
+[ "$(id -u)" -eq 0 ] && export HYPR_SHELL_ALLOW_ROOT=1   # nur für Test-Container
+
+fehler=0
+pruefe() { if eval "$1"; then echo "  ok: $2"; else echo "  FEHLER: $2"; fehler=1; fi; }
+inst() { HOME="$TESTHOME" "$REPO/install.sh" "$@" > "$TESTHOME/.ausgabe" 2>&1 || { cat "$TESTHOME/.ausgabe"; return 1; }; }
+zustand() { (cd "$TESTHOME" && find . -path ./.ausgabe -prune -o \( -type f -o -type l \) -print0 | sort -z | xargs -0 -r sha256sum); }
+
+# erwartete Ziele aus dem Repo ableiten
+erwartet=()
+while IFS= read -r -d '' f; do
+    rel="${f#config/}"
+    erwartet+=(".config/$rel")
+done < <(find config -type f ! -name .gitkeep -print0)
+while IFS= read -r -d '' f; do erwartet+=(".local/bin/$(basename "$f")"); done < <(find bin -type f ! -name .gitkeep -print0)
+while IFS= read -r -d '' f; do erwartet+=(".local/share/hypr-shell/wallpapers/$(basename "$f")"); done < <(find wallpapers -type f ! -name .gitkeep -print0)
+if [ -n "$(find quickshell -name '*.qml' -print -quit)" ]; then
+    while IFS= read -r -d '' f; do erwartet+=(".config/quickshell/hypr-shell/${f#quickshell/}"); done < <(find quickshell -type f ! -name .gitkeep -print0)
+fi
+erwartet+=(".local/share/hypr-shell/VERSION" ".config/hypr/hypr-shell-local.lua" ".config/hypr-shell/settings.json")
+
+echo "== 1. alte Datei anlegen"
+mkdir -p "$TESTHOME/.config/kitty"
+echo "# meine alte kitty.conf" > "$TESTHOME/.config/kitty/kitty.conf"
+mkdir -p "$TESTHOME/.config/hypr/config"
+printf 'source = ~/.config/hypr/config/env.conf\n' > "$TESTHOME/.config/hypr/hyprland.conf"
+printf 'env = LIBVA_DRIVER_NAME,nvidia\nenv = XCURSOR_SIZE,32\n  env = __GLX_VENDOR_LIBRARY_NAME, nvidia # Kommentar\n' > "$TESTHOME/.config/hypr/config/env.conf"
+
+echo "== 2. Installation"
+inst --yes --no-packages
+fehlend=0
+for e in "${erwartet[@]}"; do
+    if [ ! -f "$TESTHOME/$e" ]; then echo "  fehlt: ~/$e"; fehlend=1; fi
+done
+pruefe '[ $fehlend -eq 0 ]' "alle ${#erwartet[@]} Dateien angekommen"
+pruefe '[ -x "$TESTHOME/.local/bin/shell-wallpaper" ]' "Skripte in ~/.local/bin sind ausführbar"
+pruefe 'cmp -s config/kitty/kitty.conf "$TESTHOME/.config/kitty/kitty.conf"' "kitty.conf ersetzt"
+backup="$(find "$TESTHOME/.config" -maxdepth 1 -name 'hypr-shell-backup-*' | head -n1)"
+pruefe '[ -n "$backup" ] && grep -q "meine alte" "$backup/dateien/.config/kitty/kitty.conf"' "alte kitty.conf gesichert"
+pruefe '[ -f "$TESTHOME/Pictures/Wallpapers/hypr-shell-grau.png" ]' "Startbild in ~/Pictures/Wallpapers"
+envlua="$TESTHOME/.config/hypr/hypr-shell-env.lua"
+pruefe 'grep -qx "hl.env(\"LIBVA_DRIVER_NAME\", \"nvidia\")" "$envlua" && grep -qx "hl.env(\"__GLX_VENDOR_LIBRARY_NAME\", \"nvidia\")" "$envlua"' "alte Umgebungsvariablen (NVIDIA) übernommen"
+pruefe '! grep -q XCURSOR "$envlua"' "Mauszeiger-Variablen nicht doppelt"
+pruefe '[ -f "$TESTHOME/.config/hypr/hyprland.conf" ]' "alte hyprland.conf bleibt liegen (Lua hat Vorrang)"
+
+echo "== 3. keine fremden Pfade"
+fremd="$(find "$TESTHOME" -type l -exec sh -c 'case "$(readlink -f "$1")" in "$2"/*) ;; *) echo "$1";; esac' _ {} "$TESTHOME" \; )"
+pruefe '[ -z "$fremd" ]' "keine Symlinks nach ausserhalb ($fremd)"
+pruefe '! grep -rIl --exclude=.ausgabe -- "$REPO" "$TESTHOME"' "keine Datei verweist auf den Repo-Ordner"
+pruefe '! grep -rIlE "/home/[a-z]|/root/" "$TESTHOME/.config" "$TESTHOME/.local/bin"' "keine festen Benutzerpfade"
+dateien_ausserhalb="$(cd "$TESTHOME" && find . -type f ! -path './.config/*' ! -path './.local/bin/*' ! -path './.local/share/*' ! -path './Pictures/Wallpapers/*' ! -name .ausgabe)"
+pruefe '[ -z "$dateien_ausserhalb" ]' "nur in erlaubten Ordnern geschrieben ($dateien_ausserhalb)"
+
+echo "== 4. --dry-run ändert nichts"
+echo "# Änderung" >> "$TESTHOME/.config/hypr/hyprland.lua"
+vorher="$(zustand)"
+inst --dry-run
+pruefe '[ "$vorher" = "$(zustand)" ]' "Probelauf hat nichts verändert"
+pruefe 'grep -q "ersetzen: ~/.config/hypr/hyprland.lua" "$TESTHOME/.ausgabe"' "Probelauf zeigt geplante Änderung"
+inst --restore --dry-run
+pruefe '[ "$vorher" = "$(zustand)" ]' "Probelauf von --restore hat nichts verändert"
+
+echo "== 5. --restore"
+inst --restore --yes
+pruefe 'grep -q "meine alte" "$TESTHOME/.config/kitty/kitty.conf"' "alte kitty.conf zurück"
+pruefe '[ ! -e "$TESTHOME/.config/hypr/hyprland.lua" ]' "neu hinzugekommene hyprland.lua entfernt"
+
+echo "== 6. erneut installieren, dann --uninstall"
+inst --yes --no-packages
+pruefe '[ -f "$TESTHOME/.config/hypr/hyprland.lua" ]' "zweite Installation"
+inst --uninstall --yes
+pruefe 'grep -q "meine alte" "$TESTHOME/.config/kitty/kitty.conf"' "Ursprungszustand nach --uninstall"
+pruefe '[ ! -e "$TESTHOME/.config/hypr/hyprland.lua" ] && [ ! -e "$TESTHOME/.local/bin/shell-wallpaper" ]' "Dateien von hypr-shell entfernt"
+pruefe '[ ! -d "$TESTHOME/.local/share/hypr-shell" ]' "Datenordner entfernt"
+
+echo "== 7. Symlink-Ordner wird nicht durchschrieben"
+rm -rf "$TESTHOME/.config/kitty"
+mkdir -p "$TESTHOME/dotfiles/kitty"
+echo "# dotfile" > "$TESTHOME/dotfiles/kitty/kitty.conf"
+dotfile_vorher="$(stat -c %Y-%s "$TESTHOME/dotfiles/kitty/kitty.conf")"
+sleep 1
+ln -s "$TESTHOME/dotfiles/kitty" "$TESTHOME/.config/kitty"
+inst --yes --no-packages
+pruefe '[ "$dotfile_vorher" = "$(stat -c %Y-%s "$TESTHOME/dotfiles/kitty/kitty.conf")" ] && [ "$(ls "$TESTHOME/dotfiles/kitty")" = kitty.conf ]' "Dotfiles-Ordner unberührt"
+pruefe '[ ! -L "$TESTHOME/.config/kitty" ]' "~/.config/kitty ist jetzt ein eigener Ordner"
+inst --restore --yes
+pruefe '[ -L "$TESTHOME/.config/kitty" ]' "Link nach --restore wieder da"
+
+if [ "$fehler" -ne 0 ]; then
+    echo "Probeinstallation: FEHLER"
+    exit 1
+fi
+echo "Probeinstallation: alles in Ordnung"

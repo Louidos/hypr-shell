@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Startet die Quickshell-Oberfläche von hypr-shell (~/.config/quickshell/hypr-shell).
+#
+#   shell-quickshell            starten (falls noch nicht läuft)
+#   shell-quickshell restart    neu starten
+#   shell-quickshell stop       beenden
+#   shell-quickshell ipc ...    Befehl an die laufende Oberfläche, z. B. "ipc dashboard toggle"
+set -euo pipefail
+
+cfg="$HOME/.config/quickshell/hypr-shell"
+qs="$(command -v qs || command -v quickshell || true)"
+[ -n "$qs" ] || { echo "quickshell fehlt" >&2; exit 1; }
+[ -f "$cfg/shell.qml" ] || exit 0
+
+laeuft() { pgrep -f -- "-p $cfg" >/dev/null 2>&1; }
+start() { laeuft || setsid -f "$qs" -p "$cfg" >/dev/null 2>&1; }
+stop() { pkill -f -- "-p $cfg" 2>/dev/null || true; }
+
+case "${1:-start}" in
+    start) start ;;
+    restart) stop; sleep 0.3; start ;;
+    stop) stop ;;
+    ipc) shift; exec "$qs" -p "$cfg" ipc call "$@" ;;
+    *) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

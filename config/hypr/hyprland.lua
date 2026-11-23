@@ -21,11 +21,18 @@ do
     if ok and type(c) == "table" then colors = c end
 end
 
--- Tastaturlayout und alte Umgebungsvariablen (von install.sh erzeugt)
-local localcfg = { kb_layout = "us", kb_variant = "" }
+-- Tastaturlayout, Skalierung, Touchpad und alte Umgebungsvariablen (von install.sh erzeugt).
+-- Fehlt ein Wert in hypr-shell-local.lua (ältere Datei), gilt der Standard von hier.
+local localcfg = { kb_layout = "us", kb_variant = "", scale = "auto", natural_scroll = false, tap_to_click = true }
 do
     local ok, c = pcall(require, "hypr-shell-local")
-    if ok and type(c) == "table" then localcfg = c end
+    if ok and type(c) == "table" then
+        for k, v in pairs(c) do localcfg[k] = v end
+    end
+end
+local function bool(v, standard)
+    if type(v) == "boolean" then return v end
+    return standard
 end
 optional("hypr-shell-env")
 
@@ -38,7 +45,7 @@ hl.monitor({
     output   = "",
     mode     = "preferred",
     position = "auto",
-    scale    = "auto",
+    scale    = tostring(localcfg.scale or "auto"),   -- "auto" oder z. B. 1.25 in hypr-shell-local.lua
 })
 
 -------------------
@@ -125,8 +132,15 @@ hl.config({
         follow_mouse = 1,
         sensitivity  = 0,
         touchpad = {
-            natural_scroll = false,
+            natural_scroll = bool(localcfg.natural_scroll, false),
+            tap_to_click   = bool(localcfg.tap_to_click, true),
         },
+    },
+
+    -- XWayland-Programme (Steam, Battle.net, GOG-Spiele) nicht hochskalieren: bei Skalierung über 1
+    -- bleiben sie scharf statt verwaschen (Wiki: Configuring > Xwayland > HiDPI Xwayland)
+    xwayland = {
+        force_zero_scaling = true,
     },
 })
 

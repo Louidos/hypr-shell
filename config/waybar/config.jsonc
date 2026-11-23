@@ -9,7 +9,7 @@
 
   "modules-left": ["custom/distro", "hyprland/workspaces", "mpris"],
   "modules-center": [],
-  "modules-right": ["pulseaudio", "clock", "bluetooth", "network", "custom/recording", "custom/power"],
+  "modules-right": ["pulseaudio", "battery", "clock", "bluetooth", "network", "custom/recording", "custom/power"],
 
   "custom/distro": {
     "exec": "$HOME/.local/bin/shell-distro icon",
@@ -41,6 +41,18 @@
     "scroll-step": 5,
     "on-click": "pamixer -t",
     "tooltip-format": "{desc}"
+  },
+
+  // Akku: erscheint nur, wenn einer da ist (Waybar blendet das Modul ohne Akku aus);
+  // unter 15 % Warnfarbe (Klasse "critical"), am Netz das Ladesymbol
+  "battery": {
+    "interval": 30,
+    "states": { "critical": 14 },
+    "format": "{icon}  {capacity}%",
+    "format-charging": "󰂄  {capacity}%",
+    "format-plugged": "󰂄  {capacity}%",
+    "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+    "tooltip-format": "{timeTo} · {power} W"
   },
 
   "clock": {

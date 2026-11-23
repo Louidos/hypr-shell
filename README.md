@@ -86,7 +86,7 @@ Maus: Ecke **unten rechts** öffnet das Panel, die **Mitte der unteren Kante** d
 ### Leiste
 
 Oben eine flache, halbtransparente Waybar: links Distro-Symbol (öffnet den Starter),
-Arbeitsflächen 1–4 und das aktuelle Lied; rechts Lautstärke, Uhr, Bluetooth, WLAN, ein
+Arbeitsflächen 1–4 und das aktuelle Lied; rechts Lautstärke, Akku (nur mit Akku), Uhr, Bluetooth, WLAN, ein
 roter Punkt während einer Bildschirmaufnahme und der Ausschalt-Knopf (sperren, abmelden,
 neu starten, herunterfahren).
 
@@ -180,6 +180,35 @@ sofort, ohne Neustart. Das Zahnrad im Panel öffnet die Datei.
 Eigene Hyprland-Einstellungen (Monitore, Tastenkürzel, Fensterregeln) gehören nach
 `~/.config/hypr/user.lua` – diese Datei überschreibt der Installer nie. Das Tastaturlayout
 steht in `~/.config/hypr/hypr-shell-local.lua`.
+
+## Laptop
+
+In `~/.config/hypr/hypr-shell-local.lua` (legt der Installer an, wird nie überschrieben)
+stehen neben dem Tastaturlayout drei Werte für Laptops. Nach einer Änderung
+`hyprctl reload` ausführen.
+
+| Wert | Standard | Bedeutung |
+| --- | --- | --- |
+| `scale` | `"auto"` | Skalierung des Bildschirms: `"auto"` oder eine Zahl wie `1.25`, `1.5`, `2` |
+| `natural_scroll` | `false` | Touchpad: `true` = Inhalt folgt den Fingern (wie am Handy) |
+| `tap_to_click` | `true` | Touchpad: Tippen löst einen Klick aus |
+
+```lua
+return {
+    kb_layout      = "ch",
+    kb_variant     = "de",
+    scale          = 1.5,
+    natural_scroll = true,
+    tap_to_click   = true,
+}
+```
+
+Fehlt ein Wert (z. B. in einer Datei aus einer älteren Version), gilt der Standard.
+
+XWayland-Programme wie Steam, Battle.net oder GOG-Spiele werden bei einer Skalierung über 1
+nicht hochgerechnet (`xwayland.force_zero_scaling`): Sie bleiben scharf, erscheinen dafür in
+ihrer eigenen Grösse. Ein Akku erscheint in der Leiste rechts vor der Uhr (Symbol und Prozent,
+unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen Akku hat.
 
 ## Hilfsprogramme
 

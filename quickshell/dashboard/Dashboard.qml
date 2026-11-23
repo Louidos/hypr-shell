@@ -14,19 +14,19 @@ Scope {
     property string tab: "dashboard"
     property var about: ({})
     // Tabs, Reihenfolge und Start-Tab aus settings.json (dashboard.tabs, dashboard.start)
-    readonly property var allTabs: ["dashboard", "wallpaper", "performance", "games", "about"]
+    readonly property var allTabs: ["dashboard", "wallpaper", "performance", "games", "lab", "about"]
     // Spiele (shell-games list, beim Öffnen gelesen); ohne Spiele bleibt der Tab Games weg
     property var games: []
     readonly property var tabs: {
-        const l = Settings.get("dashboard.tabs", allTabs).filter(t => allTabs.indexOf(t) >= 0 && (t !== "games" || games.length > 0))
+        const l = Settings.get("dashboard.tabs", allTabs).filter(t => allTabs.indexOf(t) >= 0 && (t !== "games" || games.length > 0) && (t !== "lab" || Integrations.lab))
         return l.length > 0 ? l : ["dashboard"]
     }
     readonly property string startTab: {
         const t = Settings.get("dashboard.start", "dashboard")
         return tabs.indexOf(t) >= 0 ? t : tabs[0]
     }
-    readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", games: "Games", about: "About" })
-    readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", games: "󰊗", about: "󰋽" })
+    readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", games: "Games", lab: "Lab", about: "About" })
+    readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", games: "󰊗", lab: "󰒋", about: "󰋽" })
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
     readonly property real panelW: Math.min(Settings.get("dashboard.width", 1000), (screen ? screen.width : 1920) - 40)
     // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px, Rand 18 px
@@ -179,6 +179,7 @@ Scope {
                     sourceComponent: dash.tab === "wallpaper" ? wallTab
                                    : dash.tab === "performance" ? perfTab
                                    : dash.tab === "games" ? gamesTab
+                                   : dash.tab === "lab" ? labTab
                                    : dash.tab === "about" ? aboutTab : homeTab
                 }
             }
@@ -187,6 +188,7 @@ Scope {
 
     Component { id: homeTab; HomeTab { about: dash.about } }
     Component { id: perfTab; PerfTab { } }
+    Component { id: labTab; LabTab { } }
     Component { id: gamesTab; GamesTab { games: dash.games; onCloseRequested: dash.hide() } }
     Component { id: wallTab; WallpaperTab { onCloseRequested: dash.hide() } }
     Component { id: aboutTab; AboutTab { about: dash.about } }

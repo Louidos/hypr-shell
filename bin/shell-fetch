@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# Gemeinsamer Abruf für das Dashboard: Homelab (über Missa-Core), Kalender (CalDAV) und Sensor (JSON).
+# Nur wenn der zugehörige Schalter an ist (lab.enabled, calendar.enabled, sensor.enabled) – sonst keine
+# Netzanfrage. Zeitlimit 3 Sekunden, Zwischenspeicher (60 s); bei Fehler ruhig mit dem letzten Stand:
+#   {"ok": true|false, "stale": bool, "last_ok": "<Zeit des letzten Erfolgs>", "error": "…", "data": …}
+#   shell-fetch lab        {homelab, server, container, alarme} aus /api/homelab, /api/server, /api/container, /api/alarme
+#   shell-fetch calendar   {events: [{"start": "2026-11-24T09:00", "allday": false, "title": "…"}]} (heute bis +30 Tage)
+#   shell-fetch sensor     {value, title, unit, warn} – Feld sensor.field aus der JSON-Adresse sensor.url
+# Zugangsdaten nur aus secrets.env (MISSA_API_KEY, CALDAV_PASSWORD, SENSOR_TOKEN), an curl nur über einen
+# Dateideskriptor. Selbst signierte Zertifikate: integrations.ca_file (die Prüfung bleibt immer an).
+# Pfade aus den Einstellungen dürfen mit ~ beginnen:
+# shellcheck disable=SC2088
+set -uo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+EFF="$DATA/settings.effective.json"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/hypr-shell/fetch"
+HIER="$(dirname "$(readlink -f "$0")")"
+TTL="${HYPR_SHELL_FETCH_TTL:-60}"
+hat() { command -v "$1" >/dev/null 2>&1; }
+wert() {
+    local v=""
+    if hat jq && [ -f "$EFF" ]; then v="$(jq -r "($1) | if . == null then empty else . end" "$EFF" 2>/dev/null || true)"; fi
+    printf '%s\n' "${v:-$2}"
+}
+geheim() { "$HIER/shell-secrets" get "$1" 2>/dev/null; }
+ca() { local c; c="$(wert '.integrations.ca_file' "")"; case "$c" in "~/"*) c="$HOME/${c#\~/}" ;; esac; [ -n "$c" ] && [ -f "$c" ] && printf '%s\n' "$c"; }
+sauber() { [[ "$1" =~ ^[^\"[:cntrl:]]*$ ]]; }
+
+# curl-Konfiguration: Kopfzeile oder Benutzer:Passwort, dazu die CA-Datei
+konfig() { # art wert
+    case "$1" in
+        bearer) if sauber "$2" && [ -n "$2" ]; then printf 'header = "Authorization: Bearer %s"\n' "$2"; fi ;;
+        basic) if sauber "$2"; then printf 'user = "%s"\n' "$2"; fi ;;
+    esac
+    local c; c="$(ca)"; [ -n "$c" ] && printf 'cacert = "%s"\n' "$c"
+    return 0
+}
+
+antwort() { # name ok daten fehler -> JSON, Zwischenspeicher
+    local ok="$2" daten="$3" fehler="${4:-}" f="$CACHE/$1.json" jetzt
+    mkdir -p "$CACHE"
+    jetzt="$(date -Iseconds)"
+    if [ "$ok" = true ]; then
+        jq -cn --argjson d "$daten" --arg t "$jetzt" '{ok: true, stale: false, last_ok: $t, data: $d, error: ""}' | tee "$f.tmp"
+        mv -f "$f.tmp" "$f"
+    elif [ -f "$f" ]; then
+        jq -c --arg e "$fehler" '.ok = false | .stale = true | .error = $e' "$f"
+    else
+        jq -cn --arg e "$fehler" '{ok: false, stale: false, last_ok: "", data: null, error: $e}'
+    fi
+}
+frisch() { # name: noch frisch im Zwischenspeicher? Dann ausgeben
+    local f="$CACHE/$1.json"
+    [ "${HYPR_SHELL_FETCH_NOCACHE:-0}" = 1 ] && return 1
+    if [ -f "$f" ] && [ $(( $(date +%s) - $(stat -c %Y "$f") )) -lt "$TTL" ] && jq -e '.ok' "$f" >/dev/null 2>&1; then cat "$f"; return 0; fi
+    return 1
+}
+
+lab() {
+    if [ "$(wert '.lab.enabled' false)" != true ] || [ "$(wert '.missa.enabled' false)" != true ]; then echo '{"ok": false, "error": "off"}'; return; fi
+    local b key teil daten="{}" p
+    b="$(wert '.missa.url' "")"; b="${b%/}"
+    key="$(geheim MISSA_API_KEY)"
+    if [ -z "$b" ] || [ -z "$key" ]; then echo '{"ok": false, "error": "setup"}'; return; fi
+    frisch lab && return
+    for p in homelab server container alarme; do
+        teil="$(curl -sS --fail --max-time 3 --connect-timeout 3 -K <(konfig bearer "$key") "$b/api/$p" 2>/dev/null)" || teil=""
+        if ! jq -e . >/dev/null 2>&1 <<<"$teil"; then antwort lab false null "not reachable"; return; fi
+        daten="$(jq -c --arg k "$p" --argjson v "$teil" '.[$k] = $v' <<<"$daten")"
+    done
+    antwort lab true "$daten"
+}
+
+# CalDAV: REPORT calendar-query mit Zeitraum, aus den VEVENTs DTSTART und SUMMARY
+calendar() {
+    [ "$(wert '.calendar.enabled' false)" = true ] || { echo '{"ok": false, "error": "off"}'; return; }
+    local url user pw von bis xml
+    url="$(wert '.calendar.url' "")"; user="$(wert '.calendar.user' "")"; pw="$(geheim CALDAV_PASSWORD)"
+    if [ -z "$url" ] || [ -z "$user" ] || [ -z "$pw" ]; then echo '{"ok": false, "error": "setup"}'; return; fi
+    frisch calendar && return
+    von="$(date -u +%Y%m%dT000000Z)"; bis="$(date -u -d '+30 days' +%Y%m%dT000000Z)"
+    xml="$(curl -sS --fail --max-time 3 --connect-timeout 3 -K <(konfig basic "$user:$pw") -X REPORT \
+        -H "Depth: 1" -H "Content-Type: application/xml; charset=utf-8" --data-binary @- "$url" 2>/dev/null <<XML
+<?xml version="1.0" encoding="utf-8"?>
+<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
+  <d:prop><c:calendar-data/></d:prop>
+  <c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">
+    <c:time-range start="$von" end="$bis"/>
+  </c:comp-filter></c:comp-filter></c:filter>
+</c:calendar-query>
+XML
+)" || { antwort calendar false null "not reachable"; return; }
+    local events
+    events="$(printf '%s\n' "$xml" | sed 's/&#13;//g; s/\r//g' | awk '
+        /BEGIN:VEVENT/ { inev = 1; start = ""; titel = ""; next }
+        /END:VEVENT/ { if (start != "") print start "\t" titel; inev = 0; next }
+        inev && /^DTSTART/ { v = $0; sub(/^[^:]*:/, "", v); start = v }
+        inev && /^SUMMARY/ { v = $0; sub(/^[^:]*:/, "", v); titel = v }' \
+        | jq -R -s -c 'split("\n") | map(select(. != "") | split("\t")
+            | (.[0]) as $s | {allday: ($s | test("^[0-9]{8}$")),
+                start: ($s | if test("^[0-9]{8}") then "\(.[0:4])-\(.[4:6])-\(.[6:8])" + (if test("T") then "T\(.[9:11]):\(.[11:13])" else "" end) else . end),
+                utc: ($s | endswith("Z")), title: (.[1] // "")})
+            | sort_by(.start)')"
+    antwort calendar true "{\"events\": $events}"
+}
+
+sensor() {
+    [ "$(wert '.sensor.enabled' false)" = true ] || { echo '{"ok": false, "error": "off"}'; return; }
+    local url j tok
+    url="$(wert '.sensor.url' "")"
+    [ -n "$url" ] || { echo '{"ok": false, "error": "setup"}'; return; }
+    frisch sensor && return
+    tok="$(geheim SENSOR_TOKEN)"
+    j="$(curl -sS --fail --max-time 3 --connect-timeout 3 -K <(konfig bearer "$tok") "$url" 2>/dev/null)" || j=""
+    if ! jq -e . >/dev/null 2>&1 <<<"$j"; then antwort sensor false null "not reachable"; return; fi
+    local feld wert_
+    feld="$(wert '.sensor.field' "value")"
+    wert_="$(jq -c --arg f "$feld" 'getpath($f | split(".") | map(tonumber? // .))' <<<"$j" 2>/dev/null)"
+    antwort sensor true "$(jq -cn --argjson v "${wert_:-null}" --arg t "$(wert '.sensor.title' 'Sensor')" --arg u "$(wert '.sensor.unit' '')" \
+        --argjson g "$(wert '.sensor.warn' 1000)" '{value: $v, title: $t, unit: $u, warn: (($v | type) == "number" and $v >= $g)}')"
+}
+
+case "${1:-}" in
+    lab) lab ;;
+    calendar) calendar ;;
+    sensor) sensor ;;
+    *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

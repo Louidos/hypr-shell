@@ -154,6 +154,7 @@ aktive als weisse Pille):
 | Dashboard | Wetter, Profil mit Begrüssung, Musik, Uhr, Kalender, drei Ringe für CPU/RAM/Disk |
 | Wallpaper | alle Bilder aus `~/Pictures/Wallpapers` mit Suche; Klick setzt Bild und Farben |
 | Performance | CPU und GPU mit Modell, Temperatur und Auslastung („Usage“; eine schlafende NVIDIA-Karte wird nicht geweckt), Datenträger, Netzwerk mit Verlauf, Arbeitsspeicher |
+| Lab | nur mit `lab.enabled`: VMs und IPs, Messwerte und Erreichbarkeit, Container und Alarme des Homelabs, gelesen über Missa-Core |
 | Games | zuletzt gespielte Steam-Spiele mit Cover, Klick startet; eigene Einträge (GOG, Battle.net …) mit `games.custom_enabled` und `games.custom`. Ohne Spiele fehlt der Tab |
 | About | System, Distribution, Version von hypr-shell, Hyprland und Quickshell |
 
@@ -307,6 +308,12 @@ oder Homelab benutzt, sieht nichts davon. Einschalten in der Einstellungs-App au
 `~/Missa` mit `Eingang/` und `Ausgabe/`, beide mit Lesezeichen in der Seitenleiste des Dateimanagers.
 Alles Weitere steht in [docs/anbindungen.md](docs/anbindungen.md).
 
+Mit `calendar.enabled` (CalDAV, z. B. Nextcloud) bekommt der Kalender im Dashboard Punkte an Tagen
+mit Terminen und darunter die nächsten drei Termine; mit `sensor.enabled` zeigt die Wetter-Kachel
+rechts einen Messwert aus einer JSON-Adresse (Feld, Titel, Einheit, ab `sensor.warn` in Warnfarbe).
+Alles wird nur bei offenem Dashboard geholt (3 s Zeitlimit, Zwischenspeicher); ist ein Server nicht
+erreichbar, steht ruhig „not reachable“ mit dem letzten Stand.
+
 **Missa-Chat** (mit `missa.enabled`): `SUPER + I` öffnet von der rechten Kante ein Chatfenster. Enter
 sendet, SHIFT+Enter macht eine neue Zeile; Missas Antwort läuft Wort für Wort ein („Missa is working …“,
 während sie ein Werkzeug benutzt), der Knopf unten rechts bricht ab. Stellt Missa eine Rückfrage,
@@ -388,6 +395,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
 | `shell-games list\|launch <id>` | Spiele für den Tab Games |
 | `shell-laptop status\|profile\|gfx\|charge\|kbd …` | Laptop-Funktionen (asusctl, supergfxctl, power-profiles-daemon) |
+| `shell-fetch lab\|calendar\|sensor` | Abruf für Lab, Kalender und Sensor (nur eingeschaltet) |
 | `shell-missa-agent sync\|pause\|resume\|status` | Missa-Agent (Geräte-Anschluss v1) |
 | `shell-voice available\|listen\|speak\|stop` | mit Missa sprechen (Aufnahme, whisper.cpp, piper) |
 | `shell-missa health\|chat\|get …` | Verbindung zu Missa-Core (Chat, Status, Lagebild) |

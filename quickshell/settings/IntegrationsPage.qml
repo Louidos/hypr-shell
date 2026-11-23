@@ -24,7 +24,7 @@ Column {
         { id: "lab", title: "Homelab", icon: "󰒋", keys: ["lab.enabled"], secret: "", howto: "" },
         { id: "calendar", title: "Calendar", icon: "󰃭", keys: ["calendar.enabled", "calendar.url", "calendar.user"],
           secret: "CALDAV_PASSWORD", secretTitle: "Password", howto: "Enter the CalDAV address, user name and an (app) password." },
-        { id: "sensor", title: "Sensor", icon: "󰈐", keys: ["sensor.enabled", "sensor.url"], secret: "", howto: "Enter an address that returns JSON." },
+        { id: "sensor", title: "Sensor", icon: "󰈐", keys: ["sensor.enabled", "sensor.url", "sensor.field", "sensor.title", "sensor.unit", "sensor.warn"], secret: "", howto: "Enter an address that returns JSON." },
         { id: "games", title: "Own games", icon: "󰊴", keys: ["games.custom_enabled", "games.custom"], secret: "", howto: "" },
         { id: "security", title: "Self-signed servers", icon: "󰒃", keys: ["integrations.ca_file"], secret: "", howto: "", always: true }
     ]

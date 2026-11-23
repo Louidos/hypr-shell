@@ -48,6 +48,15 @@ local S = {
     },
     monitors = { scale = "auto", outputs = {} },
     apps = { terminal = "kitty", files = "nautilus", browser = "firefox", launcher = "rofi -show drun" },
+    keybinds = {
+        terminal = "SUPER + Q", files = "SUPER + E", browser = "", launcher = "SUPER + R",
+        launcher_alt = "ALT + Space", close = "SUPER + C", float = "SUPER + V",
+        focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
+        workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
+        dashboard = "SUPER + ALT + D", wallpaper = "SUPER + W", panel = "SUPER + A", settings = "SUPER + U",
+        lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
+        custom = {},
+    },
 }
 local function merge(a, b)
     for k, v in pairs(b) do
@@ -258,51 +267,65 @@ hl.window_rule({
 ---- TASTENKÜRZEL ----
 ------------------------
 
-local mod = "SUPER"
+-- Alle Kürzel aus settings.json (keybinds.*); Standard = die bisherigen Kürzel. Ein leerer Wert
+-- heisst: diese Aktion hat keine Taste. Doppelte Belegungen lässt shell-apply gar nicht erst durch.
+local K = S.keybinds
 local terminal    = S.apps.terminal
 local fileManager = S.apps.files
+local browser     = S.apps.browser
 local launcher    = S.apps.launcher
+local function bind(keys, action, flags)
+    if type(keys) == "string" and keys ~= "" then hl.bind(keys, action, flags) end
+end
+local function mit(m, key) return (m ~= nil and m ~= "") and (m .. " + " .. key) or "" end
 
-hl.bind(mod .. " + Q", hl.dsp.exec_cmd(terminal))
-hl.bind(mod .. " + C", hl.dsp.window.close())
-hl.bind(mod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mod .. " + R", hl.dsp.exec_cmd(launcher))
-hl.bind("ALT + Space", hl.dsp.exec_cmd(launcher))
-hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mod .. " + M", hl.dsp.exit())
-hl.bind(mod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
+bind(K.terminal,     hl.dsp.exec_cmd(terminal))
+bind(K.close,        hl.dsp.window.close())
+bind(K.files,        hl.dsp.exec_cmd(fileManager))
+bind(K.browser,      hl.dsp.exec_cmd(browser))
+bind(K.launcher,     hl.dsp.exec_cmd(launcher))
+bind(K.launcher_alt, hl.dsp.exec_cmd(launcher))
+bind(K.float,        hl.dsp.window.float({ action = "toggle" }))
+bind(K.exit,         hl.dsp.exit())
+bind(K.lock,         hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
 
 -- Fokus mit SUPER + Pfeiltasten
-hl.bind(mod .. " + left",  hl.dsp.focus({ direction = "left" }))
-hl.bind(mod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mod .. " + up",    hl.dsp.focus({ direction = "up" }))
-hl.bind(mod .. " + down",  hl.dsp.focus({ direction = "down" }))
+bind(K.focus_left,  hl.dsp.focus({ direction = "left" }))
+bind(K.focus_right, hl.dsp.focus({ direction = "right" }))
+bind(K.focus_up,    hl.dsp.focus({ direction = "up" }))
+bind(K.focus_down,  hl.dsp.focus({ direction = "down" }))
 
 -- Arbeitsflächen: SUPER + 1…0 wechseln, SUPER + SHIFT + 1…0 Fenster verschieben
 for i = 1, 10 do
     local key = i % 10
-    hl.bind(mod .. " + " .. key,           hl.dsp.focus({ workspace = i }))
-    hl.bind(mod .. " + SHIFT + " .. key,   hl.dsp.window.move({ workspace = i }))
+    bind(mit(K.workspace_mod, key), hl.dsp.focus({ workspace = i }))
+    bind(mit(K.move_mod, key),      hl.dsp.window.move({ workspace = i }))
 end
-hl.bind(mod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+bind(mit(K.workspace_mod, "mouse_down"), hl.dsp.focus({ workspace = "e+1" }))
+bind(mit(K.workspace_mod, "mouse_up"),   hl.dsp.focus({ workspace = "e-1" }))
 
 -- SUPER + linke Maustaste ziehen, SUPER + rechte Maustaste Grösse ändern
-hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
-hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+bind(mit(K.mouse_mod, "mouse:272"), hl.dsp.window.drag(),   { mouse = true })
+bind(mit(K.mouse_mod, "mouse:273"), hl.dsp.window.resize(), { mouse = true })
 
--- Oberfläche (Quickshell): Dashboard und Panel; SUPER + W öffnet direkt den Tab Wallpaper
+-- Oberfläche (Quickshell): Dashboard, Panel, Einstellungs-App; SUPER + W öffnet den Tab Wallpaper
 local ui = bin .. "shell-quickshell ipc "
-hl.bind(mod .. " + ALT + D", hl.dsp.exec_cmd(ui .. "dashboard toggle"))
-hl.bind(mod .. " + W",       hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"))
--- Hot-Corner-Panel (auch: Maus in die Ecke unten rechts)
-hl.bind(mod .. " + A",       hl.dsp.exec_cmd(ui .. "panel toggle"))
--- Einstellungs-App (auch: Zahnrad im Panel)
-hl.bind(mod .. " + U",       hl.dsp.exec_cmd(ui .. "settings toggle"))
+bind(K.dashboard, hl.dsp.exec_cmd(ui .. "dashboard toggle"))
+bind(K.wallpaper, hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"))
+bind(K.panel,     hl.dsp.exec_cmd(ui .. "panel toggle"))
+-- die App bleibt immer erreichbar: ohne gültige Taste gilt SUPER + U
+bind((K.settings ~= nil and K.settings ~= "") and K.settings or "SUPER + U", hl.dsp.exec_cmd(ui .. "settings toggle"))
 
 -- Screenshots: speichern und in die Zwischenablage
-hl.bind("Print",         hl.dsp.exec_cmd(bin .. "shell-screenshot region"))
-hl.bind("SHIFT + Print", hl.dsp.exec_cmd(bin .. "shell-screenshot screen"))
+bind(K.screenshot_region, hl.dsp.exec_cmd(bin .. "shell-screenshot region"))
+bind(K.screenshot_screen, hl.dsp.exec_cmd(bin .. "shell-screenshot screen"))
+
+-- eigene Kürzel (keybinds.custom)
+for _, c in ipairs(K.custom or {}) do
+    if type(c) == "table" and type(c.command) == "string" and c.command ~= "" then
+        bind(c.keys, hl.dsp.exec_cmd(c.command))
+    end
+end
 
 -- Lautstärke und Helligkeit (mit Anzeige von swayosd), auch im Sperrbildschirm
 local osd = "swayosd-client "

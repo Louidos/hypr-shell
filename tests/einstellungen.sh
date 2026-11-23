@@ -53,6 +53,7 @@ while IFS= read -r k; do
     var="S_$(tr '.-' '__' <<<"$k")"
     if grep -rqF "\"$k\"" quickshell --include='*.qml' \
         || grep -qF "S.$k" config/hypr/hyprland.lua \
+        || { [ "${k#keybinds.}" != "$k" ] && grep -qE "K\\.${k#keybinds.}\\b" config/hypr/hyprland.lua; } \
         || grep -qE "(\\\$$var|\\\$\\{?$var\\b|\\\$e\\.$k\\b)" bin/shell-apply \
         || grep -rqF "'.$k " bin; then :; else tot+=("$k"); fi
 done < <(jq -r '.keys[].key' $SCHEMA)

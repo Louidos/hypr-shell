@@ -10,6 +10,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Leiste, Abstände, Blur, Animationen, Farben, Schriften, Eingabe, Bildschirme, Sperrzeiten und Standard-Programme sind in settings.json einstellbar und wirken sofort; ein falscher Wert oder kaputtes JSON legt nichts lahm, eine Benachrichtigung nennt Schlüssel und Grund (#31)
 - Befehl `shell-set` zum Ändern, Zurücksetzen und Rückgängigmachen von Einstellungen, dazu Profile, Export/Import und Tab-Vervollständigung für bash und fish (#33)
 - Einstellungs-App (SUPER+U oder Zahnrad im Panel) mit Schaltern, Reglern, Listen, Farbwähler, Suche, Zurücksetzen, Undo und Profilen; Bildschirme mit 15-Sekunden-Bestätigung (#35)
+- Tastenkürzel ansehen, ändern und eigene anlegen (Einstellungs-App → Keybinds, `shell-set keybinds.…`); doppelte Belegungen werden abgelehnt und benannt, ohne Änderung gelten die bisherigen Kürzel (#37)
 
 ## 1.1.0 – 2026-11-23
 

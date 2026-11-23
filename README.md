@@ -97,6 +97,12 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `Esc` | Dashboard, Panel oder Einstellungs-App schliessen |
 | Wischen mit drei Fingern | Arbeitsfläche wechseln |
 
+Alle Kürzel lassen sich in der Einstellungs-App auf der Seite **Keybinds** ändern (Klick, dann die
+neue Kombination drücken) oder mit `shell-set keybinds.<aktion> "SUPER + T"`; ein leeres Kürzel heisst
+„keine Taste“. Eigene Kürzel stehen in `keybinds.custom`. Eine Kombination, die schon belegt ist, wird
+abgelehnt und die belegende Aktion genannt. `SUPER + U` (Einstellungs-App) lässt sich nicht leeren.
+Die Medien-, Lautstärke- und Helligkeitstasten bleiben fest.
+
 Maus: Ecke **unten rechts** öffnet das Panel, die **Mitte der unteren Kante** das Dashboard.
 
 ## Was ist dabei?
@@ -309,6 +315,29 @@ Die Tab-Taste vervollständigt in bash und fish Befehle, Schlüssel und erlaubte
 | `apps.files` | `"nautilus"` | Command for the file manager |
 | `apps.browser` | `"firefox"` | Command for the web browser |
 | `apps.launcher` | `"rofi -show drun"` | Command for the app launcher |
+| `keybinds.terminal` | `"SUPER + Q"` | Open the terminal (apps.terminal) |
+| `keybinds.files` | `"SUPER + E"` | Open the file manager (apps.files) |
+| `keybinds.browser` | `""` | Open the browser (apps.browser); empty = no key |
+| `keybinds.launcher` | `"SUPER + R"` | Open the app launcher (apps.launcher) |
+| `keybinds.launcher_alt` | `"ALT + Space"` | Another key for the app launcher |
+| `keybinds.close` | `"SUPER + C"` | Close the focused window |
+| `keybinds.float` | `"SUPER + V"` | Switch the focused window between floating and tiled |
+| `keybinds.focus_left` | `"SUPER + left"` | Move the focus to the window on the left |
+| `keybinds.focus_right` | `"SUPER + right"` | Move the focus to the window on the right |
+| `keybinds.focus_up` | `"SUPER + up"` | Move the focus to the window above |
+| `keybinds.focus_down` | `"SUPER + down"` | Move the focus to the window below |
+| `keybinds.workspace_mod` | `"SUPER"` | Modifier for 1 … 0 (go to workspace) and the mouse wheel; empty = off |
+| `keybinds.move_mod` | `"SUPER + SHIFT"` | Modifier for 1 … 0 (move the window there); empty = off |
+| `keybinds.mouse_mod` | `"SUPER"` | Modifier for dragging (left button) and resizing (right button) windows; empty = off |
+| `keybinds.dashboard` | `"SUPER + ALT + D"` | Open or close the dashboard |
+| `keybinds.wallpaper` | `"SUPER + W"` | Open the dashboard on the Wallpaper tab |
+| `keybinds.panel` | `"SUPER + A"` | Open or close the hot corner panel |
+| `keybinds.settings` | `"SUPER + U"` | Open or close this settings app (cannot be empty) |
+| `keybinds.lock` | `"SUPER + L"` | Lock the screen |
+| `keybinds.exit` | `"SUPER + M"` | Leave Hyprland |
+| `keybinds.screenshot_region` | `"Print"` | Select a region; saved and copied |
+| `keybinds.screenshot_screen` | `"SHIFT + Print"` | Whole screen; saved and copied |
+| `keybinds.custom` | `[]` | Own key combinations that run a command |
 
 Ein Beispiel – Leiste unten und etwas höher, grössere Abstände, nach 10 Minuten sperren:
 

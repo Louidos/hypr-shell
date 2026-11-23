@@ -2,7 +2,7 @@
 # Prüft die Daten und Aktionen der Fenster-Übersicht (shell-overview) mit einer hyprctl-Attrappe:
 # jedes sichtbare Fenster an seiner Arbeitsfläche, versteckte fehlen; Klick → focus mit Adresse,
 # Ziehen → move ohne Folgen; ungültige Adressen werden abgelehnt; ohne Hyprland leere Listen.
-# shellcheck disable=SC2016,SC2034
+# shellcheck disable=SC2016,SC2034,SC2329
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
 REPO="$(pwd)"

@@ -39,7 +39,7 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | Punkt | Prüfung |
 | --- | --- |
 | Kürzel und Kante öffnen, Esc schliesst | Öffnen per IPC automatisch; Kante und Esc von Hand |
-| Alle vier Tabs zeigen echte Werte | automatisch (Screenshots, Wetter mit Netz) |
+| Alle Tabs (Standard: Dashboard, Wallpaper, Performance, Games, About) zeigen echte Werte | automatisch (Screenshots aller fünf Tabs, Wetter mit Netz) |
 | Klick auf ein Bild ändert Hintergrund und Farben überall | `shell-wallpaper` automatisch; Klick von Hand |
 | Systemwerte nur bei offenem Panel | automatisch (Tabs per Loader) |
 
@@ -76,7 +76,7 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | `monitors.scale`, `input.touchpad.natural_scroll`, `input.touchpad.tap_to_click` wirken sofort | Werte an Hyprland automatisch (`tests/hyprland-lua.sh`); Wirkung von Hand |
 | XWayland-Fenster (Steam) bei Skalierung über 1 scharf | von Hand |
 | GPU-Kachel zeigt „–“, solange die NVIDIA-Karte schläft, und weckt sie nicht | automatisch mit nachgebauter Karte (`tests/dashboard.sh`); echte Karte von Hand: `cat /sys/bus/pci/devices/*/power/runtime_status` |
-| Zahnrad im Panel öffnet settings.json im Terminal | von Hand |
+| Zahnrad im Panel öffnet die Einstellungs-App | von Hand |
 | Ladegrenze auf 80, dann wieder auf 100 stellen: `cat /sys/class/power_supply/BAT*/charge_control_end_threshold` zeigt 100 | Schreiben über asusctl automatisch mit Attrappe (`tests/laptop.sh`), auch nach Reset und mit der alten Schreibweise; echter Akku von Hand |
 
 ## Einstellungen in settings.json (Schema, shell-apply)

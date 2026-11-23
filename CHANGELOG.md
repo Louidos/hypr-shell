@@ -11,6 +11,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Chat mit Missa direkt am Desktop (SUPER+I) und Missa-Karte im Dashboard, einschaltbar in den Einstellungen (#61)
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)
 
+### Behoben
+- Abnahme-Checkliste: Dashboard mit fünf statt vier Tabs, das Zahnrad im Panel öffnet die Einstellungs-App (nicht mehr settings.json); Tippfehler in der Anleitung zu den Anbindungen
+
 ## 1.4.0 – 2026-11-23
 
 ### Hinzugefügt

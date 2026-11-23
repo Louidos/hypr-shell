@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.1.0 – 2026-11-23
+
 ### Hinzugefügt
 - Akku-Anzeige in der Leiste, einstellbare Skalierung und Touchpad (`scale`, `natural_scroll`, `tap_to_click` in `hypr-shell-local.lua`), scharfe Spiele bei skaliertem Bildschirm (#22)
 - `./install.sh --update` holt den neuen Stand und installiert ihn, eigene Einstellungen bleiben; der Installer bietet vorher ein Systemupdate an und sagt am Ende, was als Nächstes zu tun ist (#23)

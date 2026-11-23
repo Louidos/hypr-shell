@@ -103,10 +103,12 @@ FocusScope {
         GlassCard {
             id: apps
             readonly property var pinned: {
+                // Abhängigkeit auf die App-Liste: DesktopEntries lädt asynchron und kann sich ändern
+                const alle = DesktopEntries.applications.values
                 const ids = Settings.get("panel.apps", ["kitty", "org.gnome.Nautilus", "firefox", "spotify", "discord", "steam"])
                 const r = []
                 for (let i = 0; i < ids.length; i++) {
-                    const e = DesktopEntries.byId(ids[i]) || DesktopEntries.heuristicLookup(ids[i])
+                    const e = alle.length > 0 ? (DesktopEntries.byId(ids[i]) || DesktopEntries.heuristicLookup(ids[i])) : null
                     if (e) r.push(e)   // nicht installierte Apps fallen weg
                 }
                 return r

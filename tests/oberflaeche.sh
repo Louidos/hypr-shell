@@ -34,6 +34,13 @@ unset WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CONFIG_HOME
 # Testdaten: Einstellungen und ein Profilbild-Ersatz
 SETTINGS_JSON="${SETTINGS_JSON:-$(jq '.weather.location = "Zurich"' "$REPO/settings/settings.example.json")}"
 printf '%s\n' "$SETTINGS_JSON" > "$HOME/.config/hypr-shell/settings.json"
+# Beispiel-Apps nur in diesem Test-HOME, damit das App-Raster des Panels etwas zeigt
+mkdir -p "$HOME/.local/share/applications"
+for app in kitty:Kitty:utilities-terminal firefox:Firefox:firefox org.gnome.Nautilus:Files:org.gnome.Nautilus steam:Steam:steam; do
+    IFS=: read -r id name icon <<<"$app"
+    printf '[Desktop Entry]\nType=Application\nName=%s\nExec=true\nIcon=%s\n' "$name" "$icon" \
+        > "$HOME/.local/share/applications/$id.desktop"
+done
 
 cat > "$T/sway.conf" <<CONF
 output HEADLESS-1 resolution 1920x1080 position 0 0

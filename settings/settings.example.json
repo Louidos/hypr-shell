@@ -22,5 +22,35 @@
     "width": 1000,
     "edge": true,
     "opacity": 0.42
+  },
+  "panel": {
+    "enabled": true,
+    "corner": "bottom-right",
+    "trigger": 6,
+    "width": 420,
+    "radius": 26,
+    "opacity": 0.44,
+    "sections": [
+      "awake",
+      "apps",
+      "media",
+      "shot",
+      "toggles"
+    ],
+    "apps": [
+      "kitty",
+      "org.gnome.Nautilus",
+      "firefox",
+      "spotify",
+      "discord",
+      "steam"
+    ],
+    "toggles": [
+      "wifi",
+      "bluetooth",
+      "dnd",
+      "gaming",
+      "settings"
+    ]
   }
 }

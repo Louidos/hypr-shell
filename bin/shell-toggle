@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Schnellschalter für Panel und Tastenkürzel.
+#   shell-toggle status                     Zustand aller Schalter als JSON
+#   shell-toggle <name> [on|off|toggle]     Schalter ändern (Standard: toggle)
+# Namen: wifi, bluetooth, dnd (Nicht stören), gaming (Blur/Animationen/Schatten aus), awake (Keep Awake)
+set -euo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+GAMING="$DATA/gaming"
+AWAKE_PID="$DATA/awake.pid"
+mkdir -p "$DATA"
+
+hat() { command -v "$1" >/dev/null 2>&1; }
+meldung() { hat notify-send && notify-send -a "hypr-shell" -t 2500 "$@" || true; }
+
+wifi_an() { hat nmcli && [ "$(nmcli radio wifi 2>/dev/null)" = enabled ]; }
+bt_an() { hat bluetoothctl && bluetoothctl show 2>/dev/null | grep -q 'Powered: yes'; }
+dnd_an() { hat swaync-client && [ "$(swaync-client -D 2>/dev/null)" = true ]; }
+gaming_an() { [ -e "$GAMING" ]; }
+awake_an() { [ -f "$AWAKE_PID" ] && kill -0 "$(cat "$AWAKE_PID")" 2>/dev/null; }
+
+bool() { if "$@"; then echo true; else echo false; fi; }
+
+status() {
+    printf '{"wifi": %s, "bluetooth": %s, "dnd": %s, "gaming": %s, "awake": %s}\n' \
+        "$(bool wifi_an)" "$(bool bt_an)" "$(bool dnd_an)" "$(bool gaming_an)" "$(bool awake_an)"
+}
+
+ziel() { # aktueller-zustand-funktion aktion -> on|off
+    case "$2" in
+        on|off) echo "$2" ;;
+        *) if "$1"; then echo off; else echo on; fi ;;
+    esac
+}
+
+wifi() { nmcli radio wifi "$(ziel wifi_an "$1")"; }
+
+bluetooth() {
+    if [ "$(ziel bt_an "$1")" = on ]; then
+        hat rfkill && rfkill unblock bluetooth 2>/dev/null || true
+        bluetoothctl power on >/dev/null
+    else
+        bluetoothctl power off >/dev/null
+    fi
+}
+
+dnd() {
+    if [ "$(ziel dnd_an "$1")" = on ]; then swaync-client -dn >/dev/null; else swaync-client -df >/dev/null; fi
+}
+
+# Gaming-Modus: Blur, Animationen und Schatten aus. Die Datei sorgt dafür, dass hyprland.lua
+# den Modus auch nach "hyprctl reload" beibehält.
+gaming() {
+    if [ "$(ziel gaming_an "$1")" = on ]; then
+        touch "$GAMING"
+        hyprctl eval 'hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false } }, animations = { enabled = false } })' >/dev/null 2>&1 || true
+        meldung "Gaming mode on" "Blur, animations and shadows off"
+    else
+        rm -f "$GAMING"
+        hyprctl reload >/dev/null 2>&1 || true
+        meldung "Gaming mode off"
+    fi
+}
+
+# Keep Awake: verhindert Sperren und Standby (hypridle beachtet systemd-inhibit)
+awake() {
+    if [ "$(ziel awake_an "$1")" = on ]; then
+        awake_an && return 0
+        setsid systemd-inhibit --what=idle:sleep --who=hypr-shell --why="Keep Awake" --mode=block \
+            sleep infinity >/dev/null 2>&1 &
+        echo "$!" > "$AWAKE_PID"
+    else
+        if [ -f "$AWAKE_PID" ]; then kill "$(cat "$AWAKE_PID")" 2>/dev/null || true; rm -f "$AWAKE_PID"; fi
+    fi
+}
+
+name="${1:-status}"
+aktion="${2:-toggle}"
+case "$name" in
+    status) status ;;
+    wifi|bluetooth|dnd|gaming|awake) "$name" "$aktion" ;;
+    *) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

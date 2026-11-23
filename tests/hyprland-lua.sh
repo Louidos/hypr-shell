@@ -25,7 +25,7 @@ for _, fn in ipairs(A.start) do fn() end
 local fehler = 0
 local function pruefe(bed, text) if not bed then print("FEHLER: " .. text); fehler = fehler + 1 end end
 
-local pflicht = { "SUPER + Q", "SUPER + C", "SUPER + E", "SUPER + R", "ALT + Space", "SUPER + V",
+local pflicht = { "SUPER + Q", "SUPER + C", "SUPER + E", "SUPER + R", "ALT + Space", "SUPER + Space", "SUPER + V",
     "SUPER + M", "SUPER + L", "SUPER + left", "SUPER + right", "SUPER + up", "SUPER + down",
     "SUPER + mouse:272", "SUPER + mouse:273", "Print", "SHIFT + Print",
     "XF86AudioRaiseVolume", "XF86AudioLowerVolume", "XF86AudioMute",

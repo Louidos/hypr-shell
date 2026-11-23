@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Hinzugefügt
+- App-Starter im Glas-Look mit Rechner (SUPER+R, SUPER+Space): Suche nach Name und Beschreibung, zuletzt benutzte zuerst, `=12*8` rechnet; mit `apps.launcher` lässt sich wieder rofi einstellen (#46)
+
 ### Geändert
 - Es ist immer nur ein Panel offen: Öffnet man Dashboard, Panel oder Einstellungs-App, schliesst das andere; Esc und ein Klick daneben schliessen, SUPER+D öffnet zusätzlich das Dashboard (#44)
 

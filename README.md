@@ -74,7 +74,7 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 | `SUPER + Q` | Terminal (kitty) |
 | `SUPER + C` | Fenster schliessen |
 | `SUPER + E` | Dateien (Nautilus) |
-| `SUPER + R` / `ALT + Space` | Starter (rofi) |
+| `SUPER + R` / `SUPER + Space` / `ALT + Space` | Starter (Suche nach Apps, `=` rechnet) |
 | `SUPER + V` | Fenster schwebend / gekachelt |
 | `SUPER + M` | abmelden (Hyprland beenden) |
 | `SUPER + L` | sperren |
@@ -145,6 +145,15 @@ aktive als weisse Pille):
 | About | System, Distribution, Version von hypr-shell, Hyprland und Quickshell |
 
 Systemwerte werden nur abgefragt, solange das Dashboard offen ist.
+
+### Starter
+
+`SUPER + R` (oder `SUPER + Space`, `ALT + Space`, das Distro-Symbol links in der Leiste) öffnet in der
+Mitte ein Suchfeld im Glas-Look: Tippen sucht Apps nach Name, Beschreibung und Stichworten, zuletzt
+benutzte stehen oben; Pfeiltasten wählen, Enter startet, Esc schliesst. Beginnt die Eingabe mit `=`,
+wird gerechnet (`=12*8` zeigt 96, auch `^`, `%`, Klammern, `sqrt()`, `pi`); Enter kopiert das Ergebnis.
+Wer lieber rofi oder einen anderen Starter will: `shell-set apps.launcher "rofi -show drun"`
+(zurück mit `shell-set apps.launcher builtin`).
 
 ### Hot-Corner-Panel
 

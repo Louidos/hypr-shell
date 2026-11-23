@@ -47,10 +47,10 @@ local S = {
         touchpad = { natural_scroll = false, tap_to_click = true },
     },
     monitors = { scale = "auto", outputs = {} },
-    apps = { terminal = "kitty", files = "nautilus", browser = "firefox", launcher = "rofi -show drun" },
+    apps = { terminal = "kitty", files = "nautilus", browser = "firefox", launcher = "builtin" },
     keybinds = {
         terminal = "SUPER + Q", files = "SUPER + E", browser = "", launcher = "SUPER + R",
-        launcher_alt = "ALT + Space", close = "SUPER + C", float = "SUPER + V",
+        launcher_alt = "ALT + Space", launcher_space = "SUPER + Space", close = "SUPER + C", float = "SUPER + V",
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", edit_desktop = "SUPER + ALT + W",
@@ -247,7 +247,7 @@ end
 
 blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
-blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings)$")
+blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
 blur_layer("hypr-shell-swaync-cc",   "^swaync-control-center$")
 blur_layer("hypr-shell-swaync-note", "^swaync-notification-window$")
@@ -274,7 +274,9 @@ local K = S.keybinds
 local terminal    = S.apps.terminal
 local fileManager = S.apps.files
 local browser     = S.apps.browser
-local launcher    = S.apps.launcher
+-- apps.launcher = "builtin": der Starter von hypr-shell (Quickshell), sonst der eigene Befehl (z. B. rofi)
+local launcher    = (S.apps.launcher == "builtin" or S.apps.launcher == nil or S.apps.launcher == "")
+    and (bin .. "shell-quickshell ipc launcher toggle") or S.apps.launcher
 local function bind(keys, action, flags)
     if type(keys) == "string" and keys ~= "" then hl.bind(keys, action, flags) end
 end
@@ -286,6 +288,7 @@ bind(K.files,        hl.dsp.exec_cmd(fileManager))
 bind(K.browser,      hl.dsp.exec_cmd(browser))
 bind(K.launcher,     hl.dsp.exec_cmd(launcher))
 bind(K.launcher_alt, hl.dsp.exec_cmd(launcher))
+bind(K.launcher_space, hl.dsp.exec_cmd(launcher))
 bind(K.float,        hl.dsp.window.float({ action = "toggle" }))
 bind(K.exit,         hl.dsp.exit())
 bind(K.lock,         hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))

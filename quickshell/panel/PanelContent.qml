@@ -157,7 +157,12 @@ FocusScope {
                     implicitHeight: 36
                     icon: "󰀻"
                     text: "All"
-                    onClicked: pc.panel.run(["rofi", "-show", "drun"], true)
+                    // eingebauter Starter (apps.launcher = builtin), sonst der eigene Befehl
+                    onClicked: {
+                        const l = Settings.get("apps.launcher", "builtin")
+                        if (l === "builtin") Ui.openPanel("launcher")
+                        else pc.panel.run(["bash", "-c", l], true)
+                    }
                 }
             }
             Grid {

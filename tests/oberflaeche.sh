@@ -150,6 +150,22 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target panel'; then
     ipc panel close; sleep 1
 fi
 
+# ---- Starter (SUPER+R): Suche, Rechner
+starter_ok=1
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target launcher'; then
+    echo "---- Starter ----"
+    ipc launcher open; sleep 2; bild launcher
+    erst="$("$qs" -p "$cfg" ipc call launcher search "kit" 2>/dev/null)"
+    if [ "$erst" = Kitty ]; then echo "  ok: \"kit\" findet Kitty"; else echo "  FEHLER: \"kit\" ergibt \"$erst\""; starter_ok=0; fi
+    sleep 1; bild launcher-suche
+    erg="$("$qs" -p "$cfg" ipc call launcher search "=12*8" 2>/dev/null)"
+    if [ "$erg" = 96 ]; then echo "  ok: =12*8 zeigt 96"; else echo "  FEHLER: =12*8 ergibt \"$erg\""; starter_ok=0; fi
+    sleep 1; bild launcher-rechner
+    ipc launcher close; sleep 1
+else
+    echo "FEHLER: IPC-Ziel launcher fehlt"; starter_ok=0
+fi
+
 # ---- immer nur ein Panel offen: öffnet man das Dashboard bei offenem Panel, schliesst das Panel
 panel_ok=1
 offen() { "$qs" -p "$cfg" ipc call shell current 2>/dev/null; }
@@ -159,6 +175,8 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target shell'; then
     if [ "$(offen)" = panel ]; then echo "  ok: Panel offen"; else echo "  FEHLER: Panel nicht offen ($(offen))"; panel_ok=0; fi
     ipc dashboard toggle; sleep 2; bild panel-dann-dashboard
     if [ "$(offen)" = dashboard ]; then echo "  ok: Dashboard geöffnet, Panel geschlossen"; else echo "  FEHLER: offen ist \"$(offen)\""; panel_ok=0; fi
+    ipc launcher open; sleep 1
+    if [ "$(offen)" = launcher ]; then echo "  ok: Starter schliesst das Dashboard"; else echo "  FEHLER: offen ist \"$(offen)\""; panel_ok=0; fi
     ipc settings open home; sleep 1
     if [ "$(offen)" = settings ]; then echo "  ok: Einstellungs-App schliesst das Dashboard"; else echo "  FEHLER: offen ist \"$(offen)\""; panel_ok=0; fi
     ipc shell close; sleep 1
@@ -255,6 +273,7 @@ bereich dashboard-dashboard dashboard-avatar "Profilbild im Dashboard"
 bereich dashboard-wallpaper wallpaper-card "erste Wallpaper-Karte"
 bereich panel panel-avatar "Profilbild im Panel"
 bereich panel app-icon "erstes App-Symbol im Panel"
+bereich launcher launcher-first "erstes App-Symbol im Starter"
 
 # ohne ~/.face: Anfangsbuchstabe statt Bild
 if [ -n "$im" ]; then
@@ -297,6 +316,7 @@ echo "------------------------"
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 [ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
+[ "$starter_ok" -eq 1 ] || { echo "FEHLER: Starter (siehe oben)"; exit 1; }
 [ "$panel_ok" -eq 1 ] || { echo "FEHLER: mehr als ein Panel offen (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then
     echo "FEHLER: Quickshell ist abgestürzt"

@@ -12,6 +12,7 @@ import "clipboard"
 import "overview"
 import "cheatsheet"
 import "missa"
+import "dock"
 import "common"
 
 // hypr-shell: Quickshell-Oberfläche (gestartet von ~/.local/bin/shell-quickshell, das das
@@ -32,4 +33,6 @@ ShellRoot {
     // Missa nur, wenn missa.enabled an ist (sonst kein Panel, kein IPC-Ziel, keine Netzanfrage)
     LazyLoader { active: Integrations.missa; MissaChat { } }
     LazyLoader { active: Integrations.missaAgent; MissaAgent { } }
+    // Dock: aus (dock.enabled = false) heisst kein Fenster und keine Abfrage
+    LazyLoader { active: Settings.get("dock.enabled", true) === true; Dock { } }
 }

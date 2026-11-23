@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Hilfsbefehle für das Dock (nur auf Anfrage, nie im Takt).
+#   shell-dock exists <ordner>…   welche Ordner es gibt: {"~/Downloads": true, …}
+#   shell-dock trash              Papierkorb: {"available": true, "full": false}
+#   shell-dock open <ordner>      Ordner im Dateimanager öffnen
+#   shell-dock open-trash         Papierkorb im Dateimanager öffnen
+set -euo pipefail
+
+TRASH="${XDG_DATA_HOME:-$HOME/.local/share}/Trash"
+EFF="$HOME/.local/share/hypr-shell/settings.effective.json"
+
+hat() { command -v "$1" >/dev/null 2>&1; }
+# shellcheck disable=SC2088  # "~" ist hier Text aus den Einstellungen
+pfad() { case "$1" in "~") printf '%s\n' "$HOME" ;; "~/"*) printf '%s\n' "$HOME/${1#"~/"}" ;; *) printf '%s\n' "$1" ;; esac; }
+
+dateimanager() {
+    local f=""
+    if hat jq && [ -f "$EFF" ]; then f="$(jq -r '.apps.files // empty' "$EFF" 2>/dev/null || true)"; fi
+    printf '%s\n' "${f:-nautilus}"
+}
+
+oeffnen() { # ziel (Pfad oder trash:///)
+    local fm
+    fm="$(dateimanager)"
+    if hat "${fm%% *}"; then
+        # shellcheck disable=SC2086
+        setsid -f $fm "$1" >/dev/null 2>&1
+    elif hat gio; then
+        setsid -f gio open "$1" >/dev/null 2>&1
+    else
+        setsid -f xdg-open "$1" >/dev/null 2>&1
+    fi
+}
+
+case "${1:-}" in
+    exists)
+        shift
+        out="{" sep=""
+        for p in "$@"; do
+            if [ -d "$(pfad "$p")" ]; then v=true; else v=false; fi
+            out+="$sep$(jq -n --arg p "$p" '$p'): $v"; sep=", "
+        done
+        printf '%s}\n' "$out" ;;
+    trash)
+        da=false voll=false
+        if hat gio || hat "$(dateimanager | cut -d' ' -f1)"; then da=true; fi
+        if [ -d "$TRASH/files" ] && [ -n "$(ls -A "$TRASH/files" 2>/dev/null)" ]; then voll=true; fi
+        printf '{"available": %s, "full": %s}\n' "$da" "$voll" ;;
+    open) [ -n "${2:-}" ] || exit 2; oeffnen "$(pfad "$2")" ;;
+    open-trash) oeffnen "trash:///" ;;
+    *) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

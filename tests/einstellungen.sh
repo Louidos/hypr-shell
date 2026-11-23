@@ -33,7 +33,7 @@ fehlend="$(jq -r '.keys[] | select((.key and .type and has("default") and .title
 pruefe '[ -z "$fehlend" ]' "jeder Schlüssel hat Typ, Standard, Titel, Erklärung, Seite und Abschnitt ($fehlend)"
 seiten="$(jq -r '[.pages[].id] as $p | .keys[] | select(.page as $x | $p | index([$x]) | not) | .key' $SCHEMA)"
 pruefe '[ -z "$seiten" ]' "jede Seite gibt es in pages ($seiten)"
-pruefe '[ "$(jq -r "[.pages[].id] | join(\",\")" $SCHEMA)" = "home,bar,look,theme,desktop,dashboard,panel,system,laptop,integrations,lock,input,monitors,apps,keybinds,about" ]' "Seiten in der Reihenfolge der App"
+pruefe '[ "$(jq -r "[.pages[].id] | join(\",\")" $SCHEMA)" = "home,bar,look,theme,desktop,dashboard,panel,dock,system,laptop,integrations,lock,input,monitors,apps,keybinds,about" ]' "Seiten in der Reihenfolge der App"
 doppelt="$(jq -r '[.keys[].key] as $k | $k[] as $a | $k[] | select(startswith($a + ".")) | "\($a) < \(.)"' $SCHEMA)"
 pruefe '[ -z "$doppelt" ]' "kein Schlüssel ist Teil eines anderen ($doppelt)"
 pruefe '[ "$(jq "[.keys[].key] | length" $SCHEMA)" = "$(jq "[.keys[].key] | unique | length" $SCHEMA)" ]' "keine doppelten Schlüssel"

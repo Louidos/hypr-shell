@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Hinzugefügt
+- Schwebendes Dock in der Mitte unten mit angehefteten und laufenden Programmen; Klick startet oder holt das Fenster nach vorn, abschaltbar mit `dock.enabled` (#77)
+
 ### Behoben
 - Ein leerer Name oder einer mit Anführungszeichen für das Symbolthema wird wieder abgelehnt (die Prüfung war beim Zusammenführen verloren gegangen) (#100)
 

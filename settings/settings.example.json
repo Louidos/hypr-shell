@@ -222,7 +222,11 @@
     "url": "",
     "folder": "~/Missa",
     "agent_enabled": false,
-    "voice_enabled": false
+    "voice_enabled": false,
+    "voice_language": "de",
+    "voice_model": "~/.local/share/hypr-shell/whisper/ggml-base.bin",
+    "voice_voice": "~/.local/share/hypr-shell/piper/de_DE-thorsten-medium.onnx",
+    "voice_speed": 1.0
   },
   "lab": {
     "enabled": false
@@ -267,6 +271,7 @@
     "overview": "SUPER + Tab",
     "cheatsheet": "SUPER + F1",
     "missa_chat": "SUPER + I",
+    "missa_voice": "SUPER + SHIFT + I",
     "lock": "SUPER + L",
     "exit": "SUPER + M",
     "screenshot_region": "Print",

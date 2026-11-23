@@ -18,6 +18,60 @@ Scope {
     property var inbox: []               // Dateien in ~/Missa/Eingang (neueste zuerst)
     property bool voice: false           // Antwort zum Vorlesen (vom Sprechen mit Missa)
     signal answered(string text)
+
+    // ---- mit Missa sprechen (missa.voice_enabled): Aufnahme → whisper.cpp → Chat → piper
+    property string voiceState: ""       // "", "listening", "thinking", "speaking"
+    property int level: 0
+    property var voiceAvail: ({ ok: false, speak: false })
+    readonly property bool voiceOn: Integrations.missaVoice && voiceAvail.ok === true
+    function voiceToggle() {
+        if (!Integrations.missaVoice) return
+        if (voiceState === "listening" || voiceState === "speaking") { voiceStop(); return }
+        if (voiceState !== "" || !voiceAvail.ok) return
+        voiceState = "listening"
+        level = 0
+        listenProc.running = true
+    }
+    function voiceStop() {
+        Quickshell.execDetached([Settings.bin + "shell-voice", "stop"])
+        if (voiceState === "speaking") { speakProc.running = false; voiceState = "" }
+    }
+    // Markdown fürs Vorlesen entfernen
+    function plain(t) { return String(t).replace(/[*_`#>]/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") }
+    onAnswered: text => {
+        if (!voice || !voiceAvail.speak) { if (voiceState === "thinking") voiceState = ""; return }
+        voiceState = "speaking"
+        speakProc.text = plain(text)
+        speakProc.running = true
+    }
+    onBusyChanged: if (!busy && voiceState === "thinking" && last && last.role === "error") voiceState = ""
+    Process {
+        id: availProc
+        command: [Settings.bin + "shell-voice", "available"]
+        running: Integrations.missaVoice
+        stdout: StdioCollector { onStreamFinished: { try { mc.voiceAvail = JSON.parse(text) } catch (e) { } } }
+    }
+    Process {
+        id: listenProc
+        command: [Settings.bin + "shell-voice", "listen"]
+        stdout: SplitParser {
+            onRead: line => {
+                if (line.indexOf("L ") === 0) mc.level = parseInt(line.slice(2)) || 0
+                else if (line === "S") mc.voiceState = "thinking"
+                else if (line.indexOf("R ") === 0) { try { mc.voiceState = "thinking"; mc.send(JSON.parse(line.slice(2)), true) } catch (e) { mc.voiceState = "" } }
+                else if (line.indexOf("E ") === 0) mc.voiceState = ""
+            }
+        }
+        onExited: if (mc.voiceState === "listening") mc.voiceState = ""
+    }
+    Process {
+        id: speakProc
+        property string text: ""
+        command: [Settings.bin + "shell-voice", "speak"]
+        stdinEnabled: true
+        onStarted: { write(text + "\n"); stdinEnabled = false }
+        onExited: { stdinEnabled = true; if (mc.voiceState === "speaking") mc.voiceState = "" }
+    }
     readonly property var last: messages.length > 0 ? messages[messages.length - 1] : null
     // Rückfrage: letzte Antwort endet mit einem Fragezeichen
     readonly property bool asking: !busy && last !== null && last.role === "assistant" && /\?\s*[*_]*\s*$/.test(last.text)
@@ -127,6 +181,8 @@ Scope {
         function busy(): bool { return mc.busy }
         function asking(): bool { return mc.asking }
         function status(): string { return mc.health.state }
+        function voice(): void { mc.voiceToggle() }
+        function voiceState(): string { return mc.voiceState }
     }
 
     Overlay {
@@ -143,6 +199,7 @@ Scope {
             Item {
                 id: root
                 focus: true
+                Keys.onEscapePressed: event => { if (mc.voiceState === "speaking") { mc.voiceStop(); event.accepted = true } else event.accepted = false }
 
                 // ---- Kopf
                 Item {
@@ -287,7 +344,7 @@ Scope {
                         border.color: drop.containsDrag ? Theme.text : Theme.cardBorder
                         Flickable {
                             id: inFlick
-                            anchors { left: parent.left; leftMargin: 16; right: sendBtn.left; rightMargin: 8; top: parent.top; topMargin: 12; bottom: parent.bottom; bottomMargin: 12 }
+                            anchors { left: parent.left; leftMargin: 16; right: mc.voiceOn ? micBtn.left : sendBtn.left; rightMargin: 8; top: parent.top; topMargin: 12; bottom: parent.bottom; bottomMargin: 12 }
                             contentHeight: input.contentHeight
                             clip: true
                             TextEdit {
@@ -304,6 +361,14 @@ Scope {
                                 }
                                 Txt { visible: input.text.length === 0; text: "Write to Missa (drop files here)"; size: 13; sub: true }
                             }
+                        }
+                        IconButton {
+                            id: micBtn
+                            visible: mc.voiceOn
+                            anchors { right: sendBtn.left; rightMargin: 4; bottom: parent.bottom; bottomMargin: 7 }
+                            active: mc.voiceState === "listening"
+                            icon: "󰍬"
+                            onClicked: mc.voiceToggle()
                         }
                         IconButton {
                             id: sendBtn
@@ -323,6 +388,60 @@ Scope {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // ---- Anzeige beim Sprechen: unten in der Mitte, Pegel und "Listening", "Thinking", "Speaking".
+    // Ein Klick (oder Esc, wenn sie den Fokus hat) beendet Aufnahme bzw. Vorlesen.
+    Overlay {
+        id: voiceOv
+        name: "missa-voice"
+        exclusive: false
+        ipc: false
+        place: "bottom"
+        margin: 72
+        panelWidth: 280
+        panelHeight: 52
+        radius: 26
+        localOpen: mc.voiceState !== ""
+        layer: WlrLayer.Overlay
+        keyboardFocus: WlrKeyboardFocus.OnDemand
+        closeOnOutside: false
+        content: Component {
+            Item {
+                focus: true
+                Keys.onEscapePressed: mc.voiceStop()
+                Glyph {
+                    id: vIcon
+                    anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+                    text: mc.voiceState === "speaking" ? "󰕾" : mc.voiceState === "thinking" ? "󰚩" : "󰍬"
+                    size: 18
+                    color: mc.voiceState === "listening" ? Theme.warn : Theme.text
+                }
+                Txt {
+                    id: vText
+                    anchors { left: vIcon.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                    text: mc.voiceState === "listening" ? "Listening" : mc.voiceState === "thinking" ? "Thinking …" : "Speaking"
+                    size: 13
+                    weight: Font.DemiBold
+                }
+                Rectangle {
+                    visible: mc.voiceState === "listening"
+                    anchors { left: vText.right; leftMargin: 14; right: parent.right; rightMargin: 20; verticalCenter: parent.verticalCenter }
+                    height: 6
+                    radius: 3
+                    color: Theme.track
+                    Rectangle {
+                        width: parent.width * Math.min(100, mc.level) / 100
+                        height: parent.height
+                        radius: 3
+                        color: Theme.pill
+                        Behavior on width { NumberAnimation { duration: 100 } }
+                    }
+                }
+                TapHandler { onTapped: mc.voiceStop() }
+                Probe { name: "missa-voice" }
             }
         }
     }

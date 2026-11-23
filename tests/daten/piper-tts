@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Attrappe von piper-tts: merkt sich jeden Satz und gibt ein paar Bytes "Audio" aus
+satz="$(cat)"
+echo "$satz | $*" >> "${PIPER_LOG:-/dev/null}"
+printf 'audio'

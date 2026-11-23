@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Attrappe von rec (sox): schreibt eine kleine WAV-Datei und zeigt den Pegel wie "rec -S"
+out=""; for a in "$@"; do case "$a" in *.wav) out="$a" ;; esac; done
+for b in "[ -=|=- ]" "[ ===|=== ]" "[=====|=====]" "[ ==|== ]"; do printf 'In:12%% 00:00:01 [00:00:00] Out:8k %s Hd:0.0 Clip:0\r' "$b" >&2; sleep 0.2; done
+printf 'RIFFfakeWAVEdata' > "$out"

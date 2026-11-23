@@ -1,0 +1,8 @@
+{
+  "_name": "compact",
+  "_description": "Tight: 40 px, spacing 4, radius 14, no names",
+  "dock.icon_size": 40,
+  "dock.spacing": 4,
+  "dock.radius": 14,
+  "dock.labels": "never"
+}

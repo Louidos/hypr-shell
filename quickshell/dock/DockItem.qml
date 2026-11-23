@@ -86,6 +86,8 @@ Item {
             icon: di.item && di.item.icon ? String(di.item.icon) : ""
             size: di.size * dock.magnifyFactor
             visible: di.kind !== "window" || ready
+            layer.enabled: dock.iconEffect !== null
+            layer.effect: dock.iconEffect
         }
         // Fenster ohne Desktop-Eintrag und ohne Symbol: Anfangsbuchstabe des Titels
         Rectangle {

@@ -20,4 +20,9 @@ fi
 sed 's/^qml: //' "$T/log"
 if grep -qE "FEHLER|Error|error:|TypeError|ReferenceError" "$T/log"; then echo "FEHLER: monitore.js"; exit 1; fi
 # ohne eine einzige Prüfung (z. B. Ausgabe verschluckt) gilt der Test nicht als bestanden
-grep -q "ok:" "$T/log" || { echo "FEHLER: monitore.js – keine Ausgabe vom qml-Werkzeug"; exit 1; }
+if ! grep -q "ok:" "$T/log"; then
+    echo "FEHLER: monitore.js – keine Ausgabe vom qml-Werkzeug ($qml)"
+    "$qml" --version 2>&1 | head -n 3
+    timeout 20 "$qml" -verbose tests/daten/monitore-test.qml 2>&1 | head -n 20; echo "Rückgabe: $?"
+    exit 1
+fi

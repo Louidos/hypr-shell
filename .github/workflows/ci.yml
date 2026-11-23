@@ -24,7 +24,7 @@ jobs:
       contents: write
     steps:
       - name: Grundpakete
-        run: pacman -Syu --noconfirm --needed git sudo jq which imagemagick lua curl sway swaybg grim quickshell hyprlock awww matugen waybar inter-font ttf-jetbrains-mono-nerd noto-fonts papirus-icon-theme
+        run: pacman -Syu --noconfirm --needed git sudo jq which imagemagick lua curl sway swaybg grim quickshell hyprlock awww matugen waybar inter-font ttf-jetbrains-mono-nerd noto-fonts papirus-icon-theme hyprland
       - uses: actions/checkout@v4
       - name: Testbenutzer anlegen
         run: |

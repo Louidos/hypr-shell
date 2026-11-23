@@ -36,5 +36,7 @@ Rectangle {
         Txt { visible: inp.text.length === 0 && !inp.activeFocus; text: f.placeholder; sub: true; size: 13 }
     }
     // neuer Wert von aussen (z. B. nach Undo): Feld nachführen, solange man nicht tippt
-    onTextChanged: if (!inp.activeFocus) inp.text = text
+    onTextChanged: if (!inp.activeFocus) { inp.text = text; inp.cursorPosition = 0 }
+    // lange Texte (Pfade) vom Anfang her zeigen
+    Component.onCompleted: inp.cursorPosition = 0
 }

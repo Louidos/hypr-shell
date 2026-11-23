@@ -170,7 +170,7 @@
     "terminal": "kitty",
     "files": "nautilus",
     "browser": "firefox",
-    "launcher": "rofi -show drun"
+    "launcher": "builtin"
   },
   "keybinds": {
     "terminal": "SUPER + Q",
@@ -178,6 +178,7 @@
     "browser": "",
     "launcher": "SUPER + R",
     "launcher_alt": "ALT + Space",
+    "launcher_space": "SUPER + Space",
     "close": "SUPER + C",
     "float": "SUPER + V",
     "focus_left": "SUPER + left",

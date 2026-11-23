@@ -260,7 +260,8 @@ erzeuge_waybar() { # eff
       "modules-left": mods($e.bar.modules.left),
       "modules-center": mods($e.bar.modules.center),
       "modules-right": mods($e.bar.modules.right),
-      "custom/distro": {exec: "$HOME/.local/bin/shell-distro icon", interval: "once", tooltip: false, "on-click": $e.apps.launcher},
+      "custom/distro": {exec: "$HOME/.local/bin/shell-distro icon", interval: "once", tooltip: false,
+                        "on-click": (if $e.apps.launcher == "builtin" then "$HOME/.local/bin/shell-quickshell ipc launcher toggle" else $e.apps.launcher end)},
       "hyprland/workspaces": ({format: "{name}"}
         + (if $e.bar.workspaces > 0 then {"persistent-workspaces": {"*": [range(1; $e.bar.workspaces + 1)]}} else {} end)
         + {"on-scroll-up": "hyprctl dispatch '"'"'hl.dsp.focus({ workspace = \"e-1\" })'"'"'",

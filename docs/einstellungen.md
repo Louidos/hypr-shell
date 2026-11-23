@@ -150,7 +150,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `apps.terminal` | `kitty` | Text (Format geprüft) | Command for the terminal | `shell-set apps.terminal foot` |
 | `apps.files` | `nautilus` | Text (Format geprüft) | Command for the file manager | `shell-set apps.files thunar` |
 | `apps.browser` | `firefox` | Text (Format geprüft) | Command for the web browser | `shell-set apps.browser chromium` |
-| `apps.launcher` | `rofi -show drun` | Text (Format geprüft) | Command for the app launcher | `shell-set apps.launcher "fuzzel"` |
+| `apps.launcher` | `builtin` | Text (Format geprüft) | builtin = the glass launcher of hypr-shell (with calculator), or an own command such as rofi -show drun | `shell-set apps.launcher "fuzzel"` |
 
 ## keybinds – Tastenkürzel
 
@@ -161,6 +161,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.browser` | `""` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the browser (apps.browser); empty = no key | `shell-set keybinds.browser "SUPER + B"` |
 | `keybinds.launcher` | `SUPER + R` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the app launcher (apps.launcher) | `shell-set keybinds.launcher "SUPER + B"` |
 | `keybinds.launcher_alt` | `ALT + Space` | Tasten wie `SUPER + Q`, leer = keine Taste | Another key for the app launcher | `shell-set keybinds.launcher_alt "SUPER + B"` |
+| `keybinds.launcher_space` | `SUPER + Space` | Tasten wie `SUPER + Q`, leer = keine Taste | Third shortcut for the launcher | `shell-set keybinds.launcher_space "SUPER + B"` |
 | `keybinds.close` | `SUPER + C` | Tasten wie `SUPER + Q`, leer = keine Taste | Close the focused window | `shell-set keybinds.close "SUPER + B"` |
 | `keybinds.float` | `SUPER + V` | Tasten wie `SUPER + Q`, leer = keine Taste | Switch the focused window between floating and tiled | `shell-set keybinds.float "SUPER + B"` |
 | `keybinds.focus_left` | `SUPER + left` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the left | `shell-set keybinds.focus_left "SUPER + B"` |

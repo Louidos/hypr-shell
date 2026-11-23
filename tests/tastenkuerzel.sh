@@ -50,6 +50,7 @@ SUPER + L
 SUPER + M
 SUPER + Q
 SUPER + R
+SUPER + Space
 SUPER + U
 SUPER + V
 SUPER + W
@@ -80,6 +81,9 @@ pruefe '[ "$std" = "$erwartet" ]' "genau die bisherigen $(wc -l <<<"$erwartet") 
 [ "$std" = "$erwartet" ] || diff <(echo "$erwartet") <(echo "$std") | head
 pruefe '[ "$(binds "{\"weather\": {\"location\": \"Bern\"}}" | cut -f1)" = "$erwartet" ]' "settings.json ohne keybinds (v1.1): gleiche Kürzel"
 pruefe 'binds "{}" | grep -qx "SUPER + Q	exec_cmd kitty"' "SUPER + Q startet das Terminal"
+pruefe 'binds "{}" | grep -qx "SUPER + R	exec_cmd $T/h[0-9]*/.local/bin/shell-quickshell ipc launcher toggle" || binds "{}" | grep -q "^SUPER + R	exec_cmd .*shell-quickshell ipc launcher toggle$"' "SUPER + R öffnet den eingebauten Starter"
+pruefe 'binds "{}" | grep -q "^SUPER + Space	exec_cmd .*shell-quickshell ipc launcher toggle$"' "SUPER + Space öffnet den Starter"
+pruefe 'binds "{\"apps\": {\"launcher\": \"rofi -show drun\"}}" | grep -qx "SUPER + R	exec_cmd rofi -show drun"' "mit eigenem Befehl startet wieder rofi"
 
 echo "== ändern, leeren, eigene"
 b="$(binds '{"keybinds": {"terminal": "SUPER + T", "lock": "", "browser": "SUPER + B", "custom": [{"keys": "SUPER + SHIFT + Return", "command": "kitty -e htop"}]}}')"

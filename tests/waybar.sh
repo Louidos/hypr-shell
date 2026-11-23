@@ -38,6 +38,19 @@ for c in $(grep -oE '@[a-z_]+' config/waybar/style.css | grep -vE '@(import|keyf
     pruefe 'grep -q "@define-color $c " config/waybar/colors.css && grep -q "@define-color $c " config/matugen/templates/colors.css' "Farbe @$c definiert"
 done
 
+# Schrift passt in die Leiste: niedrige Leiste mit grosser Schrift → kleinere Schrift, Standard unverändert
+T="$(mktemp -d)"
+trap 'rm -rf "$T"' EXIT
+schrift() {
+    local h="$T/h$1"
+    mkdir -p "$h/.config/hypr-shell"
+    printf '{"bar": {"height": %s}, "theme": {"font": {"scale": %s}}}\n' "$1" "$2" > "$h/.config/hypr-shell/settings.json"
+    HOME="$h" KEINE_MELDUNG=1 bin/shell-apply --no-reload >/dev/null 2>&1
+    grep -m1 -oE 'font-size: [0-9]+px' "$h/.config/waybar/style.css" | grep -oE '[0-9]+'
+}
+pruefe '[ "$(schrift 30 1.0)" = 13 ] && [ "$(schrift 40 1.5)" = 20 ]' "Schrift der Leiste: Standard 13 px, mit Faktor 1.5 bei 40 px Höhe 20 px"
+pruefe '[ "$(schrift 20 1.5)" -le 11 ] && [ "$(schrift 24 1.0)" -le 13 ]' "niedrige Leiste (20 px, Faktor 1.5): Schrift höchstens 11 px statt 20 px"
+
 # Statusskripte geben gültiges JSON aus
 pruefe 'bin/shell-recording status | jq -e .text >/dev/null' "shell-recording liefert JSON"
 

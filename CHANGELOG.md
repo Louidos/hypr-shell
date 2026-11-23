@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.9.1 – 2026-11-23
+
 ### Behoben
 - Ist ein Konfigurationsordner ein Link auf einen schreibgeschützten Dotfiles-Ordner, ist die Kopie, die die Installation daraus macht, jetzt beschreibbar; vorher konnte die Installation nicht hineinschreiben (#132)
 

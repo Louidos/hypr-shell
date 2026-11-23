@@ -469,6 +469,7 @@ if command -v python3 >/dev/null 2>&1; then
         else echo "  FEHLER: Abbrechen"; missa_ok=0; fi
         ipc missa close; sleep 1
         ipc dashboard open dashboard; sleep 3; bild dashboard-missa; ipc dashboard close; sleep 1
+        missa_vorher="$("$qs" -p "$cfg" ipc call missa lastText 2>/dev/null)"
     else
         echo "  FEHLER: Missa eingeschaltet, aber kein Panel"; missa_ok=0
     fi
@@ -495,7 +496,7 @@ if [ -n "$im" ]; then
     bereich panel-ohne-face panel-avatar "Anfangsbuchstabe ohne ~/.face"
     # nach dem Neustart (wie nach einer Neuanmeldung) läuft dieselbe Missa-Sitzung weiter
     if [ -f "$T/missa.log" ]; then
-        if "$qs" -p "$cfg" ipc call missa lastText 2>/dev/null | grep -q "cancelled" \
+        if [ -n "${missa_vorher:-}" ] && [ "$("$qs" -p "$cfg" ipc call missa lastText 2>/dev/null)" = "$missa_vorher" ] \
             && [ "$(jq -r 'select(.session) | .session' "$T/missa.log" | sort -u | wc -l)" = 1 ]; then
             echo "  ok: nach dem Neustart: gleicher Verlauf und dieselbe Sitzung ($(jq -r 'select(.session) | .session' "$T/missa.log" | head -n1))"
         else echo "  FEHLER: Missa-Sitzung nach dem Neustart"; missa_ok=0; fi

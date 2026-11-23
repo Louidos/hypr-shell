@@ -145,6 +145,37 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `panel.apps` | `["kitty","org.gnome.Nautilus","firefox","spotify","discord","steam"]` | Liste von Texten | Apps in the grid (name of the .desktop file); missing ones are skipped | `shell-set panel.apps kitty,org.gnome.Nautilus,firefox,spotify,discord,steam,code` |
 | `panel.toggles` | `["wifi","bluetooth","audio","dnd","gaming","profile","nightlight","settings"]` | Liste aus `wifi`, `bluetooth`, `audio`, `dnd`, `gaming`, `awake`, `profile`, `nightlight`, `settings` | Quick toggles in the panel, in this order (toggles the computer cannot use are hidden) | `shell-set panel.toggles wifi,bluetooth` |
 
+## dock – dock
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `dock.enabled` | `true` | `true`, `false` | Floating dock with pinned and running apps at the edge of the screen; off = no dock window at all | `shell-set dock.enabled false` |
+| `dock.position` | `bottom` | `bottom`, `left`, `right`, `top` | Screen edge of the dock | `shell-set dock.position left` |
+| `dock.monitor` | `all` | Text (Format geprüft) | all = every screen, primary = the first screen, or the name of a screen (e.g. eDP-1) | `shell-set dock.monitor all` |
+| `dock.running_per_monitor` | `false` | `true`, `false` | Each dock shows only the running apps with a window on its own screen | `shell-set dock.running_per_monitor true` |
+| `dock.mode` | `floating` | `floating`, `reserve` | floating = windows can go below the dock, reserve = windows keep clear of it | `shell-set dock.mode reserve` |
+| `dock.layer` | `top` | `top`, `bottom` | top = above windows, bottom = below windows | `shell-set dock.layer bottom` |
+| `dock.margin` | `10` | ganze Zahl 0 … 100 px | Gap between the dock and the screen edge | `shell-set dock.margin 11` |
+| `dock.icon_size` | `48` | ganze Zahl 16 … 128 px | Size of the app icons | `shell-set dock.icon_size 49` |
+| `dock.icon_min_size` | `24` | ganze Zahl 16 … 64 px | Icons shrink down to this size when the dock gets full; after that it scrolls | `shell-set dock.icon_min_size 25` |
+| `dock.padding` | `8` | ganze Zahl 0 … 40 px | Space between the glass edge and the icons | `shell-set dock.padding 9` |
+| `dock.spacing` | `6` | ganze Zahl 0 … 40 px | Space between two icons | `shell-set dock.spacing 7` |
+| `dock.radius` | `22` | ganze Zahl 0 … 100 px | Rounding of the glass; at most half the dock height (larger values give a pill) | `shell-set dock.radius 23` |
+| `dock.max_length` | `90` | ganze Zahl 20 … 100 % | Longest the dock may get, relative to the screen edge | `shell-set dock.max_length 91` |
+| `dock.glass_opacity` | `-1` | Zahl -1 … 1, Schritt 0.01 | Opacity of the glass; -1 = same as the panels (Theme → Glass opacity) | `shell-set dock.glass_opacity -0.99` |
+| `dock.blur` | `true` | `true`, `false` | Blur behind the dock glass | `shell-set dock.blur false` |
+| `dock.border_width` | `1` | ganze Zahl 0 … 6 px | Width of the glass border | `shell-set dock.border_width 2` |
+| `dock.border_color` | `auto` | Text (Format geprüft) | auto = like the panels, or a color like #8ab4f8 | `shell-set dock.border_color auto` |
+| `dock.shadow` | `medium` | `none`, `soft`, `medium`, `strong` | Shadow below the dock | `shell-set dock.shadow none` |
+| `dock.color_mode` | `wallpaper` | `wallpaper`, `dark`, `light`, `custom` | wallpaper = tinted like the wallpaper colors, dark, light, or custom (your own color) | `shell-set dock.color_mode dark` |
+| `dock.custom_color` | `#1e1e2e` | Farbe `#rrggbb` | Glass color for the color mode custom | `shell-set dock.custom_color "#a6e3a1"` |
+| `dock.labels` | `hover` | `never`, `hover`, `always` | never, when the mouse is on an icon (hover), or always | `shell-set dock.labels never` |
+| `dock.indicator` | `dot` | `dot`, `line`, `none` | Dot or line below running apps (two for several windows), or none | `shell-set dock.indicator line` |
+| `dock.indicator_color` | `auto` | Text (Format geprüft) | auto = accent color of the wallpaper, or a color like #8ab4f8 | `shell-set dock.indicator_color auto` |
+| `dock.show_running` | `true` | `true`, `false` | Also show running apps that are not pinned | `shell-set dock.show_running false` |
+| `dock.trash` | `true` | `true`, `false` | Show the trash entry from the item list | `shell-set dock.trash false` |
+| `dock.items` | `[{"type":"app","desktop_id":"org.gnome.Nautilus","path":""},{"type":"app","desktop_id":"kitty","path":""},{"type":"app","desktop_id":"firefox","path":""},{"type":"separator","desktop_id":"","path":""},{"type":"folder","desktop_id":"","path":"~/Downloads"},{"type":"separator","desktop_id":"","path":""},{"type":"trash","desktop_id":"","path":""}]` | Liste von Einträgen mit `type`, `desktop_id`, `path` | Pinned apps, folders, separators, trash and launcher button in this order | `shell-set dock.items '[]'` |
+
 ## lock – Sperren und Standby
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |

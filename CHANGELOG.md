@@ -7,6 +7,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ## Unveröffentlicht
 
 ### Hinzugefügt
+- Schwebendes Dock in der Mitte unten mit angehefteten und laufenden Programmen; Klick startet oder holt das Fenster nach vorn, abschaltbar mit `dock.enabled` (#77)
 - Passender Login-Bildschirm (SDDM) im Stil des Sperrbildschirms, installierbar mit `./install.sh --login-theme`, zurück mit `--login-theme-remove`; ohne SDDM wird nichts geändert (#71)
 - Dateimanager und weitere Programme übernehmen die Farben des Hintergrundbilds: GTK und Qt standardmässig, Firefox, Discord (Vesktop) und Spotify (spicetify) einzeln einschaltbar, wenn installiert; Abschalten legt die gesicherten Dateien zurück (#70)
 

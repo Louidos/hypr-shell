@@ -253,6 +253,13 @@ Ton-Symbol in der Leiste öffnet direkt die passende Unterseite (Rechtsklick auf
 
 ![Panel](docs/screenshots/panel.png)
 
+### Dock
+
+Ein schwebendes Glas-Dock mittig unten mit angehefteten und laufenden Programmen: Klick startet
+oder holt das Fenster nach vorn, Punkte zeigen laufende Programme. Abschaltbar mit
+`shell-set dock.enabled false`. Alle Werte und die Zuordnung der Symbole stehen in
+[docs/dock.md](docs/dock.md).
+
 ### Sperrbildschirm
 
 Bildschirm unscharf und abgedunkelt, links Profilbild über der grossen Uhr, Datum,
@@ -456,7 +463,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `sddm/` | Anmeldebildschirm (SDDM-Thema), nur mit `./install.sh --login-theme` |
 | `settings/` | `schema.json` (Beschreibung aller Werte) und `settings.example.json` (Standardwerte) |
 | `tests/` | Prüfskripte (`tests/lint.sh`, `tests/probeinstallation.sh`, …) |
-| `docs/` | Doku: [einstellungen.md](docs/einstellungen.md) (alle Werte, aus dem Schema erzeugt), [anbindungen.md](docs/anbindungen.md), [abnahme.md](docs/abnahme.md), Screenshots |
+| `docs/` | Doku: [einstellungen.md](docs/einstellungen.md) (alle Werte, aus dem Schema erzeugt), [anbindungen.md](docs/anbindungen.md), [dock.md](docs/dock.md), [abnahme.md](docs/abnahme.md), Screenshots |
 
 Die Screenshots stammen aus dem Oberflächentest der CI (unsichtbarer Compositor,
 Software-Rendering): Sie zeigen Aufbau und Masse, aber **ohne Blur**. Ohne Grafikkarte

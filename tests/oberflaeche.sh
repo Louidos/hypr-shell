@@ -69,6 +69,9 @@ for app in kitty:Kitty:kitty firefox:Firefox:firefox org.gnome.Nautilus:Files:or
     printf '[Desktop Entry]\nType=Application\nName=%s\nExec=true\nIcon=%s\n' "$name" "$icon" \
         > "$HOME/.local/share/applications/$id.desktop"
 done
+# Dock: Testdaten für die Zuordnung Fenster → Programm (kitty, Firefox, Flatpak, Steam-Spiel, StartupWMClass)
+cp "$REPO"/tests/fixtures/dock/applications/*.desktop "$HOME/.local/share/applications/"
+mkdir -p "$HOME/Downloads"
 
 cat > "$T/sway.conf" <<CONF
 output HEADLESS-1 resolution 1920x1080 position 0 0
@@ -366,7 +369,7 @@ warte_auf() { # jq-ausdruck erwartet [versuche à 0.25 s]
 test_ipc() { [ "$("$qs" -p "$cfg" ipc call test "$@" 2>/dev/null)" = true ]; }
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     echo "---- Einstellungs-App ----"
-    for seite in home bar look theme desktop dashboard panel system integrations laptop lock input monitors apps keybinds about; do
+    for seite in home bar look theme desktop dashboard panel dock system integrations laptop lock input monitors apps keybinds about; do
         ipc settings open "$seite"; sleep 2; bild "settings-$seite"
     done
     for q in blur clock battery; do
@@ -553,6 +556,76 @@ if [ -n "$im" ]; then
     fi
 fi
 
+# ---- Dock
+echo "---- Dock ----"
+dock_ok=1
+dk() { "$qs" -p "$cfg" ipc call dock "$@" 2>/dev/null; }
+vergleich() { if command -v magick >/dev/null 2>&1; then magick compare "$@"; else compare "$@"; fi; }
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
+    if [ "$(dk count)" = 1 ] && [ "$(dk visible)" = true ]; then echo "  ok: genau ein Dock auf dem Bildschirm"
+    else echo "  FEHLER: Dock-Fenster: $(dk count)"; dock_ok=0; fi
+    g="$(dk geometry)"
+    echo "  Lage: $g"
+    if jq -e '(.x - ((.windowWidth - .width) / 2) | fabs) <= 1 and (.windowHeight - .y - .height) == 10 and .radius == 22 and .icon == 48' <<<"$g" >/dev/null 2>&1; then
+        echo "  ok: mittig unten, 10 px vom Rand, Rundung 22, Symbole 48 px"
+    else echo "  FEHLER: Lage oder Masse des Docks"; dock_ok=0; fi
+    for _ in $(seq 1 20); do [[ "$(dk items)" == *folder:* ]] && break; sleep 0.3; done
+    l="$(dk items)"
+    echo "  Einträge: $l"
+    if [[ "$l" == app:org.gnome.Nautilus,app:kitty,app:firefox,separator,folder:~/Downloads* ]]; then echo "  ok: Standardliste (Dateimanager, Terminal, Browser, Trenner, Downloads …)"
+    else echo "  FEHLER: Standardliste"; dock_ok=0; fi
+    for paar in kitty:kitty firefox:firefox org.example.FlatNotes:org.example.FlatNotes jetbrains-idea:idea "steam_app_570:Dota 2" unbekannt-xyz:; do
+        a="${paar%%:*}" e="${paar#*:}"
+        r="$(dk resolve "$a")"
+        if [ "$r" = "$e" ]; then echo "  ok: Zuordnung $a → ${e:-(eigenes Symbol)}"
+        else echo "  FEHLER: Zuordnung $a → \"$r\" statt \"$e\""; dock_ok=0; fi
+    done
+    # ein echtes Fenster (Quickshell-Testfenster): erscheint als laufend
+    printf 'import Quickshell\nimport QtQuick\nFloatingWindow { title: "Dock test window"; implicitWidth: 300; implicitHeight: 200; color: "#335" }\n' > "$T/fenster.qml"
+    "$qs" -p "$T/fenster.qml" > "$T/fenster.log" 2>&1 &
+    fpid="$!"; pids+=("$fpid")
+    for _ in $(seq 1 30); do dk items | grep -q '\*1' && break; sleep 0.3; done
+    l2="$(dk items)"
+    if grep -q '\*1' <<<"$l2"; then echo "  ok: laufendes Fenster erscheint im Dock ($l2)"
+    else echo "  FEHLER: Fenster erscheint nicht im Dock ($l2)"; dock_ok=0; fi
+    sleep 1; bild dock
+    kill "$fpid" 2>/dev/null || true
+    for _ in $(seq 1 30); do dk items | grep -q '\*1' || break; sleep 0.3; done
+    if ! dk items | grep -q '\*1'; then echo "  ok: geschlossenes Fenster verschwindet wieder"
+    else echo "  FEHLER: geschlossenes Fenster bleibt"; dock_ok=0; fi
+    # CPU in Ruhe: Quickshell 10 s messen, mit und ohne Dock
+    cpu() { local a b; a=$(awk '{print $14+$15}' "/proc/$qspid/stat"); sleep 10; b=$(awk '{print $14+$15}' "/proc/$qspid/stat"); awk -v d=$((b - a)) -v hz="$(getconf CLK_TCK)" 'BEGIN { printf "%.2f", d / hz / 10 * 100 }'; }
+    mit="$(cpu)"
+    # Abschalten: kein Dock-Fenster mehr, die Fläche sieht aus wie ohne Dock
+    [ -n "$im" ] && grim -g "560,980 800x100" "$T/dock-an.png"
+    dk hide; sleep 1
+    [ -n "$im" ] && grim -g "560,980 800x100" "$T/dock-versteckt.png"
+    dk open
+    "$HOME/.local/bin/shell-set" dock.enabled false >/dev/null 2>&1
+    for _ in $(seq 1 30); do "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock' || break; sleep 0.3; done
+    if ! "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then echo "  ok: dock.enabled false: kein Dock-Fenster"
+    else echo "  FEHLER: Dock trotz dock.enabled false"; dock_ok=0; fi
+    sleep 1
+    ohne="$(cpu)"
+    echo "  CPU in Ruhe (ganze Oberfläche, 10 s): mit Dock $mit %, ohne Dock $ohne %"
+    if awk -v a="$mit" -v b="$ohne" 'BEGIN { exit !(a - b <= 1.0) }'; then echo "  ok: Dock braucht in Ruhe höchstens 1 % CPU"
+    else echo "  FEHLER: Dock braucht in Ruhe mehr als 1 % CPU"; dock_ok=0; fi
+    if [ -n "$im" ]; then
+        grim -g "560,980 800x100" "$T/dock-aus.png"
+        if [ "$(vergleich -metric AE "$T/dock-aus.png" "$T/dock-versteckt.png" null: 2>&1 | cut -d' ' -f1)" = 0 ] \
+            && [ "$(vergleich -metric AE "$T/dock-aus.png" "$T/dock-an.png" null: 2>&1 | cut -d' ' -f1)" != 0 ]; then
+            echo "  ok: ohne Dock gleicht der Bildschirm dem ohne Dock-Fenster"
+        else echo "  FEHLER: Bildschirm ohne Dock nicht wie vorher"; dock_ok=0; fi
+    fi
+    "$HOME/.local/bin/shell-set" dock.enabled true >/dev/null 2>&1
+    for _ in $(seq 1 30); do "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock' && break; sleep 0.3; done
+    if [ "$(dk count)" = 1 ]; then echo "  ok: wieder eingeschaltet: ein Dock"; else echo "  FEHLER: Dock nach dem Einschalten"; dock_ok=0; fi
+else
+    echo "  FEHLER: kein IPC-Ziel dock (Dock nicht geladen)"; dock_ok=0
+fi
+if grep -E "dock/[A-Za-z]+\.qml" "$T/qs.log" | grep -v "hypr-shell-probe"; then echo "  FEHLER: Warnungen aus dock/ im Log"; dock_ok=0; fi
+
+
 # Sperrbildschirm (jetzt ohne ~/.face, also mit dem Ersatzbild des Installers) – nur in diesem
 # unsichtbaren Test-Compositor, nie in einer echten Sitzung. Kommt zuletzt, weil sway nach dem Beenden von hyprlock gesperrt bleibt.
 if command -v hyprlock >/dev/null 2>&1; then
@@ -586,6 +659,7 @@ echo "------------------------"
 [ "$note_ok" -eq 1 ] || { echo "FEHLER: Benachrichtigungen (siehe oben)"; exit 1; }
 [ "$starter_ok" -eq 1 ] || { echo "FEHLER: Starter (siehe oben)"; exit 1; }
 [ "$panel_ok" -eq 1 ] || { echo "FEHLER: mehr als ein Panel offen (siehe oben)"; exit 1; }
+[ "$dock_ok" -eq 1 ] || { echo "FEHLER: Dock (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then
     echo "FEHLER: Quickshell ist abgestürzt"
     exit 1

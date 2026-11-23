@@ -255,6 +255,11 @@ blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
 blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications|osd|power|clipboard|overview|cheatsheet)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
+-- Dock: eigene Regel; Schatten und durchsichtige Ränder (unter 30 % Deckkraft) bleiben ohne Blur.
+-- Mit dock.blur = false gibt es die Regel nicht (kein Blur hinter dem Dock).
+if not (S.dock ~= nil and S.dock.blur == false) then
+    blur_layer("hypr-shell-dock",    "^hypr-shell-dock$", 0.3)
+end
 
 hl.layer_rule({ name = "hypr-shell-slurp", match = { namespace = "^selection$" }, no_anim = true })
 

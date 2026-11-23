@@ -40,6 +40,10 @@ case "${1:-start}" in
     start) start ;;
     restart) stop; sleep 0.3; start ;;
     stop) stop ;;
-    ipc) shift; exec "$qs" -p "$cfg" ipc call "$@" ;;
+    ipc)
+        shift
+        # "show" ist in qs ipc selbst vergeben: "ipc dock show" heisst intern "open"
+        if [ "${2:-}" = show ]; then set -- "$1" open "${@:3}"; fi
+        exec "$qs" -p "$cfg" ipc call "$@" ;;
     *) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

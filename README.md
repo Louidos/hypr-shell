@@ -202,7 +202,8 @@ Bildausschnitte (Profilbild, Cover, Vorschaubilder).
 
 ## Projektstand
 
-Version: siehe [`VERSION`](VERSION). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
+Version: **1.0.0** (siehe [`VERSION`](VERSION)). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
+Was nur auf dem echten Rechner geprüft werden kann, steht in [docs/abnahme.md](docs/abnahme.md).
 Optik und Aufbau sind an „DarkShadow's Shell“ (MIT) angelehnt; der Code ist neu geschrieben.
 Die mitgelieferte Schrift Bebas Neue steht unter der SIL Open Font License
 (`quickshell/common/fonts/OFL.txt`).

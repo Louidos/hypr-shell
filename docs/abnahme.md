@@ -329,6 +329,6 @@ Sensor) und der echte SDDM-Anmeldebildschirm.
 | 4K und Skalierung 2 sehen gleich gross aus wie der Laptop, nicht winzig | Faktor und Lage automatisch (4K mit Skalierung 1 und 2); Augenschein am echten 4K-Bildschirm von Hand |
 | Hochformat: nichts abgeschnitten, Dashboard und Einstellungen umgeordnet | automatisch (Bildschirm um 90° gedreht, Seitenleiste oben); Augenschein von Hand |
 | Nach dem Ändern von Auflösung oder Skalierung passt sich alles ohne Neustart an | automatisch (Wechsel im laufenden sway); am Laptop von Hand: `hyprctl keyword monitor eDP-1,preferred,auto,1.25` und zurück, Panels öffnen |
-| Zwei Bildschirme mit verschiedener Grösse: jedes Panel rechnet mit seinem | automatisch (4K neben 1280×720, Abstecken); echter zweiter Monitor von Hand |
+| Zwei Bildschirme mit verschiedener Grösse: jedes Panel rechnet mit seinem | automatisch (2560×1440 neben 1280×720, Abstecken); echter zweiter Monitor von Hand |
 | Leiste, Sperr- und Login-Bildschirm bei 1280×720 und 4K | Schriftgrösse der Leiste automatisch (`tests/waybar.sh`); Sperrbildschirm und SDDM am echten Bildschirm von Hand |
 | Lokal ohne Quickshell | nicht lokal getestet, CI entscheidet (Arch-Container mit Quickshell) |

@@ -15,6 +15,12 @@ REPO="$(pwd)"
 OUT="${SCREENSHOTS:-$REPO/screenshots-ci}/groessen"
 fehler=0
 
+# eigener D-Bus der Sitzung (Benachrichtigungsdienst und notify-send); vor allem anderen, damit
+# nichts doppelt läuft
+if [ -z "${HYPR_SHELL_DBUS:-}" ] && command -v dbus-run-session >/dev/null 2>&1; then
+    HYPR_SHELL_DBUS=1 exec dbus-run-session -- "$0" "$@"
+fi
+
 # ---- 1. Rechenteil
 echo "== 1. Grössen-Hilfe (fit.js)"
 qml="$(command -v qml6 || command -v qml || ls /usr/lib/qt6/bin/qml 2>/dev/null || true)"
@@ -39,11 +45,6 @@ for p in sway swaymsg grim jq; do
 done
 [ -n "$qs" ] || { echo "Hinweis: quickshell fehlt, Oberflächenteil übersprungen."; exit "$fehler"; }
 
-# eigener D-Bus der Sitzung (Benachrichtigungsdienst und notify-send)
-if [ -z "${HYPR_SHELL_DBUS:-}" ] && command -v dbus-run-session >/dev/null 2>&1; then
-    HYPR_SHELL_DBUS=1 exec dbus-run-session -- "$0" "$@"
-fi
-
 T="$(mktemp -d)"
 pids=()
 aufraeumen() { local p; for p in "${pids[@]}"; do kill "$p" 2>/dev/null || true; done; rm -rf "$T"; }
@@ -65,7 +66,8 @@ default_border none
 CONF
 cp "$(command -v sway)" "$T/sway"
 WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 "$T/sway" -c "$T/sway.conf" > "$T/sway.log" 2>&1 &
-pids+=("$!")
+swaypid="$!"
+pids+=("$swaypid")
 for _ in $(seq 1 100); do
     sock="$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'wayland-*' ! -name '*.lock' -print -quit)"
     [ -n "$sock" ] && break
@@ -122,6 +124,9 @@ groesse() {
     echo "== 2. $name: $mode, Skalierung $scale, Drehung $dreh"
     swaymsg output HEADLESS-1 resolution "$mode" scale "$scale" transform "$dreh" >/dev/null 2>&1
     sleep 3
+    if ! kill -0 "$swaypid" 2>/dev/null; then
+        echo "  FEHLER: sway ist beendet (Container?):"; tail -n 5 "$T/sway.log"; fehler=1; return 1
+    fi
     # logische Grösse, wie Quickshell sie sieht (sway rechnet Skalierung und Drehung schon ein)
     read -r sw sh < <(swaymsg -t get_outputs -r | jq -r '.[] | select(.name == "HEADLESS-1") | "\(.rect.width) \(.rect.height)"')
     echo "  logisch ${sw}x${sh}"
@@ -138,10 +143,14 @@ groesse() {
     for p in "${panels[@]}"; do
         IFS='|' read -r ziel auf zu <<<"$p"
         ab="$(zeilen)"
+        # die Anzeige (osd) blendet sich nach 1.5 s selbst aus: gleich nach dem Hereingleiten messen
         # shellcheck disable=SC2086
-        ipc $auf; sleep 2.2
+        ipc $auf; if [ "$ziel" = osd ]; then sleep 1.1; else sleep 2.2; fi
         pruefe_lage "overlay-$ziel" "$ab" "$sw" "$sh" "Panel $ziel"
-        case "$ziel" in dashboard|settings|power|cheatsheet) grim "$OUT/$name-$ziel.png" 2>/dev/null ;; esac
+        # Screenshots nur bis 2560 px Breite (4K-Bilder sprengen den gemeinsamen Speicher des Containers)
+        if [ "${mode%%x*}" -le 2560 ]; then
+            case "$ziel" in dashboard|settings|power|cheatsheet) grim "$OUT/$name-$ziel.png" 2>/dev/null ;; esac
+        fi
         # shellcheck disable=SC2086
         [ -n "$zu" ] && { ipc $zu; sleep 0.6; }
     done
@@ -150,17 +159,6 @@ groesse() {
 
 groesse klein 1280x720 1 normal
 groesse laptop 2560x1600 1.6 normal
-groesse 4k-skalierung2 3840x2160 2 normal
-breite_1080="$(lage overlay-dashboard 1 | awk '{print $3}')"
-groesse 4k 3840x2160 1 normal
-# 4K mit Skalierung 1: alles grösser als bei 1080 logischen Zeilen (nicht winzig)
-ab="$(zeilen)"; ipc dashboard open dashboard; sleep 2.2
-breite_4k="$(lage overlay-dashboard "$ab" | awk '{print $3}')"; ipc dashboard close; sleep 0.6
-if [ -n "$breite_4k" ] && [ -n "$breite_1080" ] && [ "$breite_4k" -gt $((breite_1080 * 13 / 10)) ]; then
-    echo "  ok: Dashboard auf 4K (Skalierung 1) ${breite_4k} px breit statt ${breite_1080} px – nicht winzig"
-else
-    echo "  FEHLER: Dashboard auf 4K nicht grösser (${breite_4k:-?} gegen ${breite_1080:-?})"; fehler=1
-fi
 groesse hochformat 2560x1600 1 90
 # Hochformat: Einstellungen mit Seiten oben (die Leiste steht über der Suche), Dashboard in 6 Spalten
 ab="$(zeilen)"; ipc settings open home; sleep 2.5
@@ -174,13 +172,13 @@ groesse laptop-125 1920x1080 1.25 normal
 
 # ---- 3. zwei Bildschirme: Panels auf dem kleinen rechnen mit dessen Grösse
 echo "== 3. zwei Bildschirme"
-swaymsg output HEADLESS-1 resolution 3840x2160 scale 1 transform normal position 0 0 >/dev/null 2>&1
+swaymsg output HEADLESS-1 resolution 2560x1440 scale 1 transform normal position 0 0 >/dev/null 2>&1
 swaymsg create_output >/dev/null 2>&1; sleep 2
 zweiter="$(swaymsg -t get_outputs -r | jq -r '.[] | select(.name != "HEADLESS-1") | .name' | head -n1)"
 if [ -z "$zweiter" ]; then
     echo "  Hinweis: kein zweiter Bildschirm (create_output), übersprungen"
 else
-    swaymsg output "$zweiter" resolution 1280x720 scale 1 position 3840 0 >/dev/null 2>&1
+    swaymsg output "$zweiter" resolution 1280x720 scale 1 position 2560 0 >/dev/null 2>&1
     "$HOME/.local/bin/shell-set" desktop.screen "$zweiter" >/dev/null 2>&1; sleep 4
     for p in "${panels[@]}"; do
         IFS='|' read -r ziel auf zu <<<"$p"
@@ -188,15 +186,29 @@ else
         ab="$(zeilen)"
         # shellcheck disable=SC2086
         ipc $auf; sleep 2.2
-        pruefe_lage "overlay-$ziel" "$ab" 1280 720 "Panel $ziel auf $zweiter (1280x720 neben 4K)"
+        pruefe_lage "overlay-$ziel" "$ab" 1280 720 "Panel $ziel auf $zweiter (1280x720 neben 2560x1440)"
         # shellcheck disable=SC2086
         [ -n "$zu" ] && { ipc $zu; sleep 0.6; }
     done
     # abgesteckt: der eingestellte Bildschirm fehlt → erster Bildschirm, kein Absturz
     swaymsg output "$zweiter" unplug >/dev/null 2>&1; sleep 3
     ab="$(zeilen)"; ipc dashboard open dashboard; sleep 2.2
-    pruefe_lage overlay-dashboard "$ab" 3840 2160 "Dashboard nach dem Abstecken auf dem ersten Bildschirm"
-    ipc dashboard close
+    pruefe_lage overlay-dashboard "$ab" 2560 1440 "Dashboard nach dem Abstecken auf dem ersten Bildschirm"
+    ipc dashboard close; sleep 0.6
+    "$HOME/.local/bin/shell-set" reset desktop.screen >/dev/null 2>&1; sleep 2
+fi
+
+# ---- 4K zuletzt (braucht im Container den meisten Speicher)
+groesse 4k-skalierung2 3840x2160 2 normal
+breite_1080="$(lage overlay-dashboard 1 | awk '{print $3}')"
+groesse 4k 3840x2160 1 normal
+# 4K mit Skalierung 1: alles grösser als bei 1080 logischen Zeilen (nicht winzig)
+ab="$(zeilen)"; ipc dashboard open dashboard; sleep 2.2
+breite_4k="$(lage overlay-dashboard "$ab" | awk '{print $3}')"; ipc dashboard close; sleep 0.6
+if [ -n "$breite_4k" ] && [ -n "$breite_1080" ] && [ "$breite_4k" -gt $((breite_1080 * 13 / 10)) ]; then
+    echo "  ok: Dashboard auf 4K (Skalierung 1) ${breite_4k} px breit statt ${breite_1080} px – nicht winzig"
+else
+    echo "  FEHLER: Dashboard auf 4K nicht grösser (${breite_4k:-?} gegen ${breite_1080:-?})"; fehler=1
 fi
 
 if ! kill -0 "$qspid" 2>/dev/null; then echo "FEHLER: Quickshell ist abgestürzt"; fehler=1; fi

@@ -28,7 +28,7 @@ Scope {
         n.tracked = true
         const e = {
             nid: ++seq, n: n, app: n.appName || "Notification", icon: n.appIcon || "", image: n.image || "",
-            summary: n.summary || "", body: n.body || "", time: new Date(),
+            summary: n.summary || "", body: n.body || "", time: new Date(), desk: n.desktopEntry || "", read: false,
             urgency: n.urgency, critical: n.urgency === NotificationUrgency.Critical,
             actions: (n.actions || []).filter(a => a.identifier !== "default").map(a => ({ id: a.identifier, text: a.text }))
         }
@@ -69,7 +69,32 @@ Scope {
         if (on) popups = []
         writeBar()
     }
+    // Zähler für das Dock (Ui.notifCounts): ungelesene Meldungen je App
+    function writeCounts() {
+        const m = {}
+        for (let i = 0; i < history.length; i++) {
+            const e = history[i]
+            if (e.read) continue
+            const ks = [String(e.app).toLowerCase()]
+            if (e.desk) ks.push(String(e.desk).toLowerCase().replace(/\.desktop$/, ""))
+            for (let j = 0; j < ks.length; j++) if (j === 0 || ks[j] !== ks[0]) m[ks[j]] = (m[ks[j]] || 0) + 1
+        }
+        Ui.notifCounts = m
+    }
+    Connections {
+        target: Ui
+        function onNotificationsRead(keys) {
+            const ks = (keys || []).map(k => String(k).toLowerCase())
+            let any = false
+            for (let i = 0; i < nc.history.length; i++) {
+                const e = nc.history[i]
+                if (!e.read && (ks.indexOf(String(e.app).toLowerCase()) >= 0 || (e.desk && ks.indexOf(String(e.desk).toLowerCase().replace(/\.desktop$/, "")) >= 0))) { e.read = true; any = true }
+            }
+            if (any) nc.writeCounts()
+        }
+    }
     function writeBar() {
+        writeCounts()
         const c = history.length
         barFile.setText(JSON.stringify({
             text: (dnd ? "󰂛" : c > 0 ? "󰂚" : "󰂜") + (c > 0 ? "  " + c : ""),

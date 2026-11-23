@@ -112,6 +112,7 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 | `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
 | `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
 | `SUPER + F1` | Kürzel-Spickzettel |
+| `SUPER + B` | Dock mit der Tastatur bedienen (Pfeile, Enter, Menütaste oder `SHIFT + F10`, Esc) |
 | `SUPER + I` | Chat mit Missa (nur mit `missa.enabled`, sonst tut das Kürzel nichts) |
 | `SUPER + SHIFT + I` | mit Missa sprechen; nochmal drücken beendet (nur mit `missa.voice_enabled` und whisper.cpp) |
 | `SUPER + M` | abmelden (Hyprland beenden) |
@@ -256,7 +257,8 @@ Ton-Symbol in der Leiste öffnet direkt die passende Unterseite (Rechtsklick auf
 ### Dock
 
 Ein schwebendes Glas-Dock mittig unten mit angehefteten und laufenden Programmen: Klick startet
-oder holt das Fenster nach vorn, Punkte zeigen laufende Programme. Abschaltbar mit
+oder holt das Fenster nach vorn, Punkte zeigen laufende Programme. Rechtsklick öffnet ein Menü,
+Ziehen sortiert um, Herausziehen löst an, `SUPER + B` bedient das Dock mit der Tastatur. Abschaltbar mit
 `shell-set dock.enabled false`. Alle Werte und die Zuordnung der Symbole stehen in
 [docs/dock.md](docs/dock.md).
 

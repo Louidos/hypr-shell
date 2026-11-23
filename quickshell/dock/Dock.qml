@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import "../common"
 import "zuordnung.js" as Z
 
@@ -42,6 +43,10 @@ Scope {
     readonly property string indicator: Settings.get("dock.indicator", "dot")
     readonly property bool showRunning: Settings.get("dock.show_running", true) === true
     readonly property bool showTrash: Settings.get("dock.trash", true) === true
+    readonly property int animMs: 180
+    readonly property bool launcherButton: Settings.get("dock.launcher_button", false) === true
+    readonly property bool badges: Settings.get("dock.badges", true) === true
+    readonly property bool previews: Settings.get("dock.previews", true) === true
 
     function farbe(v, auto) { return /^#[0-9a-fA-F]{6}$/.test(String(v)) ? String(v) : auto }
     readonly property color glassColor: {
@@ -155,21 +160,31 @@ Scope {
                 if (!e) continue                                      // nicht installiert: fehlt still
                 const k = Z.schluessel("", e)
                 if (byKey[k]) continue
-                const o = { kind: "app", key: k, name: e.name, icon: e.icon, entry: e, path: "", windows: [], pinned: true, desktopId: e.id }
+                const o = { kind: "app", key: k, name: e.name, icon: e.icon, entry: e, path: "", windows: [], pinned: true, desktopId: e.id, src: i }
                 byKey[k] = o; pins.push(o)
             } else if (it.type === "folder") {
                 const p = String(it.path || "")
                 if (p === "" || dock.folders[p] !== true) continue    // fehlt der Ordner: fehlt der Eintrag
                 const n = p.replace(/\/+$/, "").split("/").pop() || p
-                pins.push({ kind: "folder", key: "folder:" + p, name: n, icon: /download/i.test(n) ? "folder-download" : "folder", path: p, windows: [], pinned: true })
+                if (byKey["folder:" + p]) continue
+                const fo = { kind: "folder", key: "folder:" + p, name: n, icon: /download/i.test(n) ? "folder-download" : "folder", path: p, windows: [], pinned: true, src: i }
+                byKey[fo.key] = fo; pins.push(fo)
             } else if (it.type === "separator") {
-                pins.push({ kind: "separator", key: "sep:" + i, windows: [] })
+                pins.push({ kind: "separator", key: "sep:" + i, windows: [], pinned: true, src: i })
             } else if (it.type === "trash") {
-                if (!showTrash || dock.trash.available !== true) continue
-                pins.push({ kind: "trash", key: "trash", name: "Trash", icon: dock.trash.full ? "user-trash-full" : "user-trash", windows: [], pinned: true })
+                if (!showTrash || dock.trash.available !== true || byKey.trash) continue
+                byKey.trash = { kind: "trash", key: "trash", name: "Trash", icon: dock.trash.full ? "user-trash-full" : "user-trash", windows: [], pinned: true, src: i }
+                pins.push(byKey.trash)
             } else if (it.type === "launcher") {
-                pins.push({ kind: "launcher", key: "launcher", name: "Apps", icon: "view-app-grid-symbolic", windows: [], pinned: true })
+                if (byKey.launcher) continue
+                byKey.launcher = { kind: "launcher", key: "launcher", name: "Apps", icon: "view-app-grid-symbolic", windows: [], pinned: true, src: i }
+                pins.push(byKey.launcher)
             }
+        }
+        // Startknopf links (dock.launcher_button), wenn er nicht schon in der Liste steht
+        if (launcherButton && !byKey.launcher) {
+            byKey.launcher = { kind: "launcher", key: "launcher", name: "Apps", icon: "view-app-grid-symbolic", windows: [], pinned: true, src: -1 }
+            pins.unshift(byKey.launcher)
         }
         // Fenster den Einträgen zuordnen; nicht angeheftete als eigene Einträge
         const running = []
@@ -182,8 +197,8 @@ Scope {
             let o = byKey[k]
             if (!o) {
                 if (!showRunning) continue
-                o = e ? { kind: "app", key: k, name: e.name, icon: e.icon, entry: e, path: "", windows: [], pinned: false, desktopId: e.id }
-                      : { kind: "window", key: k, name: t.title || t.appId || "Window", icon: String(t.appId || "").toLowerCase(), entry: null, path: "", windows: [], pinned: false, desktopId: "" }
+                o = e ? { kind: "app", key: k, name: e.name, icon: e.icon, entry: e, path: "", windows: [], pinned: false, desktopId: e.id, src: -1 }
+                      : { kind: "window", key: k, name: t.appId || "Window", icon: String(t.appId || "").toLowerCase(), entry: null, path: "", windows: [], pinned: false, desktopId: "", src: -1 }
                 byKey[k] = o; running.push(o)
             }
             o.windows.push(t)
@@ -210,17 +225,20 @@ Scope {
 
     // ---- Bedienung
     function launch(it) {
-        if (it.entry && it.entry.ref) {
+        if (it && it.entry && it.entry.ref) {
             it.entry.ref.execute()
+            launched(it.key)
             return true
         }
         return false
     }
+    signal launched(string key)
     function activate(it) {
         if (!it) return
         if (it.kind === "folder") { Quickshell.execDetached([Settings.bin + "shell-dock", "open", it.path]); return }
         if (it.kind === "trash") { Quickshell.execDetached([Settings.bin + "shell-dock", "open-trash"]); trashCheck.restart(); return }
         if (it.kind === "launcher") { Quickshell.execDetached([Settings.bin + "shell-quickshell", "ipc", "launcher", "toggle"]); return }
+        readBadge(it)
         const w = it.windows || []
         if (w.length === 0) { launch(it); return }
         // läuft: Fenster nach vorn holen; ist eines davon schon vorn, zum nächsten
@@ -229,7 +247,160 @@ Scope {
         const next = a >= 0 ? w[(a + 1) % w.length] : w[0]
         next.activate()
     }
+    // Mausrad über einem Symbol: zwischen den Fenstern der App wechseln
+    function cycle(it, step) {
+        const w = it ? (it.windows || []) : []
+        if (w.length === 0) return
+        let a = -1
+        for (let i = 0; i < w.length; i++) if (w[i].activated) { a = i; break }
+        w[((a < 0 ? 0 : a + step) % w.length + w.length) % w.length].activate()
+    }
+    // Mittelklick / "New window": Aktion "new-window" der App, sonst die App noch einmal starten
+    function newWindow(it) {
+        if (!it || !it.entry || !it.entry.ref) return
+        const acts = it.entry.ref.actions || []
+        for (let i = 0; i < acts.length; i++) {
+            if (/^new[-_]?window$/i.test(String(acts[i].id))) { acts[i].execute(); launched(it.key); return }
+        }
+        launch(it)
+    }
+    // "Close all": Fenster normal schliessen (wie Klick aufs X), nie Prozesse beenden
+    function closeAll(it) {
+        const w = it ? (it.windows || []).slice() : []
+        for (let i = 0; i < w.length; i++) w[i].close()
+    }
+    function readBadge(it) {
+        if (!it || !it.entry) return
+        Ui.notificationsRead([String(it.entry.id).replace(/\.desktop$/, ""), String(it.entry.name)])
+    }
+    // Zähler für ein Symbol (dock.badges): Desktop-Eintrag, sonst App-Name
+    function badgeFor(it) {
+        if (!badges || !it || !it.entry) return 0
+        const c = Ui.notifCounts || {}
+        const id = String(it.entry.id).toLowerCase().replace(/\.desktop$/, "")
+        const parts = id.split(".")
+        return c[id] || c[String(it.entry.name).toLowerCase()] || c[parts[parts.length - 1]] || 0
+    }
+
+    // ---- Einträge ändern: immer auf dock.items, sodass versteckte Einträge (fehlendes Programm,
+    // fehlender Ordner) an ihrem Platz bleiben; gespeichert über shell-set (atomar)
+    function itemFor(it) {
+        if (it.kind === "app" || it.kind === "window") return { type: "app", desktop_id: it.desktopId || "", path: "" }
+        if (it.kind === "folder") return { type: "folder", desktop_id: "", path: it.path }
+        return { type: it.kind, desktop_id: "", path: "" }
+    }
+    function save(list) { Ui.set("dock.items", list) }
+    function canPin(it) { return it && !it.pinned && it.kind === "app" && it.desktopId !== "" }
+    function pin(it, beforeSrc) {
+        if (!canPin(it)) return false
+        const l = items.slice()
+        let at = beforeSrc >= 0 ? beforeSrc : -1
+        if (at < 0) { at = 0; for (let i = 0; i < l.length; i++) if (l[i].type === "app" || l[i].type === "launcher") at = i + 1 }
+        l.splice(at, 0, itemFor(it))
+        save(l)
+        return true
+    }
+    function unpin(it) {
+        if (!it || !it.pinned || it.src < 0) return false
+        const l = items.slice()
+        l.splice(it.src, 1)
+        save(l)
+        return true
+    }
+    // Eintrag "it" vor (after = false) bzw. hinter (after = true) "target" setzen
+    function move(it, target, after) {
+        if (!it || !target || it.key === target.key) return false
+        if (!it.pinned) {
+            if (!canPin(it)) return false
+            return pin(it, target.pinned && target.src >= 0 ? target.src + (after ? 1 : 0) : -1)
+        }
+        if (it.src < 0) return false
+        const l = items.slice()
+        const x = l.splice(it.src, 1)[0]
+        let t
+        if (target.pinned && target.src >= 0) {
+            t = target.src > it.src ? target.src - 1 : target.src
+            if (after) t++
+        } else {
+            // Ziel ist ein laufendes, nicht angeheftetes Programm: hinter die angehefteten Programme
+            t = 0
+            for (let i = 0; i < l.length; i++) if (l[i].type === "app" || l[i].type === "launcher") t = i + 1
+        }
+        l.splice(Math.max(0, Math.min(l.length, t)), 0, x)
+        save(l)
+        return true
+    }
+    // Ordner vorschlagen (Nextcloud, Missa), nie automatisch anheften
+    readonly property var suggestions: {
+        const s = []
+        if (Integrations.nextcloud) s.push({ name: "Nextcloud", path: String(Settings.get("nextcloud.mount_path", "~/Nextcloud")) })
+        if (Integrations.missa) s.push({ name: "Missa", path: String(Settings.get("missa.folder", "~/Missa")) })
+        return s.filter(x => !items.some(i => i.type === "folder" && i.path === x.path))
+    }
+    function addFolder(path) {
+        const l = items.slice()
+        let at = l.length
+        for (let i = 0; i < l.length; i++) if (l[i].type === "trash") { at = i; break }
+        l.splice(at, 0, { type: "folder", desktop_id: "", path: path })
+        save(l)
+    }
+    property bool trashArmed: false
+    Timer { id: trashDisarm; interval: 4000; onTriggered: dock.trashArmed = false }
+    function emptyTrash() {
+        if (!trashArmed) { trashArmed = true; trashDisarm.restart(); return false }
+        trashArmed = false
+        Quickshell.execDetached([Settings.bin + "shell-dock", "empty-trash"])
+        trashCheck.restart()
+        return true
+    }
+
+    // Menü eines Eintrags: Liste von { text, icon, run }
+    function menuFor(it) {
+        const m = []
+        if (!it || it.kind === "separator") return m
+        if (it.kind === "app" || it.kind === "window") {
+            if (it.entry) {
+                m.push({ text: "New window", icon: "󰖲", run: () => dock.newWindow(it) })
+                const acts = it.entry.ref ? (it.entry.ref.actions || []) : []
+                for (let i = 0; i < acts.length; i++) {
+                    if (/^new[-_]?window$/i.test(String(acts[i].id))) continue
+                    const a = acts[i]
+                    m.push({ text: String(a.name), icon: "󰐊", run: () => { a.execute(); dock.launched(it.key) } })
+                }
+            }
+            if (it.pinned) m.push({ text: "Remove from Dock", icon: "󰐄", run: () => dock.unpin(it) })
+            else if (canPin(it)) m.push({ text: "Keep in Dock", icon: "󰐃", run: () => dock.pin(it, -1) })
+            if ((it.windows || []).length > 0) m.push({ text: (it.windows.length > 1 ? "Close all" : "Close"), icon: "󰅖", run: () => dock.closeAll(it) })
+        } else if (it.kind === "folder") {
+            m.push({ text: "Open", icon: "󰉋", run: () => dock.activate(it) })
+            m.push({ text: "Remove from Dock", icon: "󰐄", run: () => dock.unpin(it) })
+        } else if (it.kind === "trash") {
+            m.push({ text: "Open", icon: "󰩹", run: () => dock.activate(it) })
+            if (trash.full) m.push({ text: trashArmed ? "Click again to empty" : "Empty trash", icon: "󰗨", keep: true, run: () => dock.emptyTrash() })
+        } else if (it.kind === "launcher") {
+            m.push({ text: "Open launcher", icon: "󰀻", run: () => dock.activate(it) })
+            if (it.src >= 0) m.push({ text: "Remove from Dock", icon: "󰐄", run: () => dock.unpin(it) })
+        }
+        if (it.kind === "folder" || it.kind === "trash")
+            for (let i = 0; i < suggestions.length; i++) {
+                const sg = suggestions[i]
+                m.push({ text: "Add " + sg.name + " folder", icon: "󰉗", run: () => dock.addFolder(sg.path) })
+            }
+        return m
+    }
     Timer { id: trashCheck; interval: 3000; onTriggered: dock.refreshFiles() }
+
+    // ---- Tastatur (SUPER+B): das Dock auf dem Bildschirm mit dem Fokus bekommt die Tastatur
+    property var focusWin: null
+    function focusDock() {
+        shown = true
+        let w = windows.length > 0 ? windows[0] : null
+        const name = Ui.hyprland && Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : ""
+        for (let i = 0; i < windows.length; i++) if (windows[i].screen && windows[i].screen.name === name) w = windows[i]
+        focusWin = w
+        if (w) w.startKeyboard()
+    }
+    function leaveFocus() { if (focusWin) focusWin.stopKeyboard(); focusWin = null }
 
     // ---- ein Dock pro Bildschirm
     // eigener Name für den Bezug: im Fenster heisst die Eigenschaft selbst "dock"
@@ -252,7 +423,7 @@ Scope {
         function close(): void { dock.shown = false }
         // "show" ist in qs ipc vergeben: shell-quickshell übersetzt "ipc dock show" in "open"
         function hide(): void { dock.shown = false }
-        function focus(): void { dock.shown = true }
+        function focus(): void { dock.focusDock() }
         // für Tests: Zuordnung eines Fensters (app_id/class) zu einem Desktop-Eintrag ("" = keiner)
         function resolve(appId: string): string { const e = dock.entryForApp(appId); return e ? String(e.id) : "" }
         // für Tests: Einträge des ersten Docks, z. B. "app:kitty*,separator,folder:~/Downloads,trash"
@@ -265,5 +436,19 @@ Scope {
         // für Tests: Lage des ersten Docks als JSON (x, y, width, height relativ zum Bildschirm)
         function geometry(): string { return dock.windows.length > 0 ? JSON.stringify(dock.windows[0].geometry()) : "{}" }
         function visible(): bool { return dock.on && dock.shown }
+        // für Tests: Menü des n-ten Eintrags ("New window|Private window|…")
+        function menu(index: int): string { const m = dock.model(dock.screens[0] || null); return index < m.length ? dock.menuFor(m[index]).map(x => x.text).join("|") : "" }
+        // für Tests: n-ten Eintrag vor/hinter den m-ten ziehen (derselbe Weg wie Ziehen mit der Maus)
+        function drag(from: int, to: int): bool {
+            const m = dock.model(dock.screens[0] || null)
+            if (from >= m.length || to >= m.length) return false
+            return dock.move(m[from], m[to], to > from)
+        }
+        // für Tests: n-ten Eintrag aus dem Dock ziehen (lösen)
+        function dragOut(index: int): bool { const m = dock.model(dock.screens[0] || null); return index < m.length && dock.unpin(m[index]) }
+        // für Tests: Taste im Dock (Left, Right, Return, Menu, Escape …); "" = Tastatur aktiv?
+        function key(name: string): string { return dock.windows.length > 0 ? dock.windows[0].testKey(name) : "" }
+        function refresh(): void { dock.refreshFiles() }
+        function badge(index: int): int { const m = dock.model(dock.screens[0] || null); return index < m.length ? dock.badgeFor(m[index]) : 0 }
     }
 }

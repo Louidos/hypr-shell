@@ -635,6 +635,37 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
     "$HOME/.local/bin/shell-set" reset dock.items >/dev/null 2>&1 || true
     sleep 1
 
+    # ---- Bewegung und Verstecken
+    st() { dk smartTest "$1"; }
+    if [ "$(st '{"dock":{"x":760,"y":1006,"width":400,"height":64},"windows":[{"x":0,"y":0,"width":1920,"height":1040}]}')" = true ] \
+        && [ "$(st '{"dock":{"x":760,"y":1006,"width":400,"height":64},"windows":[{"x":0,"y":0,"width":1920,"height":1000}]}')" = false ] \
+        && [ "$(st '{"dock":{"x":760,"y":1006,"width":400,"height":64},"windows":[{"x":700,"y":900,"width":200,"height":300,"sichtbar":false}]}')" = false ] \
+        && [ "$(st '{"dock":{"x":760,"y":1006,"width":400,"height":64},"windows":[{"x":1160,"y":900,"width":200,"height":300}]}')" = false ]; then
+        echo "  ok: smart: überdeckt nur, wenn ein sichtbares Fenster die Fläche schneidet"
+    else echo "  FEHLER: smart-Logik"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-set" dock.anim_ms 0 >/dev/null 2>&1; sleep 1.5
+    if [ "$(dk animMs)" = 0 ]; then echo "  ok: anim_ms 0 schaltet die Animationen ab"; else echo "  FEHLER: anim_ms $(dk animMs)"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-quickshell" ipc shell gaming true >/dev/null 2>&1
+    "$HOME/.local/bin/shell-set" reset dock.anim_ms >/dev/null 2>&1; sleep 1.5
+    if [ "$(dk animMs)" = 0 ]; then echo "  ok: Gaming-Modus: keine Dock-Animationen"; else echo "  FEHLER: Gaming-Modus anim $(dk animMs)"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-quickshell" ipc shell gaming false >/dev/null 2>&1; sleep 0.5
+    if [ "$(dk animMs)" = 180 ]; then echo "  ok: danach wieder 180 ms"; else echo "  FEHLER: anim nach Gaming $(dk animMs)"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-set" dock.autohide always >/dev/null 2>&1; sleep 2
+    if [ "$(dk geometry | jq .hidden)" = true ]; then echo "  ok: autohide always: ohne Maus versteckt"; else echo "  FEHLER: always versteckt nicht"; dock_ok=0; fi
+    bild dock-versteckt-always
+    "$HOME/.local/bin/shell-set" reset dock.autohide >/dev/null 2>&1; sleep 1.5
+    if [ "$(dk geometry | jq .hidden)" = false ]; then echo "  ok: smart ohne überdeckendes Fenster: sichtbar"; else echo "  FEHLER: smart versteckt ohne Grund"; dock_ok=0; fi
+    # 20 Symbole (Ordner): passt ohne Scrollen, Vergrösserung schnell genug
+    for i in $(seq 1 20); do mkdir -p "$HOME/dock-test/o$i"; done
+    "$HOME/.local/bin/shell-set" dock.items "$(jq -nc '[range(1;21) | {type: "folder", desktop_id: "", path: "~/dock-test/o\(.)"}]')" >/dev/null 2>&1
+    for _ in $(seq 1 30); do [ "$(dk items | tr ',' '\n' | grep -c folder)" = 20 ] && break; sleep 0.3; done
+    dauer="$(dk sweep 120)"
+    echo "  20 Symbole: $(dk items | tr ',' '\n' | grep -c folder) Ordner, 120 Mausschritte in ${dauer} ms"
+    if [ "$(dk items | tr ',' '\n' | grep -c folder)" = 20 ] && [ "${dauer:-9999}" -lt 1200 ]; then echo "  ok: Vergrösserung mit 20 Symbolen unter 10 ms je Schritt"
+    else echo "  FEHLER: 20 Symbole ($dauer ms)"; dock_ok=0; fi
+    bild dock-20
+    "$HOME/.local/bin/shell-set" reset dock.items >/dev/null 2>&1; sleep 1
+
     # CPU in Ruhe: Quickshell 10 s messen, mit und ohne Dock
     cpu() { local a b; a=$(awk '{print $14+$15}' "/proc/$qspid/stat"); sleep 10; b=$(awk '{print $14+$15}' "/proc/$qspid/stat"); awk -v d=$((b - a)) -v hz="$(getconf CLK_TCK)" 'BEGIN { printf "%.2f", d / hz / 10 * 100 }'; }
     mit="$(cpu)"

@@ -95,10 +95,12 @@ gaming() {
         touch "$GAMING"
         hyprctl eval 'hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false } }, animations = { enabled = false } })' >/dev/null 2>&1 || true
         meldung "Gaming mode on" "Blur, animations and shadows off"
+        "$HOME/.local/bin/shell-quickshell" ipc shell gaming true >/dev/null 2>&1 || true
     else
         rm -f "$GAMING"
         hyprctl reload >/dev/null 2>&1 || true
         meldung "Gaming mode off"
+        "$HOME/.local/bin/shell-quickshell" ipc shell gaming false >/dev/null 2>&1 || true
     fi
 }
 

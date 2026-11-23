@@ -14,6 +14,26 @@ Item {
     property bool dragging: false
     property Item iconItem: iconBox
     readonly property int badge: dock.badgeFor(item)
+    // Vergrösserung als Welle (DockWindow.magFor), kurz geglättet
+    readonly property real mag: separator ? 1 : win.magFor(item ? item.key : "")
+    property real magShown: mag
+    Behavior on magShown { enabled: dock.animMs > 0; NumberAnimation { duration: Math.min(90, dock.animMs); easing.type: Easing.OutQuad } }
+    readonly property real s: size * magShown
+
+    // Hüpfen beim Start, bis das erste Fenster erscheint (höchstens 5 Sekunden)
+    property bool bouncing: false
+    property int windowsAtLaunch: 0
+    Connections {
+        target: dock
+        function onLaunched(key) {
+            if (!di.item || key !== di.item.key || !dock.bounce) return
+            di.windowsAtLaunch = di.windows.length
+            di.bouncing = true
+            bounceStop.restart()
+        }
+    }
+    onWindowsChanged: if (bouncing && windows.length > windowsAtLaunch) bouncing = false
+    Timer { id: bounceStop; interval: 5000; onTriggered: di.bouncing = false }
 
     readonly property string kind: item ? item.kind : "separator"
     readonly property bool separator: kind === "separator"
@@ -29,8 +49,8 @@ Item {
     readonly property bool vertical: dock.vertical
     readonly property int labelRoom: dock.labels === "always" ? 16 : 0
 
-    implicitWidth: separator ? (vertical ? size : 1 + dock.spacing) : size
-    implicitHeight: separator ? (vertical ? 1 + dock.spacing : size + labelRoom) : size + labelRoom
+    implicitWidth: separator ? (vertical ? size : 1 + dock.spacing) : s
+    implicitHeight: separator ? (vertical ? 1 + dock.spacing : size + labelRoom) : s + labelRoom
 
     // ---- Trenner
     Rectangle {
@@ -45,13 +65,26 @@ Item {
     Item {
         id: iconBox
         visible: !di.separator
-        width: di.size
-        height: di.size
+        width: di.s
+        height: di.s
+        // Hüpfen: von der Kante weg und zurück
+        transform: Translate { id: hop }
+        SequentialAnimation {
+            running: di.bouncing
+            loops: Animation.Infinite
+            alwaysRunToEnd: true
+            NumberAnimation {
+                target: hop; property: di.vertical ? "x" : "y"
+                to: (dock.position === "bottom" || dock.position === "right" ? -1 : 1) * di.size * 0.42
+                duration: 300; easing.type: Easing.OutQuad
+            }
+            NumberAnimation { target: hop; property: di.vertical ? "x" : "y"; to: 0; duration: 360; easing.type: Easing.OutBounce }
+        }
         AppIcon {
             id: ic
             anchors.fill: parent
             icon: di.item && di.item.icon ? String(di.item.icon) : ""
-            size: di.size
+            size: di.size * dock.magnifyFactor
             visible: di.kind !== "window" || ready
         }
         // Fenster ohne Desktop-Eintrag und ohne Symbol: Anfangsbuchstabe des Titels
@@ -64,7 +97,7 @@ Item {
             Txt {
                 anchors.centerIn: parent
                 text: (di.name || "?").charAt(0).toUpperCase()
-                size: di.size * 0.42
+                size: di.s * 0.42
                 weight: Font.DemiBold
                 color: Theme.containerText
             }
@@ -111,9 +144,9 @@ Item {
     // ---- Name unter dem Symbol (dock.labels = always)
     Txt {
         visible: !di.separator && di.labelRoom > 0
-        width: di.size + dock.spacing
+        width: di.s + dock.spacing
         anchors.horizontalCenter: iconBox.horizontalCenter
-        y: di.size + 1
+        y: di.s + 1
         horizontalAlignment: Text.AlignHCenter
         text: di.name
         size: 10
@@ -130,8 +163,8 @@ Item {
         columns: di.vertical ? 1 : n
         rows: di.vertical ? n : 1
         spacing: 3
-        x: di.vertical ? (dock.position === "left" ? -gap - width / 2 : di.size + gap - width / 2) : (di.size - width) / 2
-        y: di.vertical ? (di.size - height) / 2 : (dock.position === "top" ? -gap - height / 2 : di.height + gap - height / 2)
+        x: di.vertical ? (dock.position === "left" ? -gap - width / 2 : di.width + gap - width / 2) : (di.width - width) / 2
+        y: di.vertical ? (di.height - height) / 2 : (dock.position === "top" ? -gap - height / 2 : di.height + gap - height / 2)
         Repeater {
             model: ind.n
             Rectangle {

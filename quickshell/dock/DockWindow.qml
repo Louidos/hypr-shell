@@ -2,7 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
+import Quickshell.Hyprland
 import "../common"
+import "verstecken.js" as V
 
 // Ein Dock auf einem Bildschirm: Layer-Shell-Fenster an der Kante (dock.position), das Glas mittig
 // mit dock.margin Abstand. Die Eingabefläche (mask) ist genau das sichtbare Glas, Klicks daneben
@@ -42,12 +44,50 @@ PanelWindow {
     readonly property int radius: Math.min(d.radius, Math.floor(thickness / 2))
     readonly property int shadowPad: d.shadow === "none" ? 0 : d.shadow === "soft" ? 12 : d.shadow === "medium" ? 18 : 26
     readonly property int tipRoom: d.labels === "hover" ? (vertical ? 240 : 44) : 0
-    readonly property int outward: Math.max(tipRoom, shadowPad)
-    readonly property int sideRoom: Math.max(shadowPad, vertical ? 24 : 80)
+    // Vergrösserung (nicht, wenn das Dock scrollt): Platz dafür ist im Fenster schon reserviert,
+    // damit sich die Fenstergrösse beim Darüberfahren nicht ändert
+    readonly property bool magnify: d.magnify && !scrolls
+    readonly property real magExtra: magnify ? icon * (d.magnifyFactor - 1) : 0
+    readonly property int outward: Math.max(tipRoom + magExtra, shadowPad)
+    readonly property int sideRoom: Math.max(shadowPad, vertical ? 24 : 80) + Math.ceil(magExtra * 1.5)
+
+    // Maus entlang des Docks (Fensterkoordinaten, -1 = nicht darüber); Mitte der Symbole in der
+    // Grundgrösse, gemessen ab der Mitte des Fensters (bleibt beim Wachsen stehen)
+    property real mouseAlong: -1
+    readonly property var baseCenters: {
+        const m = {}
+        let x = d.padding
+        for (let i = 0; i < shownKeys.length; i++) {
+            const o = byKey[shownKeys[i]]
+            const w = o && o.kind === "separator" ? sepW : icon
+            m[shownKeys[i]] = x + w / 2 - contentLen / 2
+            x += w + d.spacing
+        }
+        return m
+    }
+    // für Tests: Maus n Schritte über die ganze Länge führen, alle Symbole neu rechnen lassen
+    function sweep(n) {
+        const t0 = Date.now()
+        const center = (vertical ? height : width) / 2
+        for (let i = 0; i <= n; i++) {
+            mouseAlong = center - contentLen / 2 + contentLen * i / Math.max(1, n)
+            for (let j = 0; j < row.children.length; j++) { const c = row.children[j]; if (c.mag !== undefined) c.width }
+        }
+        mouseAlong = -1
+        return Date.now() - t0
+    }
+    function magFor(key) {
+        if (!magnify || mouseAlong < 0 || dragKey !== "" || baseCenters[key] === undefined) return 1
+        const center = (vertical ? height : width) / 2
+        const dist = Math.abs(mouseAlong - (center + baseCenters[key])) / (icon + d.spacing)
+        const r = d.magnifyRange + 0.5
+        if (dist >= r) return 1
+        return 1 + (d.magnifyFactor - 1) * (Math.cos(Math.PI * dist / r) + 1) / 2
+    }
 
     function geometry() {
         return { x: Math.round(body.x), y: Math.round(body.y), width: Math.round(body.width), height: Math.round(body.height),
-                 windowWidth: width, windowHeight: height, icon: icon, scrolls: scrolls, radius: radius }
+                 windowWidth: width, windowHeight: height, icon: icon, scrolls: scrolls, radius: radius, hidden: hidden }
     }
     Component.onCompleted: { const l = d.windows.slice(); l.push(win); d.windows = l }
     Component.onDestruction: { if (d) d.windows = d.windows.filter(w => w !== win) }
@@ -67,7 +107,62 @@ PanelWindow {
     WlrLayershell.layer: d.topLayer ? WlrLayer.Top : WlrLayer.Bottom
     WlrLayershell.namespace: "hypr-shell-dock"
     WlrLayershell.keyboardFocus: keyboard ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    mask: Region { item: body }
+    mask: hidden ? edgeRegion : bodyRegion
+    Region { id: bodyRegion; item: body }
+    Region { id: edgeRegion; item: edgeStrip }
+
+    // ---- Verstecken (dock.autohide): never, always (Maus geht), smart (ein Fenster überdeckt das Dock).
+    // Versteckt bleibt ein schmaler, unsichtbarer Streifen an der Kante; Mauskontakt dort blendet
+    // nach dock.show_delay_ms ein. Menü, Fensterliste, Ziehen, Tastatur und die offene Seite "Dock"
+    // der Einstellungen halten es sichtbar.
+    property bool hovering: false
+    property bool revealed: false
+    property bool hidden: false
+    readonly property bool keepVisible: hovering || revealed || keyboard || popupOpen || dragKey !== ""
+        || (Ui.settingsOpen && Ui.settingsPage === "dock")
+    // Fläche des Docks auf dem Bildschirm (für smart)
+    readonly property var screenRect: {
+        const sx = screen ? screen.x : 0, sy = screen ? screen.y : 0
+        const sw = screen ? screen.width : 1920, sh = screen ? screen.height : 1080
+        const wx = pos === "left" ? 0 : pos === "right" ? sw - width : (sw - width) / 2
+        const wy = pos === "top" ? 0 : pos === "bottom" ? sh - height : (sh - height) / 2
+        return { x: sx + wx + body.x, y: sy + wy + body.y, width: body.width, height: body.height }
+    }
+    readonly property var monitor: {
+        if (!Ui.hyprland || !screen) return null
+        const l = Hyprland.monitors.values
+        for (let i = 0; i < l.length; i++) if (l[i].name === screen.name) return l[i]
+        return null
+    }
+    readonly property bool overlapped: d.autohide === "smart" && Ui.hyprland && monitor !== null
+        && V.ueberdeckt(screenRect, V.ausHyprland(Hyprland.toplevels.values, screen.name,
+                        monitor.activeWorkspace ? monitor.activeWorkspace.id : undefined))
+    readonly property bool shouldHide: !keepVisible && (d.autohide === "always" || (d.autohide === "smart" && overlapped))
+    onShouldHideChanged: {
+        if (shouldHide) hideTimer.restart()
+        else { hideTimer.stop(); if (!revealed || keepVisible) hidden = false }
+    }
+    onHoveringChanged: if (!hovering) revealed = false
+    Timer { id: hideTimer; interval: win.d.hideDelay; onTriggered: if (win.shouldHide) win.hidden = true }
+    Timer { id: showTimer; interval: win.d.showDelay; onTriggered: { win.revealed = true; win.hidden = false } }
+    // Kante: schmaler Streifen über die Länge des Docks (nur versteckt ein Auslöser)
+    Item {
+        id: edgeStrip
+        readonly property int t: 2
+        x: win.vertical ? (win.pos === "left" ? 0 : win.width - t) : body.x
+        y: win.vertical ? body.y : (win.pos === "top" ? 0 : win.height - t)
+        width: win.vertical ? t : body.width
+        height: win.vertical ? body.height : t
+        MouseArea {
+            anchors.fill: parent
+            enabled: win.hidden
+            hoverEnabled: true
+            onEntered: showTimer.restart()
+            onExited: showTimer.stop()
+        }
+    }
+    // Die untere Kante gehört dem Dock, solange es dort versteckt ist oder über die Kante kam
+    readonly property bool ownsEdge: pos === "bottom" && (hidden || revealed)
 
     // ---- Ziehen: Vorschau der neuen Reihenfolge, beim Loslassen speichern bzw. lösen
     property string dragKey: ""
@@ -252,7 +347,7 @@ PanelWindow {
     property string hoverText: ""
     Rectangle {
         id: tip
-        visible: win.d.labels === "hover" && win.hoverItem !== null && win.hoverText !== ""
+        visible: win.d.labels === "hover" && win.hoverItem !== null && win.hoverText !== "" && !win.hidden
         readonly property point c: win.hoverItem ? win.hoverItem.mapToItem(win.contentItem, win.hoverItem.width / 2, win.hoverItem.height / 2) : Qt.point(0, 0)
         width: tipText.implicitWidth + 20
         height: tipText.implicitHeight + 10
@@ -260,10 +355,11 @@ PanelWindow {
         color: Theme.glass(0.82)
         border.width: 1
         border.color: Theme.glassBorder
-        x: win.vertical ? (win.pos === "left" ? body.x + body.width + 10 : body.x - width - 10)
+        x: win.vertical ? (win.pos === "left" ? Math.max(body.x + body.width, c.x + half) + 8 : Math.min(body.x, c.x - half) - width - 8)
                         : Math.max(2, Math.min(win.width - width - 2, c.x - width / 2))
+        readonly property real half: win.hoverItem ? (win.vertical ? win.hoverItem.width : win.hoverItem.height) / 2 : 0
         y: win.vertical ? Math.max(2, Math.min(win.height - height - 2, c.y - height / 2))
-                        : (win.pos === "bottom" ? body.y - height - 10 : body.y + body.height + 10)
+                        : (win.pos === "bottom" ? Math.min(body.y, c.y - half) - height - 8 : Math.max(body.y + body.height, c.y + half) + 8)
         Txt {
             id: tipText
             anchors.centerIn: parent
@@ -274,10 +370,29 @@ PanelWindow {
 
     Item {
         id: body
-        width: win.vertical ? win.thickness : win.bodyLen
-        height: win.vertical ? win.bodyLen : win.thickness
+        // Länge: wächst mit den vergrösserten Symbolen mit (nach beiden Seiten gleich)
+        readonly property real len: win.scrolls ? win.bodyLen : Math.max(win.bodyLen, (win.vertical ? row.height : row.width) + 2 * win.d.padding)
+        width: win.vertical ? win.thickness : len
+        height: win.vertical ? len : win.thickness
         x: win.pos === "left" ? win.d.margin : win.pos === "right" ? parent.width - win.d.margin - width : Math.round((parent.width - width) / 2)
         y: win.pos === "top" ? win.d.margin : win.pos === "bottom" ? parent.height - win.d.margin - height : Math.round((parent.height - height) / 2)
+        // versteckt: hinaus über die Kante gleiten
+        readonly property real away: win.hidden ? win.thickness + win.d.margin + win.shadowPad + 4 : 0
+        transform: Translate {
+            x: win.pos === "left" ? -body.away : win.pos === "right" ? body.away : 0
+            y: win.pos === "top" ? -body.away : win.pos === "bottom" ? body.away : 0
+            Behavior on x { NumberAnimation { duration: win.d.animMs; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: win.d.animMs; easing.type: Easing.OutCubic } }
+        }
+        HoverHandler {
+            id: bodyHover
+            onHoveredChanged: win.hovering = hovered
+            onPointChanged: {
+                if (!hovered) { win.mouseAlong = -1; return }
+                const p = body.mapToItem(win.contentItem, point.position.x, point.position.y)
+                win.mouseAlong = win.vertical ? p.y : p.x
+            }
+        }
 
         // Schatten: einige weiche Ränder um das Glas (ohne Effekt-Modul, läuft mit jedem Qt)
         Repeater {
@@ -295,7 +410,7 @@ PanelWindow {
         }
 
         // Maus kommt aufs Dock: Ordner und Papierkorb neu prüfen (statt im Takt)
-        HoverHandler { onHoveredChanged: if (hovered) win.d.refreshFiles() }
+        HoverHandler { onHoveredChanged: if (hovered) win.d.refreshFiles(); else win.mouseAlong = -1 }
 
         Rectangle {
             id: glass
@@ -330,8 +445,11 @@ PanelWindow {
                 id: row
                 // Platzhalter-Animation beim Umsortieren
                 move: Transition { NumberAnimation { properties: "x,y"; duration: win.d.animMs; easing.type: Easing.OutCubic } }
-                x: win.d.padding
-                y: win.d.padding
+                // vergrösserte Symbole wachsen von der Kante weg
+                verticalItemAlignment: win.pos === "top" ? Grid.AlignTop : win.pos === "bottom" ? Grid.AlignBottom : Grid.AlignVCenter
+                horizontalItemAlignment: win.pos === "left" ? Grid.AlignLeft : win.pos === "right" ? Grid.AlignRight : Grid.AlignHCenter
+                x: win.vertical && win.pos === "right" ? body.width - win.d.padding - width : win.d.padding
+                y: !win.vertical && win.pos === "bottom" ? body.height - win.d.padding - height : win.d.padding
                 columns: win.vertical ? 1 : Math.max(1, win.keys.length)
                 rows: win.vertical ? Math.max(1, win.keys.length) : 1
                 spacing: win.d.spacing

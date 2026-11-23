@@ -19,7 +19,18 @@ Singleton {
         target: "shell"
         function current(): string { return ui.panel }
         function close(): void { ui.closePanel() }
+        // shell-toggle meldet den Gaming-Modus (Dock ohne Animationen)
+        function gaming(on: bool): void { ui.gaming = on }
     }
+    property bool gaming: false
+    FileView {
+        path: Quickshell.env("HOME") + "/.local/share/hypr-shell/gaming"
+        printErrors: false
+        onLoaded: ui.gaming = true
+        onLoadFailed: ui.gaming = false
+    }
+    // das Dock ist unten versteckt: die Mitte der unteren Kante blendet das Dock ein, nicht das Dashboard
+    property bool dockOwnsEdge: false
     // läuft die Oberfläche unter Hyprland? (Fokus-Griff "Klick daneben schliesst" gibt es nur dort)
     readonly property bool hyprland: (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "") !== ""
 

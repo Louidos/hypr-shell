@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Geändert
+- Es ist immer nur ein Panel offen: Öffnet man Dashboard, Panel oder Einstellungs-App, schliesst das andere; Esc und ein Klick daneben schliessen, SUPER+D öffnet zusätzlich das Dashboard (#44)
+
 ## 1.2.0 – 2026-11-23
 
 ### Hinzugefügt

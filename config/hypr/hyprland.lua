@@ -53,7 +53,7 @@ local S = {
         launcher_alt = "ALT + Space", close = "SUPER + C", float = "SUPER + V",
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
-        dashboard = "SUPER + ALT + D", wallpaper = "SUPER + W", panel = "SUPER + A", edit_desktop = "SUPER + ALT + W",
+        dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", edit_desktop = "SUPER + ALT + W",
         settings = "SUPER + U",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
@@ -309,9 +309,11 @@ bind(mit(K.workspace_mod, "mouse_up"),   hl.dsp.focus({ workspace = "e-1" }))
 bind(mit(K.mouse_mod, "mouse:272"), hl.dsp.window.drag(),   { mouse = true })
 bind(mit(K.mouse_mod, "mouse:273"), hl.dsp.window.resize(), { mouse = true })
 
--- Oberfläche (Quickshell): Dashboard, Panel, Einstellungs-App; SUPER + W öffnet den Tab Wallpaper
+-- Oberfläche (Quickshell): Dashboard, Panel, Einstellungs-App; SUPER + W öffnet den Tab Wallpaper.
+-- Es ist immer nur ein Panel offen: öffnet man eines, schliesst das andere.
 local ui = bin .. "shell-quickshell ipc "
 bind(K.dashboard, hl.dsp.exec_cmd(ui .. "dashboard toggle"))
+bind(K.dashboard_alt, hl.dsp.exec_cmd(ui .. "dashboard toggle"))
 bind(K.wallpaper, hl.dsp.exec_cmd(ui .. "dashboard open wallpaper"))
 bind(K.panel,     hl.dsp.exec_cmd(ui .. "panel toggle"))
 -- Desktop-Widgets mit der Maus verschieben und skalieren

@@ -66,6 +66,15 @@ pruefe '! grep -qi "swap" $b/HomeTab.qml && [ "$(grep -A16 "Ringe (2×2" $b/Home
 pruefe 'grep -q "\"Usage\"" $b/PerfTab.qml && grep -q "component Cookie" $b/PerfTab.qml && grep -q "\"Used\"" $b/PerfTab.qml && grep -q "Download" $b/PerfTab.qml && grep -q "Upload" $b/PerfTab.qml && grep -q "\"Total\"" $b/PerfTab.qml' "Performance: Abzeichen Usage, Ring Used, Download/Upload/Total"
 pruefe 'grep -q "Saved and copied to clipboard" quickshell/panel/PanelContent.qml' "Panel: Screenshot-Karte mit Hinweis"
 
-pruefe 'grep -q "running: true" quickshell/dashboard/PerfTab.qml && grep -q "sourceComponent:" quickshell/dashboard/Dashboard.qml && grep -q "active: dash.open || win.t > 0.001" quickshell/dashboard/Dashboard.qml' "Tabs werden nur bei offenem Panel geladen (Abfragen laufen nur dann)"
+pruefe 'grep -q "running: true" quickshell/dashboard/PerfTab.qml && grep -q "content: Component" quickshell/dashboard/Dashboard.qml && grep -q "active: !ov.lazy || ov.open || win.t > 0.001" quickshell/common/Overlay.qml' "Tabs werden nur bei offenem Panel geladen (Abfragen laufen nur dann)"
+
+echo "== gemeinsame Panel-Grundlage"
+for f in quickshell/dashboard/Dashboard.qml quickshell/panel/HotCorner.qml quickshell/settings/SettingsApp.qml; do
+    pruefe 'grep -q "^    Overlay {" "$f"' "$f nutzt den Baustein Overlay"
+done
+pruefe '! grep -q "PanelWindow {[[:space:]]*$" quickshell/settings/SettingsApp.qml && [ "$(grep -c "PanelWindow {" quickshell/dashboard/Dashboard.qml)" = 1 ] && [ "$(grep -c "PanelWindow {" quickshell/panel/HotCorner.qml)" = 1 ]' "eigene Fenster nur noch für Kante und Ecke"
+pruefe 'grep -q "readonly property bool open: exclusive ? Ui.panel === name : localOpen" quickshell/common/Overlay.qml && grep -q "property string panel: \"\"" quickshell/common/Ui.qml' "zentrale Stelle: immer nur ein Panel offen (Ui.panel)"
+pruefe 'grep -q "Keys.onEscapePressed: if (ov.closeOnEscape) ov.hide()" quickshell/common/Overlay.qml && grep -q "HyprlandFocusGrab" quickshell/common/Overlay.qml' "Esc und Klick daneben schliessen"
+pruefe 'grep -q "target: ov.name" quickshell/common/Overlay.qml' "jedes Panel ist per IPC erreichbar"
 
 exit "$fehler"

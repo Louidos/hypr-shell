@@ -150,6 +150,23 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target panel'; then
     ipc panel close; sleep 1
 fi
 
+# ---- immer nur ein Panel offen: öffnet man das Dashboard bei offenem Panel, schliesst das Panel
+panel_ok=1
+offen() { "$qs" -p "$cfg" ipc call shell current 2>/dev/null; }
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target shell'; then
+    echo "---- nur ein Panel offen ----"
+    ipc panel open; sleep 1
+    if [ "$(offen)" = panel ]; then echo "  ok: Panel offen"; else echo "  FEHLER: Panel nicht offen ($(offen))"; panel_ok=0; fi
+    ipc dashboard toggle; sleep 2; bild panel-dann-dashboard
+    if [ "$(offen)" = dashboard ]; then echo "  ok: Dashboard geöffnet, Panel geschlossen"; else echo "  FEHLER: offen ist \"$(offen)\""; panel_ok=0; fi
+    ipc settings open home; sleep 1
+    if [ "$(offen)" = settings ]; then echo "  ok: Einstellungs-App schliesst das Dashboard"; else echo "  FEHLER: offen ist \"$(offen)\""; panel_ok=0; fi
+    ipc shell close; sleep 1
+    if [ -z "$(offen)" ]; then echo "  ok: alles geschlossen"; else echo "  FEHLER: noch offen: $(offen)"; panel_ok=0; fi
+else
+    echo "FEHLER: IPC-Ziel shell fehlt"; panel_ok=0
+fi
+
 # ---- Einstellungs-App: jede Seite, Suche, Bedienung. Im unsichtbaren Compositor gibt es kein
 # Zeigegerät; "ipc call test …" löst deshalb die Signale der Bedienelemente aus (toggled/clicked,
 # beim Regler moved … released) – derselbe Weg wie ein Mausklick.
@@ -280,6 +297,7 @@ echo "------------------------"
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 [ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
+[ "$panel_ok" -eq 1 ] || { echo "FEHLER: mehr als ein Panel offen (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then
     echo "FEHLER: Quickshell ist abgestürzt"
     exit 1

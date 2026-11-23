@@ -8,12 +8,15 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Hinzugefügt
 - Akku-Anzeige in der Leiste, einstellbare Skalierung und Touchpad (`scale`, `natural_scroll`, `tap_to_click` in `hypr-shell-local.lua`), scharfe Spiele bei skaliertem Bildschirm (#22)
+- `./install.sh --update` holt den neuen Stand und installiert ihn, eigene Einstellungen bleiben; der Installer bietet vorher ein Systemupdate an und sagt am Ende, was als Nächstes zu tun ist (#23)
 
 ### Geändert
 - Uhr, Kacheln, Dashboard, Panel und Sperrbildschirm sehen jetzt aus wie die Vorlage: Desktop-Uhr in JetBrainsMono, Kacheln für CPU, RAM und GPU (schlafende NVIDIA-Karte zeigt „–“), Tab-Leiste über die ganze Breite, drei Ringe ohne Swap, neuer Performance-Tab, Screenshot-Karte mit Hinweis, CPU und RAM auf dem Sperrbildschirm (#21)
 
 ### Behoben
 - Profilbild, Cover, Hintergrundbild-Vorschauen und App-Symbole fehlen nicht mehr; ohne `~/.face` steht überall der Anfangsbuchstabe, auch auf dem Sperrbildschirm (#20)
+- Abbruch mit klarer Meldung bei zu altem Hyprland (unter 0.55), bevor etwas verändert wird (#23)
+- Das Zahnrad im Panel öffnet `settings.json` im Terminal mit `$EDITOR` (sonst nano) statt über xdg-open (#23)
 
 ## 1.0.0 – 2026-11-23
 

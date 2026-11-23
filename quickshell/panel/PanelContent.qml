@@ -312,7 +312,10 @@ FocusScope {
                         active: modelData !== "settings" && pc.panel.st[modelData] === true
                         onClicked: {
                             if (modelData === "settings")
-                                pc.panel.run(["xdg-open", Settings.home + "/.config/hypr-shell/settings.json"], true)
+                                // settings.json im Terminal öffnen: $EDITOR, sonst nano
+                                pc.panel.run(["kitty", "--class", "hypr-shell-tui", "-e", "bash", "-c",
+                                              "exec ${EDITOR:-nano} \"$1\"", "_",
+                                              Settings.home + "/.config/hypr-shell/settings.json"], true)
                             else
                                 pc.panel.toggle(modelData)
                         }

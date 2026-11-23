@@ -12,6 +12,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Einstellungs-App (SUPER+U oder Zahnrad im Panel) mit Schaltern, Reglern, Listen, Farbwähler, Suche, Zurücksetzen, Undo und Profilen; Bildschirme mit 15-Sekunden-Bestätigung (#35)
 - Tastenkürzel ansehen, ändern und eigene anlegen (Einstellungs-App → Keybinds, `shell-set keybinds.…`); doppelte Belegungen werden abgelehnt und benannt, ohne Änderung gelten die bisherigen Kürzel (#37)
 - Uhr und Kacheln mit der Maus verschieben und skalieren (SUPER+ALT+W oder „Edit on desktop“), mit Hilfslinien, Done, Cancel und Reset positions (#38)
+- Vollständige Übersicht aller Einstellungen mit Beispielen (`docs/einstellungen.md`, aus dem Schema erzeugt); die Seite About der App öffnet settings.json und diese Übersicht (#39)
 
 ## 1.1.0 – 2026-11-23
 

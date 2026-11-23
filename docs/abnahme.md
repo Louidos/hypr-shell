@@ -126,3 +126,12 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | Cancel und Esc lassen alles wie vorher | Cancel automatisch, Esc (gleiche Funktion) über `ipc desktop cancel`; die Taste selbst von Hand |
 | Ausserhalb des Modus nehmen die Widgets keine Klicks an | leere Eingabefläche (`mask`) automatisch; von Hand |
 | Mausrad skaliert, Hilfslinien rasten ein | von Hand |
+
+## Doku der Einstellungen
+
+| Punkt | Prüfung |
+| --- | --- |
+| Jeder Schlüssel aus dem Schema steht in docs/einstellungen.md | automatisch (`tests/doku.sh`) |
+| Ein neuer Schlüssel ohne neu erzeugte Doku macht die CI rot | automatisch (`tests/doku.sh` prüft das mit einem zusätzlichen Test-Schlüssel) |
+| Das README erklärt die drei Wege in wenigen Zeilen | automatisch (Stichworte und Link); Lesbarkeit von Hand |
+| About: „Open settings.json“ und „Open docs“ | von Hand (öffnen Terminal bzw. Browser) |

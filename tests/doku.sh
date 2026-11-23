@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Prüft, dass die README jedes Tastenkürzel aus hyprland.lua und jede Einstellung aus
-# settings.example.json nennt und die Installation in drei Zeilen beschreibt.
+# Prüft, dass die README jedes Tastenkürzel aus hyprland.lua nennt, die Installation in drei Zeilen
+# beschreibt und die drei Wege zum Anpassen erklärt, und dass docs/einstellungen.md genau zum Schema
+# passt (sonst neu erzeugen: tests/doku-erzeugen.sh --write).
 # shellcheck disable=SC2016
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -33,12 +34,19 @@ else
     echo "  Hinweis: lua fehlt, Kürzel übersprungen."
 fi
 
-echo "== Einstellungen"
+echo "== Einstellungen (docs/einstellungen.md aus dem Schema)"
+pruefe 'tests/doku-erzeugen.sh >/dev/null' "docs/einstellungen.md passt zum Schema (sonst: tests/doku-erzeugen.sh --write)"
 if command -v jq >/dev/null; then
-    while IFS= read -r p; do
-        pruefe 'grep -qF "\`$p\`" README.md' "README nennt $p"
-    done < <(jq -r 'paths(scalars) | map(select(type == "string")) | join(".")' settings/settings.example.json | sort -u)
+    fehlend=""
+    while IFS= read -r k; do grep -qF "| \`$k\` |" docs/einstellungen.md || fehlend="$fehlend $k"; done < <(jq -r '.keys[].key' settings/schema.json)
+    pruefe '[ -z "$fehlend" ]' "jeder Schlüssel aus dem Schema steht in docs/einstellungen.md ($fehlend)"
+    # ein neuer Schlüssel ohne neu erzeugte Doku muss auffallen
+    tmp="$(mktemp)"
+    jq '.keys += [{key: "test.neu", type: "bool", default: true, title: "Neu", description: "Neu", page: "about", section: "Test", icon: ""}]' settings/schema.json > "$tmp"
+    pruefe '! DOKU_SCHEMA="$tmp" tests/doku-erzeugen.sh >/dev/null 2>&1' "neuer Schlüssel ohne neu erzeugte Doku wird erkannt"
+    rm -f "$tmp"
 fi
+pruefe 'grep -q "docs/einstellungen.md" README.md && grep -q "SUPER + U" README.md && grep -q "shell-set" README.md && grep -q "settings.json" README.md' "README nennt die drei Wege und verlinkt die Übersicht"
 
 echo "== Screenshots"
 while IFS= read -r b; do

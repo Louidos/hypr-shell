@@ -304,11 +304,17 @@ erzeuge_ersatzbild() {
     buchstabe="$(printf '%s' "${USER:-$(id -un)}" | cut -c1 | tr '[:lower:]' '[:upper:]')"
     if [ "$DRY" -eq 1 ]; then probe "neu: ~/.local/share/hypr-shell/face.png (Ersatz-Profilbild mit $buchstabe)"; return 0; fi
     mkdir -p "$DATA"
-    schrift="$( (fc-match -f '%{file}' 'Inter:bold' 2>/dev/null) || true)"
+    # fontconfig legt sonst einen Zwischenspeicher in ~/.cache an – der Installer schreibt nur
+    # in seine eigenen Ordner, also einen Wegwerf-Ordner verwenden
+    local cache rc=0
+    cache="$(mktemp -d)"
+    schrift="$( (XDG_CACHE_HOME="$cache" fc-match -f '%{file}' 'Inter:bold' 2>/dev/null) || true)"
     local args=(-size 256x256 xc:none -fill '#2a2a2e' -draw 'circle 128,128 128,2' -fill '#e6e6e6')
     [ -n "$schrift" ] && [ -f "$schrift" ] && args+=(-font "$schrift")
     args+=(-pointsize 120 -gravity center -annotate +0+4 "${buchstabe:-?}" "$ziel")
-    if "$im" "${args[@]}" 2>/dev/null; then
+    XDG_CACHE_HOME="$cache" "$im" "${args[@]}" 2>/dev/null || rc=$?
+    rm -rf "$cache"
+    if [ "$rc" -eq 0 ]; then
         vermerke neu.txt "$ziel"
         printf '%s\n' "$ziel" >> "$MANIFEST.neu"
         ok "Ersatz-Profilbild für den Sperrbildschirm erzeugt (eigenes Bild: ~/.face)"

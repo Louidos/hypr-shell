@@ -11,6 +11,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Ohne eigenes Profilbild (~/.face) zeigen Dashboard, Panel und Einstellungen den Anfangsbuchstaben, ohne bei jedem Öffnen „Cannot open“ ins Log zu schreiben (#110)
 - Beim ersten Start (noch kein Verlauf, kein Chat, keine Farben aus dem Hintergrundbild) stehen keine Warnungen „File does not exist“ mehr im Log (#110)
 - Sensor-Kachel heisst ohne Anbindung wie in den Einstellungen „Air quality“ statt „Sensor“; das Dock zeigt die Standard-Einträge auch, bevor das Schema gelesen ist (#110)
+- Ist der unter Desktop → Screen eingestellte Bildschirm abgesteckt, erscheinen Widgets und Panels auf dem ersten Bildschirm und wechseln zurück, sobald er wieder da ist; ein Hinweis steht im Log (#110)
 
 ## 1.8.0 – 2026-11-23
 

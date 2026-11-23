@@ -849,4 +849,11 @@ if grep -E "ERROR|TypeError|ReferenceError|is not a type|is not installed|Cannot
     echo "FEHLER: QML-Fehler im Log (siehe oben)"
     exit 1
 fi
-echo "Oberflächentest: keine QML-Fehler"
+# Warnungen der Oberfläche (Bindungsschleifen, fehlende Dateien, …) zählen ebenfalls als Fehler.
+# Ausnahme: AppIcon.qml probiert für ein unbekanntes Symbol der Reihe nach /usr/share/pixmaps durch.
+if grep -E "Binding loop|WARN scene|WARN qml|qt\.qml\." "$T/qs.log" \
+    | grep -vE "AppIcon\.qml\[[0-9:]+\]: Cannot open: file:///usr/share/pixmaps/"; then
+    echo "FEHLER: QML-Warnungen im Log (siehe oben)"
+    exit 1
+fi
+echo "Oberflächentest: keine QML-Fehler und keine QML-Warnungen"

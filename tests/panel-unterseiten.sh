@@ -3,7 +3,7 @@
 # WLAN-Liste (stärkstes je Netz, verbundenes zuerst), verbinden mit Passwort über stdin (nicht in der
 # Befehlszeile von shell-net), Fehler verständlich; Bluetooth-Geräte mit Akku, koppeln; ohne Adapter
 # fehlt der Schalter (null); Leistungsprofil schaltet weiter; Nachtlicht mit hyprsunset.
-# shellcheck disable=SC2016,SC2034
+# shellcheck disable=SC2016,SC2034,SC2329
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
 REPO="$(pwd)"

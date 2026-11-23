@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Behoben
+- Dock und Leiste reagieren nach dem Schliessen eines Programms wieder zuverlässig: Fensterliste, Vorschau und Menü eines geschlossenen Programms gehen sofort zu, ein hängengebliebenes Panel blockiert keine Klicks mehr im Dock, und stürzen Leiste oder Oberfläche ab, starten sie von selbst neu (#117)
+
 ## 1.9.1 – 2026-11-23
 
 ### Behoben
@@ -28,7 +31,6 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Leiste, Dock, Widgets und alle Panels passen sich an Bildschirmgrösse, Skalierung und Hochformat an, nichts wird mehr abgeschnitten: Panels bleiben im freien Platz (ohne Leiste und reserviertes Dock) und rollen, wenn sie nicht passen; auf 4K mit Skalierung 1 ist alles grösser; im Hochformat ordnen sich Dashboard und Einstellungen um; jeder Bildschirm rechnet mit seiner eigenen Grösse, ohne Neustart (#111)
 - Die Schrift der Leiste wird bei niedriger Leiste (`bar.height`) und grossem Schriftfaktor kleiner, statt über die Leiste zu ragen (#111)
 - `shell-set help` zeigt am Ende nicht mehr die Zeile `set -euo pipefail` (#112)
-- Dock und Leiste reagieren nach dem Schliessen eines Programms wieder zuverlässig: Fensterliste, Vorschau und Menü eines geschlossenen Programms gehen sofort zu, ein hängengebliebenes Panel blockiert keine Klicks mehr im Dock, und stürzen Leiste oder Oberfläche ab, starten sie von selbst neu (#117)
 
 ## 1.8.0 – 2026-11-23
 

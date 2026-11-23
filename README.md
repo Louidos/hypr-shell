@@ -38,6 +38,35 @@ Der Installer
 | `--update` | neuen Stand holen (`git pull --ff-only`) und neu installieren; `settings.json`, `user.lua` und `hypr-shell-local.lua` bleiben unberührt |
 | `--restore [ORDNER]` | Stand vor der letzten Installation zurückholen |
 | `--uninstall` | alles von hypr-shell entfernen, Zustand vor der ersten Installation zurück |
+| `--login-theme` | Anmeldebildschirm (SDDM) im Stil des Sperrbildschirms – nur auf Wunsch, siehe unten |
+| `--login-theme-remove` | vorherigen Anmeldebildschirm zurückholen |
+
+### Anmeldebildschirm (nur auf Wunsch)
+
+```bash
+./install.sh --login-theme
+```
+
+installiert ein SDDM-Thema im Stil des Sperrbildschirms: unscharfes, abgedunkeltes
+Hintergrundbild, Profilbild, grosse gestapelte Uhr, Datum, Begrüssung, Passwort als schlichte
+Linie, Benutzer- und Sitzungswahl (Klick schaltet weiter) und Standby, Neustart,
+Herunterfahren. Farben und Bild kommen vom aktuellen Hintergrundbild; nach einem Bildwechsel
+übernimmt ein erneuter Aufruf die neuen Farben.
+
+- Die normale Installation fasst den Anmeldemanager **nie** an.
+- Ist nicht SDDM der aktive Anmeldemanager (z. B. GDM), bricht der Befehl mit einer klaren
+  Meldung ab und ändert nichts.
+- Das Thema wird vorher im Testmodus des Greeters gestartet (`sddm-greeter-qt6 --test-mode`);
+  meldet er Fehler, bleibt alles, wie es war.
+- Die bisherige Einstellung (`/etc/sddm.conf`, vorhandene Dateien) wird nach
+  `~/.local/share/hypr-shell/login-theme/` gesichert; geschrieben wird mit sudo nach
+  `/usr/share/sddm/themes/hypr-shell` und `/etc/sddm.conf.d/99-hypr-shell.conf`.
+
+```bash
+./install.sh --login-theme-remove
+```
+
+legt die Sicherung zurück; ab der nächsten Anmeldung gilt wieder der vorherige Bildschirm.
 
 ## Aktualisieren
 
@@ -423,6 +452,7 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `quickshell/` | QML-Oberfläche: `desktop/`, `dashboard/`, `panel/`, `settings/` (Einstellungs-App), `common/` |
 | `bin/` | Hilfsskripte für `~/.local/bin` |
 | `wallpapers/` | mitgelieferte Hintergrundbilder |
+| `sddm/` | Anmeldebildschirm (SDDM-Thema), nur mit `./install.sh --login-theme` |
 | `settings/` | `schema.json` (Beschreibung aller Werte) und `settings.example.json` (Standardwerte) |
 | `tests/` | Prüfskripte (`tests/lint.sh`, `tests/probeinstallation.sh`, …) |
 | `docs/` | Doku: [einstellungen.md](docs/einstellungen.md) (alle Werte, aus dem Schema erzeugt), [anbindungen.md](docs/anbindungen.md), [abnahme.md](docs/abnahme.md), Screenshots |

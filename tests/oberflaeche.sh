@@ -212,6 +212,27 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     ipc settings close; sleep 0.5
 fi
 
+# ---- Bearbeiten-Modus der Desktop-Widgets (SUPER+ALT+W)
+edit_ok=1
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target desktop'; then
+    echo "---- Widgets verschieben ----"
+    vorher="$(wert .desktop)"
+    ipc desktop edit; sleep 1.5; bild desktop-bearbeiten
+    if test_ipc moveWidget clock 0.3 0.2; then sleep 1; bild desktop-bearbeiten-gezogen; else echo "  FEHLER: Bearbeiten-Modus nicht aktiv"; edit_ok=0; fi
+    test_ipc click edit-cancel; sleep 1.5
+    if [ "$(wert .desktop)" = "$vorher" ]; then echo "  ok: Cancel lässt alles wie vorher"; else echo "  FEHLER: Cancel hat gespeichert: $(wert .desktop)"; edit_ok=0; fi
+    ipc desktop edit; sleep 1; test_ipc moveWidget resources 0.5 0.5; ipc desktop cancel; sleep 1.5
+    if [ "$(wert .desktop)" = "$vorher" ]; then echo "  ok: Abbrechen wie mit Esc lässt alles wie vorher"; else echo "  FEHLER: Abbrechen hat gespeichert"; edit_ok=0; fi
+    ipc desktop edit; sleep 1
+    test_ipc moveWidget clock 0.3 0.2 && test_ipc click edit-done
+    if warte_auf .desktop.clock.x 0.3 && [ "$(wert .desktop.clock.y)" = 0.2 ]; then echo "  ok: Done speichert die Position als Anteil der Bildschirmgrösse"
+    else echo "  FEHLER: Done: $(wert .desktop)"; edit_ok=0; fi
+    sleep 2
+    if grep -q "mask: Region { }" quickshell/desktop/ClockWidget.qml && grep -q "mask: Region { }" quickshell/desktop/ResourcesWidget.qml; then
+        echo "  ok: ausserhalb des Modus nehmen die Widgets keine Klicks an (leere Eingabefläche)"
+    else echo "  FEHLER: Widgets nehmen Klicks an"; edit_ok=0; fi
+fi
+
 echo "---- Bilder und Symbole ----"
 bereich dashboard-dashboard dashboard-avatar "Profilbild im Dashboard"
 bereich dashboard-wallpaper wallpaper-card "erste Wallpaper-Karte"
@@ -227,6 +248,12 @@ if [ -n "$im" ]; then
     ipc panel open; sleep 2; bild panel-ohne-face
     ipc panel close; sleep 1
     bereich panel-ohne-face panel-avatar "Anfangsbuchstabe ohne ~/.face"
+    # nach dem Neustart (wie nach einer Neuanmeldung) steht die Uhr am gespeicherten Platz
+    if [ "$edit_ok" -eq 1 ] && [ "$(wert .desktop.clock.x)" = 0.3 ]; then
+        cx="$(grep -o "hypr-shell-probe desktop-clock .*" "$T/qs.log" | tail -n1 | awk '{print $3}')"
+        if [ "${cx:-0}" -ge 570 ] && [ "${cx:-0}" -le 590 ]; then echo "  ok: Uhr steht nach dem Neustart am neuen Platz (x = $cx)"
+        else echo "  FEHLER: Uhr nach dem Neustart bei x = ${cx:-?} statt 576"; edit_ok=0; fi
+    fi
 fi
 
 # Sperrbildschirm (jetzt ohne ~/.face, also mit dem Ersatzbild des Installers) – nur in diesem
@@ -252,6 +279,7 @@ echo "------------------------"
 [ "$bereiche_ok" -eq 1 ] || { echo "FEHLER: Bilder oder Symbole fehlen (siehe oben)"; exit 1; }
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
+[ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then
     echo "FEHLER: Quickshell ist abgestürzt"
     exit 1

@@ -54,6 +54,7 @@ while IFS= read -r k; do
     if grep -rqF "\"$k\"" quickshell --include='*.qml' \
         || grep -qF "S.$k" config/hypr/hyprland.lua \
         || { [ "${k#keybinds.}" != "$k" ] && grep -qE "K\\.${k#keybinds.}\\b" config/hypr/hyprland.lua; } \
+        || { [[ "$k" =~ ^desktop\.(clock|resources)\.(x|y|scale)$ ]] && grep -rqF "Ui.widget(\"${BASH_REMATCH[1]}\", \"${BASH_REMATCH[2]}\"" quickshell; } \
         || grep -qE "(\\\$$var|\\\$\\{?$var\\b|\\\$e\\.$k\\b)" bin/shell-apply \
         || grep -rqF "'.$k " bin; then :; else tot+=("$k"); fi
 done < <(jq -r '.keys[].key' $SCHEMA)

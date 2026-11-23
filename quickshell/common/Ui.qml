@@ -22,6 +22,56 @@ Singleton {
     function closeSettings() { settingsOpen = false }
     function toggleSettings(page) { if (settingsOpen) closeSettings(); else openSettings(page) }
 
+    // ---- Bearbeiten-Modus für die Desktop-Widgets (SUPER+ALT+W): Entwurf der Positionen
+    // (Anteil der Bildschirmgrösse) und Grössen; gespeichert wird erst mit Done (ein Schritt im Verlauf)
+    property bool editDesktop: false
+    property var draft: ({})
+    function current(w) {
+        return {
+            x: Settings.get("desktop." + w + ".x", 0), y: Settings.get("desktop." + w + ".y", 0),
+            scale: Settings.get("desktop." + w + ".scale", 1)
+        }
+    }
+    function startEdit() {
+        draft = { clock: current("clock"), resources: current("resources") }
+        settingsOpen = false
+        editDesktop = true
+    }
+    function cancelEdit() { editDesktop = false }
+    function resetDraft() {
+        const d = Settings.defaults.desktop || {}
+        const pick = (o, fx, fy) => ({ x: o && o.x !== undefined ? o.x : fx, y: o && o.y !== undefined ? o.y : fy, scale: o && o.scale !== undefined ? o.scale : 1 })
+        draft = { clock: pick(d.clock, 0.02, 0.045), resources: pick(d.resources, 0.015, 0.56) }
+    }
+    function moveDraft(w, x, y) {
+        const d = Object.assign({}, draft)
+        d[w] = Object.assign({}, d[w], { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) })
+        draft = d
+    }
+    function scaleDraft(w, f) {
+        const d = Object.assign({}, draft)
+        d[w] = Object.assign({}, d[w], { scale: Math.max(0.3, Math.min(3, Math.round(f * 20) / 20)) })
+        draft = d
+    }
+    function finishEdit() {
+        const r = v => String(Math.round(v * 1000) / 1000)
+        const args = ["set"]
+        for (const w of ["clock", "resources"]) {
+            const c = current(w), n = draft[w]
+            if (!n) continue
+            if (r(n.x) !== r(c.x)) args.push("desktop." + w + ".x", r(n.x))
+            if (r(n.y) !== r(c.y)) args.push("desktop." + w + ".y", r(n.y))
+            if (r(n.scale) !== r(c.scale)) args.push("desktop." + w + ".scale", r(n.scale))
+        }
+        if (args.length > 1) run(args)
+        editDesktop = false
+    }
+    // Position/Grösse eines Widgets: im Bearbeiten-Modus der Entwurf, sonst settings.json
+    function widget(w, what, fallback) {
+        if (editDesktop && draft[w] && draft[w][what] !== undefined) return draft[w][what]
+        return Settings.get("desktop." + w + "." + what, fallback)
+    }
+
     // ---- shell-set: Befehle der Reihe nach; beim Ziehen eines Reglers zählt nur der neueste Wert
     property var queue: []
     property var liveArgs: null
@@ -66,6 +116,12 @@ Singleton {
             const s = p.parent
             for (let i = 1; i <= 4; i++) s.moved(s.snap(s.from + (s.to - s.from) * frac * i / 4))
             s.released(s.snap(s.from + (s.to - s.from) * frac))
+            return true
+        }
+        // Widget im Bearbeiten-Modus ziehen (derselbe Aufruf wie beim Ziehen mit der Maus)
+        function moveWidget(which: string, x: real, y: real): bool {
+            if (!ui.editDesktop) return false
+            ui.moveDraft(which, x, y)
             return true
         }
         function dragStart(name: string, frac: real): bool {

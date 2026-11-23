@@ -715,6 +715,64 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
         [ "$p" = minimal ] && dk key Escape >/dev/null
     done
 
+    # ---- Zusammenspiel: Leiste, Panels, Vollbild, zweiter Bildschirm, Bildwechsel
+    ds() { dk state | jq -r "$1"; }
+    export SWAYSOCK="${SWAYSOCK:-$(find "$XDG_RUNTIME_DIR" -maxdepth 1 -name 'sway-ipc.*.sock' -print -quit)}"
+    unten() { grim -g "0,1050 1920x30" "$1"; }
+    if [ "$(ds .exclusion)" = ignore ]; then echo "  ok: Leiste oben, Dock unten: Dock schwebt frei"; else echo "  FEHLER: exclusion $(ds .exclusion)"; dock_ok=0; fi
+    if pgrep -x waybar >/dev/null 2>&1 && [ -n "$im" ]; then
+        "$HOME/.local/bin/shell-set" bar.position bottom >/dev/null 2>&1; sleep 3
+        if [ "$(ds .exclusion)" = avoid ]; then echo "  ok: Leiste unten: Dock hält ihren Abstand ein"; else echo "  FEHLER: avoid $(ds .exclusion)"; dock_ok=0; fi
+        for p in mac compact island full; do
+            "$HOME/.local/bin/shell-dock" preset "$p" >/dev/null 2>&1; sleep 2
+            unten "$T/bar-mit.png"; dk close; sleep 1; unten "$T/bar-ohne.png"; dk open; sleep 1
+            if [ "$(vergleich -metric AE "$T/bar-mit.png" "$T/bar-ohne.png" null: 2>&1 | cut -d' ' -f1)" = 0 ]; then echo "  ok: $p: Dock überdeckt die Leiste nicht"
+            else echo "  FEHLER: $p: Dock überdeckt die Leiste"; dock_ok=0; fi
+        done
+        bild dock-leiste-unten
+        "$HOME/.local/bin/shell-dock" preset mac >/dev/null 2>&1
+        "$HOME/.local/bin/shell-set" reset bar.position >/dev/null 2>&1; sleep 2
+    fi
+    ipc dashboard open dashboard; sleep 1
+    if [ "$(ds .input)" = false ]; then echo "  ok: Dashboard offen: Dock nimmt keine Eingaben an"; else echo "  FEHLER: Dock nimmt bei offenem Dashboard Eingaben an"; dock_ok=0; fi
+    ipc dashboard close; sleep 1
+    if [ "$(ds .input)" = true ]; then echo "  ok: Dashboard zu: Dock wieder bedienbar"; else echo "  FEHLER: Dock nach dem Dashboard"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-quickshell" ipc shell gaming true >/dev/null 2>&1; sleep 1
+    if [ "$(ds .shown)" = false ]; then echo "  ok: Gaming-Modus: Dock weg"; else echo "  FEHLER: Dock im Gaming-Modus sichtbar"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-quickshell" ipc shell gaming false >/dev/null 2>&1; sleep 1
+    if [ "$(ds .shown)" = true ]; then echo "  ok: danach wieder da"; else echo "  FEHLER: Dock nach dem Gaming-Modus"; dock_ok=0; fi
+    if command -v swaymsg >/dev/null 2>&1 && [ -n "$SWAYSOCK" ]; then
+        "$qs" -p "$T/fenster.qml" > "$T/fenster2.log" 2>&1 &
+        fpid="$!"; pids+=("$fpid"); sleep 2
+        swaymsg '[title="Dock test window"] fullscreen enable' >/dev/null 2>&1; sleep 1
+        if [ "$(ds .fullscreen)" = true ] && [ "$(ds .shown)" = false ]; then echo "  ok: Vollbild-Fenster: Dock weg"; else echo "  FEHLER: Vollbild: $(dk state)"; dock_ok=0; fi
+        swaymsg '[title="Dock test window"] fullscreen disable' >/dev/null 2>&1; sleep 1
+        if [ "$(ds .shown)" = true ]; then echo "  ok: Vollbild beendet: Dock wieder da"; else echo "  FEHLER: nach dem Vollbild"; dock_ok=0; fi
+        kill "$fpid" 2>/dev/null || true
+        # zweiter Bildschirm: an- und abstecken
+        swaymsg create_output >/dev/null 2>&1; sleep 2
+        n2="$(dk count)"
+        if [ "$n2" = 2 ]; then echo "  ok: zweiter Bildschirm: genau ein zusätzliches Dock"; else echo "  FEHLER: zwei Bildschirme, $n2 Docks"; dock_ok=0; fi
+        "$HOME/.local/bin/shell-set" dock.monitor primary >/dev/null 2>&1; sleep 2
+        if [ "$(dk count)" = 1 ]; then echo "  ok: dock.monitor primary: ein Dock"; else echo "  FEHLER: primary: $(dk count)"; dock_ok=0; fi
+        "$HOME/.local/bin/shell-set" reset dock.monitor >/dev/null 2>&1; sleep 2
+        zweiter="$(swaymsg -t get_outputs -r 2>/dev/null | jq -r '.[] | select(.name != "HEADLESS-1") | .name' | head -n1)"
+        [ -n "$zweiter" ] && swaymsg output "$zweiter" unplug >/dev/null 2>&1; sleep 2
+        if kill -0 "$qspid" 2>/dev/null && [ "$(dk count)" = 1 ]; then echo "  ok: Abstecken: kein Absturz, ein Dock"; else echo "  FEHLER: nach dem Abstecken: $(dk count)"; dock_ok=0; fi
+    fi
+    # Bildwechsel färbt das Dock um; helles und dunkles Bild für die Doku
+    if command -v awww >/dev/null 2>&1 && command -v matugen >/dev/null 2>&1 && [ -n "$im" ]; then
+        vorher_glas="$(ds .glass)"
+        "$im" -size 1920x1080 gradient:'#f2efe6'-'#d9e4f0' "$HOME/Pictures/Wallpapers/test-hell.png"
+        "$im" -size 1920x1080 gradient:'#10131a'-'#2b1f3a' "$HOME/Pictures/Wallpapers/test-dunkel.png"
+        "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-hell.png" >/dev/null 2>&1; sleep 3
+        bild dock-hell
+        if [ "$(ds .glass)" != "$vorher_glas" ]; then echo "  ok: Bildwechsel färbt das Dock um"; else echo "  FEHLER: Dock-Farbe bleibt nach dem Bildwechsel"; dock_ok=0; fi
+        "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-dunkel.png" >/dev/null 2>&1; sleep 3
+        bild dock-dunkel
+        "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-bunt.png" >/dev/null 2>&1; sleep 2
+    fi
+
     # CPU in Ruhe: Quickshell 10 s messen, mit und ohne Dock
     cpu() { local a b; a=$(awk '{print $14+$15}' "/proc/$qspid/stat"); sleep 10; b=$(awk '{print $14+$15}' "/proc/$qspid/stat"); awk -v d=$((b - a)) -v hz="$(getconf CLK_TCK)" 'BEGIN { printf "%.2f", d / hz / 10 * 100 }'; }
     mit="$(cpu)"

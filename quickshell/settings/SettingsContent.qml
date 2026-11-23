@@ -9,7 +9,7 @@ FocusScope {
     id: sc
     focus: true
     property var about: ({})
-    readonly property var pages: Settings.schema.pages || []
+    readonly property var pages: (Settings.schema.pages || []).filter(p => Ui.can(p.requires))
     readonly property var page: pages.find(p => p.id === Ui.settingsPage) || pages[0] || ({ id: "home", title: "Home" })
 
     Connections {
@@ -23,6 +23,12 @@ FocusScope {
         else Ui.closeSettings()
     }
 
+    // Fähigkeiten des Rechners (Laptop-Funktionen) für Seiten und Zeilen mit "requires"
+    Process {
+        command: [Settings.bin + "shell-laptop", "caps"]
+        running: true
+        stdout: StdioCollector { onStreamFinished: { try { Ui.caps = Object.assign({}, Ui.caps, JSON.parse(text)) } catch (e) { } } }
+    }
     Process {
         command: [Settings.bin + "shell-sysinfo", "about"]
         running: true
@@ -34,7 +40,8 @@ FocusScope {
         const q = search.input.text.trim().toLowerCase()
         if (q.length < 2) return []
         const keys = Settings.schema.keys || []
-        return keys.filter(k => (k.title + " " + k.description + " " + k.key).toLowerCase().indexOf(q) >= 0).slice(0, 8)
+        return keys.filter(k => Ui.can(k.requires) && sc.pages.some(p => p.id === k.page)
+                           && (k.title + " " + k.description + " " + k.key).toLowerCase().indexOf(q) >= 0).slice(0, 8)
     }
     function go(spec) {
         search.input.text = ""
@@ -175,7 +182,7 @@ FocusScope {
                 page: modelData
                 showTitle: modelData.id !== "home"
                 skip: modelData.id === "monitors" ? ["monitors.outputs"] : []
-                extra: modelData.id === "home" ? homeC : modelData.id === "monitors" ? monitorsC
+                extra: modelData.id === "home" ? homeC : modelData.id === "monitors" ? monitorsC : modelData.id === "laptop" ? laptopC
                      : modelData.id === "about" ? aboutC : modelData.id === "desktop" ? desktopC : null
                 footer: keys.length === 0 && ["home", "about", "monitors"].indexOf(modelData.id) < 0 ? emptyC : null
                 Component.onCompleted: pageHolder.current = sp
@@ -185,6 +192,7 @@ FocusScope {
     Component { id: homeC; HomePage { } }
     Component { id: monitorsC; MonitorsPage { } }
     Component { id: aboutC; AboutPage { } }
+    Component { id: laptopC; LaptopPage { } }
     Component {
         id: desktopC
         GlassCard {

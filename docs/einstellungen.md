@@ -182,6 +182,14 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `nightlight.from` | `20:00` | Text (Format geprüft) | Time the night light switches on, like 20:00 | `shell-set nightlight.from 20:00` |
 | `nightlight.to` | `07:00` | Text (Format geprüft) | Time the night light switches off, like 07:00 | `shell-set nightlight.to 07:00` |
 
+## laptop – laptop
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `laptop.charge_limit` | `100` | ganze Zahl 20 … 100 % | Stop charging the battery at this level (100 = always full). Kept by asusd across restarts | `shell-set laptop.charge_limit 95` |
+| `laptop.kbd_light` | `unchanged` | `unchanged`, `off`, `low`, `med`, `high` | Brightness of the keyboard backlight (unchanged = leave it as it is) | `shell-set laptop.kbd_light off` |
+| `laptop.kbd_follow_wallpaper` | `false` | `true`, `false` | Keyboard color follows the accent color of the wallpaper | `shell-set laptop.kbd_follow_wallpaper true` |
+
 ## keybinds – Tastenkürzel
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |

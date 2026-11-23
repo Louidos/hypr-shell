@@ -194,6 +194,11 @@
     "from": "20:00",
     "to": "07:00"
   },
+  "laptop": {
+    "charge_limit": 100,
+    "kbd_light": "unchanged",
+    "kbd_follow_wallpaper": false
+  },
   "keybinds": {
     "terminal": "SUPER + Q",
     "files": "SUPER + E",

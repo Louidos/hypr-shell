@@ -509,6 +509,19 @@ fehlende_programme() {
     fi
 }
 
+# ASUS-Laptop ohne asusctl: Pakete nur vorschlagen, nie ungefragt installieren
+laptop_hinweis() {
+    local hersteller=""
+    hersteller="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)"
+    case "$hersteller" in
+        *ASUS*)
+            if ! command -v asusctl >/dev/null 2>&1; then
+                warnung "ASUS-Laptop erkannt: Für Leistungsprofil, Ladegrenze und Tastaturlicht in hypr-shell asusctl installieren"
+                warnung "  (siehe https://asus-linux.org – z. B. Paket asusctl; für den Grafik-Modus zusätzlich supergfxctl)"
+            fi ;;
+    esac
+}
+
 dienste_pruefen() {
     command -v systemctl >/dev/null 2>&1 || return 0
     local d
@@ -604,6 +617,7 @@ installieren() {
 
     if [ "$NOPKG" -eq 0 ]; then fehlende_programme; fi
     dienste_pruefen
+    laptop_hinweis
 
     echo
     if [ "$DRY" -eq 1 ]; then

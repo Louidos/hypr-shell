@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# Laptop-Funktionen (ASUS ROG und andere) für hypr-shell. Nur was der Rechner kann, wird angeboten.
+#   shell-laptop caps                      was geht: {"laptop", "asusctl", "profile", "gfx", "charge", "kbd", "aura"}
+#   shell-laptop status                    Zustand als JSON (Profil, Grafik-Modus, Ladegrenze, Tastaturlicht)
+#   shell-laptop profile get|list|next     Leistungsprofil (asusctl, sonst power-profiles-daemon)
+#   shell-laptop profile set <name>        power-saver|balanced|performance (bei asusctl: Quiet|Balanced|Performance)
+#   shell-laptop gfx get|list|pending      Grafik-Modus (supergfxctl)
+#   shell-laptop gfx set <Modus>           z. B. Integrated, Hybrid, AsusMuxDgpu – danach ab- oder neu anmelden
+#   shell-laptop charge get|set <20-100>   Ladegrenze in Prozent (asusctl; bleibt über Neustarts, asusd merkt sie sich)
+#   shell-laptop kbd set off|low|med|high  Tastaturbeleuchtung (asusctl)
+#   shell-laptop kbd color <#rrggbb>       Farbe der Tastatur (asusctl aura, statisch)
+#   shell-laptop apply                     Werte aus den Einstellungen anwenden (laptop.*)
+# Befehle nach asusctl 6.3+ (profile get/set, battery limit, leds set, aura effect static) mit Rückfall
+# auf die alte Schreibweise bis 6.2 (profile -p/-P, -c, -k, aura static); supergfxctl -g/-s/-m/-p.
+set -uo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+EFF="$DATA/settings.effective.json"
+SYSFS="${HYPR_SHELL_SYSFS:-/sys}"
+hat() { command -v "$1" >/dev/null 2>&1; }
+wert() {
+    local v=""
+    if hat jq && [ -f "$EFF" ]; then v="$(jq -r "($1) | if . == null then empty else . end" "$EFF" 2>/dev/null || true)"; fi
+    printf '%s\n' "${v:-$2}"
+}
+bool() { if "$@"; then echo true; else echo false; fi; }
+
+# asusctl ab 6.3 kennt "profile get"; ältere Fassungen nur "profile -p"
+neu() {
+    if [ -z "${_NEU:-}" ]; then
+        _NEU=0
+        if asusctl profile get >/dev/null 2>&1; then _NEU=1; fi
+    fi
+    [ "$_NEU" = 1 ]
+}
+
+ppd_da() { hat powerprofilesctl && powerprofilesctl get >/dev/null 2>&1; }
+asus_da() { hat asusctl; }
+profil_da() { asus_da || ppd_da; }
+gfx_da() { hat supergfxctl && supergfxctl -g >/dev/null 2>&1; }
+akku() { compgen -G "$SYSFS/class/power_supply/BAT*/charge_control_end_threshold" | head -n1; }
+charge_da() { asus_da && [ -n "$(akku)" ]; }
+kbd_da() { asus_da && compgen -G "$SYSFS/class/leds/*kbd_backlight*" >/dev/null; }
+
+# ---- Leistungsprofil: einheitliche Namen nach aussen (power-saver, balanced, performance)
+asus_name() { case "$1" in power-saver|quiet|Quiet) echo Quiet ;; performance|Performance) echo Performance ;; *) echo Balanced ;; esac; }
+einheitlich() { case "$1" in Quiet|LowPower|power-saver) echo power-saver ;; Performance|performance) echo performance ;; *) echo balanced ;; esac; }
+profil_get() {
+    if asus_da; then
+        local p
+        if neu; then p="$(asusctl profile get 2>/dev/null | sed -n 's/^Active profile: //p' | head -n1)"
+        else p="$(asusctl profile -p 2>/dev/null | sed -n 's/^Active profile is //p' | head -n1)"; fi
+        einheitlich "${p:-Balanced}"
+    elif ppd_da; then powerprofilesctl get
+    else return 1; fi
+}
+profil_set() {
+    local z
+    z="$(einheitlich "$1")"
+    if asus_da; then
+        if neu; then asusctl profile set "$(asus_name "$z")" >/dev/null; else asusctl profile -P "$(asus_name "$z")" >/dev/null; fi
+    elif ppd_da; then powerprofilesctl set "$z"
+    else return 1; fi
+}
+profil_liste() {
+    if asus_da; then echo '["power-saver","balanced","performance"]'
+    elif ppd_da; then
+        powerprofilesctl list 2>/dev/null | sed -n 's/^[* ] \([a-z-]*\):$/\1/p' | jq -R -s -c 'split("\n") | map(select(. != "")) | reverse'
+    else echo '[]'; fi
+}
+profil_next() {
+    local liste jetzt
+    liste="$(profil_liste)"
+    jetzt="$(profil_get)" || return 1
+    profil_set "$(jq -r --arg j "$jetzt" '. as $l | ($l | index($j) // -1) as $i | $l[($i + 1) % ($l | length)]' <<<"$liste")"
+}
+
+# ---- Grafik-Modus (supergfxctl): Namen genau so, wie supergfxctl sie erwartet
+gfx_liste() { supergfxctl -s 2>/dev/null | tr -d '[] ' | tr ',' '\n' | jq -R -s -c 'split("\n") | map(select(. != ""))'; }
+
+# ---- Ladegrenze
+charge_get() { local f; f="$(akku)"; [ -n "$f" ] && cat "$f"; }
+charge_set() {
+    local n="$1"
+    if ! [[ "$n" =~ ^[0-9]+$ ]] || [ "$n" -lt 20 ] || [ "$n" -gt 100 ]; then echo "shell-laptop: Ladegrenze 20–100" >&2; return 2; fi
+    if neu; then asusctl battery limit "$n" >/dev/null; else asusctl -c "$n" >/dev/null; fi
+}
+
+kbd_set() {
+    case "$1" in off|low|med|high) ;; *) echo "shell-laptop: off|low|med|high" >&2; return 2 ;; esac
+    if neu; then asusctl leds set "$1" >/dev/null; else asusctl -k "$1" >/dev/null; fi
+}
+kbd_color() {
+    local c="${1#\#}"
+    [[ "$c" =~ ^[0-9a-fA-F]{6}$ ]] || { echo "shell-laptop: Farbe wie #8ab4f8" >&2; return 2; }
+    # 6.3.2+: aura effect static, davor aura static
+    asusctl aura effect static -c "$c" >/dev/null 2>&1 || asusctl aura static -c "$c" >/dev/null
+}
+
+caps() {
+    local p=false g=false c=false k=false a=false
+    profil_da && p=true; gfx_da && g=true; charge_da && c=true; kbd_da && k=true; asus_da && a=true
+    jq -cn --argjson p $p --argjson g $g --argjson c $c --argjson k $k --argjson a $a \
+        '{laptop: ($p or $g or $c or $k), asusctl: $a, profile: $p, gfx: $g, charge: $c, kbd: $k, aura: ($k and $a)}'
+}
+
+status() {
+    local pr=null pl='[]' gm=null gl='[]' gp=null ch=null
+    if profil_da; then pr="\"$(profil_get)\""; pl="$(profil_liste)"; fi
+    if gfx_da; then
+        gm="\"$(supergfxctl -g 2>/dev/null)\""; gl="$(gfx_liste)"
+        gp="$(supergfxctl -p 2>/dev/null | jq -R -s -c 'rtrimstr("\n")')"
+    fi
+    if charge_da; then ch="$(charge_get || echo null)"; fi
+    jq -cn --argjson caps "$(caps)" --argjson pr "$pr" --argjson pl "$pl" --argjson gm "$gm" --argjson gl "$gl" \
+        --argjson gp "$gp" --argjson ch "${ch:-null}" \
+        '{caps: $caps, profile: $pr, profiles: $pl, gfx: $gm, gfx_modes: $gl, gfx_pending: $gp, charge: $ch}'
+}
+
+# Einstellungen anwenden: nur was eingestellt ist (Standard: nichts ändern)
+apply() {
+    local n k
+    n="$(wert '.laptop.charge_limit' 100)"
+    if charge_da && [ "$n" != 100 ] && [ "$(charge_get)" != "$n" ]; then charge_set "$n"; fi
+    k="$(wert '.laptop.kbd_light' unchanged)"
+    if kbd_da && [ "$k" != unchanged ]; then kbd_set "$k"; fi
+    if kbd_da && [ "$(wert '.laptop.kbd_follow_wallpaper' false)" = true ] && [ -f "$HOME/.config/hypr-shell/colors.json" ]; then
+        kbd_color "$(jq -r '.accent // empty' "$HOME/.config/hypr-shell/colors.json" 2>/dev/null)" || true
+    fi
+    return 0
+}
+
+case "${1:-} ${2:-}" in
+    "caps "*) caps ;;
+    "status "*) status ;;
+    "profile get") profil_get ;;
+    "profile list") profil_liste ;;
+    "profile next") profil_next ;;
+    "profile set") profil_set "${3:?Profil fehlt}" ;;
+    "gfx get") gfx_da && supergfxctl -g ;;
+    "gfx list") if gfx_da; then gfx_liste; else echo '[]'; fi ;;
+    "gfx pending") gfx_da && supergfxctl -p ;;
+    "gfx set")
+        gfx_da || { echo "supergfxctl fehlt" >&2; exit 1; }
+        jq -e --arg m "${3:?Modus fehlt}" 'index($m) != null' <<<"$(gfx_liste)" >/dev/null || { echo "shell-laptop: unbekannter Modus $3" >&2; exit 2; }
+        supergfxctl -m "$3" ;;
+    "charge get") charge_get ;;
+    "charge set") charge_set "${3:?Prozent fehlen}" ;;
+    "kbd set") kbd_set "${3:?Stufe fehlt}" ;;
+    "kbd color") kbd_color "${3:?Farbe fehlt}" ;;
+    "apply "*) apply ;;
+    *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

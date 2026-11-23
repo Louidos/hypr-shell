@@ -121,8 +121,8 @@ cfg="$HOME/.config/quickshell/hypr-shell"
 starte_qs() {
     # Quickshell sieht eine hyprctl-Attrappe mit Beispielfenstern (tests/daten), Aufrufe landen in $T/hyprctl.log
     mkdir -p "$T/fake"
-    for p in hyprctl nmcli bluetoothctl; do ln -sf "$REPO/tests/daten/$p" "$T/fake/$p"; done
-    PATH="$T/fake:$PATH" HYPRCTL_LOG="$T/hyprctl.log" HYPRCTL_BINDS="$T/binds.json" HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
+    for p in hyprctl nmcli bluetoothctl asusctl supergfxctl; do ln -sf "$REPO/tests/daten/$p" "$T/fake/$p"; done
+    PATH="$T/fake:$PATH" ASUS_STATE="$T/asus" HYPRCTL_LOG="$T/hyprctl.log" HYPRCTL_BINDS="$T/binds.json" HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
     qspid="$!"
     pids+=("$qspid")
     sleep 6
@@ -360,7 +360,7 @@ warte_auf() { # jq-ausdruck erwartet [versuche à 0.25 s]
 test_ipc() { [ "$("$qs" -p "$cfg" ipc call test "$@" 2>/dev/null)" = true ]; }
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     echo "---- Einstellungs-App ----"
-    for seite in home bar look theme desktop dashboard panel lock input monitors apps keybinds about; do
+    for seite in home bar look theme desktop dashboard panel system laptop lock input monitors apps keybinds about; do
         ipc settings open "$seite"; sleep 2; bild "settings-$seite"
     done
     for q in blur clock battery; do

@@ -10,7 +10,7 @@ Flickable {
     property Component footer: null     // unter den Abschnitten
     property var skip: []               // Schlüssel, die die Seite selbst zeigt
     property bool showTitle: true
-    readonly property var keys: (Settings.schema.keys || []).filter(k => k.page === page.id && skip.indexOf(k.key) < 0)
+    readonly property var keys: (Settings.schema.keys || []).filter(k => k.page === page.id && skip.indexOf(k.key) < 0 && Ui.can(k.requires))
     readonly property var sections: {
         const r = []
         for (let i = 0; i < keys.length; i++) if (r.indexOf(keys[i].section) < 0) r.push(keys[i].section)

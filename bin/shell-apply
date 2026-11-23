@@ -68,7 +68,8 @@ def problem($s; $v):
   elif $s.type == "enum" then
     (if any($s.values[]; . == $v) then null else "expected one of: \(allowed($s))" end)
   elif $s.type == "color" then
-    (if ($v | type) == "string" and ($v | test("^#[0-9a-fA-F]{6}$")) then null else "expected a color like #8ab4f8" end)
+    (if ($v | type) == "string" and (($v | test("^#[0-9a-fA-F]{6}$")) or ($s.auto == true and $v == "auto")) then null
+     elif $s.auto == true then "expected auto or a color like #8ab4f8" else "expected a color like #8ab4f8" end)
   elif $s.type == "list" then
     if ($v | type) != "array" then "expected a list of: \(allowed($s))"
     elif any($v[]; . as $x | ($s.values | index([$x])) == null) then "unknown entry, allowed are: \(allowed($s))"

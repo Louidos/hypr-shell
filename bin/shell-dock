@@ -7,10 +7,27 @@
 #   shell-dock recent <ordner>    die 10 neuesten Dateien als JSON [{"name", "path"}]
 #   shell-dock file <datei>       Datei mit dem Standardprogramm öffnen
 #   shell-dock empty-trash        Papierkorb leeren (das Dock fragt vorher nach)
+#   shell-dock presets            Voreinstellungen als JSON [{"name", "description"}]
+#   shell-dock preset <name>      Voreinstellung anwenden (nur dock.*-Werte, nie dock.items)
+#   shell-dock export <datei>     alle dock.*-Werte (mit dock.items) als JSON-Datei
+#   shell-dock import <datei>     dock.*-Werte aus einer Datei: alles oder nichts
+#   shell-dock reset              alle dock.*-Werte auf den Standard
 set -euo pipefail
 
 TRASH="${XDG_DATA_HOME:-$HOME/.local/share}/Trash"
-EFF="$HOME/.local/share/hypr-shell/settings.effective.json"
+DATA="$HOME/.local/share/hypr-shell"
+EFF="$DATA/settings.effective.json"
+SCHEMA="$DATA/schema.json"
+BIN="$HOME/.local/bin"
+# Voreinstellungen: installiert unter ~/.local/share/hypr-shell/presets/dock, sonst aus dem Repo
+REPO_DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." 2>/dev/null && pwd)"
+PRESETS="$DATA/presets/dock"
+[ -d "$PRESETS" ] || PRESETS="$REPO_DIR/settings/presets/dock"
+[ -f "$SCHEMA" ] || SCHEMA="$REPO_DIR/settings/schema.json"
+
+fehler() { echo "shell-dock: $*" >&2; exit 1; }
+# alle dock.*-Schlüssel ausser dock.items und dock.preset
+dock_schluessel() { jq -r '.keys[] | select(.key | startswith("dock.")) | select(.key != "dock.items" and .key != "dock.preset") | .key' "$SCHEMA"; }
 
 hat() { command -v "$1" >/dev/null 2>&1; }
 # shellcheck disable=SC2088  # "~" ist hier Text aus den Einstellungen
@@ -61,5 +78,39 @@ case "${1:-}" in
         if hat gio && gio trash --empty 2>/dev/null; then exit 0; fi
         [ -d "$TRASH" ] || exit 0
         find "$TRASH/files" "$TRASH/info" -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true ;;
-    *) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+    presets)
+        for f in "$PRESETS"/*.json; do [ -f "$f" ] && jq -c '{name: ._name, description: ._description}' "$f"; done | jq -s -c '.' ;;
+    preset)
+        name="${2:-}"; f="$PRESETS/$name.json"
+        if ! [[ "$name" =~ ^[a-z]+$ ]] || [ ! -f "$f" ]; then fehler "unbekannte Voreinstellung: $name"; fi
+        # jeder dock.*-Wert: aus der Voreinstellung, sonst der Standard aus dem Schema; dock.items bleibt
+        args=()
+        while IFS=$'\t' read -r k v; do args+=("$k" "$v"); done < <(
+            jq -r --slurpfile p "$f" '.keys[] | select(.key | startswith("dock.")) | select(.key != "dock.items" and .key != "dock.preset")
+                | .key as $k | [$k, ((if ($p[0] | has($k)) then $p[0][$k] else .default end) | if type == "string" then . else tojson end)] | @tsv' "$SCHEMA")
+        args+=(dock.preset "$name")
+        "$BIN/shell-set" set "${args[@]}" ;;
+    export)
+        ziel="${2:-}"; [ -n "$ziel" ] || fehler "Datei fehlt"
+        [ -f "$EFF" ] || fehler "keine Einstellungen ($EFF)"
+        jq '{dock: .dock}' "$EFF" > "$ziel.tmp.$$" && mv -f "$ziel.tmp.$$" "$ziel"
+        echo "$ziel" ;;
+    import)
+        quelle="${2:-}"; [ -f "$quelle" ] || fehler "Datei nicht gefunden: $quelle"
+        jq -e '(.dock | type) == "object"' "$quelle" >/dev/null 2>&1 || fehler "keine gültige Dock-Datei (erwartet {\"dock\": {…}})"
+        # nur bekannte dock.*-Schlüssel, jeder Wert gültig – sonst wird nichts übernommen
+        unbekannt="$(jq -r --slurpfile s "$SCHEMA" '[.dock | keys[] | "dock." + .] - [$s[0].keys[].key] | join(", ")' "$quelle")"
+        [ -z "$unbekannt" ] || fehler "unbekannte Werte: $unbekannt – nichts übernommen"
+        tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+        jq -n --slurpfile d "$quelle" '{dock: $d[0].dock}' > "$tmp/probe.json"
+        if ! "$BIN/shell-apply" --check "$tmp/probe.json" > "$tmp/check.txt" 2>&1; then
+            sed 's/^/  /' "$tmp/check.txt" >&2
+            fehler "ungültige Werte – nichts übernommen"
+        fi
+        args=()
+        while IFS=$'\t' read -r k v; do args+=("$k" "$v"); done < <(jq -r '.dock | to_entries[] | ["dock." + .key, (.value | if type == "string" then . else tojson end)] | @tsv' "$quelle")
+        [ "${#args[@]}" -gt 0 ] || exit 0
+        "$BIN/shell-set" set "${args[@]}" ;;
+    reset) "$BIN/shell-set" reset dock ;;
+    *) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

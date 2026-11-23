@@ -107,6 +107,38 @@ Starter und Fenster-Übersicht bieten kein Ziehen an; Programme kommen dort desh
 - `dock.anim_ms` 0 schaltet alle Dock-Animationen ab; ebenso im Gaming-Modus und wenn die
   Animationen von hypr-shell (`look.animations.enabled`) aus sind.
 
+## Einstellungen
+
+Einstellungs-App → **Dock** (`SUPER + U`): alle Werte in den Abschnitten General, Size & Shape,
+Glass & Color, Icons & Indicators, Motion, Behavior und Items. Schieberegler haben ein Zahlenfeld
+(anklicken und eintippen), jeder Wert hat „Reset“, abhängige Werte sind grau, solange ihr Schalter
+aus ist. Jede Änderung wirkt sofort am echten Dock; solange die Seite offen ist, bleibt das Dock
+sichtbar.
+
+**Items**: Liste zum Sortieren (am Griff ziehen oder Pfeile), Entfernen, Hinzufügen von
+Programmen (Suche), Ordnern (Pfad oder Vorschlag), Trenner, Papierkorb und Startknopf.
+
+**Voreinstellungen** (`settings/presets/dock/`, auch `shell-dock preset <name>`) ändern nur
+dock.*-Werte, nie `dock.items`; alles, was eine Voreinstellung nicht nennt, kommt auf den Standard:
+
+| Name | Wirkung |
+| --- | --- |
+| `mac` (Standard) | Werte wie in der Tabelle unten |
+| `minimal` | 36 px, ohne Vergrösserung, `autohide` always, Indikator line, schwacher Schatten |
+| `compact` | 40 px, Abstand 4, Rundung 14, ohne Namen |
+| `island` | 56 px, Rundung halbe Höhe, Abstand 16, kräftiger Schatten |
+| `full` | `max_length` 100, `margin` 0, Rundung 0, `mode` reserve |
+
+| mac | minimal | compact | island | full |
+| --- | --- | --- | --- | --- |
+| ![mac](screenshots/dock/mac.png) | ![minimal](screenshots/dock/minimal.png) | ![compact](screenshots/dock/compact.png) | ![island](screenshots/dock/island.png) | ![full](screenshots/dock/full.png) |
+
+**Export, Import, Reset all**: auf der Seite oder mit `shell-dock export <datei>`,
+`shell-dock import <datei>`, `shell-dock reset`. Exportiert werden alle dock.*-Werte mit
+`dock.items`, sonst nichts. Eine kaputte Datei (kein JSON, unbekannte Werte, Werte ausserhalb des
+Bereichs) wird abgelehnt – dann wird nichts übernommen. Die Dock-Werte gehören auch zu den Profilen
+von `shell-set profile`.
+
 ## Werte
 
 | Name | Standard | Bereich / Werte | Wirkung |
@@ -131,6 +163,7 @@ Starter und Fenster-Übersicht bieten kein Ziehen an; Programme kommen dort desh
 | `dock.shadow` | `medium` | none, soft, medium, strong | Schatten |
 | `dock.color_mode` | `wallpaper` | wallpaper, dark, light, custom | Farbquelle |
 | `dock.custom_color` | `#1e1e2e` | Farbe | Nur bei custom |
+| `dock.icon_style` | `original` | original, mono, theme | Darstellung der Symbole |
 | `dock.labels` | `hover` | never, hover, always | Namen anzeigen |
 | `dock.indicator` | `dot` | dot, line, none | Anzeige „läuft“ |
 | `dock.indicator_color` | `auto` | auto, Farbe | Farbe der Anzeige |
@@ -148,5 +181,6 @@ Starter und Fenster-Übersicht bieten kein Ziehen an; Programme kommen dort desh
 | `dock.show_delay_ms` | `150` | 0–2000 ms | Verzögerung beim Einblenden |
 | `dock.hide_delay_ms` | `400` | 0–5000 ms | Verzögerung beim Ausblenden |
 | `dock.items` | Standardliste | Liste | Reihenfolge und Art der Einträge |
+| `dock.preset` | `mac` | mac, minimal, compact, island, full | Zuletzt gewählte Voreinstellung |
 
 Zahlen ausserhalb des Bereichs werden auf die Grenze gesetzt (mit Hinweis), statt verworfen.

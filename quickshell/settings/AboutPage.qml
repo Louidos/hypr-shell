@@ -17,6 +17,21 @@ Column {
         stdout: StdioCollector { onStreamFinished: { try { ab.about = JSON.parse(text) } catch (e) { } } }
     }
 
+    // settings.json im Terminal (apps.terminal) mit $EDITOR öffnen, sonst nano
+    function openSettingsFile() {
+        const term = Settings.get("apps.terminal", "kitty")
+        const pre = term.split(" ")[0] === "kitty" ? ["kitty", "--class", "hypr-shell-tui"] : term.split(" ")
+        Quickshell.execDetached(pre.concat(["-e", "bash", "-c", "exec ${EDITOR:-nano} \"$1\"", "_", Settings.file]))
+        Ui.closeSettings()
+    }
+    // Übersicht aller Einstellungen (docs/einstellungen.md) im Browser (apps.browser)
+    function openDocs() {
+        const url = "https://github.com/Louidos/hypr-shell/blob/main/docs/einstellungen.md"
+        const b = Settings.get("apps.browser", "firefox").split(" ").filter(x => x !== "")
+        Quickshell.execDetached(b.concat([url]))
+        Ui.closeSettings()
+    }
+
     component Line: Row {
         id: line
         property string key
@@ -43,6 +58,22 @@ Column {
             Line { key: "Values"; value: (Settings.schema.keys || []).length + " settings in the schema" }
             Line { key: "Hyprland"; value: ab.about.hyprland || "" }
             Line { key: "Quickshell"; value: ab.about.quickshell || "" }
+            Item { width: 1; height: 6 }
+            Row {
+                spacing: 8
+                Pill {
+                    icon: "󰈙"
+                    text: "Open settings.json"
+                    onClicked: ab.openSettingsFile()
+                    Probe { name: "about-open-settings" }
+                }
+                Pill {
+                    icon: "󰈹"
+                    text: "Open docs"
+                    onClicked: ab.openDocs()
+                    Probe { name: "about-open-docs" }
+                }
+            }
         }
     }
 }

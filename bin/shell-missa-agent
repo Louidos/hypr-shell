@@ -38,11 +38,17 @@ DEFAULT_BLOCKED = ["~/.ssh", "~/.gnupg", "~/.local/share/keyrings", "~/.password
 # ------------------------------------------------------------------ Einstellungen und Zustand
 
 def settings():
-    try:
-        with open(EFF) as f:
-            return json.load(f)
-    except (OSError, ValueError):
-        return {}
+    # eine gerade geschriebene Datei ist kurz leer oder halb: einmal kurz warten und neu lesen
+    for versuch in range(2):
+        try:
+            with open(EFF) as f:
+                return json.load(f)
+        except ValueError:
+            if versuch == 0:
+                time.sleep(0.05)
+        except OSError:
+            break
+    return {}
 
 
 def get(path, default=None):

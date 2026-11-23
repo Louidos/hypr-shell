@@ -32,7 +32,8 @@ S="http://127.0.0.1:$port"
 python3 "$REPO/tests/daten/missa-testserver.py" "$port" "$T/server.log" 2>"$T/server.err" &
 pids+=("$!")
 for _ in $(seq 1 50); do curl -s -o /dev/null "$S/health" && break; sleep 0.1; done
-einstellen() { jq -n --arg u "$S" --argjson x "$1" '{missa: ({enabled: true, agent_enabled: true, url: $u, device: "testgeraet", access: "ask"} + $x)}' > "$EFF"; }
+# atomar schreiben (wie shell-apply), sonst liest der Agent womöglich eine halbe Datei
+einstellen() { jq -n --arg u "$S" --argjson x "$1" '{missa: ({enabled: true, agent_enabled: true, url: $u, device: "testgeraet", access: "ask"} + $x)}' > "$EFF.tmp" && mv -f "$EFF.tmp" "$EFF"; }
 ag() { "$REPO/bin/shell-missa-agent" "$@"; }
 auftrag() { curl -s -X POST "$S/test/auftrag" -d "$1" | jq -r .id; }
 ergebnis() { # id [sekunden] -> JSON des Ergebnisses

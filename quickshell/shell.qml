@@ -17,6 +17,7 @@ ShellRoot {
     Desktop { }
     Dashboard { }
     HotCorner { }
+    NightLight { }
     SettingsApp { }
     Launcher { }
     Notifications { }

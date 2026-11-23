@@ -39,7 +39,7 @@ ARGS=("$@")
 
 # Pakete (Namen werden vor der Installation mit pacman -Si / paru -Si geprüft)
 PAKETE=(
-    hyprland hyprlock hypridle xdg-desktop-portal-hyprland hyprpolkitagent
+    hyprland hyprlock hypridle hyprsunset xdg-desktop-portal-hyprland hyprpolkitagent
     quickshell waybar rofi awww matugen kitty cava
     grim slurp wl-clipboard cliphist libnotify jq playerctl brightnessctl pamixer wireplumber
     power-profiles-daemon networkmanager bluez bluez-utils nautilus xdg-user-dirs imagemagick

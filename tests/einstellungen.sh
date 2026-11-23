@@ -56,7 +56,7 @@ while IFS= read -r k; do
         || { [ "${k#keybinds.}" != "$k" ] && grep -qE "K\\.${k#keybinds.}\\b" config/hypr/hyprland.lua; } \
         || { [[ "$k" =~ ^desktop\.(clock|resources)\.(x|y|scale)$ ]] && grep -rqF "Ui.widget(\"${BASH_REMATCH[1]}\", \"${BASH_REMATCH[2]}\"" quickshell; } \
         || grep -qE "(\\\$$var|\\\$\\{?$var\\b|\\\$e\\.$k\\b)" bin/shell-apply \
-        || grep -rqF "'.$k " bin; then :; else tot+=("$k"); fi
+        || grep -rqF "'.$k " bin || grep -rqF "'.$k'" bin; then :; else tot+=("$k"); fi
 done < <(jq -r '.keys[].key' $SCHEMA)
 pruefe '[ "${#tot[@]}" -eq 0 ]' "kein Wert ohne Wirkung (${tot[*]:-})"
 
@@ -96,7 +96,7 @@ st="$h/.config/waybar/style.css"
 pruefe 'grep -q "font-family: \"Noto Sans\", \"Hack Nerd Font\"" "$st" && grep -q "font-size: 16px" "$st" && grep -q "rgba(10, 10, 12, 0.5)" "$st"' "B: Schrift, Grösse und Deckkraft der Leiste"
 pruefe 'grep -q "font_family = Oswald" "$h/.config/hypr/hyprlock.conf" && grep -q "font_size = 156" "$h/.config/hypr/hyprlock.conf"' "B: Uhrschrift und Grösse auf dem Sperrbildschirm"
 pruefe 'grep -q "icon-theme: *\"Adwaita\"" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "Noto Sans 13" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "0.6)" "$h/.config/rofi/hypr-shell-settings.rasi"' "B: Starter mit Symbolthema, Schrift und Glas"
-pruefe '[ "$(waybar "$h" ".network.\"on-click\"")" = "foot -e nmtui" ] && [ "$(waybar "$h" ".\"custom/distro\".\"on-click\"")" = fuzzel ]' "B: Terminal und Starter in der Leiste"
+pruefe '[ "$(waybar "$h" ".network.\"on-click\"")" = "\$HOME/.local/bin/shell-quickshell ipc panel page wifi" ] && [ "$(waybar "$h" ".\"custom/distro\".\"on-click\"")" = fuzzel ]' "B: Starter in der Leiste, WLAN öffnet die Unterseite im Panel"
 
 # Beispiel C: Bildschirme
 h="$(neues_home c '{"monitors": {"scale": "1.25", "outputs": [{"name": "eDP-1", "resolution": "2560x1600", "refresh": 165, "scale": "1.6"}, {"name": "HDMI-A-1", "position": "2560x0"}]}}')"

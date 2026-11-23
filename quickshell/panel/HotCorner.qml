@@ -10,7 +10,11 @@ import "../common"
 Scope {
     id: hc
     readonly property bool open: ov.open
-    property var st: ({ wifi: false, bluetooth: false, dnd: false, gaming: false, awake: false })
+    property var st: ({ wifi: false, bluetooth: false, audio: false, dnd: false, gaming: false, awake: false, nightlight: null, profile: null })
+    property string wantPage: ""
+    // Schnellschalter aus panel.toggles ohne die, die der Rechner nicht hat (Zustand null)
+    readonly property var toggles: Settings.get("panel.toggles", ["wifi", "bluetooth", "audio", "dnd", "gaming", "profile", "nightlight", "settings"])
+        .filter(n => n === "settings" || st[n] !== null)
 
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
     readonly property string corner: Settings.get("panel.corner", "bottom-right")
@@ -18,7 +22,20 @@ Scope {
     readonly property bool atRight: corner.indexOf("right") > 0
     readonly property int gap: 10
 
-    function show() { ov.show() }
+    function show() { wantPage = ""; ov.show() }
+    // Panel direkt auf einer Unterseite öffnen (Klick auf WLAN, Bluetooth oder Ton in der Leiste)
+    function showPage(name) { wantPage = name; ov.show(); if (ov.item) ov.item.page = name }
+
+    IpcHandler {
+        target: "panel"
+        function open(): void { hc.show() }
+        function close(): void { hc.hide() }
+        function toggle(): void { if (hc.open) hc.hide(); else hc.show() }
+        function page(name: string): void { hc.showPage(name) }
+        // für Tests: gerade gezeigte Unterseite ("" = Übersicht)
+        function current(): string { return hc.open && ov.item ? ov.item.page : "" }
+        function toggles(): string { return hc.toggles.join(",") }
+    }
     function hide() { ov.hide() }
     function refresh() { if (!stateProc.running) stateProc.running = true }
     // Befehl ausführen; closeFirst schliesst das Panel vorher (z. B. für Screenshots)
@@ -65,6 +82,7 @@ Scope {
     Overlay {
         id: ov
         name: "panel"
+        ipc: false
         place: hc.corner
         animation: "grow"
         screen: hc.screen
@@ -76,8 +94,9 @@ Scope {
         keyboardFocus: WlrKeyboardFocus.OnDemand
         leaveDelay: Settings.get("panel.close_on_leave", true) ? Settings.get("panel.close_delay", 400) : -1
         idleDelay: Settings.get("panel.close_on_leave", true) ? 4000 : -1
-        holdOpen: item ? item.typing : false
-        onOpened: hc.refresh()
+        // offen halten, solange getippt wird oder eine Unterseite (z. B. WLAN-Passwort) offen ist
+        holdOpen: item ? (item.typing || item.page !== "") : false
+        onOpened: { hc.refresh(); if (ov.item) ov.item.page = hc.wantPage }
 
         content: Component {
             PanelContent {

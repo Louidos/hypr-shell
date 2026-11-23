@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Attrappe von powerprofilesctl: Zustand in $PPD_STATE (Standard balanced)
+f="${PPD_STATE:-/tmp/ppd-state}"
+case "$1" in
+    get) cat "$f" 2>/dev/null || echo balanced ;;
+    set) case "$2" in power-saver|balanced|performance) echo "$2" > "$f" ;; *) exit 1 ;; esac ;;
+    list) printf '  performance:\n* balanced:\n  power-saver:\n' ;;
+esac

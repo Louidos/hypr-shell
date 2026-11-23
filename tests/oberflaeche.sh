@@ -120,7 +120,8 @@ fi
 cfg="$HOME/.config/quickshell/hypr-shell"
 starte_qs() {
     # Quickshell sieht eine hyprctl-Attrappe mit Beispielfenstern (tests/daten), Aufrufe landen in $T/hyprctl.log
-    mkdir -p "$T/fake"; ln -sf "$REPO/tests/daten/hyprctl" "$T/fake/hyprctl"
+    mkdir -p "$T/fake"
+    for p in hyprctl nmcli bluetoothctl; do ln -sf "$REPO/tests/daten/$p" "$T/fake/$p"; done
     PATH="$T/fake:$PATH" HYPRCTL_LOG="$T/hyprctl.log" HYPR_SHELL_TEST=1 HYPR_SHELL_POWER_DRYRUN=1 "$qs" -p "$cfg" >> "$T/qs.log" 2>&1 &
     qspid="$!"
     pids+=("$qspid")
@@ -284,6 +285,18 @@ else
     echo "FEHLER: IPC-Ziel launcher fehlt"; starter_ok=0
 fi
 
+# ---- Unterseiten im Panel (WLAN und Bluetooth aus Attrappen; der Test-Rechner hat keinen Bluetooth-Adapter)
+seiten_ok=1
+echo "---- Unterseiten im Panel ----"
+ipc panel page wifi; sleep 2.5; bild panel-wlan
+if [ "$("$qs" -p "$cfg" ipc call panel current 2>/dev/null)" = wifi ]; then echo "  ok: WLAN-Unterseite direkt geöffnet (wie Klick auf das Symbol in der Leiste)"
+else echo "  FEHLER: Unterseite: $("$qs" -p "$cfg" ipc call panel current 2>/dev/null)"; seiten_ok=0; fi
+ipc panel page audio; sleep 1.5; bild panel-ton
+ipc panel close; sleep 1
+schalter="$("$qs" -p "$cfg" ipc call panel toggles 2>/dev/null)"
+if [[ ",$schalter," != *",bluetooth,"* ]] && [[ ",$schalter," == *",wifi,"* ]]; then echo "  ok: ohne Bluetooth-Adapter fehlt der Schalter ($schalter)"
+else echo "  FEHLER: Schalter: $schalter"; seiten_ok=0; fi
+
 # ---- immer nur ein Panel offen: öffnet man das Dashboard bei offenem Panel, schliesst das Panel
 panel_ok=1
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target shell'; then
@@ -434,6 +447,7 @@ echo "------------------------"
 [ "$ersatzbild_ok" -eq 1 ] || { echo "FEHLER: Ersatz-Profilbild"; exit 1; }
 [ "$app_ok" -eq 1 ] || { echo "FEHLER: Einstellungs-App (siehe oben)"; exit 1; }
 [ "$edit_ok" -eq 1 ] || { echo "FEHLER: Widgets verschieben (siehe oben)"; exit 1; }
+[ "$seiten_ok" -eq 1 ] || { echo "FEHLER: Unterseiten im Panel (siehe oben)"; exit 1; }
 [ "$uebersicht_ok" -eq 1 ] || { echo "FEHLER: Fenster-Übersicht (siehe oben)"; exit 1; }
 [ "$clip_ok" -eq 1 ] || { echo "FEHLER: Zwischenablage (siehe oben)"; exit 1; }
 [ "$power_ok" -eq 1 ] || { echo "FEHLER: Anzeige oder Power-Menü (siehe oben)"; exit 1; }

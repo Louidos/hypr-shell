@@ -196,8 +196,18 @@ steht in `clipboard.max` (Standard 50); `shell-set clipboard.enabled false` scha
 
 Wächst aus der Ecke unten rechts: Begrüssung mit Uhrzeit, **Keep Awake** (kein Sperren,
 kein Standby), **Apps** mit Suche, **Now playing**, **Screenshot** (Screen, Region,
-Ordner; gespeichert und in der Zwischenablage) und **Quick Toggles** für WLAN, Bluetooth, Nicht stören, Gaming-Modus (Blur,
-Animationen und Schatten aus) und Einstellungen (öffnet die Einstellungs-App).
+Ordner; gespeichert und in der Zwischenablage) und **Quick Toggles**: WLAN, Bluetooth, Ton (stumm),
+Nicht stören, Gaming-Modus (Blur, Animationen und Schatten aus), **Leistungsprofil** (ein Klick
+schaltet weiter: Power saver → Balanced → Performance), **Nachtlicht** (hyprsunset, Wärme in
+`nightlight.temperature`, Zeitplan mit `nightlight.schedule`, `nightlight.from`, `nightlight.to`) und
+Einstellungen (öffnet die Einstellungs-App). Schalter, die der Rechner nicht hat (kein WLAN, kein
+Bluetooth-Adapter, kein hyprsunset …), fehlen einfach.
+
+WLAN, Bluetooth und Ton haben einen kleinen Pfeil (oder Rechtsklick): er öffnet im Panel eine
+**Unterseite** mit Zurück-Pfeil – WLAN: Netze mit Stärke, verbinden (mit Passwortfeld), trennen;
+Bluetooth: gekoppelte und neue Geräte mit Akkustand, suchen, koppeln, verbinden; Ton: Ausgabe- und
+Eingabegerät wählen (wirkt sofort) und Lautstärke je App. Ein Klick auf das WLAN-, Bluetooth- oder
+Ton-Symbol in der Leiste öffnet direkt die passende Unterseite (Rechtsklick auf den Ton: stumm).
 
 ![Panel](docs/screenshots/panel.png)
 
@@ -306,7 +316,8 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-apply` | Einstellungen prüfen und anwenden (`--check` nur prüfen) |
 | `shell-wallpaper <bild>` | Hintergrundbild setzen und Farben erzeugen (Farbmodus aus `theme.colors`) |
 | `shell-screenshot region\|screen\|folder` | Screenshot bzw. Ordner öffnen |
-| `shell-toggle <wifi\|bluetooth\|dnd\|gaming\|awake> [on\|off]` | Schnellschalter, `shell-toggle status` zeigt alle |
+| `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
+| `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |
 | `shell-clipboard list\|paste\|delete\|clear …` | Verlauf der Zwischenablage |

@@ -153,8 +153,11 @@
     "toggles": [
       "wifi",
       "bluetooth",
+      "audio",
       "dnd",
       "gaming",
+      "profile",
+      "nightlight",
       "settings"
     ]
   },
@@ -184,6 +187,12 @@
   "clipboard": {
     "enabled": true,
     "max": 50
+  },
+  "nightlight": {
+    "temperature": 4000,
+    "schedule": false,
+    "from": "20:00",
+    "to": "07:00"
   },
   "keybinds": {
     "terminal": "SUPER + Q",

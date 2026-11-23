@@ -248,8 +248,6 @@ erzeuge_waybar() { # eff
               tray: "tray", recording: "custom/recording", notifications: "custom/notifications", power: "custom/power"}[.];
     . as $e
     | def mods($l): [$l[] | select(. != "battery" or $e.bar.battery) | mod];
-      def tui($c): ($e.apps.terminal | split(" ")[0]) as $t
-                   | if $t == "kitty" then "kitty --class hypr-shell-tui -e " + $c else $e.apps.terminal + " -e " + $c end;
     {
       layer: "top",
       position: $e.bar.position,
@@ -272,7 +270,8 @@ erzeuge_waybar() { # eff
               "status-icons": {playing: "󰎈", paused: "󰏤"}, "title-len": 40,
               "tooltip-format": "{artist} – {title}", "on-click": "playerctl play-pause"},
       pulseaudio: {format: "󰕾  {volume}%", "format-muted": "󰝟  muted", "scroll-step": 5,
-                   "on-click": "pamixer -t", "tooltip-format": "{desc}"},
+                   "on-click": "$HOME/.local/bin/shell-quickshell ipc panel page audio",
+                   "on-click-right": "$HOME/.local/bin/shell-toggle audio", "tooltip-format": "{desc}"},
       battery: {interval: 30, states: {critical: 14}, format: "{icon}  {capacity}%",
                 "format-charging": "󰂄  {capacity}%", "format-plugged": "󰂄  {capacity}%",
                 "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
@@ -282,10 +281,12 @@ erzeuge_waybar() { # eff
               calendar: {mode: "month", "weeks-pos": "", "on-scroll": 1}},
       bluetooth: {format: "󰂯", "format-off": "󰂲", "format-disabled": "󰂲", "format-connected": "󰂱",
                   "tooltip-format": "{controller_alias}: {status}", "tooltip-format-connected": "{device_enumerate}",
-                  "tooltip-format-enumerate-connected": "{device_alias}", "on-click": tui("bluetoothctl")},
+                  "tooltip-format-enumerate-connected": "{device_alias}",
+                  "on-click": "$HOME/.local/bin/shell-quickshell ipc panel page bluetooth"},
       network: {"format-wifi": "󰤨", "format-ethernet": "󰈀", "format-linked": "󰈀", "format-disconnected": "󰤭",
                 "tooltip-format-wifi": "{essid} · {signalStrength}%", "tooltip-format-ethernet": "{ifname} · {ipaddr}",
-                "tooltip-format-disconnected": "offline", "on-click": tui("nmtui")},
+                "tooltip-format-disconnected": "offline",
+                "on-click": "$HOME/.local/bin/shell-quickshell ipc panel page wifi"},
       tray: {"icon-size": 16, spacing: 8},
       "custom/recording": {exec: "$HOME/.local/bin/shell-recording status", "return-type": "json", interval: 2, tooltip: true},
       "custom/notifications": {exec: "cat \"$HOME/.local/share/hypr-shell/notifications-bar.json\" 2>/dev/null || echo '"'"'{\"text\": \"󰂜\"}'"'"'",

@@ -13,8 +13,13 @@ GlassCard {
     readonly property bool changed: rawv !== undefined && JSON.stringify(rawv) !== JSON.stringify(spec.default)
     readonly property bool wide: spec.type === "list" || spec.type === "stringlist" || spec.type === "objectlist"
     // hängt von einem anderen Schalter ab (z. B. der Agent von missa.enabled): grau mit Hinweis
-    readonly property bool blocked: spec.depends ? Settings.get(spec.depends, false) !== true : false
-    readonly property var dependsSpec: spec.depends ? Settings.schemaKey(spec.depends) : null
+    // "schlüssel" = Schalter muss an sein, "schlüssel=wert" = Auswahl muss diesen Wert haben
+    readonly property string dependsKey: spec.depends ? String(spec.depends).split("=")[0] : ""
+    readonly property string dependsValue: spec.depends && String(spec.depends).indexOf("=") > 0 ? String(spec.depends).split("=")[1] : ""
+    readonly property bool blocked: dependsKey === "" ? false
+        : dependsValue !== "" ? String(Settings.get(dependsKey, "")) !== dependsValue
+        : Settings.get(dependsKey, false) !== true
+    readonly property var dependsSpec: dependsKey !== "" ? Settings.schemaKey(dependsKey) : null
     // zuletzt gesetzter Wert, bis settings.json ihn bestätigt (damit Schalter sofort umspringen)
     property var pending: undefined
     readonly property var shown: pending !== undefined ? pending : value
@@ -72,7 +77,9 @@ GlassCard {
             Txt {
                 visible: row.blocked
                 width: parent.width
-                text: "Needs \"" + (row.dependsSpec ? row.dependsSpec.title : row.spec.depends) + "\" switched on first"
+                text: row.dependsValue !== ""
+                    ? "Only used when \"" + (row.dependsSpec ? row.dependsSpec.title : row.dependsKey) + "\" is " + row.dependsValue
+                    : "Needs \"" + (row.dependsSpec ? row.dependsSpec.title : row.dependsKey) + "\" switched on first"
                 size: 11
                 color: Theme.warn
                 wrapMode: Text.WordWrap

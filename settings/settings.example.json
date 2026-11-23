@@ -180,6 +180,70 @@
       "settings"
     ]
   },
+  "dock": {
+    "enabled": true,
+    "position": "bottom",
+    "monitor": "all",
+    "running_per_monitor": false,
+    "mode": "floating",
+    "layer": "top",
+    "margin": 10,
+    "icon_size": 48,
+    "icon_min_size": 24,
+    "padding": 8,
+    "spacing": 6,
+    "radius": 22,
+    "max_length": 90,
+    "glass_opacity": -1,
+    "blur": true,
+    "border_width": 1,
+    "border_color": "auto",
+    "shadow": "medium",
+    "color_mode": "wallpaper",
+    "custom_color": "#1e1e2e",
+    "labels": "hover",
+    "indicator": "dot",
+    "indicator_color": "auto",
+    "show_running": true,
+    "trash": true,
+    "items": [
+      {
+        "type": "app",
+        "desktop_id": "org.gnome.Nautilus",
+        "path": ""
+      },
+      {
+        "type": "app",
+        "desktop_id": "kitty",
+        "path": ""
+      },
+      {
+        "type": "app",
+        "desktop_id": "firefox",
+        "path": ""
+      },
+      {
+        "type": "separator",
+        "desktop_id": "",
+        "path": ""
+      },
+      {
+        "type": "folder",
+        "desktop_id": "",
+        "path": "~/Downloads"
+      },
+      {
+        "type": "separator",
+        "desktop_id": "",
+        "path": ""
+      },
+      {
+        "type": "trash",
+        "desktop_id": "",
+        "path": ""
+      }
+    ]
+  },
   "lock": {
     "after": 5,
     "screen_off": 0,

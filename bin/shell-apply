@@ -147,6 +147,10 @@ def evaluate($schema):
         elif $v == "\u0000not-an-object" then .eff |= setpath($p; $s.default | num)
         else problem($s; $v) as $why
           | if $why == null then .eff |= setpath($p; norm($s; $v))
+            # Zahlen mit "clamp" (Dock): ausserhalb des Bereichs auf die Grenze setzen statt verwerfen
+            elif $s.clamp == true and ($v | type) == "number" and ($s.type == "number" or ($v | floor) == $v) then
+              .eff |= setpath($p; ([[$v, $s.min] | max, $s.max] | min) | num)
+              | .err += [{key: $s.key, reason: "\($why); using \([[$v, $s.min] | max, $s.max] | min) instead"}]
             else .eff |= setpath($p; $s.default | num) | .err += [{key: $s.key, reason: $why}] end
         end)
   | .err += [ $raw | paths(type != "object") | map(tostring) | join(".") as $k
@@ -743,7 +747,7 @@ fi
 # Fehler melden (nur wenn sie sich seit dem letzten Lauf geändert haben)
 {
     [ -n "$kaputt" ] && printf 'settings.json is not valid JSON (%s) – the last good settings stay active\n' "$kaputt"
-    jq -r '.err[] | "\(.key): \(.reason) – using the default"' "$T/result.json"
+    jq -r '.err[] | if (.reason | test("instead$")) then "\(.key): \(.reason)" else "\(.key): \(.reason) – using the default" end' "$T/result.json"
 } > "$T/errors" || true
 if [ -s "$T/errors" ]; then sed 's/^/shell-apply: /' "$T/errors" >&2; fi
 if schreibe "$ERRORS" < "$T/errors" && [ -s "$T/errors" ] && [ "$RELOAD" -eq 1 ]; then

@@ -9,7 +9,8 @@ qml="$(command -v qml6 || command -v qml || ls /usr/lib/qt6/bin/qml 2>/dev/null 
 
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
-export XDG_RUNTIME_DIR="$T" QT_QPA_PLATFORM=offscreen
+# Qt schreibt ohne Terminal sonst ins Journal statt auf stderr (console.* wäre unsichtbar)
+export XDG_RUNTIME_DIR="$T" QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true;js.debug=true"
 
 echo "== Auflösungen auf der Seite Monitors"
 if ! timeout 60 "$qml" tests/daten/monitore-test.qml > "$T/log" 2>&1; then

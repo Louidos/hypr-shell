@@ -10,3 +10,5 @@ Txt 1.0 Txt.qml
 Usage 1.0 Usage.qml
 RoundImage 1.0 RoundImage.qml
 IconButton 1.0 IconButton.qml
+Probe 1.0 Probe.qml
+AppIcon 1.0 AppIcon.qml

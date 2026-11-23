@@ -136,7 +136,11 @@ grau/weiss. Mitgeliefert ist ein schlichtes graues Verlaufsbild.
 
 ![Farben aus einem bunten Bild](docs/screenshots/farben-aus-bild.png)
 
-Ein Profilbild wird aus `~/.face` gelesen (quadratisches Bild, z. B. PNG).
+Ein Profilbild wird aus `~/.face` gelesen (quadratisches Bild, z. B. PNG). Fehlt es, steht
+im Dashboard, im Panel und auf dem Sperrbildschirm der Anfangsbuchstabe des Benutzers in
+einem Kreis (für den Sperrbildschirm erzeugt der Installer dafür ein Ersatzbild).
+App-Symbole kommen aus Papirus-Dark, dann aus hicolor, dann aus dem Pfad in der
+`.desktop`-Datei; erst wenn nichts davon passt, erscheint ein Platzhalter.
 
 ## Anpassen
 
@@ -197,8 +201,8 @@ steht in `~/.config/hypr/hypr-shell-local.lua`.
 | `docs/` | Doku und Screenshots |
 
 Die Screenshots stammen aus dem Oberflächentest der CI (unsichtbarer Compositor,
-Software-Rendering): Sie zeigen Aufbau und Masse, aber **ohne Blur** und ohne runde
-Bildausschnitte (Profilbild, Cover, Vorschaubilder).
+Software-Rendering): Sie zeigen Aufbau und Masse, aber **ohne Blur**. Ohne Grafikkarte
+haben Profilbild, Cover und Vorschaubilder dort eckige statt runde Ecken.
 
 ## Projektstand
 

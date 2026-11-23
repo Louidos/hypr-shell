@@ -61,6 +61,7 @@ Item {
             id: cardItem
             required property string filePath
             required property string fileBaseName
+            required property int index
             width: view.cellWidth
             height: view.cellHeight
             readonly property bool isCurrent: filePath === wt.current
@@ -71,6 +72,7 @@ Item {
                 source: "file://" + cardItem.filePath
                 sourceWidth: 480
                 fallbackText: ""
+                probe: cardItem.index === 0 ? "wallpaper-card" : ""
             }
             Rectangle {
                 anchors.fill: thumb

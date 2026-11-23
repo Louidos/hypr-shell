@@ -20,6 +20,7 @@ pruefe 'grep -q "ignore_systemd_inhibit = false" $idle && grep -q "systemd-inhib
 echo "== hyprlock"
 pruefe 'grep -q "path = screenshot" $lock && grep -q "brightness = 0.5" $lock && grep -qE "blur_passes = [1-9]" $lock' "Hintergrund: Bildschirm, unscharf, 50 % dunkler"
 pruefe 'grep -q "path = ~/.face" $lock' "Profilbild"
+pruefe 'grep -q "path = ~/.local/share/hypr-shell/face.png" $lock && [ "$(grep -n "face.png" $lock | head -n1 | cut -d: -f1)" -lt "$(grep -n "path = ~/.face" $lock | cut -d: -f1)" ]' "Ersatzbild unter ~/.face (Anfangsbuchstabe, wenn ~/.face fehlt)"
 pruefe '[ "$(grep -c "font_family = Bebas Neue" $lock)" -ge 2 ] && grep -q "date +%H" $lock && grep -q "date +%M" $lock' "grosse gestapelte Uhr, 24 h"
 pruefe 'grep -q "shell-greeting" $lock && [ -x bin/shell-greeting ]' "Begrüssung"
 pruefe 'grep -q "^input-field" $lock && grep -q "outline_thickness = 0" $lock && grep -q "^shape" $lock' "Passwortfeld als schlichte Linie"

@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Widgets
 import Quickshell.Services.Mpris
 import "../common"
 
@@ -39,6 +38,7 @@ FocusScope {
                 anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
                 source: "file://" + Settings.home + "/.face"
                 fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
+                probe: "panel-avatar"
             }
             Column {
                 anchors { left: avatar.right; leftMargin: 12; right: time.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
@@ -170,23 +170,16 @@ FocusScope {
                     model: apps.found
                     delegate: Rectangle {
                         required property var modelData
+                        required property int index
                         width: (apps.width - 24 - 12) / 4
                         height: 72
                         radius: 14
                         color: tileHover.hovered ? Theme.cardHover : "transparent"
-                        readonly property string iconSrc: Quickshell.iconPath(modelData.icon, true)
-                        IconImage {
+                        AppIcon {
                             anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 8 }
-                            implicitSize: 32
-                            visible: parent.iconSrc !== ""
-                            source: parent.iconSrc
-                        }
-                        Glyph {
-                            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 8 }
-                            visible: parent.iconSrc === ""
-                            text: "󰀻"
-                            size: 28
-                            color: Theme.subtext
+                            size: 32
+                            icon: modelData.icon || ""
+                            probe: index === 0 ? "app-icon" : ""
                         }
                         Txt {
                             anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 8 }

@@ -3,12 +3,13 @@ import Quickshell
 import Quickshell.Wayland
 import "../common"
 
-// Grosse gestapelte Uhr (Stunden über Minuten), weiss und leicht durchscheinend.
+// Grosse gestapelte Uhr (Stunden über Minuten) in JetBrainsMono Nerd Font, fett, 150 px bei
+// 1080 Bildschirmzeilen; Stunden 85 % deckend, Minuten 45 % (wie die Vorlage).
 // Position als Anteil der Bildschirmgrösse aus settings.json (desktop.clock.x / .y).
 PanelWindow {
     id: w
     readonly property real k: (screen ? screen.height : 1080) / 1080 * Settings.get("desktop.clock.scale", 1.0)
-    readonly property real size: 168 * k
+    readonly property real size: 150 * k
 
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
@@ -28,18 +29,24 @@ PanelWindow {
 
     Column {
         id: stack
-        spacing: -w.size * 0.30
+        spacing: -42 * w.k
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: Qt.formatTime(clock.date, "HH")
-            font.family: Theme.display
+            font.family: Theme.mono
             font.pixelSize: w.size
-            color: Qt.rgba(1, 1, 1, 0.90)
+            font.bold: true
+            color: "#F6F5F4"
+            opacity: 0.85
         }
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: Qt.formatTime(clock.date, "mm")
-            font.family: Theme.display
+            font.family: Theme.mono
             font.pixelSize: w.size
-            color: Qt.rgba(1, 1, 1, 0.50)
+            font.bold: true
+            color: "#F6F5F4"
+            opacity: 0.45
         }
     }
 }

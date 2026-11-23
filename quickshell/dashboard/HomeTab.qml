@@ -3,7 +3,7 @@ import Quickshell
 import Quickshell.Io
 import "../common"
 
-// Tab Dashboard: Wetter, Profil, Musik, Uhr, Kalender, Ringe (Raster mit 12 Spalten, 3 Zeilen).
+// Tab Dashboard: Wetter, Profil, Musik, Uhr, Kalender, Ringe für CPU/RAM/Disk (12 Spalten, 3 Zeilen).
 Grid12 {
     id: home
     property var about: ({})
@@ -132,30 +132,28 @@ Grid12 {
         Calendar { anchors.fill: parent; anchors.margins: 14; today: clock.date }
     }
 
-    // ---- Ringe (2×2 bei 7,1)
+    // ---- Ringe (2×2 bei 7,1): CPU, RAM, Datenträger untereinander, Symbol in der Mitte (wie die Vorlage)
     Cell {
+        id: rings
         col: 7; row: 1; cs: 2; rs: 2
+        readonly property bool tall: height >= width
+        readonly property real s: tall ? Math.min(width - 20, (height - 32) / 3) : Math.min(height - 30, (width - 50) / 3)
         Grid {
             anchors.centerIn: parent
-            columns: 2
-            rowSpacing: 14
-            columnSpacing: 14
+            columns: rings.tall ? 1 : 3
+            spacing: rings.tall ? 6 : 16
             Repeater {
                 model: [
-                    { label: "CPU", v: () => usage.cpu },
-                    { label: "RAM", v: () => usage.mem },
-                    { label: "Disk", v: () => usage.disk },
-                    { label: "Swap", v: () => usage.swap }
+                    { label: "CPU", icon: "󰘚", v: () => usage.cpu },
+                    { label: "RAM", icon: "󰍛", v: () => usage.mem },
+                    { label: "Disk", icon: "󰋊", v: () => usage.disk }
                 ]
-                delegate: Column {
+                delegate: Item {
                     required property var modelData
-                    spacing: 4
-                    Item {
-                        width: 54; height: 54
-                        Ring { anchors.fill: parent; value: modelData.v(); thickness: 4 }
-                        Txt { anchors.centerIn: parent; text: Math.round(modelData.v()) + "%"; size: 12; weight: Font.Bold }
-                    }
-                    Txt { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.label; sub: true; size: 11 }
+                    width: rings.s
+                    height: rings.s
+                    Ring { anchors.fill: parent; value: modelData.v(); thickness: 5; gapped: true }
+                    Glyph { anchors.centerIn: parent; text: modelData.icon; size: rings.s * 0.3 }
                 }
             }
         }

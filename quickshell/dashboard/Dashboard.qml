@@ -16,10 +16,14 @@ Scope {
     property var about: ({})
     readonly property var tabs: ["dashboard", "wallpaper", "performance", "about"]
     readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", about: "About" })
-    readonly property var tabIcons: ({ dashboard: "󰕭", wallpaper: "󰋩", performance: "󰃘", about: "󰋼" })
+    readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", about: "󰋽" })
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
     readonly property real panelW: Math.min(Settings.get("dashboard.width", 1000), (screen ? screen.width : 1920) - 40)
-    readonly property real panelH: 440
+    // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px, Rand 18 px
+    readonly property real headH: 64
+    readonly property real pad: 18
+    readonly property real pageH: 330
+    readonly property real panelH: headH + 4 + pageH + pad
 
     function show(t) {
         if (tabs.indexOf(t) >= 0) tab = t
@@ -109,27 +113,73 @@ Scope {
                 Keys.onTabPressed: dash.tab = dash.tabs[(dash.tabs.indexOf(dash.tab) + 1) % dash.tabs.length]
             }
 
-            // Tab-Leiste: aktiver Tab als weisse Pille
-            Row {
+            // Tab-Leiste: vier gleich breite Tabs über die ganze Breite, Symbol über dem Text,
+            // der aktive Tab als weisse Pille, die zum gewählten Tab gleitet
+            Item {
                 id: tabBar
-                anchors { top: parent.top; topMargin: 16; horizontalCenter: parent.horizontalCenter }
-                spacing: 6
-                Repeater {
-                    model: dash.tabs
-                    delegate: Pill {
-                        required property string modelData
-                        text: dash.tabNames[modelData]
-                        icon: dash.tabIcons[modelData]
-                        active: dash.tab === modelData
-                        implicitHeight: 32
-                        onClicked: dash.tab = modelData
+                x: dash.pad
+                y: 10
+                width: parent.width - 2 * dash.pad
+                height: dash.headH - 14
+                readonly property int cur: Math.max(0, dash.tabs.indexOf(dash.tab))
+                readonly property real tw: width / dash.tabs.length
+                Rectangle {
+                    anchors.fill: parent
+                    radius: height / 2
+                    color: Theme.card
+                }
+                Rectangle {
+                    x: tabBar.cur * tabBar.tw + 4
+                    y: 4
+                    width: tabBar.tw - 8
+                    height: tabBar.height - 8
+                    radius: height / 2
+                    color: Theme.pill
+                    Behavior on x { NumberAnimation { duration: 460; easing.type: Easing.OutBack; easing.overshoot: 0.9 } }
+                }
+                Row {
+                    anchors.fill: parent
+                    Repeater {
+                        model: dash.tabs
+                        delegate: Item {
+                            id: tb
+                            required property string modelData
+                            required property int index
+                            readonly property bool active: tabBar.cur === index
+                            width: tabBar.tw
+                            height: tabBar.height
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 1
+                                Glyph {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: dash.tabIcons[tb.modelData]
+                                    size: 18
+                                    color: tb.active ? Theme.pillText : Theme.subtext
+                                    Behavior on color { ColorAnimation { duration: 220 } }
+                                }
+                                Txt {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: dash.tabNames[tb.modelData]
+                                    size: 12
+                                    weight: tb.active ? Font.DemiBold : Font.Medium
+                                    color: tb.active ? Theme.pillText : Theme.subtext
+                                    Behavior on color { ColorAnimation { duration: 220 } }
+                                }
+                            }
+                            HoverHandler { cursorShape: Qt.PointingHandCursor }
+                            TapHandler { onTapped: dash.tab = tb.modelData }
+                        }
                     }
                 }
             }
 
             Loader {
                 id: page
-                anchors { top: tabBar.bottom; topMargin: 16; left: parent.left; right: parent.right; bottom: parent.bottom; margins: 18 }
+                x: dash.pad
+                y: dash.headH + 4
+                width: parent.width - 2 * dash.pad
+                height: dash.pageH
                 active: dash.open || win.t > 0.001
                 sourceComponent: dash.tab === "wallpaper" ? wallTab
                                : dash.tab === "performance" ? perfTab

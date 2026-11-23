@@ -3,8 +3,14 @@
 #   shell-sysinfo about   Benutzer, Rechner, Kernel, Distribution, Versionen, Laufzeit
 #   shell-sysinfo cpu     Modell und Temperatur
 #   shell-sysinfo gpu     Modell, Temperatur, Grafikspeicher (nvidia-smi, sonst sysfs)
+#   shell-sysinfo gpu-usage  nur Zustand und Auslastung der Grafikkarte (für die Desktop-Kachel)
+#   shell-sysinfo lock    eine Zeile "CPU 12%  ·  RAM 34%" für den Sperrbildschirm
 # Eine schlafende NVIDIA-Karte (Hybrid-Grafik) wird nicht geweckt.
 set -euo pipefail
+
+# für Tests umlenkbar (tests/dashboard.sh baut eine schlafende NVIDIA-Karte nach)
+SYS="${HYPR_SHELL_SYSFS:-/sys}"
+NVPROC="${HYPR_SHELL_NVPROC:-/proc/driver/nvidia}"
 
 zahl() { [[ "${1:-}" =~ ^[0-9]+([.][0-9]+)?$ ]] && echo "$1" || echo null; }
 
@@ -58,7 +64,7 @@ cpu() {
 
 nvidia_schlaeft() {
     local d
-    for d in /sys/bus/pci/devices/*; do
+    for d in "$SYS"/bus/pci/devices/*; do
         [ "$(cat "$d/vendor" 2>/dev/null)" = 0x10de ] || continue
         case "$(cat "$d/class" 2>/dev/null)" in 0x03*) ;; *) continue ;; esac
         [ "$(cat "$d/power/runtime_status" 2>/dev/null)" = suspended ] && return 0
@@ -68,8 +74,8 @@ nvidia_schlaeft() {
 
 gpu() {
     local name="" temp=null used=null total=null util=null state=active line d card vendor
-    if command -v nvidia-smi >/dev/null 2>&1 && [ -d /proc/driver/nvidia ]; then
-        name="$(awk -F':[[:space:]]*' '/^Model/ {print $2; exit}' /proc/driver/nvidia/gpus/*/information 2>/dev/null || true)"
+    if command -v nvidia-smi >/dev/null 2>&1 && [ -d "$NVPROC" ]; then
+        name="$(awk -F':[[:space:]]*' '/^Model/ {print $2; exit}' "$NVPROC"/gpus/*/information 2>/dev/null || true)"
         if nvidia_schlaeft; then
             state=sleeping
         elif line="$(nvidia-smi --query-gpu=name,temperature.gpu,memory.used,memory.total,utilization.gpu \
@@ -81,9 +87,11 @@ gpu() {
         fi
     fi
     if [ -z "$name" ]; then
-        for card in /sys/class/drm/card[0-9]; do
+        for card in "$SYS"/class/drm/card[0-9]; do
             d="$card/device"
             [ -r "$d/vendor" ] || continue
+            # schlafende Karte nicht über lspci oder hwmon wecken
+            [ "$(cat "$d/power/runtime_status" 2>/dev/null)" = suspended ] && continue
             vendor="$(cat "$d/vendor" 2>/dev/null || true)"
             if command -v lspci >/dev/null 2>&1; then
                 name="$( (lspci -s "$(basename "$(readlink -f "$d")")" 2>/dev/null || true) | sed -E 's/^[^:]*: *[^:]*: *//; s/ \(rev.*//' | head -n1)"
@@ -109,9 +117,46 @@ gpu() {
         '{name: $name, state: $state, temp: $temp, memUsed: $memUsed, memTotal: $memTotal, util: $util}'
 }
 
+# Nur Zustand und Auslastung, ohne Namen oder lspci: schnell und weckt keine schlafende Karte.
+#   {"state": "sleeping"|"active"|"unknown", "util": Zahl oder null}
+gpu_usage() {
+    local state=unknown util=null d
+    if nvidia_schlaeft; then
+        state=sleeping
+    elif command -v nvidia-smi >/dev/null 2>&1 && [ -d "$NVPROC" ]; then
+        util="$( (nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null || true) | head -n1 | xargs)"
+        util="$(zahl "$util")"
+        [ "$util" != null ] && state=active
+    else
+        for d in "$SYS"/class/drm/card[0-9]/device; do
+            [ "$(cat "$d/power/runtime_status" 2>/dev/null)" = suspended ] && continue
+            if [ -r "$d/gpu_busy_percent" ]; then
+                util="$(zahl "$(cat "$d/gpu_busy_percent" 2>/dev/null)")"
+                [ "$util" != null ] && { state=active; break; }
+            fi
+        done
+    fi
+    jq -cn --arg state "$state" --argjson util "$util" '{state: $state, util: $util}'
+}
+
+cpu_zaehler() { awk '/^cpu / {idle = $5 + $6; t = 0; for (i = 2; i <= NF; i++) t += $i; print idle, t; exit}' /proc/stat; }
+
+lock_zeile() {
+    local i0 t0 i1 t1 cpu ram
+    read -r i0 t0 < <(cpu_zaehler)
+    sleep 0.4
+    read -r i1 t1 < <(cpu_zaehler)
+    cpu=0
+    [ "$t1" -gt "$t0" ] && cpu=$(( (100 * ((t1 - t0) - (i1 - i0)) + (t1 - t0) / 2) / (t1 - t0) ))
+    ram="$(awk '/^MemTotal/ {t = $2} /^MemAvailable/ {a = $2} END {if (t > 0) printf "%d", (100 * (t - a) + t / 2) / t; else print 0}' /proc/meminfo)"
+    printf '  CPU %s%%    󰍛  RAM %s%%\n' "$cpu" "$ram"
+}
+
 case "${1:-about}" in
     about) about ;;
     cpu) cpu ;;
     gpu) gpu ;;
-    *) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+    gpu-usage) gpu_usage ;;
+    lock) lock_zeile ;;
+    *) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

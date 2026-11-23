@@ -29,6 +29,15 @@ Singleton {
     readonly property color pill: Qt.rgba(1, 1, 1, 0.92)
     readonly property color pillText: "#121214"
     readonly property color track: Qt.rgba(1, 1, 1, 0.10)
+    // Abzeichen und Pillen in der Farbe des Hintergrundbilds (dunkel gemischt), Text darauf hell
+    readonly property color container: mix(c.accent, "#141416", 0.8)
+    readonly property color containerText: mix(c.accent, "#ffffff", 0.55)
+    readonly property color warn: "#e06c75"
+
+    function mix(a, b, k, al) {
+        const x = Qt.color(a), y = Qt.color(b)
+        return Qt.rgba(x.r * (1 - k) + y.r * k, x.g * (1 - k) + y.g * k, x.b * (1 - k) + y.b * k, al === undefined ? 1 : al)
+    }
 
     readonly property int panelRadius: 26
     readonly property int cardRadius: 18

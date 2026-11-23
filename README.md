@@ -92,20 +92,22 @@ neu starten, herunterfahren).
 
 ### Desktop
 
-Hinter den Fenstern eine grosse gestapelte Uhr und drei Glas-Kacheln mit Ringen für CPU,
-Arbeitsspeicher und Datenträger.
+Hinter den Fenstern eine grosse gestapelte Uhr (JetBrainsMono, Stunden kräftig, Minuten
+blasser) und drei Glas-Kacheln mit Ringen für CPU, Arbeitsspeicher und Grafikkarte. Schläft
+die NVIDIA-Karte (Hybrid-Grafik), zeigt die GPU-Kachel „–“ – sie wird dafür nicht geweckt.
 
 ![Desktop](docs/screenshots/desktop.png)
 
 ### Dashboard
 
-Gleitet unten in der Mitte hoch. Tabs:
+Gleitet unten in der Mitte hoch. Oben vier gleich breite Tabs (Symbol über dem Text, der
+aktive als weisse Pille):
 
 | Tab | Inhalt |
 | --- | --- |
-| Dashboard | Wetter, Profil mit Begrüssung, Musik, Uhr, Kalender, Ringe für CPU/RAM/Disk/Swap |
+| Dashboard | Wetter, Profil mit Begrüssung, Musik, Uhr, Kalender, drei Ringe für CPU/RAM/Disk |
 | Wallpaper | alle Bilder aus `~/Pictures/Wallpapers` mit Suche; Klick setzt Bild und Farben |
-| Performance | CPU, GPU (eine schlafende NVIDIA-Karte wird nicht geweckt), Datenträger, Netzwerk, Arbeitsspeicher |
+| Performance | CPU und GPU mit Modell, Temperatur und Auslastung („Usage“; eine schlafende NVIDIA-Karte wird nicht geweckt), Datenträger, Netzwerk mit Verlauf, Arbeitsspeicher |
 | About | System, Distribution, Version von hypr-shell, Hyprland und Quickshell |
 
 Systemwerte werden nur abgefragt, solange das Dashboard offen ist.
@@ -114,15 +116,16 @@ Systemwerte werden nur abgefragt, solange das Dashboard offen ist.
 
 Wächst aus der Ecke unten rechts: Begrüssung mit Uhrzeit, **Keep Awake** (kein Sperren,
 kein Standby), **Apps** mit Suche, **Now playing**, **Screenshot** (Screen, Region,
-Ordner) und **Quick Toggles** für WLAN, Bluetooth, Nicht stören, Gaming-Modus (Blur,
+Ordner; gespeichert und in der Zwischenablage) und **Quick Toggles** für WLAN, Bluetooth, Nicht stören, Gaming-Modus (Blur,
 Animationen und Schatten aus) und Einstellungen.
 
 ![Panel](docs/screenshots/panel.png)
 
 ### Sperrbildschirm
 
-Bildschirm unscharf und abgedunkelt, links Profilbild, grosse Uhr, Datum, Begrüssung,
-Passwort als Linie und Knöpfe für Standby, Neustart und Herunterfahren. hypridle sperrt
+Bildschirm unscharf und abgedunkelt, links Profilbild über der grossen Uhr, Datum,
+Begrüssung, Passwort als Linie und Knöpfe für Standby, Neustart und Herunterfahren; unten
+links CPU- und RAM-Auslastung. hypridle sperrt
 nach 5 Minuten und geht nach 15 Minuten in den Standby (vorher wird gesperrt).
 
 ![Sperrbildschirm](docs/screenshots/lockscreen.png)
@@ -157,7 +160,7 @@ sofort, ohne Neustart. Das Zahnrad im Panel öffnet die Datei.
 | `desktop.clock.x` | `0.02` | Abstand von links als Anteil der Bildschirmbreite |
 | `desktop.clock.y` | `0.045` | Abstand von oben als Anteil der Bildschirmhöhe |
 | `desktop.clock.scale` | `1.0` | Grösse |
-| `desktop.resources.enabled` | `true` | Kacheln CPU/RAM/Datenträger an/aus |
+| `desktop.resources.enabled` | `true` | Kacheln CPU/RAM/GPU an/aus |
 | `desktop.resources.x` | `0.015` | Abstand von links (Anteil) |
 | `desktop.resources.y` | `0.56` | Abstand von oben (Anteil) |
 | `desktop.resources.scale` | `1.0` | Grösse |
@@ -208,6 +211,7 @@ haben Profilbild, Cover und Vorschaubilder dort eckige statt runde Ecken.
 
 Version: **1.0.0** (siehe [`VERSION`](VERSION)). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
 Was nur auf dem echten Rechner geprüft werden kann, steht in [docs/abnahme.md](docs/abnahme.md).
-Optik und Aufbau sind an „DarkShadow's Shell“ (MIT) angelehnt; der Code ist neu geschrieben.
+Optik und Aufbau sind an „DarkShadow's Shell“ (MIT) angelehnt; der Code ist neu geschrieben,
+übernommene Masse und Formen sind in [NOTICE](NOTICE) vermerkt.
 Die mitgelieferte Schrift Bebas Neue steht unter der SIL Open Font License
 (`quickshell/common/fonts/OFL.txt`).

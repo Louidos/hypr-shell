@@ -15,6 +15,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Spiele-Tab im Dashboard (zuletzt gespielte Steam-Spiele mit Cover, eigene Einträge einschaltbar) und automatischer Gaming-Modus, solange ein Spiel im Vollbild läuft (#57)
 - Leistungsprofil, Grafik-Modus, Ladegrenze und Tastaturlicht für ROG-Laptops (asusctl, supergfxctl) auf der neuen Einstellungsseite Laptop; sie erscheint nur, wenn der Rechner das kann (#56)
 
+### Behoben
+- Die Ladegrenze lässt sich wieder auf 100 % zurückstellen (Regler, `shell-set laptop.charge_limit 100` oder Reset); eine nur mit asusctl gesetzte Grenze lässt hypr-shell weiterhin in Ruhe
+
 ## 1.3.0 – 2026-11-23
 
 ### Hinzugefügt

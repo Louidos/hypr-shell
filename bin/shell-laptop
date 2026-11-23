@@ -16,6 +16,8 @@ set -uo pipefail
 
 DATA="$HOME/.local/share/hypr-shell"
 EFF="$DATA/settings.effective.json"
+# da, solange laptop.charge_limit unter 100 steht und angewendet ist; nur dann setzt apply bei 100 zurück
+CHARGE_MARKE="$DATA/charge-limit-set"
 SYSFS="${HYPR_SHELL_SYSFS:-/sys}"
 hat() { command -v "$1" >/dev/null 2>&1; }
 wert() {
@@ -121,7 +123,14 @@ status() {
 apply() {
     local n k
     n="$(wert '.laptop.charge_limit' 100)"
-    if charge_da && [ "$n" != 100 ] && [ "$(charge_get)" != "$n" ]; then charge_set "$n"; fi
+    # Ladegrenze: eine eigene Grenze (unter 100) setzen und merken. Steht die Einstellung wieder auf
+    # 100 (auch nach Reset), einmal 100 schreiben – aber nur, wenn hypr-shell die Grenze gesetzt hat.
+    # Eine Grenze, die man direkt mit asusctl gesetzt hat, bleibt so beim Anmelden unberührt.
+    if charge_da && [ "$n" != 100 ]; then
+        if [ "$(charge_get)" = "$n" ] || charge_set "$n"; then mkdir -p "$DATA" && : > "$CHARGE_MARKE"; fi
+    elif charge_da && [ -f "$CHARGE_MARKE" ] && [ -f "$EFF" ] && hat jq; then
+        if [ "$(charge_get)" = 100 ] || charge_set 100; then rm -f "$CHARGE_MARKE"; fi
+    fi
     k="$(wert '.laptop.kbd_light' unchanged)"
     if kbd_da && [ "$k" != unchanged ]; then kbd_set "$k"; fi
     if kbd_da && [ "$(wert '.laptop.kbd_follow_wallpaper' false)" = true ] && [ -f "$HOME/.config/hypr-shell/colors.json" ]; then

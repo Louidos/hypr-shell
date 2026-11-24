@@ -20,17 +20,21 @@ Scope {
     }
 
     Overlay {
+        id: ov
         name: "settings"
         ipc: false
         place: "center"
         glass: false
         margin: 0
         screen: app.screen
-        panelWidth: Math.min(1100, (app.screen ? app.screen.width : 1920) - 40)
-        panelHeight: Math.min(700, (app.screen ? app.screen.height : 1080) - 60)
+        // Entwurf 1100 × 700 (im Hochformat höher); Overlay begrenzt auf den Bildschirm, die Seiten
+        // rollen selbst. Schmal oder hochkant: Seiten oben statt links (compact)
+        panelWidth: 1100
+        panelHeight: ov.portrait ? 1100 : 700
+        scroll: false
         keyboardFocus: WlrKeyboardFocus.Exclusive
         // Esc behandelt die App selbst (erst die Suche leeren, dann schliessen)
         closeOnEscape: false
-        content: Component { SettingsContent { } }
+        content: Component { SettingsContent { compact: ov.portrait || ov.fitWidth < 860 } }
     }
 }

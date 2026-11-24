@@ -41,7 +41,7 @@ local S = {
         opacity = { inactive = 1.0 },
         animations = { enabled = true, speed = "normal" },
     },
-    theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 } },
+    theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 }, apps = { gtk = true, qt = true } },
     input = {
         layout = "us", variant = "", sensitivity = 0,
         touchpad = { natural_scroll = false, tap_to_click = true },
@@ -49,12 +49,13 @@ local S = {
     monitors = { scale = "auto", outputs = {} },
     apps = { terminal = "kitty", files = "nautilus", browser = "firefox", launcher = "builtin" },
     keybinds = {
-        terminal = "SUPER + Q", files = "SUPER + E", browser = "", launcher = "SUPER + R",
-        launcher_alt = "ALT + Space", launcher_space = "SUPER + Space", close = "SUPER + C", float = "SUPER + V",
+        terminal = "SUPER + Return", files = "SUPER + E", browser = "", launcher = "SUPER + R",
+        launcher_alt = "ALT + Space", launcher_space = "SUPER + Space", launcher_search = "CTRL + SUPER + Return",
+        close = "SUPER + Q", close_alt = "SUPER + C", float = "SUPER + V", fullscreen = "SUPER + F",
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
-        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1",
+        settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1", missa_chat = "SUPER + I", missa_voice = "SUPER + SHIFT + I", dock_focus = "SUPER + B",
         lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
     },
@@ -87,8 +88,18 @@ optional("hypr-shell-env")
 ------------------
 
 -- jeder Bildschirm mit seiner bevorzugten Auflösung, automatisch angeordnet (monitors.scale);
--- Einträge in monitors.outputs gelten für einzelne Bildschirme
+-- Einträge in monitors.outputs gelten für einzelne Bildschirme. Gibt es einen Bildschirm nicht,
+-- bleibt sein Eintrag ohne Wirkung.
 local function leer(v) return v == nil or v == "" or v == "auto" end
+-- Drehung (monitors.outputs[].transform) → Zahl für Hyprland (wl_output_transform 0–7):
+-- normal 0, 90 1, 180 2, 270 3, flipped 4, flipped-90 5, flipped-180 6, flipped-270 7.
+-- Ein Eintrag ohne Drehung (vor 1.9) gilt als normal.
+local DREHUNG = { normal = 0, ["90"] = 1, ["180"] = 2, ["270"] = 3,
+    flipped = 4, ["flipped-90"] = 5, ["flipped-180"] = 6, ["flipped-270"] = 7 }
+local function drehung(v)
+    if type(v) == "number" and v >= 0 and v <= 7 and v == math.floor(v) then return math.floor(v) end
+    return DREHUNG[tostring(v or "normal")] or 0
+end
 hl.monitor({
     output   = "",
     mode     = "preferred",
@@ -107,7 +118,44 @@ for _, m in ipairs(S.monitors.outputs or {}) do
             mode     = mode,
             position = leer(m.position) and "auto" or m.position,
             scale    = (m.scale == nil or m.scale == "") and tostring(S.monitors.scale or "auto") or tostring(m.scale),
+            transform = drehung(m.transform),
         })
+    end
+end
+
+-- Touchscreen und Stift drehen mit dem gedrehten Bildschirm mit (der eingebaute zuerst). Nur, wenn
+-- es ein solches Gerät gibt: direkt auf dem Bildschirm bediente Geräte (INPUT_PROP_DIRECT) in
+-- /proc/bus/input/devices; Namen mit Pen, Stylus oder Wacom gelten als Stift. Sonst nichts.
+local function direkte_geraete()
+    local f = io.open(os.getenv("HYPR_SHELL_INPUT_DEVICES") or "/proc/bus/input/devices", "r")
+    if not f then return false, false end
+    local touch, stift, name = false, false, ""
+    for zeile in f:lines() do
+        local n = zeile:match('^N: Name="(.*)"')
+        if n then name = n:lower() end
+        local p = zeile:match("^B: PROP=(%x+)")
+        if p and ((tonumber(p, 16) or 0) & 2) ~= 0 then
+            if name:find("pen", 1, true) or name:find("stylus", 1, true) or name:find("wacom", 1, true) then stift = true
+            else touch = true end
+        end
+    end
+    f:close()
+    return touch, stift
+end
+do
+    local gedreht
+    for _, m in ipairs(S.monitors.outputs or {}) do
+        if type(m) == "table" and type(m.name) == "string" and m.name ~= "" and drehung(m.transform) ~= 0 then
+            local eingebaut = m.name:match("^eDP") or m.name:match("^LVDS") or m.name:match("^DSI")
+            if not gedreht or (eingebaut and not gedreht.eingebaut) then gedreht = { name = m.name, t = drehung(m.transform), eingebaut = eingebaut } end
+        end
+    end
+    if gedreht then
+        local touch, stift = direkte_geraete()
+        local input = {}
+        if touch then input.touchdevice = { transform = gedreht.t, output = gedreht.name } end
+        if stift then input.tablet = { transform = gedreht.t, output = gedreht.name } end
+        if next(input) then hl.config({ input = input }) end
     end
 end
 
@@ -126,6 +174,10 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(bin .. "shell-clipboard daemon")
     -- Laptop: eingestellte Ladegrenze und Tastaturlicht anwenden (Standard: nichts ändern)
     hl.exec_cmd(bin .. "shell-laptop apply")
+    -- Ordner der Anbindungen (Nextcloud, Missa) nach den Einstellungen; alles aus = nichts passiert
+    hl.exec_cmd(bin .. "shell-mount sync")
+    -- Missa-Agent nur, wenn eingeschaltet (startet sonst nichts)
+    hl.exec_cmd(bin .. "shell-missa-agent sync")
 end)
 
 ------------------------------
@@ -251,6 +303,11 @@ blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
 blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications|osd|power|clipboard|overview|cheatsheet)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
+-- Dock: eigene Regel; Schatten und durchsichtige Ränder (unter 30 % Deckkraft) bleiben ohne Blur.
+-- Mit dock.blur = false gibt es die Regel nicht (kein Blur hinter dem Dock).
+if not (S.dock ~= nil and S.dock.blur == false) then
+    blur_layer("hypr-shell-dock",    "^hypr-shell-dock$", 0.3)
+end
 
 hl.layer_rule({ name = "hypr-shell-slurp", match = { namespace = "^selection$" }, no_anim = true })
 
@@ -289,12 +346,15 @@ local function mit(m, key) return (m ~= nil and m ~= "") and (m .. " + " .. key)
 
 bind(K.terminal,     hl.dsp.exec_cmd(terminal), "Apps: Terminal")
 bind(K.close,        hl.dsp.window.close(), "Windows: Close window")
+bind(K.close_alt,    hl.dsp.window.close(), "Windows: Close window")
 bind(K.files,        hl.dsp.exec_cmd(fileManager), "Apps: File manager")
 bind(K.browser,      hl.dsp.exec_cmd(browser), "Apps: Browser")
 bind(K.launcher,     hl.dsp.exec_cmd(launcher), "Panels: Launcher")
 bind(K.launcher_alt, hl.dsp.exec_cmd(launcher), "Panels: Launcher")
 bind(K.launcher_space, hl.dsp.exec_cmd(launcher), "Panels: Launcher")
+bind(K.launcher_search, hl.dsp.exec_cmd(launcher), "Panels: App search")
 bind(K.float,        hl.dsp.window.float({ action = "toggle" }), "Windows: Floating / tiled")
+bind(K.fullscreen,   hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }), "Windows: Fullscreen")
 bind(K.exit,         hl.dsp.exit(), "System: Log out (quit Hyprland)")
 bind(K.lock,         hl.dsp.exec_cmd("pidof hyprlock || hyprlock"), "System: Lock screen")
 
@@ -330,8 +390,37 @@ bind(K.edit_desktop, hl.dsp.exec_cmd(ui .. "desktop edit"), "System: Move deskto
 -- die App bleibt immer erreichbar: ohne gültige Taste gilt SUPER + U
 bind((K.settings ~= nil and K.settings ~= "") and K.settings or "SUPER + U", hl.dsp.exec_cmd(ui .. "settings toggle"), "Panels: Settings")
 
+-- Missa: nur mit missa.enabled belegt – ausgeschaltet tut das Kürzel still nichts (und steht nicht im
+-- Spickzettel)
+local missa_an = S.missa ~= nil and S.missa.enabled == true
+local function programm(name)
+    for dir in (os.getenv("PATH") or ""):gmatch("[^:]+") do
+        local f = io.open(dir .. "/" .. name, "r")
+        if f then f:close(); return true end
+    end
+    return false
+end
+if missa_an then
+    bind(K.missa_chat, hl.dsp.exec_cmd(ui .. "missa toggle"), "Missa: Chat with Missa")
+    -- mit Missa sprechen: nur mit missa.voice_enabled und whisper.cpp (sonst fehlt die Taste)
+    if S.missa.voice_enabled == true and programm("whisper-cli") then
+        bind(K.missa_voice, hl.dsp.exec_cmd(ui .. "missa voice"), "Missa: Talk to Missa")
+    end
+end
+
+-- Qt-Programme mit den Farben des Hintergrundbilds (theme.apps.qt, über qt6ct); wer selbst schon ein
+-- Plattform-Thema gesetzt hat, behält es
+if S.theme.apps ~= nil and S.theme.apps.qt == true and os.getenv("QT_QPA_PLATFORMTHEME") == nil and programm("qt6ct") then
+    hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+end
+
 -- Kürzel-Spickzettel
 bind(K.cheatsheet, hl.dsp.exec_cmd(ui .. "cheatsheet toggle"), "Panels: Keyboard shortcuts")
+
+-- Dock mit der Tastatur bedienen (nur wenn das Dock an ist)
+if S.dock == nil or S.dock.enabled ~= false then
+    bind(K.dock_focus, hl.dsp.exec_cmd(ui .. "dock focus"), "Panels: Focus the dock")
+end
 
 -- Fenster-Übersicht aller Arbeitsflächen
 bind(K.overview, hl.dsp.exec_cmd(ui .. "overview toggle"), "Panels: Window overview")

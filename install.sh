@@ -9,6 +9,8 @@
 #                                settings.json, user.lua und hypr-shell-local.lua bleiben unberührt
 #   ./install.sh --restore [DIR] Stand vor der letzten Installation wiederherstellen
 #   ./install.sh --uninstall     alle Dateien von hypr-shell entfernen, Ursprungszustand zurück
+#   ./install.sh --login-theme   Anmeldebildschirm (SDDM) im Stil des Sperrbildschirms, nur auf Wunsch
+#   ./install.sh --login-theme-remove   vorherigen Anmeldebildschirm zurückholen
 #
 # Braucht Hyprland ab 0.55 (Lua-Konfiguration); ein älteres bricht vor jeder Änderung ab.
 # Jede Datei, die ersetzt wird, landet vorher in ~/.config/hypr-shell-backup-<Zeit>/.
@@ -43,7 +45,7 @@ PAKETE=(
     quickshell waybar rofi awww matugen kitty cava
     grim slurp wl-clipboard cliphist libnotify jq playerctl brightnessctl pamixer wireplumber
     power-profiles-daemon networkmanager bluez bluez-utils nautilus xdg-user-dirs imagemagick
-    papirus-icon-theme bibata-cursor-theme-bin
+    papirus-icon-theme bibata-cursor-theme-bin qt6ct
     ttf-jetbrains-mono-nerd inter-font noto-fonts noto-fonts-emoji
 )
 # Ausweichnamen, falls ein Paket anders heisst
@@ -61,7 +63,7 @@ PROGRAMME=(
     grim:grim slurp:slurp wl-copy:wl-clipboard cliphist:cliphist notify-send:libnotify jq:jq playerctl:playerctl
     brightnessctl:brightnessctl pamixer:pamixer wpctl:wireplumber
     powerprofilesctl:power-profiles-daemon nmcli:networkmanager bluetoothctl:bluez-utils
-    nautilus:nautilus
+    nautilus:nautilus qt6ct:qt6ct
 )
 # Dateien, die nur angelegt werden, wenn sie fehlen (vom Benutzer oder von matugen erzeugt)
 NUR_WENN_FEHLT=(
@@ -98,7 +100,7 @@ fehler() { printf '%sFehler:%s %s\n' "$ROT" "$AUS" "$*" >&2; exit 1; }
 probe()  { printf '  [Probelauf] %s\n' "$*"; }
 
 hilfe() {
-    sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
 }
 
@@ -136,6 +138,8 @@ while [ $# -gt 0 ]; do
             if [ $# -gt 1 ] && [ "${2#-}" = "$2" ]; then RESTORE_DIR="$2"; shift; fi
             ;;
         --uninstall) MODE=uninstall ;;
+        --login-theme) MODE=login ;;
+        --login-theme-remove) MODE=login-remove ;;
         -h|--help) hilfe ;;
         *) fehler "Unbekannte Option: $1 (siehe ./install.sh --help)" ;;
     esac
@@ -231,6 +235,7 @@ echter_ordner() { # pfad
         mkdir -p "$d"
         # bisherigen Inhalt übernehmen (als Kopie, der Dotfiles-Ordner bleibt unberührt)
         cp -a "$(readlink -f "$BACKUP/links/$rel")/." "$d/" 2>/dev/null || true
+        chmod -R u+w "$d"
     fi
 }
 
@@ -509,6 +514,35 @@ fehlende_programme() {
     fi
 }
 
+# Sprechen mit Missa (freiwillig): whisper.cpp, piper und ihre Modelle nur nach Rückfrage holen.
+# Mit --yes wird nicht gefragt und nichts geholt; ohne die Programme fehlen Taste und Mikrofon-Knopf.
+STIMME_PAKETE=(whisper-cpp piper-tts-bin sox)
+declare -A STIMME_ALTERNATIVEN=([whisper-cpp]="whisper.cpp" [piper-tts-bin]="piper-tts")
+WHISPER_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin"
+PIPER_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx"
+stimme_einrichten() {
+    if [ "$DRY" -eq 1 ] || [ "$YES" -eq 1 ] || [ ! -t 0 ]; then return 0; fi
+    if command -v whisper-cli >/dev/null 2>&1 && [ -f "$DATA/whisper/ggml-base.bin" ]; then return 0; fi
+    ja_nein "Mit Missa sprechen einrichten (whisper.cpp, piper, deutsches Sprachmodell und Stimme, etwa 250 MB)? Nur nötig, wenn du Missa benutzt." || return 0
+    local p kandidat gefunden
+    for p in "${STIMME_PAKETE[@]}"; do
+        gefunden=""
+        # shellcheck disable=SC2086
+        for kandidat in "$p" ${STIMME_ALTERNATIVEN[$p]:-}; do
+            if pacman -Si "$kandidat" >/dev/null 2>&1; then sudo pacman -S --needed --noconfirm "$kandidat" && gefunden=1; break; fi
+            if command -v paru >/dev/null 2>&1 && paru -Si "$kandidat" >/dev/null 2>&1; then paru -S --needed --noconfirm "$kandidat" && gefunden=1; break; fi
+        done
+        [ -n "$gefunden" ] || warnung "Paket $p nicht gefunden – Sprechen mit Missa bleibt aus"
+    done
+    mkdir -p "$DATA/whisper" "$DATA/piper"
+    curl -fL --progress-bar -o "$DATA/whisper/ggml-base.bin" "$WHISPER_URL" || warnung "Sprachmodell konnte nicht geladen werden"
+    if ! curl -fL --progress-bar -o "$DATA/piper/de_DE-thorsten-medium.onnx" "$PIPER_URL" \
+        || ! curl -fL -s -o "$DATA/piper/de_DE-thorsten-medium.onnx.json" "$PIPER_URL.json"; then
+        warnung "Stimme konnte nicht geladen werden"
+    fi
+    ok "Sprechen mit Missa eingerichtet (einschalten: Einstellungen → Integrations → Talk to Missa)"
+}
+
 # ASUS-Laptop ohne asusctl: Pakete nur vorschlagen, nie ungefragt installieren
 laptop_hinweis() {
     local hersteller=""
@@ -571,6 +605,8 @@ installieren() {
     installiere_datei "$REPO/VERSION" "$DATA/VERSION"
     installiere_datei "$REPO/settings/settings.example.json" "$DATA/settings.example.json"
     installiere_datei "$REPO/settings/schema.json" "$DATA/schema.json"
+    # Voreinstellungen (Dock)
+    installiere_baum "$REPO/settings/presets" "$DATA/presets"
     # Tab-Vervollständigung für shell-set (bash, fish); ein verlinkter Ordner wird nicht angefasst
     vervollstaendigung "$REPO/settings/completions/shell-set.bash" "$HOME/.local/share/bash-completion/completions/shell-set"
     vervollstaendigung "$REPO/settings/completions/shell-set.fish" "$CONF/fish/completions/shell-set.fish"
@@ -618,6 +654,7 @@ installieren() {
     if [ "$NOPKG" -eq 0 ]; then fehlende_programme; fi
     dienste_pruefen
     laptop_hinweis
+    stimme_einrichten
 
     echo
     if [ "$DRY" -eq 1 ]; then
@@ -716,6 +753,9 @@ entfernen() {
     [ -f "$MANIFEST" ] || fehler "hypr-shell ist nicht installiert ($MANIFEST fehlt)."
     [ "$DRY" -eq 1 ] && info "Probelauf: es wird nichts verändert"
     ja_nein "Alle Dateien von hypr-shell entfernen und den Zustand vor der ersten Installation zurückholen?" || { echo "Abgebrochen."; exit 1; }
+    # mitgefärbte Programme (GTK, Qt, Firefox, …) zuerst auf ihren eigenen Stand zurück
+    if [ "$DRY" -eq 1 ]; then probe "Programme mitfärben: Sicherungen zurücklegen"
+    elif [ -x "$BIN/shell-appcolors" ]; then "$BIN/shell-appcolors" restore || true; fi
     info "Dateien von hypr-shell entfernen"
     local f
     while IFS= read -r f; do
@@ -736,13 +776,142 @@ entfernen() {
         stelle_wieder_her "$erste"
     fi
     if [ "$DRY" -eq 0 ]; then
-        rm -rf "$DATA"
+        if [ -f "$LOGIN_SICHERUNG/installiert" ]; then
+            # der Anmeldebildschirm gehört zum System: seine Sicherung bleibt für --login-theme-remove
+            find "$DATA" -mindepth 1 -maxdepth 1 ! -name login-theme -exec rm -rf {} +
+            warnung "Der Anmeldebildschirm von hypr-shell bleibt; zurück mit ./install.sh --login-theme-remove"
+        else
+            rm -rf "$DATA"
+        fi
         ok "hypr-shell entfernt. Sicherungen bleiben in ~/.config/hypr-shell-backup-*"
     fi
 }
 
+# ---------------------------------------------------------------- Anmeldebildschirm (nur auf Wunsch)
+# Wird nur mit --login-theme angefasst, nie bei der normalen Installation. HYPR_SHELL_ROOT (nur für
+# Tests) setzt eine andere Wurzel statt / – dann ohne sudo.
+WURZEL="${HYPR_SHELL_ROOT:-}"
+SDDM_THEMES="$WURZEL/usr/share/sddm/themes"
+SDDM_ZIEL="$SDDM_THEMES/hypr-shell"
+SDDM_CONF="$WURZEL/etc/sddm.conf"
+SDDM_CONFD="$WURZEL/etc/sddm.conf.d"
+SDDM_UNSERE="$SDDM_CONFD/99-hypr-shell.conf"
+LOGIN_SICHERUNG="$DATA/login-theme"
+
+als_root() { if [ -n "$WURZEL" ]; then "$@"; else sudo "$@"; fi; }
+
+# aktiver Anmeldemanager, z. B. "sddm" oder "gdm" (leer, wenn keiner eingerichtet ist)
+anmeldemanager() {
+    local l="$WURZEL/etc/systemd/system/display-manager.service" z
+    [ -L "$l" ] || return 0
+    z="$(readlink "$l")"
+    z="$(basename "$z")"
+    printf '%s\n' "${z%.service}"
+}
+
+greeter() { command -v sddm-greeter-qt6 || command -v sddm-greeter; }
+
+# Thema mit Farben und Hintergrund des Benutzers in einem eigenen Ordner zusammenstellen
+login_thema_bauen() { # zielordner
+    local d="$1" bild="" im c k v
+    cp -r "$REPO/sddm/hypr-shell/." "$d/"
+    mkdir -p "$d/fonts"
+    cp "$REPO/quickshell/common/fonts/BebasNeue-Regular.ttf" "$REPO/quickshell/common/fonts/OFL.txt" "$d/fonts/"
+    [ -f "$DATA/wallpaper" ] && bild="$(cat "$DATA/wallpaper")"
+    if [ -z "$bild" ] || [ ! -f "$bild" ]; then bild="$(find "$REPO/wallpapers" -maxdepth 1 -name '*.png' 2>/dev/null | sort | head -n1)"; fi
+    im="$(command -v magick || command -v convert || true)"
+    if [ -n "$bild" ] && [ -n "$im" ]; then
+        # wie der Sperrbildschirm: unscharf und halb so hell
+        "$im" "${bild}[0]" -resize 1920x1080^ -gravity center -extent 1920x1080 -blur 0x18 -modulate 50 "$d/background.png" \
+            || cp "$bild" "$d/background.png"
+    elif [ -n "$bild" ]; then
+        cp "$bild" "$d/background.png"
+    fi
+    # Farben aus dem Hintergrundbild (colors.json von matugen)
+    c="$CONF/hypr-shell/colors.json"
+    if [ -f "$c" ] && command -v jq >/dev/null 2>&1; then
+        for k in accent text subtext surface error; do
+            v="$(jq -r --arg k "$k" '.[$k] // empty' "$c" 2>/dev/null || true)"
+            [[ "$v" =~ ^#[0-9a-fA-F]{6}$ ]] && sed -i "s|^$k=.*|$k=$v|" "$d/theme.conf"
+        done
+    fi
+    chmod -R a+rX "$d"
+}
+
+# Thema im Testmodus des Greeters starten: läuft es nach einigen Sekunden noch ohne QML-Fehler, passt es
+login_thema_testen() { # ordner greeter
+    local log rc=0
+    log="$(mktemp)"
+    QT_QPA_PLATFORM=offscreen timeout "${HYPR_SHELL_GREETER_ZEIT:-8}" "$2" --test-mode --theme "$1" > "$log" 2>&1 || rc=$?
+    if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ] || grep -Eq 'Main\.qml:[0-9]+.*(rror|is not|Cannot|nicht)|ReferenceError|TypeError|failed to load|module ".*" is not installed' "$log"; then
+        warnung "Der Greeter meldet:"; sed -n '1,15p' "$log" >&2
+        rm -f "$log"
+        return 1
+    fi
+    rm -f "$log"
+}
+
+login_thema() {
+    local dm g tmp
+    dm="$(anmeldemanager)"
+    [ "$dm" = sddm ] || fehler "Aktiver Anmeldemanager ist ${dm:-keiner}, nicht SDDM – der Anmeldebildschirm von hypr-shell braucht SDDM. Es wurde nichts geändert."
+    g="$(greeter)" || fehler "sddm-greeter fehlt (Paket sddm). Es wurde nichts geändert."
+    info "Anmeldebildschirm (SDDM) im Stil des Sperrbildschirms"
+    tmp="$(mktemp -d)"
+    login_thema_bauen "$tmp"
+    if ! login_thema_testen "$tmp" "$g"; then
+        rm -rf "$tmp"
+        fehler "Das Thema startet im Testmodus nicht. Es wurde nichts geändert."
+    fi
+    ok "Thema startet im Testmodus ($(basename "$g") --test-mode)"
+    if [ "$DRY" -eq 1 ]; then
+        probe "Thema nach ${SDDM_ZIEL#"$WURZEL"} kopieren, ${SDDM_UNSERE#"$WURZEL"} schreiben (sudo)"
+        rm -rf "$tmp"; return 0
+    fi
+    ja_nein "Anmeldebildschirm von hypr-shell aktivieren (braucht sudo; zurück mit --login-theme-remove)?" || { rm -rf "$tmp"; echo "Abgebrochen."; exit 1; }
+
+    # bisherigen Stand sichern – nur beim ersten Mal, ein erneuter Aufruf erneuert nur das Thema
+    if [ ! -f "$LOGIN_SICHERUNG/installiert" ]; then
+        rm -rf "$LOGIN_SICHERUNG"; mkdir -p "$LOGIN_SICHERUNG"
+        if [ -e "$SDDM_CONF" ]; then cp -p "$SDDM_CONF" "$LOGIN_SICHERUNG/sddm.conf"; else : > "$LOGIN_SICHERUNG/sddm.conf.fehlte"; fi
+        [ -d "$SDDM_CONFD" ] || : > "$LOGIN_SICHERUNG/sddm.conf.d.fehlte"
+        [ -d "$SDDM_THEMES" ] || : > "$LOGIN_SICHERUNG/themes.fehlte"
+        if [ -e "$SDDM_ZIEL" ]; then cp -a "$SDDM_ZIEL" "$LOGIN_SICHERUNG/thema-vorher"; fi
+        if [ -e "$SDDM_UNSERE" ]; then cp -p "$SDDM_UNSERE" "$LOGIN_SICHERUNG/unsere-vorher.conf"; fi
+    fi
+    als_root mkdir -p "$SDDM_THEMES" "$SDDM_CONFD"
+    als_root rm -rf "$SDDM_ZIEL"
+    als_root cp -r "$tmp" "$SDDM_ZIEL"
+    als_root chmod -R a+rX "$SDDM_ZIEL"
+    rm -rf "$tmp"
+    printf '# hypr-shell: Anmeldebildschirm (zurück mit ./install.sh --login-theme-remove)\n[Theme]\nCurrent=hypr-shell\n' \
+        | als_root tee "$SDDM_UNSERE" >/dev/null
+    # /etc/sddm.conf wird nach sddm.conf.d gelesen: steht dort ein anderes Thema, gilt sonst das
+    if [ -f "$SDDM_CONF" ] && awk '/^\[/ { t = ($0 == "[Theme]") } t && /^Current=/ { f = 1 } END { exit !f }' "$SDDM_CONF"; then
+        als_root sed -i '/^\[Theme\]/,/^\[/ s/^Current=.*/Current=hypr-shell/' "$SDDM_CONF"
+    fi
+    : > "$LOGIN_SICHERUNG/installiert"
+    ok "Anmeldebildschirm aktiv (ab der nächsten Anmeldung). Zurück: ./install.sh --login-theme-remove"
+}
+
+login_thema_entfernen() {
+    [ -f "$LOGIN_SICHERUNG/installiert" ] || fehler "Der Anmeldebildschirm von hypr-shell ist nicht installiert (keine Sicherung in ~/${LOGIN_SICHERUNG#"$HOME"/})."
+    if [ "$DRY" -eq 1 ]; then probe "vorherigen Anmeldebildschirm zurückholen (sudo)"; return 0; fi
+    ja_nein "Vorherigen Anmeldebildschirm zurückholen (braucht sudo)?" || { echo "Abgebrochen."; exit 1; }
+    als_root rm -rf "$SDDM_ZIEL"
+    [ -d "$LOGIN_SICHERUNG/thema-vorher" ] && als_root cp -a "$LOGIN_SICHERUNG/thema-vorher" "$SDDM_ZIEL"
+    if [ -f "$LOGIN_SICHERUNG/unsere-vorher.conf" ]; then als_root cp -p "$LOGIN_SICHERUNG/unsere-vorher.conf" "$SDDM_UNSERE"
+    else als_root rm -f "$SDDM_UNSERE"; fi
+    if [ -f "$LOGIN_SICHERUNG/sddm.conf.fehlte" ]; then als_root rm -f "$SDDM_CONF"
+    elif [ -f "$LOGIN_SICHERUNG/sddm.conf" ]; then als_root cp -p "$LOGIN_SICHERUNG/sddm.conf" "$SDDM_CONF"; fi
+    [ -f "$LOGIN_SICHERUNG/sddm.conf.d.fehlte" ] && als_root rmdir "$SDDM_CONFD" 2>/dev/null
+    [ -f "$LOGIN_SICHERUNG/themes.fehlte" ] && als_root rmdir "$SDDM_THEMES" 2>/dev/null
+    rm -rf "$LOGIN_SICHERUNG"
+    ok "Vorheriger Anmeldebildschirm ist wieder aktiv (ab der nächsten Anmeldung)."
+}
+
 if [ "$UPDATE" -eq 1 ]; then
-    [ "$MODE" = install ] || fehler "--update passt nicht zu --restore oder --uninstall."
+    [ "$MODE" = install ] || fehler "--update passt nicht zu --restore, --uninstall oder --login-theme."
     # vor dem Holen prüfen: ein zu altes Hyprland bricht ab, bevor etwas verändert wird
     pruefe_hyprland
     aktualisieren
@@ -752,4 +921,6 @@ case "$MODE" in
     install) installieren ;;
     restore) wiederherstellen ;;
     uninstall) entfernen ;;
+    login) login_thema ;;
+    login-remove) login_thema_entfernen ;;
 esac

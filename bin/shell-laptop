@@ -13,9 +13,13 @@
 # Befehle nach asusctl 6.3+ (profile get/set, battery limit, leds set, aura effect static) mit Rückfall
 # auf die alte Schreibweise bis 6.2 (profile -p/-P, -c, -k, aura static); supergfxctl -g/-s/-m/-p.
 set -uo pipefail
+# fehlendes Argument: klare Meldung und Ende (statt "Zeile N: 2: … fehlt" oder still weiter)
+fehlt() { echo "shell-laptop: $1" >&2; exit 2; }
 
 DATA="$HOME/.local/share/hypr-shell"
 EFF="$DATA/settings.effective.json"
+# da, solange laptop.charge_limit unter 100 steht und angewendet ist; nur dann setzt apply bei 100 zurück
+CHARGE_MARKE="$DATA/charge-limit-set"
 SYSFS="${HYPR_SHELL_SYSFS:-/sys}"
 hat() { command -v "$1" >/dev/null 2>&1; }
 wert() {
@@ -121,7 +125,14 @@ status() {
 apply() {
     local n k
     n="$(wert '.laptop.charge_limit' 100)"
-    if charge_da && [ "$n" != 100 ] && [ "$(charge_get)" != "$n" ]; then charge_set "$n"; fi
+    # Ladegrenze: eine eigene Grenze (unter 100) setzen und merken. Steht die Einstellung wieder auf
+    # 100 (auch nach Reset), einmal 100 schreiben – aber nur, wenn hypr-shell die Grenze gesetzt hat.
+    # Eine Grenze, die man direkt mit asusctl gesetzt hat, bleibt so beim Anmelden unberührt.
+    if charge_da && [ "$n" != 100 ]; then
+        if [ "$(charge_get)" = "$n" ] || charge_set "$n"; then mkdir -p "$DATA" && : > "$CHARGE_MARKE"; fi
+    elif charge_da && [ -f "$CHARGE_MARKE" ] && [ -f "$EFF" ] && hat jq; then
+        if [ "$(charge_get)" = 100 ] || charge_set 100; then rm -f "$CHARGE_MARKE"; fi
+    fi
     k="$(wert '.laptop.kbd_light' unchanged)"
     if kbd_da && [ "$k" != unchanged ]; then kbd_set "$k"; fi
     if kbd_da && [ "$(wert '.laptop.kbd_follow_wallpaper' false)" = true ] && [ -f "$HOME/.config/hypr-shell/colors.json" ]; then
@@ -136,18 +147,18 @@ case "${1:-} ${2:-}" in
     "profile get") profil_get ;;
     "profile list") profil_liste ;;
     "profile next") profil_next ;;
-    "profile set") profil_set "${3:?Profil fehlt}" ;;
+    "profile set") [ -n "${3:-}" ] || fehlt "Profil fehlt"; profil_set "${3}" ;;
     "gfx get") gfx_da && supergfxctl -g ;;
     "gfx list") if gfx_da; then gfx_liste; else echo '[]'; fi ;;
     "gfx pending") gfx_da && supergfxctl -p ;;
     "gfx set")
         gfx_da || { echo "supergfxctl fehlt" >&2; exit 1; }
-        jq -e --arg m "${3:?Modus fehlt}" 'index($m) != null' <<<"$(gfx_liste)" >/dev/null || { echo "shell-laptop: unbekannter Modus $3" >&2; exit 2; }
+        [ -n "${3:-}" ] || fehlt "Modus fehlt"; jq -e --arg m "${3}" 'index($m) != null' <<<"$(gfx_liste)" >/dev/null || { echo "shell-laptop: unbekannter Modus $3" >&2; exit 2; }
         supergfxctl -m "$3" ;;
     "charge get") charge_get ;;
-    "charge set") charge_set "${3:?Prozent fehlen}" ;;
-    "kbd set") kbd_set "${3:?Stufe fehlt}" ;;
-    "kbd color") kbd_color "${3:?Farbe fehlt}" ;;
+    "charge set") [ -n "${3:-}" ] || fehlt "Prozent fehlen"; charge_set "${3}" ;;
+    "kbd set") [ -n "${3:-}" ] || fehlt "Stufe fehlt"; kbd_set "${3}" ;;
+    "kbd color") [ -n "${3:-}" ] || fehlt "Farbe fehlt"; kbd_color "${3}" ;;
     "apply "*) apply ;;
     *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

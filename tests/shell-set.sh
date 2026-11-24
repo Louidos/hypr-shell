@@ -3,7 +3,8 @@
 #   setzen mit Prüfung gegen das Schema (falscher Wert ändert nichts und nennt den Bereich),
 #   get/list, reset (Schlüssel, Bereich, alles), undo/redo (höchstens 20 Schritte), Ziehen eines
 #   Reglers (--live) ergibt einen Schritt, Profile, Export/Import mit Prüfung, kaputtes JSON,
-#   Tab-Vervollständigung für bash und fish.
+#   Bildschirm drehen (shell-set monitor … rotate|mirror|transform), Tab-Vervollständigung für
+#   bash und fish.
 # shellcheck disable=SC2016,SC2034,SC2329
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -93,12 +94,34 @@ pruefe 'ss import "$T/gut.json" >/dev/null && [ "$(wert .bar.height)" = 33 ]' "i
 echo "== Vervollständigung"
 pruefe 'ss __complete keys | grep -qx look.rounding && ss __complete areas | grep -qx look.blur && [ "$(ss __complete values bar.position | tr "\n" " ")" = "top bottom " ]' "Schlüssel, Bereiche und Werte aus dem Schema"
 mkdir -p "$T/bin"; ln -s "$REPO/bin/shell-set" "$T/bin/shell-set"
+echo "== Bildschirm drehen"
+pruefe 'ss monitors.outputs "[{\"name\":\"eDP-1\",\"resolution\":\"2560x1600\",\"scale\":\"1.6\"}]" >/dev/null && [ "$(jq -r ".monitors.outputs[0] | has(\"transform\")" "$S")" = false ]' "alter Eintrag ohne transform wird angenommen"
+pruefe '[ "$(ss get monitors.outputs | jq -r ".[0].transform")" = normal ]' "… und gilt als normal"
+pruefe 'ss monitor eDP-1 rotate 90 >/dev/null && [ "$(jq -c ".monitors.outputs[0]" "$S")" = "{\"name\":\"eDP-1\",\"resolution\":\"2560x1600\",\"scale\":\"1.6\",\"transform\":\"90\"}" ]' "shell-set monitor eDP-1 rotate 90: Drehung gesetzt, übrige Werte bleiben"
+pruefe 'grep -q "\"90\"" "$LUA"' "… und wirkt sofort (hypr-shell-settings.lua)"
+pruefe 'ss monitor eDP-1 mirror on >/dev/null && [ "$(jq -r ".monitors.outputs[0].transform" "$S")" = flipped-90 ]' "mirror on behält die Drehung (flipped-90)"
+pruefe 'ss monitor eDP-1 rotate 270 >/dev/null && [ "$(jq -r ".monitors.outputs[0].transform" "$S")" = flipped-270 ]' "rotate behält die Spiegelung (flipped-270)"
+pruefe 'ss monitor eDP-1 mirror off >/dev/null && ss monitor eDP-1 rotate 0 >/dev/null && [ "$(jq -r ".monitors.outputs[0].transform" "$S")" = normal ]' "zurück auf normal"
+pruefe 'ss monitor HDMI-A-1 transform flipped >/dev/null && [ "$(jq -c ".monitors.outputs[1]" "$S")" = "{\"name\":\"HDMI-A-1\",\"transform\":\"flipped\"}" ]' "neuer Bildschirm wird angehängt"
+vorher="$(cat "$S")"
+for falsch in "monitor eDP-1 rotate 45" "monitor eDP-1 rotate links" "monitor eDP-1 mirror vielleicht" "monitor eDP-1 transform sideways" "monitor eDP-1 drehen 90" "monitor e;x rotate 90" "monitor eDP-1"; do
+    # shellcheck disable=SC2086
+    out="$(ss $falsch 2>&1 || true)"
+    # shellcheck disable=SC2086
+    pruefe '! ss $falsch >/dev/null 2>&1 && grep -qE "invalid|unknown|shell-set monitor" <<<"$out" && [ "$vorher" = "$(cat "$S")" ]' "abgelehnt mit Meldung: shell-set $falsch ($out)"
+done
+pruefe '! ss monitors.outputs "[{\"name\":\"X\",\"transform\":\"sideways\"}]" >/dev/null 2>&1 && [ "$vorher" = "$(cat "$S")" ]' "ungültige Drehung über monitors.outputs wird abgelehnt"
+ss undo >/dev/null 2>&1 || true
+
 komplett() { PATH="$T/bin:$PATH" bash -c 'source settings/completions/shell-set.bash; COMP_WORDS=("$@"); COMP_CWORD=$(($# - 1)); _shell_set; printf "%s\n" "${COMPREPLY[@]}"' _ "$@"; }
 pruefe 'komplett shell-set look.ro | grep -qx look.rounding' "bash: Schlüssel"
 pruefe '[ "$(komplett shell-set panel.corner bottom- | tr "\n" " ")" = "bottom-right bottom-left " ]' "bash: Werte"
 pruefe 'komplett shell-set pro | grep -qx profile' "bash: Befehle"
+pruefe '[ "$(komplett shell-set monitor eDP-1 r | tr "\n" " ")" = "rotate " ] && [ "$(komplett shell-set monitor eDP-1 rotate "" | tr "\n" " ")" = "0 90 180 270 " ]' "bash: monitor … rotate 0 90 180 270"
+pruefe '[ "$(komplett shell-set monitor eDP-1 mirror "" | tr "\n" " ")" = "on off " ] && komplett shell-set monitor "" | grep -qx eDP-1' "bash: mirror on/off, Bildschirmnamen"
 if command -v fish >/dev/null 2>&1; then
     pruefe 'PATH="$T/bin:$PATH" fish -c "source settings/completions/shell-set.fish; complete -C \"shell-set look.ro\"" | grep -q "^look.rounding"' "fish: Schlüssel"
+    pruefe 'PATH="$T/bin:$PATH" fish -c "source settings/completions/shell-set.fish; complete -C \"shell-set monitor eDP-1 rotate \"" | grep -qx 270' "fish: monitor … rotate"
 else
     pruefe 'grep -q "complete -c shell-set" settings/completions/shell-set.fish' "fish-Datei vorhanden (fish fehlt, nicht ausgeführt)"
 fi

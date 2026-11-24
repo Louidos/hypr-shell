@@ -13,13 +13,14 @@ Item {
     function melde() {
         const it = p.parent, w = p.win
         if (!it || !w || !w.screen || !it.visible || it.width < 4 || it.height < 4) return
-        const g = it.mapToItem(null, 0, 0)
+        // Ecken in Fensterkoordinaten (so stimmt die Grösse auch, wenn das Element skaliert ist)
+        const g = it.mapToItem(null, 0, 0), e = it.mapToItem(null, it.width, it.height)
         const sw = w.screen.width, sh = w.screen.height
         const a = w.anchors, m = w.margins
         const wx = a.left ? m.left : a.right ? sw - w.width - m.right : (sw - w.width) / 2
         const wy = a.top ? m.top : a.bottom ? sh - w.height - m.bottom : (sh - w.height) / 2
         console.log("hypr-shell-probe " + p.name + " " + Math.round(wx + g.x) + " " + Math.round(wy + g.y)
-                    + " " + Math.round(it.width) + " " + Math.round(it.height))
+                    + " " + Math.round(e.x - g.x) + " " + Math.round(e.y - g.y))
     }
     // im Test anmelden, damit "ipc call test click|drag <name>" das Bedienelement auslösen kann
     Component.onCompleted: if (aktiv) Ui.probes[name] = p

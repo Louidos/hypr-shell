@@ -1,0 +1,20 @@
+I: Bus=0018 Vendor=04f3 Product=2b7c Version=0100
+N: Name="ELAN2514:00 04F3:2B7C"
+P: Phys=i2c-ELAN2514:00
+H: Handlers=mouse2 event8
+B: PROP=2
+B: EV=1b
+B: ABS=3273800000000003
+
+I: Bus=0018 Vendor=04f3 Product=2b7c Version=0100
+N: Name="ELAN2514:00 04F3:2B7C Stylus"
+P: Phys=i2c-ELAN2514:00
+H: Handlers=mouse3 event9
+B: PROP=2
+B: EV=1b
+
+I: Bus=0018 Vendor=06cb Product=ce26 Version=0100
+N: Name="ASUE120A:00 04F3:319B Touchpad"
+H: Handlers=mouse1 event7
+B: PROP=5
+B: EV=1b

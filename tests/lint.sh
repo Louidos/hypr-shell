@@ -25,6 +25,14 @@ else
     echo "Hinweis: shellcheck fehlt, übersprungen."
 fi
 
+# Python (Missa-Agent, Testserver)
+if command -v python3 >/dev/null; then
+    for f in bin/* tests/daten/*; do
+        if [ ! -f "$f" ] || ! head -n1 "$f" | grep -q python; then continue; fi
+        python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$f" || melde "Python: $f"
+    done
+fi
+
 # JSON
 if command -v jq >/dev/null; then
     while IFS= read -r -d '' f; do
@@ -52,7 +60,7 @@ qmlformat=$(command -v qmlformat || command -v qmlformat6 || ls /usr/lib/qt6/bin
 if [ -n "$qmlformat" ]; then
     while IFS= read -r -d '' f; do
         "$qmlformat" "$f" >/dev/null 2>&1 || { "$qmlformat" "$f" >/dev/null; melde "QML: $f"; }
-    done < <(find quickshell -name '*.qml' -print0 2>/dev/null)
+    done < <(find quickshell sddm tests/daten -name '*.qml' -print0 2>/dev/null)
 else
     echo "Hinweis: qmlformat fehlt, QML übersprungen."
 fi

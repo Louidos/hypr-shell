@@ -38,6 +38,35 @@ Der Installer
 | `--update` | neuen Stand holen (`git pull --ff-only`) und neu installieren; `settings.json`, `user.lua` und `hypr-shell-local.lua` bleiben unberührt |
 | `--restore [ORDNER]` | Stand vor der letzten Installation zurückholen |
 | `--uninstall` | alles von hypr-shell entfernen, Zustand vor der ersten Installation zurück |
+| `--login-theme` | Anmeldebildschirm (SDDM) im Stil des Sperrbildschirms – nur auf Wunsch, siehe unten |
+| `--login-theme-remove` | vorherigen Anmeldebildschirm zurückholen |
+
+### Anmeldebildschirm (nur auf Wunsch)
+
+```bash
+./install.sh --login-theme
+```
+
+installiert ein SDDM-Thema im Stil des Sperrbildschirms: unscharfes, abgedunkeltes
+Hintergrundbild, Profilbild, grosse gestapelte Uhr, Datum, Begrüssung, Passwort als schlichte
+Linie, Benutzer- und Sitzungswahl (Klick schaltet weiter) und Standby, Neustart,
+Herunterfahren. Farben und Bild kommen vom aktuellen Hintergrundbild; nach einem Bildwechsel
+übernimmt ein erneuter Aufruf die neuen Farben.
+
+- Die normale Installation fasst den Anmeldemanager **nie** an.
+- Ist nicht SDDM der aktive Anmeldemanager (z. B. GDM), bricht der Befehl mit einer klaren
+  Meldung ab und ändert nichts.
+- Das Thema wird vorher im Testmodus des Greeters gestartet (`sddm-greeter-qt6 --test-mode`);
+  meldet er Fehler, bleibt alles, wie es war.
+- Die bisherige Einstellung (`/etc/sddm.conf`, vorhandene Dateien) wird nach
+  `~/.local/share/hypr-shell/login-theme/` gesichert; geschrieben wird mit sudo nach
+  `/usr/share/sddm/themes/hypr-shell` und `/etc/sddm.conf.d/99-hypr-shell.conf`.
+
+```bash
+./install.sh --login-theme-remove
+```
+
+legt die Sicherung zurück; ab der nächsten Anmeldung gilt wieder der vorherige Bildschirm.
 
 ## Aktualisieren
 
@@ -73,16 +102,30 @@ her. Die Sicherungsordner bleiben liegen. Danach abmelden und wieder anmelden.
 Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kürzel stehen dort unter
 „Custom“.
 
+**Die wichtigsten Kürzel**
+
 | Kürzel | Wirkung |
 | --- | --- |
-| `SUPER + Q` | Terminal (kitty) |
-| `SUPER + C` | Fenster schliessen |
+| `SUPER + Enter` | Terminal öffnen |
+| `CTRL + SUPER + Enter` | App-Suche (Starter) |
+| `SUPER + Q` | aktives Fenster schliessen |
+
+**Alle Kürzel**
+
+| Kürzel | Wirkung |
+| --- | --- |
+| `SUPER + Return` (Enter) | Terminal (kitty) |
+| `SUPER + Q` / `SUPER + C` | Fenster schliessen (wie ein Klick aufs X) |
+| `SUPER + F` | Vollbild an / aus |
 | `SUPER + E` | Dateien (Nautilus) |
-| `SUPER + R` / `SUPER + Space` / `ALT + Space` | Starter (Suche nach Apps, `=` rechnet) |
+| `CTRL + SUPER + Return` / `SUPER + R` / `SUPER + Space` / `ALT + Space` | Starter (Suche nach Apps, `=` rechnet) |
 | `SUPER + V` | Fenster schwebend / gekachelt |
 | `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
 | `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
 | `SUPER + F1` | Kürzel-Spickzettel |
+| `SUPER + B` | Dock mit der Tastatur bedienen (Pfeile, Enter, Menütaste oder `SHIFT + F10`, Esc) |
+| `SUPER + I` | Chat mit Missa (nur mit `missa.enabled`, sonst tut das Kürzel nichts) |
+| `SUPER + SHIFT + I` | mit Missa sprechen; nochmal drücken beendet (nur mit `missa.voice_enabled` und whisper.cpp) |
 | `SUPER + M` | abmelden (Hyprland beenden) |
 | `SUPER + L` | sperren |
 | `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |
@@ -152,6 +195,7 @@ aktive als weisse Pille):
 | Dashboard | Wetter, Profil mit Begrüssung, Musik, Uhr, Kalender, drei Ringe für CPU/RAM/Disk |
 | Wallpaper | alle Bilder aus `~/Pictures/Wallpapers` mit Suche; Klick setzt Bild und Farben |
 | Performance | CPU und GPU mit Modell, Temperatur und Auslastung („Usage“; eine schlafende NVIDIA-Karte wird nicht geweckt), Datenträger, Netzwerk mit Verlauf, Arbeitsspeicher |
+| Lab | nur mit `lab.enabled`: VMs und IPs, Messwerte und Erreichbarkeit, Container und Alarme des Homelabs, gelesen über Missa-Core |
 | Games | zuletzt gespielte Steam-Spiele mit Cover, Klick startet; eigene Einträge (GOG, Battle.net …) mit `games.custom_enabled` und `games.custom`. Ohne Spiele fehlt der Tab |
 | About | System, Distribution, Version von hypr-shell, Hyprland und Quickshell |
 
@@ -221,6 +265,18 @@ Ton-Symbol in der Leiste öffnet direkt die passende Unterseite (Rechtsklick auf
 
 ![Panel](docs/screenshots/panel.png)
 
+### Dock
+
+![Dock](docs/screenshots/dock.png)
+
+Ein schwebendes Glas-Dock mittig unten mit angehefteten und laufenden Programmen: Klick startet
+oder holt das Fenster nach vorn, Punkte zeigen laufende Programme. Rechtsklick öffnet ein Menü,
+Ziehen sortiert um, Herausziehen löst an, `SUPER + B` bedient das Dock mit der Tastatur. Abschaltbar mit
+`shell-set dock.enabled false`. Jeder Wert ist in der Einstellungs-App (Seite **Dock**, mit
+fünf Voreinstellungen, Export und Import) einstellbar. Es weicht der Leiste aus, verschwindet bei
+Vollbild und Spielen und färbt sich mit dem Hintergrundbild. Alle Werte stehen in
+[docs/dock.md](docs/dock.md).
+
 ### Sperrbildschirm
 
 Bildschirm unscharf und abgedunkelt, links Profilbild über der grossen Uhr, Datum,
@@ -239,6 +295,14 @@ Waybar, kitty, rofi, hyprlock und Quickshell; bei einem grauen Bild bleibt alles
 grau/weiss. Mitgeliefert ist ein schlichtes graues Verlaufsbild.
 
 ![Farben aus einem bunten Bild](docs/screenshots/farben-aus-bild.png)
+
+**Programme mitfärben** (Einstellungs-App → Theme → Apps, `theme.apps.*`): GTK-Programme
+wie Nautilus und Dialoge sowie Qt-Programme (über qt6ct/qt5ct) übernehmen die Farben
+standardmässig mit; Firefox, Discord (Vesktop) und Spotify (spicetify) lassen sich einzeln
+einschalten und erscheinen nur, wenn sie installiert sind. Jede Datei, die dafür geändert
+wird (`gtk.css`, `qt6ct.conf`, `userChrome.css`, `user.js`, Vesktop-Einstellungen,
+`config-xpui.ini`), wird vorher gesichert; Ausschalten legt die Sicherung genau so zurück.
+Offene GTK-4-Fenster und Firefox zeigen die neuen Farben nach dem nächsten Öffnen.
 
 Ein Profilbild wird aus `~/.face` gelesen (quadratisches Bild, z. B. PNG). Fehlt es, steht
 im Dashboard, im Panel und auf dem Sperrbildschirm der Anfangsbuchstabe des Benutzers in
@@ -268,13 +332,13 @@ Datei überschreibt der Installer nie, und sie gilt zuletzt.
 
 ### Mit der Einstellungs-App
 
-Links stehen die Seiten Home, Bar, Look, Theme, Desktop, Dashboard, Panel, System, Laptop (nur auf Laptops mit asusctl, supergfxctl oder power-profiles-daemon), Lock & Idle, Input,
+Links stehen die Seiten Home, Bar, Look, Theme, Desktop, Dashboard, Panel, System, Integrations, Laptop (nur auf Laptops mit asusctl, supergfxctl oder power-profiles-daemon), Lock & Idle, Input,
 Monitors, Apps, Keybinds und About; rechts jeder Wert mit Erklärung und dem passenden Bedienelement.
 Ein Regler wirkt schon beim Ziehen. Neben einem geänderten Wert steht **Reset**, oben auf jeder Seite
 **Reset page**, ganz oben **Undo** und **Redo**; die Suche findet Werte über Titel, Erklärung und
 Schlüssel (z. B. „blur“, „clock“, „battery“) und springt zur Zeile. Auf **Monitors** stehen die echten
-Bildschirme aus Hyprland; eine neue Auflösung muss innerhalb von 15 Sekunden bestätigt werden, sonst
-gilt wieder die alte. **About** öffnet `settings.json` und diese Übersicht. Weitere Seiten:
+Bildschirme aus Hyprland; eine neue Auflösung oder Drehung muss innerhalb von 15 Sekunden bestätigt
+werden, sonst gilt wieder die alte. **About** öffnet `settings.json` und diese Übersicht. Weitere Seiten:
 [Home](docs/screenshots/settings-home.png), [Bar](docs/screenshots/settings-bar.png),
 [Theme](docs/screenshots/settings-theme.png), [Monitors](docs/screenshots/settings-monitors.png),
 [Keybinds](docs/screenshots/settings-keybinds.png), [Suche](docs/screenshots/settings-suche.png).
@@ -296,6 +360,53 @@ Die Tab-Taste vervollständigt in bash und fish Befehle, Schlüssel und erlaubte
 alten `~/.config/hypr/hypr-shell-local.lua` (Version 1.1) wandern beim ersten Start einmalig in
 `settings.json`; eine `settings.json` aus Version 1.0 oder 1.1 funktioniert unverändert.
 
+## Anbindungen (Nextcloud, Missa, Homelab, Kalender, Sensor)
+
+Alle persönlichen Anbindungen sind nach der Installation **aus** – wer hypr-shell ohne Nextcloud, Missa
+oder Homelab benutzt, sieht nichts davon. Einschalten in der Einstellungs-App auf der Seite
+**Integrations** (Schalter, Statuspunkt, Felder; Passwörter landen nur in
+`~/.config/hypr-shell/secrets.env`). Nextcloud erscheint dann als Ordner `~/Nextcloud`, Missa als
+`~/Missa` mit `Eingang/` und `Ausgabe/`, beide mit Lesezeichen in der Seitenleiste des Dateimanagers.
+Alles Weitere steht in [docs/anbindungen.md](docs/anbindungen.md).
+
+Mit `calendar.enabled` (CalDAV, z. B. Nextcloud) bekommt der Kalender im Dashboard Punkte an Tagen
+mit Terminen und darunter die nächsten drei Termine; mit `sensor.enabled` zeigt die Wetter-Kachel
+rechts einen Messwert aus einer JSON-Adresse (Feld, Titel, Einheit, ab `sensor.warn` in Warnfarbe).
+Alles wird nur bei offenem Dashboard geholt (3 s Zeitlimit, Zwischenspeicher); ist ein Server nicht
+erreichbar, steht ruhig „not reachable“ mit dem letzten Stand.
+
+**Missa-Chat** (mit `missa.enabled`): `SUPER + I` öffnet von der rechten Kante ein Chatfenster. Enter
+sendet, SHIFT+Enter macht eine neue Zeile; Missas Antwort läuft Wort für Wort ein („Missa is working …“,
+während sie ein Werkzeug benutzt), der Knopf unten rechts bricht ab. Stellt Missa eine Rückfrage,
+erscheinen **Yes** und **No**. Dateien lassen sich ins Eingabefeld ziehen (der Pfad geht mit), Dateien
+aus `~/Missa/Eingang` stehen als Knöpfe darüber. Die Sitzung heisst `hypr-shell-<Rechnername>` und läuft
+nach einem Neustart weiter. Im Dashboard zeigt die Karte **Missa** die Kurzfassung des Lagebilds und die
+nächsten Erinnerungen; ein Klick öffnet den Chat.
+
+**Mit Missa sprechen** (zusätzlich `missa.voice_enabled`): `SUPER + SHIFT + I` nimmt auf, bis man
+nochmal drückt oder zwei Sekunden still ist; unten zeigt eine Glas-Pille den Pegel und „Listening“,
+„Thinking“, „Speaking“, in der Leiste steht ein Mikrofon. whisper.cpp erkennt den Satz lokal (Sprache
+`missa.voice_language`, Standard Deutsch), er erscheint im Chat und geht an Missa; ihre Antwort liest
+piper Satz für Satz vor (Stimme `missa.voice_voice`, Tempo `missa.voice_speed`). Esc, ein Klick auf die
+Pille oder die Taste stoppt. Aufgenommen wird nur nach Tastendruck, nichts wird gespeichert. Der
+Installer fragt, ob whisper.cpp, piper und die Modelle (etwa 250 MB) geholt werden sollen; ohne sie
+fehlen Taste und Mikrofon-Knopf.
+
+**Missa bedient den Rechner** (zusätzlich `missa.agent_enabled` und ein Geräte-Token): Der Missa-Agent
+(`shell-missa-agent`, Benutzerdienst) verbindet sich ausgehend mit Missa-Core – am Rechner wird kein
+Port geöffnet – und bietet Missa 16 Werkzeuge: Dateien suchen, lesen und öffnen, Fenster und Medien
+steuern, Benachrichtigungen, Panels und Einstellungen, Dateien anlegen (nie überschreiben), und nach
+Rückfrage Befehle, Dateien ändern (Papierkorb statt löschen), Programme beenden, Energie. Die
+**Zugriffsstufe** `missa.access`: `read` (nur lesen), `ask` (Standard: Schreiben frei, Zerstörerisches
+erst nach Klick auf einer Glas-Karte, die den Befehl wörtlich zeigt – Enter erlaubt, Esc lehnt ab, nach
+60 s abgelehnt), `full` (ohne lokale Rückfrage). In jeder Stufe gilt: gesperrte Ordner
+(`missa.blocked_paths`, z. B. `~/.ssh`, Schlüsselbund, Browser-Profile, `secrets.env`), nie als root,
+bei gesperrtem Bildschirm nur Lesendes, Ausgaben höchstens 20 000 Zeichen. Solange der Agent verbunden
+ist, steht ein Symbol in der Leiste (es pulsiert während einer Aktion); der Schalter **Missa access** im
+Panel trennt sofort. Jede Aktion steht im Chat (Knopf 󰋚) und in
+`~/.local/share/hypr-shell/missa-actions.log`; Erinnerungen und Alarme von Missa erscheinen als
+Benachrichtigung (Notfälle bleiben stehen).
+
 ## Laptop
 
 Auf ASUS-ROG-Laptops (z. B. Zephyrus M16) steuert hypr-shell über `asusctl` und `supergfxctl`
@@ -306,7 +417,8 @@ Auf ASUS-ROG-Laptops (z. B. Zephyrus M16) steuert hypr-shell über `asusctl` und
 - **Grafik-Modus** – Seite Laptop: Integrated, Hybrid, AsusMuxDgpu … mit Bestätigung, danach ab- oder
   neu anmelden.
 - **Ladegrenze** – `laptop.charge_limit` (z. B. 80 %); asusd behält sie über Neustarts, hypr-shell setzt
-  sie beim Anmelden noch einmal.
+  sie beim Anmelden noch einmal. Zurück auf 100 (oder Reset) stellt auch asusd wieder auf 100; eine nur mit
+  asusctl gesetzte Grenze bleibt unberührt.
 - **Tastaturlicht** – `laptop.kbd_light` (off/low/med/high) und `laptop.kbd_follow_wallpaper` (Farbe folgt
   dem Hintergrundbild).
 
@@ -333,6 +445,48 @@ ihrer eigenen Grösse. Ein Akku erscheint in der Leiste rechts vor der Uhr (Symb
 unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen Akku hat
 (abschalten mit `bar.battery`).
 
+## Bildschirme
+
+Leiste, Dock, Desktop-Widgets und alle Panels richten sich nach dem Bildschirm, auf dem sie
+erscheinen – bei mehreren Bildschirmen jedes nach seinem eigenen. Gerechnet wird in der Grösse nach
+der Skalierung von Hyprland (2560×1600 mit Skalierung 1.6 sind also 1600×1000):
+
+- **Grösse:** Zwischen 1080 und 1440 Pixeln kürzerer Seite sieht alles aus wie entworfen. Darunter
+  (bis 1280×720) wird die Oberfläche etwas kleiner (höchstens auf 85 %), darüber grösser (4K mit
+  Skalierung 1: anderthalbmal, höchstens doppelt) – nichts wird winzig.
+- **Platz:** Kein Panel ragt über den Bildschirm, über die Leiste oder über ein Dock mit
+  `dock.mode = reserve`. Was nicht in die Höhe passt, lässt sich rollen statt abgeschnitten zu werden.
+- **Hochformat:** Das Dashboard ordnet seine Karten in 6 statt 12 Spalten, die Einstellungs-App
+  zeigt die Seiten oben statt links, der Spickzettel und die Fenster-Übersicht nehmen weniger Spalten,
+  das Power-Menü bricht in Reihen um.
+- **Widgets:** Die Lage bleibt ein Anteil des Bildschirms; nach einem Wechsel von Auflösung oder
+  Ausrichtung ragt ein Widget nie über den Rand (es wird begrenzt, die gespeicherte Lage bleibt).
+- **Ohne Neustart:** Ändern sich Auflösung, Skalierung oder Ausrichtung, ordnet sich alles sofort neu.
+  Ist der unter Desktop → Screen eingestellte Bildschirm abgesteckt, erscheint alles auf dem ersten.
+
+Die Schrift der Leiste wird nie grösser, als die Leiste hoch ist (`bar.height`); Sperr- und
+Login-Bildschirm passen ab 1280×720.
+
+### Bildschirm drehen
+
+Einstellungen → **Monitors** → Zeile **Rotation**: 0°, 90°, 180° oder 270°, dazu der Schalter
+**Mirrored**; die kleine Kachel zeigt, wie der Bildschirm steht. Wie bei der Auflösung muss die
+Drehung innerhalb von 15 Sekunden mit **Keep** bestätigt werden, sonst springt sie zurück. Auf der
+Befehlszeile:
+
+```bash
+shell-set monitor eDP-1 rotate 90
+```
+
+```bash
+shell-set monitor eDP-1 mirror on
+```
+
+Ungültige Werte (z. B. `rotate 45`) werden mit einer Meldung abgelehnt. Ein Touchscreen oder Stift
+dreht mit dem eingebauten Bildschirm mit (gibt es keinen, ändert sich nichts). Ist die Lage eines
+Bildschirms von Hand eingetragen und überlappen sich danach zwei, weist die Seite darauf hin;
+automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelten als `normal`.
+
 ## Hilfsprogramme
 
 | Befehl | Wirkung |
@@ -340,10 +494,17 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `shell-set …` | Einstellungen lesen, ändern, zurücksetzen, rückgängig machen, Profile (siehe „Anpassen“) |
 | `shell-apply` | Einstellungen prüfen und anwenden (`--check` nur prüfen) |
 | `shell-wallpaper <bild>` | Hintergrundbild setzen und Farben erzeugen (Farbmodus aus `theme.colors`) |
+| `shell-appcolors sync\|apply\|restore\|status` | Programme mitfärben (GTK, Qt, Firefox, Vesktop, Spotify) bzw. Sicherungen zurücklegen |
 | `shell-screenshot region\|screen\|folder` | Screenshot bzw. Ordner öffnen |
 | `shell-toggle <wifi\|bluetooth\|audio\|dnd\|gaming\|awake\|nightlight> [on\|off]` | Schnellschalter, `shell-toggle profile` schaltet das Leistungsprofil weiter, `shell-toggle status` zeigt alle |
 | `shell-games list\|launch <id>` | Spiele für den Tab Games |
 | `shell-laptop status\|profile\|gfx\|charge\|kbd …` | Laptop-Funktionen (asusctl, supergfxctl, power-profiles-daemon) |
+| `shell-fetch lab\|calendar\|sensor` | Abruf für Lab, Kalender und Sensor (nur eingeschaltet) |
+| `shell-missa-agent sync\|pause\|resume\|status` | Missa-Agent (Geräte-Anschluss v1) |
+| `shell-voice available\|listen\|speak\|stop` | mit Missa sprechen (Aufnahme, whisper.cpp, piper) |
+| `shell-missa health\|chat\|get …` | Verbindung zu Missa-Core (Chat, Status, Lagebild) |
+| `shell-mount nextcloud\|missa up\|down\|status` | Ordner der Anbindungen einhängen / aufräumen |
+| `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |
@@ -358,9 +519,10 @@ unter 15 % in Warnfarbe, beim Laden mit Blitz) – nur, wenn der Rechner einen A
 | `quickshell/` | QML-Oberfläche: `desktop/`, `dashboard/`, `panel/`, `settings/` (Einstellungs-App), `common/` |
 | `bin/` | Hilfsskripte für `~/.local/bin` |
 | `wallpapers/` | mitgelieferte Hintergrundbilder |
+| `sddm/` | Anmeldebildschirm (SDDM-Thema), nur mit `./install.sh --login-theme` |
 | `settings/` | `schema.json` (Beschreibung aller Werte) und `settings.example.json` (Standardwerte) |
 | `tests/` | Prüfskripte (`tests/lint.sh`, `tests/probeinstallation.sh`, …) |
-| `docs/` | Doku: [einstellungen.md](docs/einstellungen.md) (alle Werte, aus dem Schema erzeugt), [abnahme.md](docs/abnahme.md), Screenshots |
+| `docs/` | Doku: [einstellungen.md](docs/einstellungen.md) (alle Werte, aus dem Schema erzeugt), [anbindungen.md](docs/anbindungen.md), [dock.md](docs/dock.md), [tastenkuerzel.md](docs/tastenkuerzel.md), [abnahme.md](docs/abnahme.md), Screenshots |
 
 Die Screenshots stammen aus dem Oberflächentest der CI (unsichtbarer Compositor,
 Software-Rendering): Sie zeigen Aufbau und Masse, aber **ohne Blur**. Ohne Grafikkarte

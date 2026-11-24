@@ -8,6 +8,8 @@
 #   shell-net bt pair|connect|disconnect|forget <mac>
 # nmcli (NetworkManager) und bluetoothctl (BlueZ); fehlt eins, liefert list "[]".
 set -uo pipefail
+# fehlendes Argument: klare Meldung und Ende (statt "Zeile N: 2: … fehlt" oder still weiter)
+fehlt() { echo "shell-net: $1" >&2; exit 2; }
 
 hat() { command -v "$1" >/dev/null 2>&1; }
 SYSFS="${HYPR_SHELL_SYSFS:-/sys}"
@@ -78,12 +80,12 @@ bt_aktion() { # befehl mac
 
 case "${1:-} ${2:-}" in
     "wifi list") wifi_liste ;;
-    "wifi connect") wifi_verbinden "${3:?SSID fehlt}" ;;
+    "wifi connect") [ -n "${3:-}" ] || fehlt "SSID fehlt"; wifi_verbinden "${3}" ;;
     "wifi disconnect") wifi_trennen ;;
     "bt list") bt_liste ;;
     "bt scan")
         if hat bluetoothctl && adapter; then timeout 10 bluetoothctl --timeout 8 scan on >/dev/null 2>&1 || true; fi
         bt_liste ;;
-    "bt pair"|"bt connect"|"bt disconnect"|"bt forget") bt_aktion "$2" "${3:?Adresse fehlt}" ;;
+    "bt pair"|"bt connect"|"bt disconnect"|"bt forget") [ -n "${3:-}" ] || fehlt "Adresse fehlt"; bt_aktion "$2" "${3}" ;;
     *) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

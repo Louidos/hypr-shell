@@ -35,6 +35,7 @@ tooltip label { color: @text; font-weight: 500; }
 #tray,
 #custom-recording,
 #custom-notifications,
+#custom-missa,
 #custom-power {
   padding: 0 8px;
   color: @text;
@@ -73,6 +74,11 @@ tooltip label { color: @text; font-weight: 500; }
 #bluetooth.off, #bluetooth.disabled, #network.disconnected { color: alpha(@text, 0.45); }
 
 #custom-notifications.empty, #custom-notifications.dnd { color: alpha(@text, 0.45); }
+
+/* Missa bedient den Rechner: Symbol pulsiert, solange eine Aktion läuft */
+#custom-missa { font-family: "JetBrainsMono Nerd Font"; color: @accent; }
+@keyframes missa-puls { from { opacity: 1; } to { opacity: 0.3; } }
+#custom-missa.busy { animation: missa-puls 0.8s ease-in-out infinite alternate; }
 
 #custom-recording { color: #ff4d4d; font-size: 12px; }
 

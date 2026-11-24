@@ -125,7 +125,7 @@ Column {
             Txt { width: parent.width; text: "Write your settings to a file or load them from one. A file is checked before it is loaded."; sub: true; size: 12; wrapMode: Text.WordWrap; elide: Text.ElideNone }
             Row {
                 spacing: 8
-                Field { id: path; width: 380; mono: true; text: home.exportPath; onAccepted: t => home.exportPath = t }
+                Field { id: path; width: Math.max(160, Math.min(380, expCol.width - 220)); mono: true; text: home.exportPath; onAccepted: t => home.exportPath = t }
                 Pill { icon: "󰈝"; text: "Export"; onClicked: Ui.run(["export", path.input.text]) }
                 Pill { icon: "󰈞"; text: "Import"; onClicked: Ui.run(["import", path.input.text]) }
             }

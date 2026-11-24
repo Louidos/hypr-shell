@@ -78,7 +78,8 @@ FocusScope {
                 id: avatar
                 width: 42; height: 42; radius: 21
                 anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
-                source: "file://" + Settings.home + "/.face"
+                source: Settings.face
+                Component.onCompleted: Settings.checkFace()
                 fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
                 probe: "panel-avatar"
             }
@@ -341,7 +342,7 @@ FocusScope {
         GlassCard {
             id: tg
             readonly property var items: pc.panel.toggles
-            readonly property var icons: ({ wifi: "󰤨", bluetooth: "󰂯", audio: "󰕾", dnd: "󰂚", gaming: "󰊗", settings: "", awake: "󰅶", nightlight: "󰖔" })
+            readonly property var icons: ({ wifi: "󰤨", bluetooth: "󰂯", audio: "󰕾", dnd: "󰂚", gaming: "󰊗", settings: "", awake: "󰅶", nightlight: "󰖔", missa: "󰚩" })
             readonly property var profileIcons: ({ "power-saver": "󰌪", balanced: "󰾅", performance: "󰓅" })
             readonly property var pages: ["wifi", "bluetooth", "audio"]
             readonly property int perRow: Math.min(4, Math.max(1, items.length))

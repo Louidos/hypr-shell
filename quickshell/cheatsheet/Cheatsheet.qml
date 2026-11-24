@@ -88,8 +88,9 @@ Scope {
         ipc: false
         place: "center"
         margin: 0
-        panelWidth: Math.min(1120, (screen ? screen.width : 1920) - 80)
-        panelHeight: Math.min(760, (screen ? screen.height : 1080) - 80)
+        panelWidth: 1120
+        panelHeight: ov.portrait ? 1100 : 760
+        scroll: false
         keyboardFocus: WlrKeyboardFocus.Exclusive
         onOpened: { cs.query = ""; bindsProc.running = true }
 
@@ -108,7 +109,7 @@ Scope {
                     }
                     Rectangle {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                        width: 300
+                        width: Math.min(300, parent.width * 0.45)
                         height: 40
                         radius: 20
                         color: Qt.rgba(1, 1, 1, 0.06)
@@ -146,7 +147,9 @@ Scope {
                             delegate: GlassCard {
                                 id: card
                                 required property var modelData
-                                width: (flow.width - 28) / 3
+                                // drei Spalten, auf schmalen Bildschirmen (Hochformat) zwei oder eine
+                                readonly property int cols: flow.width >= 880 ? 3 : flow.width >= 540 ? 2 : 1
+                                width: (flow.width - (cols - 1) * flow.spacing) / cols
                                 height: col.implicitHeight + 24
                                 Column {
                                     id: col

@@ -48,6 +48,30 @@ else
     echo "  ok: Hyprland lädt hyprland.lua ohne Fehler"
 fi
 
+# gedrehte Bildschirme (alle acht Werte) und ein Touchscreen mit Stift: Hyprland nimmt transform 0–7
+# und input.touchdevice/input.tablet an
+echo "== Hyprland --verify-config mit gedrehten Bildschirmen und Touchscreen"
+jq -n '{monitors: {outputs: [
+    {name: "eDP-1", transform: "270", scale: "1.6"}, {name: "DP-1", transform: "90"}, {name: "DP-2", transform: "180"},
+    {name: "DP-3", transform: "flipped"}, {name: "DP-4", transform: "flipped-90"}, {name: "DP-5", transform: "flipped-180"},
+    {name: "DP-6", transform: "flipped-270"}, {name: "HDMI-A-1", transform: "normal", position: "auto"}]}}' \
+    > "$HOME/.config/hypr-shell/settings.json"
+KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload > "$T/apply.log" 2>&1 || { cat "$T/apply.log"; fehler=1; }
+set +e
+HYPR_SHELL_INPUT_DEVICES="$REPO/tests/fixtures/eingabe/touch-und-stift" Hyprland --verify-config -c "$cfg" > "$T/verify2.log" 2>&1
+rc=$?
+set -e
+sed -n '/Config parsing result/,$p' "$T/verify2.log"
+if [ "$rc" -ne 0 ] || ! grep -q "config ok" "$T/verify2.log"; then
+    echo "FEHLER: Hyprland lehnt gedrehte Bildschirme oder die Touch-Drehung ab (Rückgabewert $rc)"
+    grep -q "Config parsing result" "$T/verify2.log" || tail -n 40 "$T/verify2.log"
+    fehler=1
+else
+    echo "  ok: Hyprland nimmt Drehung 0–7 und die Drehung von Touchscreen und Stift an"
+fi
+echo '{}' > "$HOME/.config/hypr-shell/settings.json"
+KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload > /dev/null 2>&1 || true
+
 echo "== Versuch: Hyprland ohne Bildschirm starten (nur zur Information)"
 if command -v sway >/dev/null 2>&1; then
     cat > "$T/sway.conf" <<CONF

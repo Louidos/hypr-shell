@@ -6,7 +6,7 @@
 #   4. --dry-run ändert nichts
 #   5. --restore holt die alte Datei zurück und entfernt neue Dateien
 #   6. --uninstall entfernt alles wieder
-#   7. ein Dotfiles-Ordner (Symlink) wird nicht durchschrieben
+#   7. ein Dotfiles-Ordner (Symlink) wird nicht durchschrieben; ist er schreibgeschützt, ist die Kopie beschreibbar
 #   8. ein zu altes Hyprland (vorgetäuscht 0.54) bricht vor jeder Änderung ab
 #   9. --update holt den neuen Stand und lässt settings.json, user.lua, hypr-shell-local.lua in Ruhe
 # Prüfungen werden als Text an pruefe übergeben und dort ausgewertet:
@@ -121,6 +121,25 @@ pruefe '[ "$dotfile_vorher" = "$(stat -c %Y-%s "$TESTHOME/dotfiles/kitty/kitty.c
 pruefe '[ ! -L "$TESTHOME/.config/kitty" ]' "~/.config/kitty ist jetzt ein eigener Ordner"
 inst --restore --yes
 pruefe '[ -L "$TESTHOME/.config/kitty" ]' "Link nach --restore wieder da"
+
+echo "== 7b. schreibgeschützter Dotfiles-Ordner: die Kopie ist beschreibbar"
+# z. B. aus einem Nix- oder Git-Annex-Ordner: Dateien und Ordner ohne Schreibrecht. Die Kopie unter
+# ~/.config/rofi muss beschreibbar sein, sonst kann die Installation nicht hineinschreiben.
+rm -rf "$TESTHOME/.config/rofi"
+mkdir -p "$TESTHOME/dotfiles/rofi/themes"
+echo "/* dotfile */" > "$TESTHOME/dotfiles/rofi/config.rasi"
+echo "/* thema */" > "$TESTHOME/dotfiles/rofi/themes/eigen.rasi"
+chmod -R a-w "$TESTHOME/dotfiles/rofi"
+ln -s "$TESTHOME/dotfiles/rofi" "$TESTHOME/.config/rofi"
+inst --yes --no-packages
+# Schreibrecht an den Modus-Bits prüfen (als root in der CI würde "-w" immer stimmen)
+ohne_schreibrecht="$(find "$TESTHOME/.config/rofi" ! -type l ! -perm -u+w -print)"
+pruefe '[ ! -L "$TESTHOME/.config/rofi" ] && [ -z "$ohne_schreibrecht" ]' "übernommener Ordner samt Inhalt beschreibbar ($ohne_schreibrecht)"
+pruefe '[ -f "$TESTHOME/.config/rofi/themes/eigen.rasi" ] && grep -q "hypr-shell" "$TESTHOME/.config/rofi/config.rasi"' "eigene Dateien übernommen, hypr-shell schreibt hinein"
+pruefe '[ -z "$(find "$TESTHOME/dotfiles/rofi" -perm -u+w -print)" ]' "Dotfiles-Ordner bleibt schreibgeschützt (unberührt)"
+inst --restore --yes
+pruefe '[ -L "$TESTHOME/.config/rofi" ]' "Link nach --restore wieder da"
+chmod -R u+w "$TESTHOME/dotfiles/rofi"   # zum Aufräumen
 
 echo "== 8. zu altes Hyprland: Abbruch vor jeder Änderung"
 mkdir -p "$TESTHOME/.fakebin"

@@ -28,6 +28,7 @@ Scope {
     }
     EditOverlay {
         screen: d.screen
+        hasScreen: d.screen !== null
         clockWin: clock
         tilesWin: tiles
     }

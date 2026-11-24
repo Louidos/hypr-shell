@@ -1,0 +1,30 @@
+name: Release
+
+# Legt zu einem Versions-Tag (vX.Y.Z) das GitHub-Release an; Text = Abschnitt "## X.Y.Z – …" aus
+# CHANGELOG.md. Ein Tag wird nie verschoben: gibt es das Release schon, passiert nichts.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release aus dem CHANGELOG
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Abschnitt aus CHANGELOG.md
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="$v" '$0 ~ "^## " v " " { an = 1; next } an && /^## / { exit } an' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "Kein Abschnitt \"## $v\" in CHANGELOG.md"; exit 1; }
+          [ "$(cat VERSION)" = "$v" ] || { echo "VERSION ($(cat VERSION)) passt nicht zum Tag $GITHUB_REF_NAME"; exit 1; }
+          cat notes.md
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then echo "Release gibt es schon"; exit 0; fi
+          gh release create "$GITHUB_REF_NAME" --title "${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag

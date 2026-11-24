@@ -46,8 +46,11 @@ Scope {
         name: "power"
         ipc: false
         place: "center"
-        panelWidth: 5 * 132 + 4 * 12 + 2 * 24
-        panelHeight: 132 + 2 * 24 + 34
+        // fünf Knöpfe in einer Reihe; passt das nicht (schmaler Bildschirm, Hochformat), in mehreren
+        readonly property int cols: Math.max(1, Math.min(pm.actions.length, Math.floor((roomW / k - 2 * 24 + 12) / (132 + 12))))
+        readonly property int rows: Math.ceil(pm.actions.length / cols)
+        panelWidth: cols * 132 + (cols - 1) * 12 + 2 * 24
+        panelHeight: rows * 132 + (rows - 1) * 12 + 2 * 24 + 34
         keyboardFocus: WlrKeyboardFocus.Exclusive
         onOpened: { pm.sel = 0; pm.armed = "" }
 
@@ -60,8 +63,9 @@ Scope {
                 Keys.onReturnPressed: pm.press(pm.actions[pm.sel].id)
                 Keys.onEnterPressed: pm.press(pm.actions[pm.sel].id)
 
-                Row {
+                Grid {
                     x: 24; y: 24
+                    columns: ov.cols
                     spacing: 12
                     Repeater {
                         model: pm.actions

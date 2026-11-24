@@ -29,6 +29,10 @@ wifi_da() { hat nmcli && nmcli -t -f TYPE device 2>/dev/null | grep -qx wifi; }
 bt_da() { hat bluetoothctl && compgen -G "$SYSFS/class/bluetooth/hci*" >/dev/null; }
 audio_da() { hat wpctl || hat pamixer; }
 night_da() { hat hyprsunset; }
+# Missa access (nur sichtbar, wenn der Missa-Agent eingeschaltet ist): an = verbunden, aus = sofort getrennt
+AGENT="$(dirname "$(readlink -f "$0")")/shell-missa-agent"
+missa_da() { [ "$(wert '.missa.enabled' false)" = true ] && [ "$(wert '.missa.agent_enabled' false)" = true ]; }
+missa_an() { [ ! -e "$DATA/missa-agent.paused" ]; }
 # Leistungsprofil über shell-laptop: asusctl (ROG), sonst power-profiles-daemon
 LAPTOP="$(dirname "$(readlink -f "$0")")/shell-laptop"
 profil_da() { [ -x "$LAPTOP" ] && "$LAPTOP" profile get >/dev/null 2>&1; }
@@ -57,9 +61,9 @@ wenn() { if "$1"; then bool "$2"; else echo null; fi; }   # verfügbar-funktion 
 status() {
     local p=null
     profil_da && p="\"$(profil)\""
-    printf '{"wifi": %s, "bluetooth": %s, "audio": %s, "dnd": %s, "gaming": %s, "awake": %s, "nightlight": %s, "profile": %s}\n' \
+    printf '{"wifi": %s, "bluetooth": %s, "audio": %s, "dnd": %s, "gaming": %s, "awake": %s, "nightlight": %s, "profile": %s, "missa": %s}\n' \
         "$(wenn wifi_da wifi_an)" "$(wenn bt_da bt_an)" "$(wenn audio_da audio_an)" "$(bool dnd_an)" \
-        "$(bool gaming_an)" "$(bool awake_an)" "$(wenn night_da night_an)" "$p"
+        "$(bool gaming_an)" "$(bool awake_an)" "$(wenn night_da night_an)" "$p" "$(wenn missa_da missa_an)"
 }
 
 ziel() { # aktueller-zustand-funktion aktion -> on|off
@@ -91,10 +95,12 @@ gaming() {
         touch "$GAMING"
         hyprctl eval 'hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false } }, animations = { enabled = false } })' >/dev/null 2>&1 || true
         meldung "Gaming mode on" "Blur, animations and shadows off"
+        "$HOME/.local/bin/shell-quickshell" ipc shell gaming true >/dev/null 2>&1 || true
     else
         rm -f "$GAMING"
         hyprctl reload >/dev/null 2>&1 || true
         meldung "Gaming mode off"
+        "$HOME/.local/bin/shell-quickshell" ipc shell gaming false >/dev/null 2>&1 || true
     fi
 }
 
@@ -105,6 +111,11 @@ audio() {
     else
         if hat wpctl; then wpctl set-mute @DEFAULT_AUDIO_SINK@ 1; else pamixer -m; fi
     fi
+}
+
+missa() {
+    missa_da || return 0
+    if [ "$(ziel missa_an "$1")" = on ]; then "$AGENT" resume; else "$AGENT" pause; fi
 }
 
 # Nachtlicht: hyprsunset mit der Farbtemperatur aus nightlight.temperature
@@ -144,7 +155,7 @@ name="${1:-status}"
 aktion="${2:-toggle}"
 case "$name" in
     status) status ;;
-    wifi|bluetooth|audio|dnd|gaming|awake|nightlight) "$name" "$aktion" ;;
+    wifi|bluetooth|audio|dnd|gaming|awake|nightlight|missa) "$name" "$aktion" ;;
     profile) profile "${2:-next}" ;;
     *) sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

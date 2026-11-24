@@ -57,6 +57,7 @@ Singleton {
 
     FileView {
         path: Quickshell.env("HOME") + "/.config/hypr-shell/colors.json"
+        printErrors: false
         watchChanges: true
         onFileChanged: reload()
         onLoaded: {

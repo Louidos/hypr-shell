@@ -10,7 +10,10 @@ import "../common"
 // sie wird dafür nicht geweckt.
 PanelWindow {
     id: w
-    readonly property real k: (screen ? screen.height : 1080) / 1080 * Ui.widget("resources", "scale", 1.0)
+    // Grösse nach der kürzeren Bildschirmseite (im Hochformat die Breite), 1080 = 1
+    readonly property real sw: Settings.screenWidth(screen)
+    readonly property real sh: Settings.screenHeight(screen)
+    readonly property real k: Math.min(sw, sh) / 1080 * Ui.widget("resources", "scale", 1.0)
     property var gpu: ({ state: "unknown", util: null })
     readonly property real gpuUtil: gpu.state === "active" && typeof gpu.util === "number" ? gpu.util : -1
 
@@ -20,9 +23,11 @@ PanelWindow {
     WlrLayershell.namespace: "hypr-shell-desktop"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     anchors { top: true; left: true }
+    // Position als Anteil des Bildschirms, nach einem Wechsel von Auflösung oder Ausrichtung auf den
+    // Bildschirm begrenzt (die gespeicherte Position bleibt, das Widget ragt nur nie hinaus)
     margins {
-        left: Math.round(Ui.widget("resources", "x", 0.015) * (screen ? screen.width : 1920))
-        top: Math.round(Ui.widget("resources", "y", 0.56) * (screen ? screen.height : 1080))
+        left: Math.round(Math.max(0, Math.min(Ui.widget("resources", "x", 0.015) * w.sw, w.sw - w.implicitWidth)))
+        top: Math.round(Math.max(0, Math.min(Ui.widget("resources", "y", 0.56) * w.sh, w.sh - w.implicitHeight)))
     }
     implicitWidth: Math.ceil(col.implicitWidth)
     implicitHeight: Math.ceil(col.implicitHeight)
@@ -55,6 +60,7 @@ PanelWindow {
     Column {
         id: col
         spacing: 12 * w.k
+        Probe { name: "desktop-resources"; visible: false }   // unsichtbar: kein Platz in der Spalte
         Repeater {
             model: w.tiles.filter(t => w.tileInfo[t] !== undefined).map(t => w.tileInfo[t])
             delegate: GlassPanel {

@@ -15,3 +15,4 @@ Probe 1.0 Probe.qml
 AppIcon 1.0 AppIcon.qml
 singleton Ui 1.0 Ui.qml
 singleton Integrations 1.0 Integrations.qml
+ScreenFit 1.0 ScreenFit.qml

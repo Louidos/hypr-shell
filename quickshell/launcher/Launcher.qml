@@ -74,6 +74,7 @@ Scope {
     FileView {
         id: store
         path: Settings.dataDir + "/launcher-recent.json"
+        printErrors: false
         onLoaded: { try { const r = JSON.parse(text()); if (r && typeof r === "object") la.recent = r } catch (e) { } }
         onLoadFailed: la.recent = ({})
     }
@@ -96,6 +97,7 @@ Scope {
         margin: 0
         panelWidth: 640
         panelHeight: 76 + 7 * 56 + 14
+        scroll: false
         glassOpacity: Settings.get("theme.glass", 0.44)
         keyboardFocus: WlrKeyboardFocus.Exclusive
         onOpened: { la.query = ""; la.sel = 0; if (ov.item) ov.item.input.text = "" }

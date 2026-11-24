@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Diagnose und Notfall-Hilfe für hypr-shell.
+#
+#   shell-diag tastatur     wer hat gerade die Tastatur? (Flächen der Shell, offenes Panel,
+#                           Submap von Hyprland, aktives Fenster) – mit Hinweisen
+#   shell-diag freigeben    Tastatur zurück (auch SUPER+CTRL+Escape): alle Panels zu, Dock-Tastatur-
+#                           Modus und Bearbeiten-Modus aus, Submap verlassen, Fokus auf das Fenster
+#                           unter der Maus
+#
+# Ohne Hyprland oder ohne laufende Oberfläche wird der jeweilige Teil übersprungen (mit Hinweis).
+set -uo pipefail
+fehlt() { echo "shell-diag: $1" >&2; exit 2; }
+
+HIER="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+ui() { "$HIER/shell-quickshell" ipc shell "$@" 2>/dev/null; }
+hat() { command -v "$1" >/dev/null 2>&1; }
+hypr() { hat hyprctl && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; }
+
+# Fenster unter der Maus auf einer sichtbaren Arbeitsfläche (schwebende zuerst, dann das zuletzt
+# benutzte) – Adresse oder leer
+fenster_unter_maus() {
+    hat jq || return 0
+    local pos mons clients
+    pos="$(hyprctl -j cursorpos 2>/dev/null)" || return 0
+    mons="$(hyprctl -j monitors 2>/dev/null)" || return 0
+    clients="$(hyprctl -j clients 2>/dev/null)" || return 0
+    jq -rn --argjson p "${pos:-{\}}" --argjson m "${mons:-[]}" --argjson c "${clients:-[]}" '
+        ([$m[] | .activeWorkspace.id, (.specialWorkspace.id // empty)] | map(select(. != null and . != 0))) as $ws
+        | [$c[] | select(.mapped != false and .hidden != true)
+                | select(.workspace.id as $w | $ws | index($w))
+                | select(($p.x // -1) >= .at[0] and ($p.x // -1) < .at[0] + .size[0] and ($p.y // -1) >= .at[1] and ($p.y // -1) < .at[1] + .size[1])]
+        | sort_by((if .floating then 0 else 1 end), (.focusHistoryID // 999))
+        | .[0].address // empty' 2>/dev/null
+}
+
+tastatur() {
+    local panel flaechen sub aktiv
+    echo "== Tastatur"
+    if panel="$(ui current)"; then
+        flaechen="$(ui keyboard)"
+        echo "  offenes Panel (Ui.panel):        ${panel:-keines}"
+        echo "  Flächen der Shell mit Tastatur:  ${flaechen:-keine}"
+    else
+        panel=""; flaechen=""
+        echo "  Oberfläche (Quickshell) läuft nicht oder antwortet nicht"
+    fi
+    if hypr; then
+        sub="$(hyprctl submap 2>/dev/null | head -n1)"
+        aktiv="$( (hyprctl -j activewindow 2>/dev/null || echo '{}') | jq -r 'if .class then "\(.class) – \(.title)" else "keines" end' 2>/dev/null)"
+        echo "  Submap von Hyprland:             ${sub:-default}"
+        echo "  aktives Fenster:                 ${aktiv:-?}"
+        hyprctl -j layers 2>/dev/null | jq -r '[.. | objects | select(has("namespace")) | .namespace | select(startswith("hypr-shell"))] | unique | "  Flächen der Shell (Layer):       " + (if length == 0 then "keine" else join(", ") end)' 2>/dev/null
+    else
+        sub=""
+        echo "  Hyprland läuft nicht (Submap und Fenster übersprungen)"
+    fi
+    echo
+    if [ -n "$flaechen" ] && [ -z "$panel" ]; then
+        echo "  Hinweis: eine Fläche hält die Tastatur, obwohl kein Panel offen ist ($flaechen)."
+    fi
+    if [ -n "$sub" ] && [ "$sub" != default ]; then
+        echo "  Hinweis: Hyprland steckt in der Submap \"$sub\"."
+    fi
+    echo "  Tastatur zurück: CTRL + SUPER + Escape  (oder: shell-diag freigeben)"
+}
+
+freigeben() {
+    local rest addr
+    if rest="$(ui release)"; then
+        echo "  Panels zu, Dock-Tastatur-Modus aus${rest:+ (hält noch: $rest)}"
+    else
+        echo "  Oberfläche antwortet nicht – nichts zu schliessen"
+    fi
+    if hypr; then
+        hyprctl dispatch 'hl.dsp.submap("reset")' >/dev/null 2>&1 && echo "  Submap verlassen"
+        addr="$(fenster_unter_maus)"
+        if [ -n "$addr" ]; then
+            hyprctl dispatch "hl.dsp.focus({ window = \"address:$addr\" })" >/dev/null 2>&1 && echo "  Fokus auf das Fenster unter der Maus ($addr)"
+        fi
+    else
+        echo "  Hyprland läuft nicht – Submap und Fokus übersprungen"
+    fi
+}
+
+case "${1:-}" in
+    tastatur|keyboard) tastatur ;;
+    freigeben|release) freigeben ;;
+    ""|-h|--help|help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) fehlt "unbekannter Befehl: $1 (tastatur, freigeben)" ;;
+esac

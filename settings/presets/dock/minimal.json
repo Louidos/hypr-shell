@@ -1,0 +1,9 @@
+{
+  "_name": "minimal",
+  "_description": "Small and quiet: 36 px, no magnification, always hidden, line indicator, soft shadow",
+  "dock.icon_size": 36,
+  "dock.magnify": false,
+  "dock.autohide": "always",
+  "dock.indicator": "line",
+  "dock.shadow": "soft"
+}

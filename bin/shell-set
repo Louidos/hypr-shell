@@ -12,6 +12,9 @@
 #   shell-set profile list                  Profile anzeigen
 #   shell-set export <datei>                Einstellungen in eine Datei schreiben
 #   shell-set import <datei>                Einstellungen aus einer Datei laden (wird geprüft)
+#   shell-set monitor <name> rotate <grad>  Bildschirm drehen: 0, 90, 180, 270 (Spiegelung bleibt)
+#   shell-set monitor <name> mirror on|off  Bildschirm spiegeln (Drehung bleibt)
+#   shell-set monitor <name> transform <w>  direkt: normal, 90, 180, 270, flipped, flipped-90 …
 #
 # Werte: true/false (auch on/off), Zahlen, Text, Listen als a,b,c oder JSON wie ["a","b"].
 # Jede Änderung wird atomar geschrieben und sofort angewendet (shell-apply).
@@ -32,7 +35,7 @@ command -v jq >/dev/null 2>&1 || { echo "shell-set: jq fehlt" >&2; exit 1; }
 SCHEMA="$("$APPLY" --schema)"
 
 fehler() { printf 'shell-set: %s\n' "$*" >&2; exit 1; }
-hilfe() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+hilfe() { sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
@@ -319,8 +322,45 @@ cmd_complete() { # keys | areas | values <key> | profiles
                   elif .type == "int" or .type == "number" then .default | tostring
                   else empty end' "$SCHEMA" ;;
         profiles) cmd_profile list 2>/dev/null || true ;;
+        # Bildschirme: aus Hyprland, sonst die eingetragenen
+        monitors) { hyprctl monitors -j 2>/dev/null | jq -r '.[].name' 2>/dev/null || true
+                    roh 2>/dev/null | jq -r '(.monitors.outputs // [])[].name' 2>/dev/null || true; } | sort -u ;;
         describe) jq -r '.keys[] | "\(.key)\t\(.title): \(.description)"' "$SCHEMA" ;;
     esac
+}
+
+# ---------------------------------------------------------------- Bildschirm drehen
+
+# monitors.outputs[name].transform setzen (über cmd_set: geprüft, ein Schritt im Verlauf, sofort aktiv)
+cmd_monitor() { # name aktion wert
+    local name="${1:-}" aktion="${2:-}" wert="${3:-}" alt neu grad spiegel
+    [ -n "$name" ] && [ -n "$aktion" ] && [ -n "$wert" ] \
+        || fehler "shell-set monitor <name> rotate 0|90|180|270, mirror on|off or transform <value> (names: hyprctl monitors)"
+    [[ "$name" =~ ^[A-Za-z0-9_.:-]+$ ]] || fehler "invalid screen name: $name (letters, digits, _ . : -)"
+    roh > "$T/raw.json"
+    alt="$(jq -r --arg n "$name" '[(.monitors.outputs // [])[] | select(.name == $n) | .transform][0] // "normal"' "$T/raw.json")"
+    case "$alt" in flipped) grad=0; spiegel=1 ;; flipped-*) grad="${alt#flipped-}"; spiegel=1 ;; normal) grad=0; spiegel=0 ;; *) grad="$alt"; spiegel=0 ;; esac
+    case "$aktion" in
+        rotate|rotation)
+            case "$wert" in 0|normal) grad=0 ;; 90|180|270) grad="$wert" ;;
+                *) fehler "invalid rotation: $wert – allowed: 0, 90, 180, 270 (mirror with: shell-set monitor $name mirror on)" ;; esac ;;
+        mirror|flip|flipped)
+            case "$wert" in on|true|1|yes) spiegel=1 ;; off|false|0|no) spiegel=0 ;;
+                *) fehler "invalid value: $wert – allowed: on, off" ;; esac ;;
+        transform)
+            case "$wert" in normal|90|180|270|flipped|flipped-90|flipped-180|flipped-270) neu="$wert" ;;
+                *) fehler "invalid transform: $wert – allowed: normal, 90, 180, 270, flipped, flipped-90, flipped-180, flipped-270" ;; esac ;;
+        *) fehler "unknown action: $aktion – use rotate, mirror or transform" ;;
+    esac
+    if [ -z "${neu:-}" ]; then
+        if [ "$spiegel" = 1 ]; then [ "$grad" = 0 ] && neu=flipped || neu="flipped-$grad"
+        else [ "$grad" = 0 ] && neu=normal || neu="$grad"; fi
+    fi
+    # Eintrag ändern oder anhängen (alte Einträge ohne transform bleiben sonst, wie sie sind)
+    jq -c --arg n "$name" --arg t "$neu" '(.monitors.outputs // []) as $l
+        | if any($l[]; .name == $n) then [$l[] | if .name == $n then .transform = $t else . end]
+          else $l + [{name: $n, transform: $t}] end' "$T/raw.json" > "$T/outputs.json"
+    cmd_set "$LIVE" monitors.outputs "$(cat "$T/outputs.json")"
 }
 
 # ---------------------------------------------------------------- Aufruf
@@ -340,6 +380,7 @@ case "$befehl" in
     profile|profiles) cmd_profile "${2:-list}" "${3:-}" ;;
     export) cmd_export "${2:-}" ;;
     import) cmd_import "${2:-}" ;;
+    monitor|monitors) shift; [ $# -le 3 ] || fehler "too many arguments: shell-set monitor <name> rotate|mirror|transform <value>"; cmd_monitor "$@" ;;
     __complete) cmd_complete "${2:-keys}" "${3:-}" ;;
     *)
         [ $# -ge 2 ] || { [ -n "$(schluessel "$befehl")" ] && { cmd_get "$befehl"; exit 0; }; hilfe 2; }

@@ -11,19 +11,23 @@ PanelWindow {
     id: ov
     property var clockWin
     property var tilesWin
-    readonly property real sw: screen ? screen.width : 1920
-    readonly property real sh: screen ? screen.height : 1080
+    // gibt es den Bildschirm? (von Desktop.qml gesetzt; "screen" selbst hier abzufragen ergäbe eine
+    // Bindungsschleife, weil Quickshell screen beim Ein- und Ausblenden neu meldet)
+    property bool hasScreen: true
+    readonly property real sw: Settings.screenWidth(screen)
+    readonly property real sh: Settings.screenHeight(screen)
     readonly property real snap: 10
     // aktive Hilfslinien (beim Ziehen): Liste von {v: true/false, pos}
     property var guides: []
 
-    visible: Ui.editDesktop && screen !== null
+    visible: Ui.editDesktop && ov.hasScreen
     anchors { top: true; bottom: true; left: true; right: true }
     color: Qt.rgba(0, 0, 0, 0.28)
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "hypr-shell-edit"
-    WlrLayershell.keyboardFocus: Ui.editDesktop ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // Tastatur nur, solange der Bearbeiten-Modus sichtbar läuft
+    WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     Item {
         id: keys
@@ -31,7 +35,7 @@ PanelWindow {
         focus: true
         Keys.onEscapePressed: Ui.cancelEdit()
     }
-    onVisibleChanged: if (visible) { guides = []; keys.forceActiveFocus() }
+    onVisibleChanged: { Ui.setKeyboard("hypr-shell-edit", visible); if (visible) { guides = []; keys.forceActiveFocus() } }
 
     // ---- feste Hilfslinien: Mitte und Ränder (2 %)
     Repeater {
@@ -63,8 +67,9 @@ PanelWindow {
             readonly property string which: modelData.which
             readonly property var win: modelData.win
             visible: win !== undefined && win !== null && win.visible
-            x: Ui.widget(which, "x", 0) * ov.sw
-            y: Ui.widget(which, "y", 0) * ov.sh
+            // wo das Widget wirklich steht (auf den Bildschirm begrenzt, siehe ClockWidget.qml)
+            x: win ? win.margins.left : Ui.widget(which, "x", 0) * ov.sw
+            y: win ? win.margins.top : Ui.widget(which, "y", 0) * ov.sh
             width: win ? win.implicitWidth : 100
             height: win ? win.implicitHeight : 100
             color: drag.pressed ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.04)

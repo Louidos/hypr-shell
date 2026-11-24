@@ -1,0 +1,12 @@
+# hypr-shell: Missa-Agent (Missa bedient diesen Rechner). Wird nur von "shell-missa-agent sync" gestartet,
+# wenn missa.enabled und missa.agent_enabled an sind, und beim Ausschalten sofort gestoppt – nie von selbst.
+# Verbindet sich nur ausgehend mit Missa-Core; am Rechner wird kein Port geöffnet. Läuft als Benutzer.
+[Unit]
+Description=hypr-shell: Missa-Agent (Geräte-Anschluss v1)
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/shell-missa-agent run
+Restart=on-failure
+RestartSec=10

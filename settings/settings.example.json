@@ -18,6 +18,7 @@
         "network",
         "recording",
         "notifications",
+        "missa",
         "power"
       ]
     },
@@ -65,7 +66,14 @@
       "name": "Bibata-Modern-Ice",
       "size": 24
     },
-    "icons": "Papirus-Dark"
+    "icons": "Papirus-Dark",
+    "apps": {
+      "gtk": true,
+      "qt": true,
+      "firefox": false,
+      "vesktop": false,
+      "spotify": false
+    }
   },
   "input": {
     "layout": "us",
@@ -111,6 +119,7 @@
       "wallpaper",
       "performance",
       "games",
+      "lab",
       "about"
     ],
     "start": "dashboard",
@@ -171,6 +180,86 @@
       "settings"
     ]
   },
+  "dock": {
+    "enabled": true,
+    "preset": "mac",
+    "position": "bottom",
+    "monitor": "all",
+    "running_per_monitor": false,
+    "mode": "floating",
+    "layer": "top",
+    "margin": 10,
+    "icon_size": 48,
+    "icon_min_size": 24,
+    "padding": 8,
+    "spacing": 6,
+    "radius": 22,
+    "max_length": 90,
+    "glass_opacity": -1,
+    "blur": true,
+    "border_width": 1,
+    "border_color": "auto",
+    "shadow": "medium",
+    "color_mode": "wallpaper",
+    "custom_color": "#1e1e2e",
+    "labels": "hover",
+    "indicator": "dot",
+    "indicator_color": "auto",
+    "icon_style": "original",
+    "show_running": true,
+    "trash": true,
+    "launcher_button": false,
+    "badges": true,
+    "previews": true,
+    "magnify": true,
+    "magnify_factor": 1.6,
+    "magnify_range": 2,
+    "anim_ms": 180,
+    "bounce_on_launch": true,
+    "autohide": "smart",
+    "show_delay_ms": 150,
+    "hide_delay_ms": 400,
+    "keyboard_timeout_s": 10,
+    "hide_on_fullscreen": true,
+    "avoid_bar": true,
+    "items": [
+      {
+        "type": "app",
+        "desktop_id": "org.gnome.Nautilus",
+        "path": ""
+      },
+      {
+        "type": "app",
+        "desktop_id": "kitty",
+        "path": ""
+      },
+      {
+        "type": "app",
+        "desktop_id": "firefox",
+        "path": ""
+      },
+      {
+        "type": "separator",
+        "desktop_id": "",
+        "path": ""
+      },
+      {
+        "type": "folder",
+        "desktop_id": "",
+        "path": "~/Downloads"
+      },
+      {
+        "type": "separator",
+        "desktop_id": "",
+        "path": ""
+      },
+      {
+        "type": "trash",
+        "desktop_id": "",
+        "path": ""
+      }
+    ]
+  },
   "lock": {
     "after": 5,
     "screen_off": 0,
@@ -222,6 +311,20 @@
     "url": "",
     "folder": "~/Missa",
     "agent_enabled": false,
+    "access": "ask",
+    "blocked_paths": [
+      "~/.ssh",
+      "~/.gnupg",
+      "~/.local/share/keyrings",
+      "~/.password-store",
+      "~/.mozilla",
+      "~/.config/google-chrome",
+      "~/.config/chromium",
+      "~/.config/BraveSoftware",
+      "~/.var/app",
+      "~/.config/hypr-shell/secrets.env"
+    ],
+    "device": "",
     "voice_enabled": false,
     "voice_language": "de",
     "voice_model": "~/.local/share/hypr-shell/whisper/ggml-base.bin",
@@ -238,20 +341,27 @@
   },
   "sensor": {
     "enabled": false,
-    "url": ""
+    "url": "",
+    "field": "value",
+    "title": "Air quality",
+    "unit": "ppm",
+    "warn": 1000
   },
   "integrations": {
     "ca_file": ""
   },
   "keybinds": {
-    "terminal": "SUPER + Q",
+    "terminal": "SUPER + Return",
     "files": "SUPER + E",
     "browser": "",
     "launcher": "SUPER + R",
     "launcher_alt": "ALT + Space",
     "launcher_space": "SUPER + Space",
-    "close": "SUPER + C",
+    "launcher_search": "CTRL + SUPER + Return",
+    "close": "SUPER + Q",
+    "close_alt": "SUPER + C",
     "float": "SUPER + V",
+    "fullscreen": "SUPER + F",
     "focus_left": "SUPER + left",
     "focus_right": "SUPER + right",
     "focus_up": "SUPER + up",
@@ -270,8 +380,10 @@
     "clipboard": "SUPER + SHIFT + V",
     "overview": "SUPER + Tab",
     "cheatsheet": "SUPER + F1",
+    "dock_focus": "SUPER + B",
     "missa_chat": "SUPER + I",
     "missa_voice": "SUPER + SHIFT + I",
+    "emergency": "CTRL + SUPER + Escape",
     "lock": "SUPER + L",
     "exit": "SUPER + M",
     "screenshot_region": "Print",

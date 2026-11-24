@@ -14,6 +14,8 @@
 # Pfade aus den Einstellungen dürfen mit ~ beginnen:
 # shellcheck disable=SC2088
 set -uo pipefail
+# fehlendes Argument: klare Meldung und Ende (statt "Zeile N: 2: … fehlt" oder still weiter)
+fehlt() { echo "shell-missa: $1" >&2; exit 2; }
 
 DATA="$HOME/.local/share/hypr-shell"
 EFF="$DATA/settings.effective.json"
@@ -125,7 +127,7 @@ chat() {
 case "${1:-}" in
     health) health ;;
     chat) shift; chat "$@" ;;
-    get) get "${2:?Pfad fehlt}" ;;
+    get) [ -n "${2:-}" ] || fehlt "Pfad fehlt"; get "${2}" ;;
     session) session ;;
     *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

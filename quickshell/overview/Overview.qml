@@ -20,12 +20,17 @@ Scope {
         for (const w of snap.workspaces) if (w.id > 0 && ids.indexOf(w.id) < 0) ids.push(w.id)
         return ids.sort((a, b) => a - b).slice(0, 10)
     }
-    readonly property int cols: wsIds.length <= 4 ? wsIds.length : Math.ceil(wsIds.length / 2)
+    // Hochformat: höchstens zwei Arbeitsflächen nebeneinander
+    readonly property int cols: Math.max(1, ov.portrait ? Math.min(2, wsIds.length) : wsIds.length <= 4 ? wsIds.length : Math.ceil(wsIds.length / 2))
     readonly property int rows: Math.ceil(wsIds.length / cols)
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
-    readonly property real sw: screen ? screen.width : 1920
-    readonly property real sh: screen ? screen.height : 1080
-    readonly property real cellW: Math.min(360, (sw - 160 - (cols - 1) * 14) / cols)
+    readonly property real sw: Settings.screenWidth(screen)
+    readonly property real sh: Settings.screenHeight(screen)
+    // Kacheln so gross, dass alle auf den freien Platz passen (Entwurfseinheiten des Overlay)
+    readonly property real roomW: ov.roomW / ov.k
+    readonly property real roomH: ov.roomH / ov.k
+    readonly property real cellW: Math.max(80, Math.min(360, (roomW - 48 - (cols - 1) * 14) / cols,
+        ((roomH - 24 - 44 - 18 - 24 - (rows - 1) * 14) / rows - 30) * sw / sh))
     readonly property real cellH: cellW * sh / sw
 
     function matches(c) {

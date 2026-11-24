@@ -11,15 +11,63 @@ Singleton {
 
     // ---- immer nur ein Panel offen: Name des offenen Panels (Overlay.name) oder ""
     property string panel: ""
-    function openPanel(name) { panel = name }
+    // angemeldete Panels (Overlay meldet sich an und ab): ein Name ohne Panel – z. B. Missa, solange
+    // es aus ist – darf Ui.panel nie besetzen, sonst nimmt das Dock keine Klicks mehr an
+    property var known: ({})
+    function registerPanel(name) { const k = Object.assign({}, known); k[name] = (k[name] || 0) + 1; known = k }
+    function unregisterPanel(name) {
+        const k = Object.assign({}, known)
+        if (k[name] > 1) k[name]--; else delete k[name]
+        known = k
+        if (!known[name] && panel === name) panel = ""
+    }
+    function openPanel(name) {
+        if (!name || !known[name]) { if (name) console.info("hypr-shell: kein Panel \"" + name + "\" – nichts geöffnet"); return }
+        panel = name
+    }
     function closePanel(name) { if (name === undefined || name === "" || panel === name) panel = "" }
     function togglePanel(name) { if (panel === name) closePanel(name); else openPanel(name) }
+
+    // ---- Tastatur: jede Fläche meldet, solange sie die Tastatur will (Exclusive/OnDemand, sichtbar
+    // und offen). Regel: nur sichtbar offene Flächen dürfen die Tastatur haben; der Notfall gibt alles frei.
+    property var keyboardWanted: ({})
+    function setKeyboard(name, on) {
+        if (!name || (keyboardWanted[name] === true) === !!on) return
+        const k = Object.assign({}, keyboardWanted)
+        if (on) k[name] = true; else delete k[name]
+        keyboardWanted = k
+    }
+    function keyboardHolders() { return Object.keys(keyboardWanted).sort().join(",") }
+    signal released()
+    function releaseAll() {
+        closePanel()
+        editDesktop = false
+        released()           // Dock: Tastatur-Modus aus, nicht exklusive Karten zu
+    }
     // "shell-quickshell ipc shell current" nennt das offene Panel, "… shell close" schliesst es
     IpcHandler {
         target: "shell"
         function current(): string { return ui.panel }
+        // für Tests und den Notfall: ein Panel öffnen wie von innen (auch ein unbekannter Name)
+        function open(name: string): string { ui.openPanel(name); return ui.panel }
+        // welche Flächen der Shell gerade die Tastatur wollen ("" = keine) – shell-diag tastatur
+        function keyboard(): string { return ui.keyboardHolders() }
+        // Notfall (SUPER+CTRL+Escape, shell-diag freigeben): alle Panels zu, Dock-Tastatur-Modus
+        // und Bearbeiten-Modus aus – danach hält keine Fläche der Shell mehr die Tastatur
+        function release(): string { ui.releaseAll(); return ui.keyboardHolders() }
         function close(): void { ui.closePanel() }
+        // shell-toggle meldet den Gaming-Modus (Dock ohne Animationen)
+        function gaming(on: bool): void { ui.gaming = on }
     }
+    property bool gaming: false
+    FileView {
+        path: Quickshell.env("HOME") + "/.local/share/hypr-shell/gaming"
+        printErrors: false
+        onLoaded: ui.gaming = true
+        onLoadFailed: ui.gaming = false
+    }
+    // das Dock ist unten versteckt: die Mitte der unteren Kante blendet das Dock ein, nicht das Dashboard
+    property bool dockOwnsEdge: false
     // läuft die Oberfläche unter Hyprland? (Fokus-Griff "Klick daneben schliesst" gibt es nur dort)
     readonly property bool hyprland: (Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") || "") !== ""
 
@@ -28,6 +76,10 @@ Singleton {
     // "requires" im Schema erscheinen nur, wenn die Fähigkeit da ist
     property var caps: ({})
     function can(req) { return !req || caps[req] === true }
+    // ungelesene Benachrichtigungen je App (Kleinschreibung: App-Name und Desktop-Eintrag), vom
+    // Benachrichtigungsdienst von hypr-shell gepflegt; ohne Dienst leer (dann keine Zähler im Dock)
+    property var notifCounts: ({})
+    signal notificationsRead(var keys)
     property string settingsPage: "home"
     // Schlüssel, zu dem die App nach dem Öffnen springen soll (Suche)
     property string settingsFocus: ""

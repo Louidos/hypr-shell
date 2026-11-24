@@ -1036,18 +1036,24 @@ ipc dashboard open dashboard; sleep 2; bild design-karten-hell; ipc dashboard cl
 setze set theme.border.glow true theme.border.glow_size 16 theme.border.glow_opacity 0.5
 if th_warte '.glow == true and .glowSize == 16 and .glowOpacity == 0.5'; then echo "  ok: shell-set theme.border.glow true"
 else echo "  FEHLER: Leuchten: $(th)"; design_ok=0; fi
-ipc dashboard open dashboard; sleep 2; bild design-leuchten
-# der Schein liegt ausserhalb der Fläche: direkt über dem Dashboard ist es heller als ohne Leuchten
-read -r ox oy ow _ < <(grep -o "hypr-shell-probe overlay-dashboard .*" "$T/qs.log" | tail -n1 | awk '{print $3, $4, $5, $6}') || true
-ipc dashboard close; sleep 1
+ipc dashboard open dashboard; sleep 2; bild design-leuchten; ipc dashboard close; sleep 1
 setze set theme.border.glow false
 th_warte '.glow == false' || true
 ipc dashboard open dashboard; sleep 2; bild design-ohne-leuchten; ipc dashboard close; sleep 1
-if [ -n "$im" ] && [ -n "${oy:-}" ]; then
-    hell() { "$im" "$OUT/$1.png" -crop "$((ow / 2))x6+$((ox + ow / 4))+$((oy - 8))" +repage -colorspace gray -format '%[fx:mean]' info:; }
-    mit="$(hell design-leuchten)"; ohne="$(hell design-ohne-leuchten)"
-    if awk -v a="$mit" -v b="$ohne" 'BEGIN { exit !(a > b + 0.02) }'; then echo "  ok: der Rand des Dashboards leuchtet (über dem Rand $mit statt $ohne)"
-    else echo "  FEHLER: kein Leuchten über dem Dashboard ($mit / $ohne)"; design_ok=0; fi
+# der Schein liegt ausserhalb der Fläche: direkt über dem Dashboard ist es heller als 40 px darüber;
+# gemessen in jedem Bild an der eigenen Lage des Dashboards (mit Leuchten bekommt es etwas Platz)
+if [ -n "$im" ]; then
+    rand_hell() { # bild → Helligkeit direkt über dem Rand minus Helligkeit 40 px darüber
+        local x y w nah fern
+        read -r x y w _ < <(grep -o "hypr-shell-probe overlay-dashboard .*" "$T/log-$1" | tail -n1 | awk '{print $3, $4, $5, $6}') || return 0
+        [ -n "${w:-}" ] || return 0
+        nah="$("$im" "$OUT/$1.png" -crop "$((w / 2))x4+$((x + w / 4))+$((y - 6))" +repage -colorspace gray -format '%[fx:mean]' info:)"
+        fern="$("$im" "$OUT/$1.png" -crop "$((w / 2))x4+$((x + w / 4))+$((y - 46))" +repage -colorspace gray -format '%[fx:mean]' info:)"
+        awk -v a="$nah" -v b="$fern" 'BEGIN { printf "%.3f", a - b }'
+    }
+    mit="$(rand_hell design-leuchten)"; ohne="$(rand_hell design-ohne-leuchten)"
+    if awk -v a="${mit:-0}" -v b="${ohne:-0}" 'BEGIN { exit !(a > b + 0.03) }'; then echo "  ok: der Rand des Dashboards leuchtet (über dem Rand +$mit statt +$ohne heller)"
+    else echo "  FEHLER: kein Leuchten über dem Dashboard (${mit:-?} / ${ohne:-?})"; design_ok=0; fi
 fi
 setze set theme.spacing.scale 1.5 theme.font.title_weight demibold theme.font.title_scale 1.25
 if th_warte '.pad10 == 15 and .panelPad == 27 and .gap == 15 and .titleWeight == 600 and .strongWeight == 500 and .titleScale == 1.25'; then

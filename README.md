@@ -456,7 +456,15 @@ Ein Regler wirkt schon beim Ziehen. Neben einem geänderten Wert steht **Reset**
 **Reset page**, ganz oben **Undo** und **Redo**; die Suche findet Werte über Titel, Erklärung und
 Schlüssel (z. B. „blur“, „clock“, „battery“) und springt zur Zeile. Auf **Monitors** stehen die echten
 Bildschirme aus Hyprland; eine neue Auflösung oder Drehung muss innerhalb von 15 Sekunden bestätigt
-werden, sonst gilt wieder die alte. **About** öffnet `settings.json` und diese Übersicht. Weitere Seiten:
+werden, sonst gilt wieder die alte. **About** öffnet `settings.json` und diese Übersicht.
+
+Die Startseite **Home** ist luftig wie die Vorlage: grosses Profilbild, „Good evening, <name>“,
+Datum und Uhrzeit, Pillen mit Farbmodus, Laufzeit und Distro, ein Tipp, der bei jedem Öffnen
+wechselt (das × schaltet die Tipps ab, `settings.home.tips`), und Kacheln unter „Make it yours“
+zu Theme, Wallpaper (Tab im Dashboard), Notifications, Lock screen, Bar und Launcher. **Profile,
+Export und Import** stehen jetzt unter **System → Backup**. In der Seitenleiste ist die offene
+Seite eine hellere graue Pille mit fetter Schrift (`theme.pill.nav = white` gibt die weisse Pille
+zurück). Weitere Seiten:
 [Home](docs/screenshots/settings-home.png), [Bar](docs/screenshots/settings-bar.png),
 [Theme](docs/screenshots/settings-theme.png), [Monitors](docs/screenshots/settings-monitors.png),
 [Keybinds](docs/screenshots/settings-keybinds.png), [Suche](docs/screenshots/settings-suche.png).

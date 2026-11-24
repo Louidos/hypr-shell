@@ -125,7 +125,8 @@
       "border_opacity": 0.12
     },
     "pill": {
-      "opacity": 0.92
+      "opacity": 0.92,
+      "nav": "soft"
     },
     "spacing": {
       "scale": 1.0,
@@ -388,6 +389,11 @@
     "schedule": false,
     "from": "20:00",
     "to": "07:00"
+  },
+  "settings": {
+    "home": {
+      "tips": true
+    }
   },
   "laptop": {
     "charge_limit": 100,

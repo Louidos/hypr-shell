@@ -93,6 +93,11 @@ Singleton {
     readonly property real pillOpacity: Math.max(0.3, Math.min(1, Settings.get("theme.pill.opacity", 0.92)))
     readonly property color pill: Qt.rgba(1, 1, 1, pillOpacity)
     readonly property color pillText: "#121214"
+    // aktiver Eintrag der Seitenleiste in den Einstellungen (theme.pill.nav): soft = hellere graue
+    // Pille mit heller, fetter Schrift (wie die Vorlage), white = weisse Pille wie Tabs und Schalter
+    readonly property bool navWhite: Settings.get("theme.pill.nav", "soft") === "white"
+    readonly property color navPill: navWhite ? pill : cardLevel(1.9)
+    readonly property color navPillText: navWhite ? pillText : text
     readonly property color track: Qt.rgba(1, 1, 1, 0.10)
 
     // Abstände (theme.spacing.*): scale ist der Faktor für alle Abstände der Oberfläche; panel ist der

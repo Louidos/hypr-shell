@@ -444,6 +444,35 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     for seite in home bar look theme desktop dashboard panel dock system integrations laptop lock input monitors apps keybinds about; do
         ipc settings open "$seite"; sleep 2; bild "settings-$seite"
     done
+    # ---- Startseite: Profilbild, Begrüssung, Pillen, Tipp, 6 Kacheln, keine Eingabefelder; Backup unter System
+    ipc settings open home; sleep 2
+    : > "$T/home-probes"; sleep 1.5; grep -o "hypr-shell-probe [a-z0-9-]*" "$T/qs.log" | tail -n 400 | sort -u > "$T/home-probes"
+    fehlt=""
+    for p in home-avatar home-greeting home-chips home-tips home-tips-close home-tile-0 home-tile-1 home-tile-2 home-tile-3 home-tile-4 home-tile-5; do
+        grep -q "probe $p\$" "$T/home-probes" || fehlt="$fehlt $p"
+    done
+    if [ -z "$fehlt" ]; then echo "  ok: Startseite mit Profilbild, Begrüssung, Pillen, Tipp und 6 Kacheln"
+    else echo "  FEHLER: auf der Startseite fehlt:$fehlt"; app_ok=0; fi
+    bereich settings-home home-avatar "Profilbild auf der Startseite"
+    test_ipc click home-tile-4; sleep 1
+    if [ "$("$qs" -p "$cfg" ipc call settings page 2>/dev/null)" = bar ]; then echo "  ok: Kachel Bar öffnet die Seite Bar"
+    else echo "  FEHLER: Kachel Bar: Seite $("$qs" -p "$cfg" ipc call settings page 2>/dev/null)"; app_ok=0; fi
+    ipc settings open home; sleep 1.5
+    test_ipc click home-tile-1; sleep 2
+    if [ "$(offen)" = dashboard ]; then echo "  ok: Kachel Wallpaper öffnet den Tab Wallpaper im Dashboard"; bild home-kachel-wallpaper
+    else echo "  FEHLER: Kachel Wallpaper: offen ist \"$(offen)\""; app_ok=0; fi
+    ipc settings open home; sleep 1.5
+    test_ipc click home-tips-close
+    if warte_auf .settings.home.tips false; then echo "  ok: × im Tipp schaltet die Tipps ab (settings.home.tips = false)"
+    else echo "  FEHLER: × im Tipp: $(wert .settings)"; app_ok=0; fi
+    sleep 1.5; n="$(wc -l < "$T/qs.log")"; sleep 2; bild settings-home-ohne-tipp
+    if ! tail -n "+$((n + 1))" "$T/qs.log" | grep -q "probe home-tips "; then echo "  ok: ohne Tipps kein Banner"
+    else echo "  FEHLER: Banner trotz settings.home.tips false"; app_ok=0; fi
+    "$HOME/.local/bin/shell-set" reset settings.home.tips >/dev/null 2>&1
+    ipc settings open system; sleep 1; n="$(wc -l < "$T/qs.log")"; sleep 2
+    if tail -n "+$((n + 1))" "$T/qs.log" | grep -q "hypr-shell-probe backup-section"; then echo "  ok: Profile, Export und Import stehen unter System → Backup"
+    else echo "  FEHLER: kein Abschnitt Backup auf der Seite System"; app_ok=0; fi
+    ipc settings open home; sleep 2; bild settings-home
     for q in blur clock battery; do
         vorher="$(grep -c "hypr-shell-probe search-first" "$T/qs.log" || true)"
         ipc settings search "$q"; sleep 1.5

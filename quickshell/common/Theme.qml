@@ -79,7 +79,9 @@ Singleton {
     }
     function cardTint(opacity) { const b = Qt.color(cardBase); return Qt.rgba(b.r, b.g, b.b, opacity) }
     readonly property color card: cardTint(readableCard(cardOpacity))
-    readonly property color cardHover: cardTint(readableCard(cardHoverOpacity))
+    // der kurze Hover-Zustand bleibt so hell wie eingestellt (eine sichtbare Rückmeldung), mindestens
+    // so hell wie die Karte
+    readonly property color cardHover: cardTint(Math.max(cardHoverOpacity, Qt.color(card).a))
     readonly property color cardBorder: cardTint(cardBorderOpacity)
     // Abstufungen relativ zur Karte (wachsen mit theme.card.opacity): cardLevel(k) = Karte × k
     function cardLevel(k) { return cardTint(readableCard(cardOpacity * k)) }

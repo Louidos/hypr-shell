@@ -1028,8 +1028,9 @@ if th_warte '.card == 0.05 and .cardHover == 0.08 and .cardBorder == 0.08 and .p
     echo "  ok: ohne geänderte Werte wie in 1.10.0 (Karten 5 %/8 %, Kontur 8 %, Pille 92 %, kein Leuchten, Abstände 18/14/10, Titel fett)"
 else echo "  FEHLER: Standardwerte: $(th)"; design_ok=0; fi
 setze set theme.card.opacity 0.15 theme.card.hover 0.2 theme.card.border_opacity 0.3 theme.pill.opacity 0.8
-if th_warte '.card >= 0.14 and .card <= 0.15 and .cardHover >= 0.19 and .cardBorder == 0.3 and .pill == 0.8'; then
-    echo "  ok: shell-set theme.card.opacity 0.15 macht die Karten sofort heller, Pille und Kontur folgen ($(th | jq -c '{card, cardHover, cardBorder, pill}'))"
+# (auf einem hellen Testbild begrenzt die Lesbarkeit die Karte; das Glas wird dafür dunkler)
+if th_warte '.card >= 0.09 and .card <= 0.15 and .cardHover == 0.2 and .cardBorder == 0.3 and .pill == 0.8'; then
+    echo "  ok: shell-set theme.card.opacity 0.15 macht die Karten sofort heller, Pille und Kontur folgen ($(th | jq -c '{card, cardHover, cardBorder, pill, glass}'))"
 else echo "  FEHLER: Karten/Pille aus settings.json: $(th)"; design_ok=0; fi
 ipc dashboard open dashboard; sleep 2; bild design-karten-hell; ipc dashboard close; sleep 1
 setze set theme.border.glow true theme.border.glow_size 16 theme.border.glow_opacity 0.5

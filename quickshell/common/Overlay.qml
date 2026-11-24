@@ -142,6 +142,9 @@ Scope {
     readonly property real insetRight: atRight || fillH ? fitter.right : 0
     // freier Platz für das Panel (Bildschirmpixel); in der Mitte gleich viel Abstand oben und unten
     readonly property real gap: Math.max(8, margin)
+    // Platz für das Leuchten des Rands (theme.border.glow) rund um Kantenpanels: ohne ihn läge der
+    // Schein ausserhalb des Fensters (Ecken und Mitte haben dafür schon den Rand margin)
+    readonly property real glowRoom: glass && Theme.glow && animation === "slide" ? Math.ceil(Theme.glowSize) : 0
     readonly property real roomW: fillH ? fitter.availWidth : fitter.availWidth - 2 * gap
     readonly property real roomH: place === "center"
         ? fitter.height - 2 * Math.max(fitter.top, fitter.bottom) - 2 * gap
@@ -192,9 +195,9 @@ Scope {
         // Ecken: Abstand ringsum; Mitte: Rand ringsum
         readonly property bool edge: ov.animation === "slide"
         implicitWidth: ov.fitWidth * ov.k + (edge ? ((ov.atLeft || ov.atRight) ? ov.margin : 0) : 2 * ov.margin)
-                       + ov.insetLeft + ov.insetRight
+                       + ov.insetLeft + ov.insetRight + 2 * ov.glowRoom
         implicitHeight: ov.fitHeight * ov.k + (edge ? ((ov.atTop || ov.atBottom) ? ov.margin : 0) : 2 * ov.margin)
-                        + ov.insetTop + ov.insetBottom
+                        + ov.insetTop + ov.insetBottom + 2 * ov.glowRoom
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: ov.layer
@@ -220,14 +223,14 @@ Scope {
         Rectangle {
             id: body
             // Grösse auf dem Bildschirm (Bildschirmpixel)
-            readonly property real fw: ov.fillH ? win.width - ov.insetLeft - ov.insetRight : ov.fitWidth * ov.k
-            readonly property real fh: ov.fillV ? win.height - 2 * ov.margin - ov.insetTop - ov.insetBottom : ov.fitHeight * ov.k
+            readonly property real fw: ov.fillH ? win.width - ov.insetLeft - ov.insetRight - 2 * ov.glowRoom : ov.fitWidth * ov.k
+            readonly property real fh: ov.fillV ? win.height - 2 * ov.margin - ov.insetTop - ov.insetBottom - 2 * ov.glowRoom : ov.fitHeight * ov.k
             // Endlage im Fenster
             readonly property real x0: ov.animation === "slide"
-                ? (ov.atLeft ? ov.margin + ov.insetLeft : ov.fillH ? ov.insetLeft : 0)
+                ? (ov.atLeft ? ov.margin + ov.insetLeft : ov.fillH ? ov.insetLeft : 0) + ov.glowRoom
                 : (win.width - width) / 2
             readonly property real y0: ov.animation === "slide"
-                ? (ov.atTop ? ov.margin + ov.insetTop : ov.atBottom ? 0 : ov.fillV ? ov.margin + ov.insetTop : 0)
+                ? (ov.atTop ? ov.margin + ov.insetTop : ov.atBottom ? 0 : ov.fillV ? ov.margin + ov.insetTop : 0) + ov.glowRoom
                 : (win.height - height) / 2
 
             width: ov.animation === "grow" ? fw * (0.55 + 0.45 * win.t) : fw

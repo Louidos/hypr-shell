@@ -182,7 +182,7 @@ Singleton {
         target: "test"
         // aktuelle Design-Werte aus Theme (Karten, Pille, Leuchten, Abstände, Schrift) als JSON
         function theme(): string {
-            const a = c => Math.round(Qt.color(c).a * 1000) / 1000
+            const a = c => Math.round(Qt.color(c).a * 100) / 100   // Farben speichern 8 Bit: auf 0.01 genau
             return JSON.stringify({ card: a(Theme.card), cardHover: a(Theme.cardHover), cardBorder: a(Theme.cardBorder),
                                     cardColor: String(Theme.cardBase), pill: a(Theme.pill), glow: Theme.glow, glowSize: Theme.glowSize,
                                     glowOpacity: Theme.glowOpacity, panelPad: Theme.panelPad, cardPad: Theme.cardPad, gap: Theme.gap,

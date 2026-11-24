@@ -26,6 +26,7 @@ tooltip {
 tooltip label { color: @text; font-weight: 500; }
 
 #custom-distro,
+#custom-apps,
 #workspaces button,
 #window,
 #mpris,
@@ -85,4 +86,4 @@ tooltip label { color: @text; font-weight: 500; }
 #custom-recording { color: #ff4d4d; font-size: 12px; }
 
 #custom-power { padding: 0 12px 0 8px; }
-#custom-power:hover, #custom-distro:hover { color: @accent; }
+#custom-power:hover, #custom-distro:hover, #custom-apps:hover { color: @accent; }

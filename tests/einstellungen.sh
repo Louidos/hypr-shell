@@ -141,7 +141,7 @@ rm -f "$h/.local/share/hypr-shell/wallpaper-luma"
 apply "$h" --no-reload
 pruefe 'grep -q "font_family = Oswald" "$h/.config/hypr/hyprlock.conf" && grep -q "font_size = 156" "$h/.config/hypr/hyprlock.conf"' "B: Uhrschrift und Grösse auf dem Sperrbildschirm"
 pruefe 'grep -q "icon-theme: *\"Adwaita\"" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "Noto Sans 13" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "rgba(42, 42, 47, 0.60)" "$h/.config/rofi/hypr-shell-settings.rasi"' "B: Starter mit Symbolthema, Schrift und Glas"
-pruefe '[ "$(waybar "$h" ".network.\"on-click\"")" = "\$HOME/.local/bin/shell-quickshell ipc panel page wifi" ] && [ "$(waybar "$h" ".\"custom/distro\".\"on-click\"")" = fuzzel ]' "B: Starter in der Leiste, WLAN öffnet die Unterseite im Panel"
+pruefe '[ "$(waybar "$h" ".network.\"on-click\"")" = "\$HOME/.local/bin/shell-quickshell ipc panel page wifi" ] && [ "$(waybar "$h" ".\"custom/distro\".\"on-click-right\"")" = fuzzel ] && [ "$(waybar "$h" ".\"custom/distro\".\"on-click\"")" = "\$HOME/.local/bin/shell-quickshell ipc apps toggle" ]' "B: Logo in der Leiste: Klick = App-Raster, Rechtsklick = eigener Starter; WLAN öffnet die Unterseite im Panel"
 
 # Beispiel C: Bildschirme
 h="$(neues_home c '{"monitors": {"scale": "1.25", "outputs": [{"name": "eDP-1", "resolution": "2560x1600", "refresh": 165, "scale": "1.6"}, {"name": "HDMI-A-1", "position": "2560x0"}]}}')"

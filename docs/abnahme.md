@@ -415,3 +415,12 @@ Prüfliste aller Flächen: Glas (graue Fläche aus `theme.glass_color`/`theme.gl
 | Ziehen an der hyprbars-Titelleiste | nicht unterstützt (das Plugin zieht selbst, es gibt kein Ereignis); offen |
 | Lokal ohne Hyprland | nicht lokal getestet, CI entscheidet |
 
+## App-Raster (#123)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Einstellungen, Loslass-Kürzel auf SUPER (abschaltbar), Logo/Modul in der Leiste, Dock-Knopf, Start schliesst vor dem Starten | automatisch (`tests/appraster.sh`) |
+| Raster öffnen, Suche, Kategorie Games, Favorit (settings.json), Menü, Lösen/Anheften im Dock, Enter startet und gibt die Tastatur frei, gemeinsames „zuletzt benutzt“ mit dem Starter, Dock-Knopf, ausgeschaltet | automatisch (`tests/oberflaeche.sh`, Screenshots `apps*.png`) |
+| **Am echten Laptop** | von Hand: SUPER kurz antippen → Raster geht auf, nochmals antippen → zu; SUPER + E, SUPER + Q, SUPER + 1, SUPER + Pfeile → nur deren Wirkung, Raster bleibt zu; SUPER + Ziehen mit der Maus → kein Raster; Rechtsklick auf eine App → Menü; App starten → Fenster bekommt die Tastatur sofort |
+| SUPER + Taste ohne Kürzel (z. B. SUPER + ü) | Hyprland unterdrückt das Loslass-Kürzel nur nach einem anderen Kürzel – danach geht das Raster auf; offen, am Laptop prüfen |
+| Lokal ohne Hyprland/Quickshell | nicht lokal getestet, CI entscheidet |

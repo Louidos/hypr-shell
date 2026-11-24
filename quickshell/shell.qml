@@ -5,6 +5,7 @@ import "dashboard"
 import "panel"
 import "settings"
 import "launcher"
+import "apps"
 import "notifications"
 import "osd"
 import "power"
@@ -26,6 +27,7 @@ ShellRoot {
     NightLight { }
     SettingsApp { }
     Launcher { }
+    AppGrid { }
     Notifications { }
     Osd { }
     PowerMenu { }

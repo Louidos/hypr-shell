@@ -353,6 +353,14 @@
     "previews": true,
     "size": "medium"
   },
+  "appraster": {
+    "enabled": true,
+    "super_tippen": true,
+    "dock_knopf": true,
+    "kategorien": true,
+    "zuletzt": 8,
+    "favoriten": []
+  },
   "nightlight": {
     "temperature": 4000,
     "schedule": false,

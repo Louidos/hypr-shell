@@ -119,6 +119,7 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 | `SUPER + F` | Vollbild an / aus |
 | `SUPER + E` | Dateien (Nautilus) |
 | `CTRL + SUPER + Return` / `SUPER + R` / `SUPER + Space` / `ALT + Space` | Starter (Suche nach Apps, `=` rechnet) |
+| `SUPER` allein antippen (`SUPER + Super_L` / `SUPER + Super_R`, beim Loslassen) | App-Raster (alle Apps, wie Start-Menü) |
 | `SUPER + V` | Fenster schwebend / gekachelt |
 | `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
 | `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
@@ -215,12 +216,29 @@ von Hand eingeschalteter Gaming-Modus bleibt, wie er ist; abschalten mit `shell-
 
 ### Starter
 
-`SUPER + R` (oder `SUPER + Space`, `ALT + Space`, das Distro-Symbol links in der Leiste) öffnet in der
+`SUPER + R` (oder `SUPER + Space`, `ALT + Space`, Rechtsklick auf das Distro-Symbol links in der Leiste) öffnet in der
 Mitte ein Suchfeld im Glas-Look: Tippen sucht Apps nach Name, Beschreibung und Stichworten, zuletzt
 benutzte stehen oben; Pfeiltasten wählen, Enter startet, Esc schliesst. Beginnt die Eingabe mit `=`,
 wird gerechnet (`=12*8` zeigt 96, auch `^`, `%`, Klammern, `sqrt()`, `pi`); Enter kopiert das Ergebnis.
 Wer lieber rofi oder einen anderen Starter will: `shell-set apps.launcher "rofi -show drun"`
 (zurück mit `shell-set apps.launcher builtin`).
+
+### App-Raster
+
+Alle Apps auf einen Blick, wie ein Start-Menü oder Launchpad: **`SUPER` allein antippen** (drücken und
+loslassen), der **Knopf links im Dock** oder ein **Klick auf das Distro-Symbol** in der Leiste öffnet in
+der Mitte ein Glas-Raster mit allen Apps. Oben stehen ein Suchfeld (einfach lostippen), die Kategorien
+(Internet, Office, Media, Games, …), darunter die **Favoriten** und die **zuletzt benutzten** Apps, dann
+alle Apps nach Namen. Pfeiltasten wählen, Enter startet, Esc schliesst; nach dem Start ist das Raster zu
+und die Tastatur wieder frei. **Rechtsklick** (oder Menü-Taste) auf eine App: im Dock anheften/lösen,
+Favorit an/aus, neues Fenster; Mittelklick öffnet ein neues Fenster.
+
+`SUPER` mit einer anderen Taste (`SUPER + E`, `SUPER + Q`, …) wirkt wie bisher, das Raster geht dabei
+nicht auf. Einstellungen unter System → App grid: `appraster.enabled`, `appraster.super_tippen`
+(SUPER antippen an/aus), `appraster.dock_knopf`, `appraster.kategorien`, `appraster.zuletzt` (wie viele
+zuletzt benutzte, 0 = keine) und `appraster.favoriten` (Liste der `.desktop`-Namen). Zuletzt benutzt
+teilt sich das Raster mit dem Starter. Als eigenes Leisten-Modul gibt es zusätzlich `apps`
+(z. B. `shell-set bar.modules.left '["apps","workspaces","media"]'`).
 
 ### Benachrichtigungen
 

@@ -43,7 +43,8 @@ unset WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CONFIG_HOME
 "$REPO/install.sh" --yes --no-packages > "$T/install.log" 2>&1 || { cat "$T/install.log"; exit 1; }
 
 # Testdaten: Einstellungen, Profilbild, zwei Hintergrundbilder, Beispiel-Apps (nur in diesem Test-HOME)
-SETTINGS_JSON="${SETTINGS_JSON:-$(jq '.weather.location = "Zurich"' "$REPO/settings/settings.example.json")}"
+# Startknopf des App-Rasters im Dock erst im Abschnitt App-Raster (die Dock-Tests prüfen die Reihenfolge der Apps)
+SETTINGS_JSON="${SETTINGS_JSON:-$(jq '.weather.location = "Zurich" | .appraster.dock_knopf = false' "$REPO/settings/settings.example.json")}"
 printf '%s\n' "$SETTINGS_JSON" > "$HOME/.config/hypr-shell/settings.json"
 im="$(command -v magick || command -v convert || true)"
 ersatzbild_ok=1
@@ -292,6 +293,77 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target launcher'; then
     ipc launcher close; sleep 1
 else
     echo "FEHLER: IPC-Ziel launcher fehlt"; starter_ok=0
+fi
+
+# ---- App-Raster (SUPER antippen, Dock, Leiste): Suche, Kategorien, Favoriten, Menü, Start gibt die Tastatur frei
+raster_ok=1
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target apps'; then
+    echo "---- App-Raster ----"
+    ap() { "$qs" -p "$cfg" ipc call apps "$@" 2>/dev/null; }
+    kbr() { "$qs" -p "$cfg" ipc call shell keyboard 2>/dev/null; }
+    rw() { jq -c "$1" "$HOME/.config/hypr-shell/settings.json"; }
+    cp "$HOME/.config/hypr-shell/settings.json" "$T/settings.raster"
+    ipc apps open; sleep 2; bild apps
+    st="$(ap state)"; r_kb="$(kbr)"
+    if [[ "$st" == open:0:* ]] && [ "$(cut -d: -f3 <<<"$st")" -ge 5 ] && [ "$(offen)" = apps ] && [ "$r_kb" = hypr-shell-apps ]; then
+        echo "  ok: Raster offen mit $(cut -d: -f3 <<<"$st") Apps, hält die Tastatur"
+    else echo "  FEHLER: Raster: $st, offen \"$(offen)\", Tastatur [$r_kb]"; raster_ok=0; fi
+    erst="$(ap search kit)"
+    if [ "$erst" = Kitty ]; then echo "  ok: Tippen \"kit\" findet Kitty"; else echo "  FEHLER: \"kit\" ergibt \"$erst\""; raster_ok=0; fi
+    sleep 0.5; bild apps-suche
+    ap search "" >/dev/null
+    kat="$(ap categories)"; spiele="$(ap category games)"
+    if [[ "|$kat|" == *"|games|"* ]] && [[ "$spiele" == *"Dota 2"* ]] && [[ "$spiele" != *kitty* ]]; then echo "  ok: Kategorie Games zeigt nur Spiele ($spiele)"
+    else echo "  FEHLER: Kategorien \"$kat\", Games \"$spiele\""; raster_ok=0; fi
+    ap category all >/dev/null
+    ap favorite kitty >/dev/null
+    for _ in $(seq 1 20); do [ "$(rw '.appraster.favoriten')" = '["kitty"]' ] && break; sleep 0.3; done
+    sleep 0.5
+    if [ "$(rw '.appraster.favoriten')" = '["kitty"]' ] && [ "$(ap favorites)" = kitty ] && [ "$(ap category favorites)" = kitty ]; then
+        echo "  ok: Favorit landet in settings.json und oben im Raster"
+    else echo "  FEHLER: Favoriten: $(rw .appraster.favoriten) / $(ap favorites)"; raster_ok=0; fi
+    ap category all >/dev/null; sleep 0.5; bild apps-favoriten
+    ap search kit >/dev/null; m="$(ap menu)"
+    if [ "$m" = "Open|New window|Remove from Dock|Remove from favorites" ]; then echo "  ok: Menü: $m"
+    else echo "  FEHLER: Menü \"$m\""; raster_ok=0; fi
+    sleep 0.5; bild apps-menue
+    ap search fir >/dev/null; ap pin firefox >/dev/null
+    for _ in $(seq 1 20); do [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 0 ] && break; sleep 0.3; done
+    if [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 0 ]; then echo "  ok: Lösen nimmt Firefox aus dem Dock"
+    else echo "  FEHLER: Lösen: $(rw .dock.items)"; raster_ok=0; fi
+    # erst wieder anheften, wenn auch das Raster den neuen Stand geladen hat (sonst schaltet es zurück)
+    for _ in $(seq 1 20); do [ "$(ap pinned firefox)" = false ] && break; sleep 0.3; done
+    ap pin firefox >/dev/null
+    for _ in $(seq 1 20); do [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 1 ] && break; sleep 0.3; done
+    if [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 1 ]; then echo "  ok: Anheften legt Firefox wieder ins Dock"
+    else echo "  FEHLER: Anheften: $(rw .dock.items)"; raster_ok=0; fi
+    echo '{}' > "$HOME/.local/share/hypr-shell/launcher-recent.json"; sleep 0.5
+    ap search kit >/dev/null; gestartet="$(ap launch)"; sleep 1
+    if [ "$gestartet" = Kitty ] && [ "$(ap state)" = closed ] && [ -z "$(offen)" ] && [ -z "$(kbr)" ] \
+        && jq -e 'has("kitty")' "$HOME/.local/share/hypr-shell/launcher-recent.json" >/dev/null 2>&1; then
+        echo "  ok: Enter startet Kitty, Raster zu, keine Fläche hält die Tastatur, zuletzt benutzt gemerkt"
+    else echo "  FEHLER: Start: \"$gestartet\", $(ap state), offen \"$(offen)\", Tastatur [$(kbr)]"; raster_ok=0; fi
+    # Starter und Raster teilen sich "zuletzt benutzt"
+    ipc launcher open; sleep 1
+    if [ "$("$qs" -p "$cfg" ipc call launcher search "" 2>/dev/null)" = Kitty ]; then echo "  ok: Starter kennt die im Raster gestartete App als zuletzt benutzt"
+    else echo "  FEHLER: Starter zeigt nicht Kitty zuerst"; raster_ok=0; fi
+    ipc launcher close; sleep 0.5
+    # Knopf im Dock (Standard an; hier im Test bis jetzt aus)
+    if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
+        "$HOME/.local/bin/shell-set" appraster.dock_knopf true >/dev/null 2>&1
+        for _ in $(seq 1 20); do [[ "$("$qs" -p "$cfg" ipc call dock items 2>/dev/null)" == launcher,* ]] && break; sleep 0.3; done
+        if [[ "$("$qs" -p "$cfg" ipc call dock items 2>/dev/null)" == launcher,* ]]; then echo "  ok: Startknopf vorne im Dock"
+        else echo "  FEHLER: Dock: $("$qs" -p "$cfg" ipc call dock items 2>/dev/null)"; raster_ok=0; fi
+        sleep 0.5; bild apps-dock
+    fi
+    # Raster aus: kein Ziel mehr für die Kürzel (SUPER antippen tut nichts)
+    "$HOME/.local/bin/shell-set" appraster.enabled false >/dev/null 2>&1; sleep 1.5
+    ipc apps open; sleep 1
+    if [ "$(offen)" != apps ]; then echo "  ok: appraster.enabled = false: Raster geht nicht auf"
+    else echo "  FEHLER: Raster trotz appraster.enabled = false"; raster_ok=0; ipc apps close; fi
+    cp "$T/settings.raster" "$HOME/.config/hypr-shell/settings.json"; sleep 1.5
+else
+    echo "FEHLER: IPC-Ziel apps fehlt"; raster_ok=0
 fi
 
 # ---- Kürzel-Spickzettel (SUPER+F1) aus "hyprctl binds -j" (hier: die Kürzel aus hyprland.lua über die Attrappe)
@@ -949,6 +1021,7 @@ echo "------------------------"
 [ "$power_ok" -eq 1 ] || { echo "FEHLER: Anzeige oder Power-Menü (siehe oben)"; exit 1; }
 [ "$note_ok" -eq 1 ] || { echo "FEHLER: Benachrichtigungen (siehe oben)"; exit 1; }
 [ "$starter_ok" -eq 1 ] || { echo "FEHLER: Starter (siehe oben)"; exit 1; }
+[ "$raster_ok" -eq 1 ] || { echo "FEHLER: App-Raster (siehe oben)"; exit 1; }
 [ "$panel_ok" -eq 1 ] || { echo "FEHLER: mehr als ein Panel offen (siehe oben)"; exit 1; }
 [ "$dock_ok" -eq 1 ] || { echo "FEHLER: Dock (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then

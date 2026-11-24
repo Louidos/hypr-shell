@@ -6,6 +6,7 @@
 | --- | --- |
 | `SUPER + Enter` | Terminal öffnen |
 | `CTRL + SUPER + Enter` | App-Suche (Starter) |
+| `SUPER` allein antippen | App-Raster: alle Apps wie im Start-Menü (abschaltbar mit `shell-set appraster.super_tippen false`) |
 | `SUPER + Q` | aktives Fenster schliessen |
 | `CTRL + SUPER + Escape` | Notfall: Tastatur zurück (alle Panels zu, Dock-Tastatur-Modus aus, Fokus auf das Fenster unter der Maus) |
 

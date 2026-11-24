@@ -53,9 +53,9 @@ Column {
             id: track
             anchors { left: lt.right; leftMargin: Theme.pad(8); right: parent.right; rightMargin: Theme.pad(44); verticalCenter: parent.verticalCenter }
             height: 6
-            radius: 3
+            radius: Theme.corner(3)
             color: Theme.track
-            Rectangle { width: parent.width * Math.min(1, lv.vol); height: parent.height; radius: 3; color: Theme.pill }
+            Rectangle { width: parent.width * Math.min(1, lv.vol); height: parent.height; radius: Theme.corner(3); color: Theme.pill }
             MouseArea {
                 anchors.fill: parent
                 anchors.margins: -10

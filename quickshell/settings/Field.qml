@@ -14,7 +14,7 @@ Rectangle {
 
     implicitWidth: 220
     implicitHeight: 34
-    radius: 12
+    radius: Theme.corner(12)
     color: Theme.field
     border.width: 1
     border.color: inp.activeFocus ? Qt.rgba(1, 1, 1, 0.35) : Theme.cardBorder

@@ -304,6 +304,10 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target apps'; then
     rw() { jq -c "$1" "$HOME/.config/hypr-shell/settings.json"; }
     cp "$HOME/.config/hypr-shell/settings.json" "$T/settings.raster"
     ipc apps open; sleep 2; bild apps
+    # die Höhe passt sich dem Inhalt an: wenige Apps, keine halb leere Fläche (früher immer 640 px)
+    ah="$(grep -o "hypr-shell-probe overlay-apps .*" "$T/qs.log" | tail -n1 | awk '{print $6}')"
+    if [ -n "$ah" ] && [ "$ah" -lt 560 ]; then echo "  ok: App-Raster nur so hoch wie nötig ($ah px bei $("$qs" -p "$cfg" ipc call apps state 2>/dev/null | cut -d: -f3) Apps)"
+    else echo "  FEHLER: App-Raster ${ah:-?} px hoch"; raster_ok=0; fi
     st="$(ap state)"; r_kb="$(kbr)"
     if [[ "$st" == open:0:* ]] && [ "$(cut -d: -f3 <<<"$st")" -ge 5 ] && [ "$(offen)" = apps ] && [ "$r_kb" = hypr-shell-apps ]; then
         echo "  ok: Raster offen mit $(cut -d: -f3 <<<"$st") Apps, hält die Tastatur"
@@ -1050,10 +1054,26 @@ fi
 if grep -E "dock/[A-Za-z]+\.qml" "$T/qs.log" | grep -v "hypr-shell-probe"; then echo "  FEHLER: Warnungen aus dock/ im Log"; dock_ok=0; fi
 
 
+design_ok=1
+# ---- Desktop-Kacheln: ohne Wert für die GPU (hier keine Grafikkarte) bleibt ihre Kachel weg
+echo "---- Desktop-Kacheln ----"
+seit="$(wc -l < "$T/qs.log")"; sleep 2
+if tail -n "+$seit" "$T/qs.log" | grep -q "probe resources-cpu " && ! tail -n "+$seit" "$T/qs.log" | grep -q "probe resources-gpu "; then
+    echo "  ok: GPU-Kachel ohne Wert ausgeblendet, CPU und RAM da"
+else echo "  FEHLER: GPU-Kachel ohne Wert sichtbar (oder CPU fehlt)"; design_ok=0; fi
+"$HOME/.local/bin/shell-set" desktop.resources.hide_empty false >/dev/null 2>&1; sleep 2
+seit="$(wc -l < "$T/qs.log")"; sleep 2; bild desktop-gpu-leer
+if tail -n "+$seit" "$T/qs.log" | grep -q "probe resources-gpu "; then echo "  ok: mit desktop.resources.hide_empty false ist die GPU-Kachel wieder da (–)"
+else echo "  FEHLER: GPU-Kachel fehlt trotz hide_empty false"; design_ok=0; fi
+"$HOME/.local/bin/shell-set" reset desktop.resources.hide_empty >/dev/null 2>&1
+# Performance-Tab: gewelltes Abzeichen (Standard) und Kreis
+ipc dashboard open performance; sleep 2; bild dashboard-perf-welle
+"$HOME/.local/bin/shell-set" dashboard.perf_badge circle >/dev/null 2>&1; sleep 2; bild dashboard-perf-kreis
+ipc dashboard close; sleep 1; "$HOME/.local/bin/shell-set" reset dashboard.perf_badge >/dev/null 2>&1
+
 # ---- Design-Werte (theme.card.*, theme.pill.opacity, theme.border.glow*, theme.spacing.*, theme.font.*):
 # Theme nimmt sie aus settings.json, sofort und ohne Neustart
 echo "---- Design-Werte ----"
-design_ok=1
 th() { "$qs" -p "$cfg" ipc call test theme 2>/dev/null; }
 th_warte() { # jq-Ausdruck, bis er stimmt (höchstens 8 s)
     for _ in $(seq 1 32); do jq -e "$1" <<<"$(th)" >/dev/null 2>&1 && return 0; sleep 0.25; done; return 1

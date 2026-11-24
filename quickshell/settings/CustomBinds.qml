@@ -17,7 +17,7 @@ Column {
             required property int index
             width: cb.width
             height: 40
-            radius: 12
+            radius: Theme.corner(12)
             color: Theme.cardSoft
             Row {
                 anchors { left: parent.left; leftMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }

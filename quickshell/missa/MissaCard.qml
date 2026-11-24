@@ -40,7 +40,7 @@ Item {
         anchors { left: parent.left; leftMargin: Theme.pad(16); right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
         spacing: Theme.pad(12)
         Rectangle {
-            width: 44; height: 44; radius: 22
+            width: 44; height: 44; radius: Theme.corner(22)
             anchors.verticalCenter: parent.verticalCenter
             color: Theme.container
             Glyph { anchors.centerIn: parent; text: "󰚩"; size: 20; color: Theme.containerText }

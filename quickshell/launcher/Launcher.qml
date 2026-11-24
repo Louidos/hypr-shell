@@ -117,7 +117,7 @@ Scope {
                     x: 14; y: 14
                     width: parent.width - 28
                     height: 48
-                    radius: 24
+                    radius: Theme.corner(24)
                     color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
@@ -193,7 +193,7 @@ Scope {
                         required property int index
                         width: list.width
                         height: 56
-                        radius: 16
+                        radius: Theme.corner(16)
                         color: index === la.sel ? Theme.cardHover : (hov.hovered ? Theme.card : "transparent")
                         AppIcon {
                             id: ico

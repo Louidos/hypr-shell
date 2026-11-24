@@ -186,6 +186,7 @@
         "ram",
         "gpu"
       ],
+      "hide_empty": true,
       "x": 0.015,
       "y": 0.56,
       "scale": 1.0
@@ -212,7 +213,8 @@
       "clock",
       "calendar",
       "rings"
-    ]
+    ],
+    "perf_badge": "wave"
   },
   "weather": {
     "location": "",

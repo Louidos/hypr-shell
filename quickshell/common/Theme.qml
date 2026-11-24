@@ -122,6 +122,9 @@ Singleton {
     // Radien und Schriften aus settings.json (theme.radius.*, theme.font.*)
     readonly property int panelRadius: Settings.get("theme.radius.panel", 26)
     readonly property int cardRadius: Settings.get("theme.radius.card", 16)
+    // Rundung kleiner Elemente (Zeilen, Felder, Knöpfe) im Verhältnis zur Karte: Entwurfswert n bei
+    // Kartenradius 10; ein Kreis (n = halbe Grösse) bleibt ein Kreis, Qt begrenzt auf die halbe Seite
+    function corner(n) { return Math.round(n * cardRadius / 10) }
 
     readonly property string sans: Settings.get("theme.font.ui", "Inter")
     readonly property string mono: Settings.get("theme.font.mono", "JetBrainsMono Nerd Font")

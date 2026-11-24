@@ -25,7 +25,7 @@ Item {
         id: search
         anchors { top: parent.top; left: parent.left; right: parent.right }
         height: 40
-        radius: 20
+        radius: Theme.corner(20)
         Glyph { id: lens; anchors { left: parent.left; leftMargin: Theme.pad(16); verticalCenter: parent.verticalCenter } text: ""; size: 13; color: Theme.subtext }
         TextInput {
             id: input
@@ -69,7 +69,7 @@ Item {
             RoundImage {
                 id: thumb
                 anchors { fill: parent; margins: Theme.pad(6) }
-                radius: 14
+                radius: Theme.corner(14)
                 source: "file://" + cardItem.filePath
                 sourceWidth: 480
                 fallbackText: ""
@@ -77,7 +77,7 @@ Item {
             }
             Rectangle {
                 anchors.fill: thumb
-                radius: 14
+                radius: Theme.corner(14)
                 color: "transparent"
                 border.width: cardItem.isCurrent ? 2 : (hover.hovered ? 1 : 0)
                 border.color: cardItem.isCurrent ? Theme.pill : Qt.rgba(1, 1, 1, 0.4)
@@ -85,7 +85,7 @@ Item {
             Rectangle {
                 visible: cardItem.isCurrent
                 anchors { top: thumb.top; right: thumb.right; margins: Theme.pad(8) }
-                width: 24; height: 24; radius: 12
+                width: 24; height: 24; radius: Theme.corner(12)
                 color: Theme.pill
                 Glyph { anchors.centerIn: parent; text: ""; size: 11; color: Theme.pillText }
             }

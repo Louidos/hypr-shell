@@ -94,7 +94,7 @@ Item {
                 Rectangle {
                     visible: Integrations.calendar && day.inMonth && cal.hasEvent(day.d)
                     anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.pad(1) }
-                    width: 4; height: 4; radius: 2
+                    width: 4; height: 4; radius: Theme.corner(2)
                     color: day.isToday ? Theme.pillText : Theme.accent
                 }
                 Txt {

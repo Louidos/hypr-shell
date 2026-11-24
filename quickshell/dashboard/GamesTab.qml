@@ -50,7 +50,7 @@ Item {
                         }
                         Rectangle {
                             anchors { right: parent.right; top: parent.top; margins: Theme.pad(8) }
-                            width: 26; height: 26; radius: 13
+                            width: 26; height: 26; radius: Theme.corner(13)
                             color: Qt.rgba(0, 0, 0, 0.45)
                             Glyph { anchors.centerIn: parent; text: g.modelData.source === "steam" ? "󰓓" : "󰊴"; size: 13 }
                         }

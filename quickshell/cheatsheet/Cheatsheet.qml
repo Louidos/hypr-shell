@@ -111,7 +111,7 @@ Scope {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                         width: Math.min(300, parent.width * 0.45)
                         height: 40
-                        radius: 20
+                        radius: Theme.corner(20)
                         color: Theme.field
                         border.width: 1
                         border.color: Theme.cardBorder
@@ -180,7 +180,7 @@ Scope {
                                                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                                                 width: Math.min(col.width * 0.55, keyTxt.implicitWidth + 16)
                                                 height: 22
-                                                radius: 7
+                                                radius: Theme.corner(7)
                                                 color: Theme.cardHover
                                                 border.width: 1
                                                 border.color: Theme.cardBorder

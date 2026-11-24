@@ -14,7 +14,7 @@ FocusScope {
     readonly property var pageTitles: ({ wifi: "Wi-Fi", bluetooth: "Bluetooth", audio: "Sound" })
     readonly property bool typing: query.length > 0
     readonly property var sections: Settings.get("panel.sections", ["awake", "apps", "media", "shot", "toggles"])
-    implicitHeight: (page === "" ? col.implicitHeight : sub.implicitHeight) + 28
+    implicitHeight: (page === "" ? col.implicitHeight : sub.implicitHeight) + 2 * Theme.panelPad
     // Esc auf einer Unterseite: zurück zur Übersicht (erst danach schliesst Esc das Panel)
     Keys.onEscapePressed: event => { if (page !== "") { page = ""; event.accepted = true } else event.accepted = false }
 
@@ -30,9 +30,9 @@ FocusScope {
     Column {
         id: sub
         visible: pc.page !== ""
-        x: 14
-        y: 14
-        width: parent.width - 28
+        x: Theme.panelPad
+        y: Theme.panelPad
+        width: parent.width - 2 * Theme.panelPad
         spacing: Theme.pad(10)
         Item {
             width: parent.width
@@ -65,10 +65,10 @@ FocusScope {
     Column {
         id: col
         visible: pc.page === ""
-        x: 14
-        y: 14
-        width: parent.width - 28
-        spacing: Theme.pad(10)
+        x: Theme.panelPad
+        y: Theme.panelPad
+        width: parent.width - 2 * Theme.panelPad
+        spacing: Theme.gap
 
         // ---- Kopf: Profilbild, Begrüssung, Datum, Uhrzeit
         Item {
@@ -76,7 +76,7 @@ FocusScope {
             height: 52
             RoundImage {
                 id: avatar
-                width: 42; height: 42; radius: 21
+                width: 42; height: 42; radius: Theme.corner(21)
                 anchors { left: parent.left; leftMargin: Theme.pad(4); verticalCenter: parent.verticalCenter }
                 source: Settings.face
                 Component.onCompleted: Settings.checkFace()
@@ -167,17 +167,17 @@ FocusScope {
                 return r
             }
             function launch(e) { pc.panel.hide(); e.execute() }
-            height: 14 + 36 + 10 + grid.implicitHeight + 14
+            height: Theme.cardPad + 36 + Theme.pad(10) + grid.implicitHeight + Theme.cardPad
 
             Row {
                 id: searchRow
-                x: 12; y: 14
-                width: parent.width - 24
+                x: Theme.cardPad; y: Theme.cardPad
+                width: parent.width - 2 * Theme.cardPad
                 spacing: Theme.pad(8)
                 Rectangle {
                     width: parent.width - allBtn.width - 8
                     height: 36
-                    radius: 18
+                    radius: Theme.corner(18)
                     color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
@@ -221,7 +221,7 @@ FocusScope {
                         required property int index
                         width: (apps.width - 24 - 12) / 4
                         height: 72
-                        radius: 14
+                        radius: Theme.corner(14)
                         color: tileHover.hovered ? Theme.cardHover : "transparent"
                         AppIcon {
                             anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: Theme.pad(8) }
@@ -258,7 +258,7 @@ FocusScope {
             height: 64
             RoundImage {
                 id: art
-                width: 40; height: 40; radius: 10
+                width: 40; height: 40; radius: Theme.corner(10)
                 anchors { left: parent.left; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                 source: media.player ? media.player.trackArtUrl : ""
                 Glyph { anchors.centerIn: parent; visible: !art.ready; text: "󰎇"; size: 16; color: Theme.subtext }
@@ -284,18 +284,18 @@ FocusScope {
     Component {
         id: shotCard
         GlassCard {
-            height: shotCol.implicitHeight + 28
+            height: shotCol.implicitHeight + 2 * Theme.cardPad
             Column {
                 id: shotCol
-                x: 14; y: 14
-                width: parent.width - 28
+                x: Theme.cardPad; y: Theme.cardPad
+                width: parent.width - 2 * Theme.cardPad
                 spacing: Theme.pad(12)
                 Item {
                     width: parent.width
                     height: 44
                     Rectangle {
                         id: camBubble
-                        width: 44; height: 44; radius: 22
+                        width: 44; height: 44; radius: Theme.corner(22)
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.cardStrong
                         Glyph { anchors.centerIn: parent; text: "󰄀"; size: 19 }
@@ -304,13 +304,13 @@ FocusScope {
                         anchors { left: camBubble.right; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                         spacing: Theme.pad(2)
                         Txt { text: "Screenshot"; size: 15; title: true; font.family: Theme.mono }
-                        Txt { text: "Saved and copied to clipboard"; size: 12; color: "#9a9aa4"; font.family: Theme.mono }
+                        Txt { text: "Saved and copied to clipboard"; size: 12; sub: true; font.family: Theme.mono }
                     }
                     Glyph {
                         anchors { right: parent.right; rightMargin: Theme.pad(4); verticalCenter: parent.verticalCenter }
                         text: "󰉋"
                         size: 15
-                        color: folderHover.hovered ? "#F6F5F4" : "#8a8a8a"
+                        color: folderHover.hovered ? Theme.text : Theme.subtext
                         HoverHandler { id: folderHover; margin: 6; cursorShape: Qt.PointingHandCursor }
                         TapHandler { margin: 6; onTapped: pc.panel.run([pc.bin + "shell-screenshot", "folder"], true) }
                     }
@@ -346,11 +346,11 @@ FocusScope {
             readonly property var profileIcons: ({ "power-saver": "󰌪", balanced: "󰾅", performance: "󰓅" })
             readonly property var pages: ["wifi", "bluetooth", "audio"]
             readonly property int perRow: Math.min(4, Math.max(1, items.length))
-            readonly property real bw: (tg.width - 24 - 8 * (perRow - 1)) / perRow
-            height: 16 + 20 + 10 + grid.implicitHeight + 16
-            Txt { x: 16; y: 16; text: "Quick Toggles"; size: 13; title: true; font.family: Theme.mono }
+            readonly property real bw: (tg.width - 2 * Theme.cardPad - Theme.pad(8) * (perRow - 1)) / perRow
+            height: Theme.cardPad + 20 + Theme.pad(10) + grid.implicitHeight + Theme.cardPad
+            Txt { x: Theme.cardPad; y: Theme.cardPad; text: "Quick Toggles"; size: 13; title: true; font.family: Theme.mono }
             Txt {
-                anchors { right: parent.right; rightMargin: Theme.pad(16); top: parent.top; topMargin: Theme.pad(17) }
+                anchors { right: parent.right; rightMargin: Theme.cardPad; top: parent.top; topMargin: Theme.cardPad + 1 }
                 visible: pc.panel.st.profile !== null && pc.panel.st.profile !== undefined
                 text: ({ "power-saver": "Power saver", balanced: "Balanced", performance: "Performance" })[pc.panel.st.profile] || ""
                 size: 11
@@ -359,8 +359,8 @@ FocusScope {
             }
             Grid {
                 id: grid
-                x: 12
-                anchors { bottom: parent.bottom; bottomMargin: Theme.pad(16) }
+                x: Theme.cardPad
+                anchors { bottom: parent.bottom; bottomMargin: Theme.cardPad }
                 columns: tg.perRow
                 spacing: Theme.pad(8)
                 Repeater {
@@ -371,7 +371,7 @@ FocusScope {
                         readonly property bool hasPage: tg.pages.indexOf(modelData) >= 0
                         width: tg.bw
                         height: 44
-                        radius: 14
+                        radius: Theme.corner(14)
                         iconSize: 17
                         icon: modelData === "profile" ? (tg.profileIcons[pc.panel.st.profile] || "󰾅") : (tg.icons[modelData] || "")
                         active: modelData === "profile" ? pc.panel.st.profile === "performance"
@@ -392,7 +392,7 @@ FocusScope {
                         Rectangle {
                             visible: tb.hasPage
                             anchors { right: parent.right; bottom: parent.bottom; margins: Theme.pad(3) }
-                            width: 18; height: 18; radius: 9
+                            width: 18; height: 18; radius: Theme.corner(9)
                             color: arrowHover.hovered ? Theme.cardHover : "transparent"
                             Glyph {
                                 anchors.centerIn: parent

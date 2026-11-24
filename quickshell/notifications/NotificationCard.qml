@@ -57,7 +57,7 @@ GlassPanel {
                 RoundImage {
                     id: img
                     anchors.fill: parent
-                    radius: 10
+                    radius: Theme.corner(10)
                     visible: (card.info.image || "") !== ""
                     source: card.info.image || ""
                 }

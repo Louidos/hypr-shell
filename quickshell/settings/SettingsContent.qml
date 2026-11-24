@@ -95,7 +95,7 @@ FocusScope {
             width: parent.width - 32
             spacing: Theme.pad(8)
             RoundImage {
-                width: 56; height: 56; radius: 28
+                width: 56; height: 56; radius: Theme.corner(28)
                 source: Settings.face
                 Component.onCompleted: Settings.checkFace()
                 fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
@@ -121,7 +121,7 @@ FocusScope {
                         readonly property bool active: sc.page.id === modelData.id
                         width: nav.width
                         height: 40
-                        radius: 14
+                        radius: Theme.corner(14)
                         // aktiv: weiche hellere Pille mit fetter Schrift (theme.pill.nav = soft) oder weisse Pille
                         color: active ? Theme.navPill : (hov.hovered ? Theme.cardHover : "transparent")
                         border.width: active && !Theme.navWhite ? 1 : 0
@@ -131,7 +131,7 @@ FocusScope {
                         Rectangle {
                             visible: navItem.active && !Theme.navWhite
                             x: 0; anchors.verticalCenter: parent.verticalCenter
-                            width: 3; height: 18; radius: 1.5
+                            width: 3; height: 18; radius: Theme.corner(1.5)
                             color: Theme.text
                         }
                         Glyph {
@@ -169,7 +169,7 @@ FocusScope {
         RoundImage {
             id: topFace
             x: 8; anchors.verticalCenter: parent.verticalCenter
-            width: 36; height: 36; radius: 18
+            width: 36; height: 36; radius: Theme.corner(18)
             source: Settings.face
             Component.onCompleted: Settings.checkFace()
             fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
@@ -194,7 +194,7 @@ FocusScope {
                         anchors.verticalCenter: parent ? parent.verticalCenter : undefined
                         width: topLabel.implicitWidth + 46
                         height: 36
-                        radius: 18
+                        radius: Theme.corner(18)
                         color: active ? Theme.navPill : (topHov.hovered ? Theme.cardHover : "transparent")
                         // die gewählte Seite sichtbar halten
                         onActiveChanged: if (active) topFlick.contentX = Math.max(0, Math.min(x - 40, topFlick.contentWidth - topFlick.width))
@@ -233,7 +233,7 @@ FocusScope {
             id: search
             width: Math.max(140, Math.min(360, parent.width - 220))
             height: 40
-            radius: 20
+            radius: Theme.corner(20)
             placeholder: "Search settings, e.g. blur, clock, battery"
             commitOnBlur: false
             onAccepted: if (sc.results.length > 0) sc.go(sc.results[0])
@@ -320,7 +320,7 @@ FocusScope {
         z: 10
         width: Math.min(Math.max(search.width, 420), sc.width - x - 14)
         height: resCol.implicitHeight + 16
-        radius: 18
+        radius: Theme.corner(18)
         glassOpacity: 0.92
         Column {
             id: resCol
@@ -335,7 +335,7 @@ FocusScope {
                     readonly property var pg: sc.pages.find(p => p.id === modelData.page) || ({ title: modelData.page })
                     width: resCol.width
                     height: 46
-                    radius: 12
+                    radius: Theme.corner(12)
                     color: rh.hovered ? Theme.cardHover : "transparent"
                     Column {
                         anchors { left: parent.left; leftMargin: Theme.pad(12); right: parent.right; rightMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }

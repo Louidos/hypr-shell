@@ -48,7 +48,7 @@ Scope {
         margin: 72
         panelWidth: 320
         panelHeight: 56
-        radius: 28
+        radius: Theme.corner(28)
         keyboardFocus: WlrKeyboardFocus.None
         layer: WlrLayer.Overlay
         closeOnOutside: false
@@ -69,12 +69,12 @@ Scope {
                     id: track
                     anchors { left: ico.right; leftMargin: Theme.pad(16); right: pct.left; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                     height: 6
-                    radius: 3
+                    radius: Theme.corner(3)
                     color: Theme.track
                     Rectangle {
                         width: parent.width * osd.value / 100
                         height: parent.height
-                        radius: 3
+                        radius: Theme.corner(3)
                         color: osd.muted ? Theme.subtext : Theme.pill
                         Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                     }

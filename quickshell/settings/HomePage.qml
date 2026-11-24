@@ -46,7 +46,7 @@ Column {
         spacing: Theme.pad(8)
         RoundImage {
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 96; height: 96; radius: 48
+            width: 96; height: 96; radius: Theme.corner(48)
             source: Settings.face
             Component.onCompleted: Settings.checkFace()
             fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
@@ -95,7 +95,7 @@ Column {
         Rectangle {
             id: bulb
             x: Theme.cardPad; anchors.verticalCenter: parent.verticalCenter
-            width: 44; height: 44; radius: 14
+            width: 44; height: 44; radius: Theme.corner(14)
             color: Theme.cardStrong
             Glyph { anchors.centerIn: parent; text: "󰛨"; size: 19; color: Theme.containerText }
         }
@@ -144,7 +144,7 @@ Column {
                 hoverable: true
                 Rectangle {
                     id: ib
-                    width: 40; height: 40; radius: 12
+                    width: 40; height: 40; radius: Theme.corner(12)
                     anchors { left: parent.left; leftMargin: Theme.cardPad; verticalCenter: parent.verticalCenter }
                     color: Theme.cardStrong
                     Glyph { anchors.centerIn: parent; text: tile.modelData.icon; size: 17 }

@@ -65,7 +65,7 @@ PopupWindow {
                 required property int index
                 width: Math.max(164, rowContent.implicitWidth + 20)
                 height: pop.previews && modelData.toplevel ? 112 : 32
-                radius: 9
+                radius: Theme.corner(9)
                 color: pop.selected === index || ma.containsMouse ? Theme.cardHover : "transparent"
                 border.width: pop.selected === index ? 1 : 0
                 border.color: Theme.accent
@@ -78,7 +78,7 @@ PopupWindow {
                         visible: pop.previews && !!row.modelData.toplevel
                         width: visible ? 150 : 0
                         height: visible ? 96 : 0
-                        Rectangle { anchors.fill: parent; radius: 6; color: Theme.card }
+                        Rectangle { anchors.fill: parent; radius: Theme.corner(6); color: Theme.card }
                         Loader {
                             anchors.fill: parent
                             // nur für Fenster, die es noch gibt (Vorschau eines geschlossenen Fensters = Absturzgefahr)

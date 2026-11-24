@@ -49,7 +49,7 @@ Column {
             required property int index
             width: le.width
             height: 38
-            radius: 12
+            radius: Theme.corner(12)
             color: hover.hovered ? Theme.cardHover : Theme.cardSoft
             HoverHandler { id: hover }
             Row {

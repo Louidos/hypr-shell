@@ -110,7 +110,7 @@ Column {
                 Rectangle {
                     width: net.width - 24 - joinBtn.width - 8
                     height: 36
-                    radius: 18
+                    radius: Theme.corner(18)
                     color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder

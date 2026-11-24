@@ -53,7 +53,7 @@ Column {
                 readonly property bool lifted: listBox.dragFrom === index
                 width: listBox.width
                 height: 38
-                radius: 12
+                radius: Theme.corner(12)
                 x: 0
                 y: lifted ? listBox.dragY - 19 : 42 * (
                     listBox.dragFrom < 0 ? index
@@ -186,7 +186,7 @@ Column {
                 required property var modelData
                 width: parent ? parent.width : 0
                 height: 34
-                radius: 10
+                radius: Theme.corner(10)
                 color: appHover.hovered ? Theme.cardHover : "transparent"
                 HoverHandler { id: appHover }
                 Row {

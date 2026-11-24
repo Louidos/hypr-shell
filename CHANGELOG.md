@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.9.2 – 2026-11-24
+
 ### Behoben
 - Dock und Leiste reagieren nach dem Schliessen eines Programms wieder zuverlässig: Fensterliste, Vorschau und Menü eines geschlossenen Programms gehen sofort zu, ein hängengebliebenes Panel blockiert keine Klicks mehr im Dock, und stürzen Leiste oder Oberfläche ab, starten sie von selbst neu (#117)
 - Die Tastatur bleibt nicht mehr beim Dock oder einem Panel hängen: der Tastatur-Modus des Docks (SUPER+B) endet bei jeder anderen Taste, einem Klick daneben, wenn ein Panel aufgeht, das Dock verschwindet oder nach 10 Sekunden (`dock.keyboard_timeout_s`); Flächen halten die Tastatur nur, solange sie sichtbar offen sind; das neue Notfall-Kürzel CTRL+SUPER+Escape gibt sie jederzeit frei, `shell-diag tastatur` zeigt, wer sie hat (#118)

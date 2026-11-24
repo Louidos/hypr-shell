@@ -191,6 +191,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dock.running_per_monitor` | `false` | `true`, `false` | Each dock shows only the running apps with a window on its own screen | `shell-set dock.running_per_monitor true` |
 | `dock.mode` | `floating` | `floating`, `reserve` | floating = windows can go below the dock, reserve = windows keep clear of it | `shell-set dock.mode reserve` |
 | `dock.layer` | `top` | `top`, `bottom` | top = above windows, bottom = below windows | `shell-set dock.layer bottom` |
+| `dock.when_panel_open` | `hide` | `hide`, `behind`, `stay` | hide = the dock slides away while the dashboard, panel, settings, app grid or launcher covers it and comes back when it closes, behind = it lies below the panel, stay = it stays on top (old behavior) | `shell-set dock.when_panel_open behind` |
 | `dock.margin` | `10` | ganze Zahl 0 … 100 px | Gap between the dock and the screen edge | `shell-set dock.margin 11` |
 | `dock.icon_size` | `48` | ganze Zahl 16 … 128 px | Size of the app icons | `shell-set dock.icon_size 49` |
 | `dock.icon_min_size` | `24` | ganze Zahl 16 … 64 px | Icons shrink down to this size when the dock gets full; after that it scrolls | `shell-set dock.icon_min_size 25` |

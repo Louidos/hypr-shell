@@ -20,13 +20,15 @@ function fit(want, k, min, max) {
 }
 
 // Rand, den Leiste und ein reservierendes Dock belegen: {top, bottom, left, right}
+// (o.dockGivesWay: das Dock fährt für Panels weg, sein Platz zählt dann nicht)
 function rand(o) {
     const r = { top: 0, bottom: 0, left: 0, right: 0 }
     const bar = Math.max(0, Number(o.barHeight) || 0)
     r[o.barPosition === "bottom" ? "bottom" : "top"] += bar
     const monitor = String(o.dockMonitor || "all")
     const hier = monitor === "all" || (monitor === "primary" ? o.screenName === o.firstScreen : monitor === o.screenName)
-    if (o.dockEnabled !== false && o.dockMode === "reserve" && hier) {
+    // dock.when_panel_open = hide: für Panels zählt das reservierte Dock nicht, es fährt ja weg
+    if (o.dockEnabled !== false && o.dockMode === "reserve" && hier && !o.dockGivesWay) {
         const kante = ["top", "bottom", "left", "right"].indexOf(o.dockPosition) >= 0 ? o.dockPosition : "bottom"
         r[kante] += (Number(o.dockMargin) || 0) + Math.round((Number(o.dockIcon) || 48) * (o.factor || 1)) + 2 * (Number(o.dockPadding) || 0)
     }

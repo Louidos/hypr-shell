@@ -248,6 +248,7 @@
     "running_per_monitor": false,
     "mode": "floating",
     "layer": "top",
+    "when_panel_open": "hide",
     "margin": 10,
     "icon_size": 48,
     "icon_min_size": 24,

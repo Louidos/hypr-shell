@@ -32,6 +32,8 @@ Item {
         pruefe(x.left === 10 + 72 + 16, "Dock links auf dem ersten Bildschirm, mit Faktor: " + x.left)
         x = r({ dockMode: "reserve", dockEnabled: false })
         pruefe(x.bottom === 0, "Dock aus: kein Rand")
+        x = r({ dockMode: "reserve", dockGivesWay: true })
+        pruefe(x.bottom === 0 && x.top === 30, "Dock fährt für Panels weg (dock.when_panel_open = hide): Panel bekommt die volle Höhe")
         // Panel auf den Platz begrenzen (Entwurf 1100×700, Platz in Bildschirmpixeln)
         let p = F.panel(1100, 700, 1904, 1000, 1)
         pruefe(p.w === 1100 && p.h === 700 && !p.scroll, "passt: Entwurfsgrösse")

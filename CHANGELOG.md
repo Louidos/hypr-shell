@@ -73,6 +73,10 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Chat mit Missa direkt am Desktop (SUPER+I) und Missa-Karte im Dashboard, einschaltbar in den Einstellungen (#61)
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)
 
+### Behoben
+- Ein eigenes Kürzel auf einer fest belegten Taste (Lautstärke, Helligkeit, Medien) wird abgelehnt statt die Hyprland-Konfiguration zu stören
+- Bei einem Kürzel-Konflikt mit den Arbeitsflächen-Tasten nennt die Meldung die kollidierende Kombination (z. B. `SUPER + SHIFT + 1`) statt nur den Modifikator
+
 ## 1.4.0 – 2026-11-23
 
 ### Hinzugefügt

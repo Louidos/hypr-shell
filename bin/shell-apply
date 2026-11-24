@@ -116,25 +116,34 @@ def combos_of($k; $v; $e):
   elif $k == "move_mod" then [range(0; 10) | "\($v) + \(.)"]
   elif $k == "mouse_mod" then ["\($v) + mouse:272", "\($v) + mouse:273"]
   else [$v] end;
+# Die festen Tasten aus hyprland.lua (fixed_binds im Schema) sind von Anfang an belegt.
 def keybind_conflicts($schema):
   if (.eff.keybinds | type) != "object" then . else
     . as $r
-    | ($schema.keys | map({key: .key, value: .title}) | from_entries) as $titles
-    | reduce ($r.eff.keybinds | to_entries[] | select(.key != "custom" and .value != "")) as $b
-        ({r: $r, seen: {}};
-         [combos_of($b.key; $b.value; $r.eff)[] | norm_combo] as $cs
-         | ([$cs[] as $c | .seen[$c] // empty] | first // null) as $other
-         | if $other != null then
-             .r.eff.keybinds[$b.key] = ""
-             | .r.err += [{key: "keybinds.\($b.key)", reason: "\($b.value) is already used by \($titles[$other] // $other) (\($other))"},
-                          {key: $other, reason: "\($b.value) is also used by \($titles["keybinds.\($b.key)"] // $b.key) (keybinds.\($b.key))"}]
+    | ($schema.fixed_binds // [] | map({key: "fixed:\(.keys | norm_combo)", value: .title})) as $fixed
+    | ($schema.keys | map({key: .key, value: .title}) + $fixed | from_entries) as $titles
+    | def who($o): if ($o | startswith("fixed:")) then "\($titles[$o]) (fixed key)" else "\($titles[$o] // $o) (\($o))" end;
+      reduce ($r.eff.keybinds | to_entries[] | select(.key != "custom" and .value != "")) as $b
+        ({r: $r, seen: ($fixed | map({key: (.key | ltrimstr("fixed:")), value: .key}) | from_entries)};
+         combos_of($b.key; $b.value; $r.eff) as $raw
+         | [$raw[] | norm_combo] as $cs
+         | . as $st
+         | ([range(0; $cs | length) | select($st.seen[$cs[.]] != null)] | first // null) as $i
+         | if $i != null then
+             .seen[$cs[$i]] as $other
+             # die kollidierende Kombination so, wie sie eingegeben wird (bei Gruppen z. B. SUPER + SHIFT + 1)
+             | $raw[$i] as $shown
+             | .r.eff.keybinds[$b.key] = ""
+             | .r.err += [{key: "keybinds.\($b.key)", reason: "\($shown) is already used by \(who($other))"}]
+             | if ($other | startswith("fixed:")) then . else
+                 .r.err += [{key: $other, reason: "\($shown) is also used by \($titles["keybinds.\($b.key)"] // $b.key) (keybinds.\($b.key))"}] end
            else reduce $cs[] as $c (.; .seen[$c] = "keybinds.\($b.key)") end)
     | .seen as $seen
     | reduce (.r.eff.keybinds.custom // [] | to_entries[]) as $c
         ({r: (.r | .eff.keybinds.custom = []), seen: $seen};
          ($c.value.keys | norm_combo) as $n
          | if .seen[$n] != null then
-             .r.err += [{key: "keybinds.custom", reason: "entry \($c.key + 1): \($c.value.keys) is already used by \($titles[.seen[$n]] // .seen[$n]) (\(.seen[$n]))"}]
+             .r.err += [{key: "keybinds.custom", reason: "entry \($c.key + 1): \($c.value.keys) is already used by \(who(.seen[$n]))"}]
            else .r.eff.keybinds.custom += [$c.value] | .seen[$n] = "keybinds.custom" end)
     | .r
   end;

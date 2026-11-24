@@ -42,11 +42,11 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `look.preset` | `glass` | `glass`, `minimal`, `gaming` | Last chosen look (choose with the buttons above): glass, minimal or gaming; changes only look and glass values | `shell-set look.preset minimal` |
 | `look.gaps.inner` | `6` | ganze Zahl 0 … 40 px | Space between windows | `shell-set look.gaps.inner 7` |
 | `look.gaps.outer` | `12` | ganze Zahl 0 … 60 px | Space between windows and the screen edge | `shell-set look.gaps.outer 13` |
-| `look.border` | `1` | ganze Zahl 0 … 8 px | Width of the window border | `shell-set look.border 2` |
-| `look.rounding` | `14` | ganze Zahl 0 … 30 px | Corner radius of windows | `shell-set look.rounding 15` |
+| `look.border` | `2` | ganze Zahl 0 … 8 px | Width of the window border | `shell-set look.border 3` |
+| `look.rounding` | `18` | ganze Zahl 0 … 30 px | Corner radius of windows | `shell-set look.rounding 19` |
 | `look.blur.enabled` | `true` | `true`, `false` | Blur behind transparent windows, the bar and the glass panels | `shell-set look.blur.enabled false` |
-| `look.blur.size` | `10` | ganze Zahl 1 … 20 | Radius of the blur | `shell-set look.blur.size 11` |
-| `look.blur.passes` | `3` | ganze Zahl 1 … 6 | More passes give a softer blur but cost more | `shell-set look.blur.passes 4` |
+| `look.blur.size` | `12` | ganze Zahl 1 … 20 | Radius of the blur | `shell-set look.blur.size 13` |
+| `look.blur.passes` | `2` | ganze Zahl 1 … 6 | More passes give a softer blur but cost more | `shell-set look.blur.passes 3` |
 | `look.shadow` | `true` | `true`, `false` | Soft shadow under windows | `shell-set look.shadow false` |
 | `look.opacity.inactive` | `0.88` | Zahl 0.5 … 1, Schritt 0.05 | Opacity of windows without focus (games, videos, image editors and fullscreen stay opaque) | `shell-set look.opacity.inactive 0.93` |
 | `look.opacity.active` | `0.95` | Zahl 0.5 … 1, Schritt 0.01 | Opacity of the window with focus (games, videos, image editors and fullscreen stay opaque) | `shell-set look.opacity.active 0.96` |
@@ -81,26 +81,26 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `theme.colors` | `auto` | `auto`, `grey`, `custom` | auto = colors from the wallpaper, grey = grey and white, custom = your accent color | `shell-set theme.colors grey` |
 | `theme.accent` | `#8ab4f8` | Farbe `#rrggbb` | Accent color for the custom color mode | `shell-set theme.accent "#a6e3a1"` |
-| `theme.glass` | `0.55` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of all glass surfaces: bar, dock, panels, menus, notifications, launcher and settings (darker automatically when text would be hard to read) | `shell-set theme.glass 0.56` |
-| `theme.glass_color` | `#2a2a2f` | Farbe `#rrggbb` | Tint of all glass surfaces (neutral gray) | `shell-set theme.glass_color "#a6e3a1"` |
+| `theme.glass` | `0.46` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of all glass surfaces: bar, dock, panels, menus, notifications, launcher and settings (darker automatically when text would be hard to read) | `shell-set theme.glass 0.47` |
+| `theme.glass_color` | `#1a1a1d` | Farbe `#rrggbb` | Tint of all glass surfaces (neutral gray) | `shell-set theme.glass_color "#a6e3a1"` |
 | `theme.border.color` | `#ffffff` | Farbe `#rrggbb` | Fine edge of glass surfaces and windows | `shell-set theme.border.color "#a6e3a1"` |
-| `theme.border.opacity` | `0.35` | Zahl 0 … 1, Schritt 0.01 | Edge of the active window and of glass surfaces | `shell-set theme.border.opacity 0.36` |
-| `theme.border.opacity_inactive` | `0.15` | Zahl 0 … 1, Schritt 0.01 | Edge of windows without focus | `shell-set theme.border.opacity_inactive 0.16` |
-| `theme.border.width` | `1` | ganze Zahl 0 … 4 px | Width of the edge of glass surfaces | `shell-set theme.border.width 2` |
-| `theme.border.glow` | `false` | `true`, `false` | Soft outer glow in the border color around glass panels, cards, the dock and windows (never for games, videos and image editors in Look → Always opaque, nor for fullscreen) | `shell-set theme.border.glow true` |
+| `theme.border.opacity` | `0.8` | Zahl 0 … 1, Schritt 0.01 | Edge of the active window and of glass surfaces | `shell-set theme.border.opacity 0.81` |
+| `theme.border.opacity_inactive` | `0.3` | Zahl 0 … 1, Schritt 0.01 | Edge of windows without focus | `shell-set theme.border.opacity_inactive 0.31` |
+| `theme.border.width` | `2` | ganze Zahl 0 … 4 px | Width of the edge of glass surfaces | `shell-set theme.border.width 3` |
+| `theme.border.glow` | `true` | `true`, `false` | Soft outer glow in the border color around glass panels, cards, the dock and windows (never for games, videos and image editors in Look → Always opaque, nor for fullscreen) | `shell-set theme.border.glow false` |
 | `theme.border.glow_size` | `10` | ganze Zahl 0 … 40 px | How far the glow reaches beyond the border | `shell-set theme.border.glow_size 11` |
 | `theme.border.glow_opacity` | `0.25` | Zahl 0 … 1, Schritt 0.01 | Opacity of the glow next to the border | `shell-set theme.border.glow_opacity 0.26` |
-| `theme.radius.panel` | `14` | ganze Zahl 0 … 40 px | Corner radius of glass panels | `shell-set theme.radius.panel 15` |
-| `theme.radius.card` | `10` | ganze Zahl 0 … 30 px | Corner radius of cards inside panels | `shell-set theme.radius.card 11` |
+| `theme.radius.panel` | `26` | ganze Zahl 0 … 40 px | Corner radius of glass panels | `shell-set theme.radius.panel 27` |
+| `theme.radius.card` | `16` | ganze Zahl 0 … 30 px | Corner radius of cards inside panels | `shell-set theme.radius.card 17` |
 | `theme.card.color` | `#ffffff` | Farbe `#rrggbb` | Tint of the cards inside panels, the dashboard and the settings | `shell-set theme.card.color "#a6e3a1"` |
-| `theme.card.opacity` | `0.05` | Zahl 0 … 0.4, Schritt 0.01 | Opacity of the cards on the glass; higher = brighter cards (kept readable automatically) | `shell-set theme.card.opacity 0.06` |
-| `theme.card.hover` | `0.08` | Zahl 0 … 0.5, Schritt 0.01 | Opacity of a card under the mouse | `shell-set theme.card.hover 0.09` |
-| `theme.card.border_opacity` | `0.08` | Zahl 0 … 1, Schritt 0.01 | Opacity of the fine outline around cards | `shell-set theme.card.border_opacity 0.09` |
+| `theme.card.opacity` | `0.09` | Zahl 0 … 0.4, Schritt 0.01 | Opacity of the cards on the glass; higher = brighter cards (kept readable automatically) | `shell-set theme.card.opacity 0.1` |
+| `theme.card.hover` | `0.14` | Zahl 0 … 0.5, Schritt 0.01 | Opacity of a card under the mouse | `shell-set theme.card.hover 0.15` |
+| `theme.card.border_opacity` | `0.12` | Zahl 0 … 1, Schritt 0.01 | Opacity of the fine outline around cards | `shell-set theme.card.border_opacity 0.13` |
 | `theme.pill.opacity` | `0.92` | Zahl 0.3 … 1, Schritt 0.01 | Opacity of the white pill of active tabs, buttons and switches | `shell-set theme.pill.opacity 0.93` |
 | `theme.spacing.scale` | `1.0` | Zahl 0.5 … 2.0, Schritt 0.05 | Factor for all gaps and paddings of panels, cards and lists | `shell-set theme.spacing.scale 1.05` |
-| `theme.spacing.panel` | `18` | ganze Zahl 0 … 48 px | Space between the edge of a glass panel (e.g. the dashboard) and its content | `shell-set theme.spacing.panel 19` |
-| `theme.spacing.card` | `14` | ganze Zahl 0 … 40 px | Space between the edge of a card and its content | `shell-set theme.spacing.card 15` |
-| `theme.spacing.gap` | `10` | ganze Zahl 0 … 40 px | Space between two cards | `shell-set theme.spacing.gap 11` |
+| `theme.spacing.panel` | `20` | ganze Zahl 0 … 48 px | Space between the edge of a glass panel (e.g. the dashboard) and its content | `shell-set theme.spacing.panel 21` |
+| `theme.spacing.card` | `16` | ganze Zahl 0 … 40 px | Space between the edge of a card and its content | `shell-set theme.spacing.card 17` |
+| `theme.spacing.gap` | `12` | ganze Zahl 0 … 40 px | Space between two cards | `shell-set theme.spacing.gap 13` |
 | `theme.font.ui` | `Inter` | Text (Format geprüft) | Font for text in the bar, dashboard, panel and lock screen | `shell-set theme.font.ui "Noto Sans"` |
 | `theme.font.mono` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font for symbols and numbers (needs Nerd Font symbols) | `shell-set theme.font.mono "Noto Sans"` |
 | `theme.font.clock` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font of the big clock on the desktop | `shell-set theme.font.clock "Noto Sans"` |
@@ -108,7 +108,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `theme.font.scale` | `1.0` | Zahl 0.8 … 1.5, Schritt 0.05 | Factor for all font sizes | `shell-set theme.font.scale 1.05` |
 | `theme.font.title_weight` | `bold` | `normal`, `medium`, `demibold`, `bold` | Thickness of titles; labels and pill texts are one step lighter | `shell-set theme.font.title_weight normal` |
 | `theme.font.text_weight` | `normal` | `normal`, `medium`, `demibold`, `bold` | Thickness of normal text | `shell-set theme.font.text_weight medium` |
-| `theme.font.title_scale` | `1.0` | Zahl 0.8 … 2.0, Schritt 0.05 | Size of titles relative to the normal text | `shell-set theme.font.title_scale 1.05` |
+| `theme.font.title_scale` | `1.25` | Zahl 0.8 … 2.0, Schritt 0.05 | Size of titles relative to the normal text | `shell-set theme.font.title_scale 1.3` |
 | `theme.cursor.name` | `Bibata-Modern-Ice` | Text (Format geprüft) | Name of the mouse cursor theme | `shell-set theme.cursor.name Adwaita` |
 | `theme.cursor.size` | `24` | ganze Zahl 16 … 64 px | Size of the mouse cursor | `shell-set theme.cursor.size 26` |
 | `theme.icons` | `Papirus-Dark` | Text (Format geprüft) | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |

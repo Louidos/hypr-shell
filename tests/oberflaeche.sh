@@ -972,9 +972,15 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
         "$im" -size 1920x1080 gradient:'#10131a'-'#2b1f3a' "$HOME/Pictures/Wallpapers/test-dunkel.png"
         "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-hell.png" >/dev/null 2>&1; sleep 3
         bild dock-hell
+        # Mindestlesbarkeit mit dem Standard-Look (helle Karten auf grauem Glas): Text auf Karten ≥ 4.5:1
+        kh="$("$qs" -p "$cfg" ipc call test contrast 2>/dev/null)"; karte_hell="$("$qs" -p "$cfg" ipc call test theme 2>/dev/null | jq .card)"
         if [ "$(ds .glass)" != "$vorher_glas" ]; then echo "  ok: Bildwechsel färbt das Dock um"; else echo "  FEHLER: Dock-Farbe bleibt nach dem Bildwechsel"; dock_ok=0; fi
         "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-dunkel.png" >/dev/null 2>&1; sleep 3
         bild dock-dunkel
+        kd="$("$qs" -p "$cfg" ipc call test contrast 2>/dev/null)"
+        if awk -v h="${kh:-0}" -v d="${kd:-0}" 'BEGIN { exit !(h >= 4.5 && d >= 4.5) }' && awk -v c="${karte_hell:-0}" 'BEGIN { exit !(c > 0) }'; then
+            echo "  ok: Text auf Karten lesbar auf hellem ($kh:1) und dunklem Bild ($kd:1); die Karte bleibt sichtbar ($karte_hell)"
+        else echo "  FEHLER: Lesbarkeit hell ${kh:-?} / dunkel ${kd:-?}, Karte ${karte_hell:-?}"; dock_ok=0; fi
         "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-bunt.png" >/dev/null 2>&1; sleep 2
         "$HOME/.local/bin/shell-set" reset dock.color_mode >/dev/null 2>&1; sleep 1.5
         if [ "$(ds .glass)" = "$glas_std" ]; then echo "  ok: Standard (glass): Dock im gemeinsamen Glas, unabhängig vom Bild"
@@ -1024,8 +1030,8 @@ th_warte() { # jq-Ausdruck, bis er stimmt (höchstens 8 s)
 }
 setze() { "$HOME/.local/bin/shell-set" "$@" >/dev/null 2>&1; }
 echo "  Standard: $(th)"
-if th_warte '.card == 0.05 and .cardHover == 0.08 and .cardBorder == 0.08 and .pill == 0.92 and .glow == false and .panelPad == 18 and .cardPad == 14 and .gap == 10 and .titleWeight == 700 and .strongWeight == 600 and .textWeight == 400 and .titleScale == 1'; then
-    echo "  ok: ohne geänderte Werte wie in 1.10.0 (Karten 5 %/8 %, Kontur 8 %, Pille 92 %, kein Leuchten, Abstände 18/14/10, Titel fett)"
+if th_warte '.card >= 0.07 and .card <= 0.09 and .cardHover == 0.14 and .cardBorder == 0.12 and .pill == 0.92 and .glow == true and .glowSize == 10 and .glowOpacity == 0.25 and .panelPad == 20 and .cardPad == 16 and .gap == 12 and .titleWeight == 700 and .strongWeight == 600 and .textWeight == 400 and .titleScale == 1.25'; then
+    echo "  ok: Standard wie die Vorlage (Karten 9 % – auf hellem Testbild durch die Lesbarkeit begrenzt –, Hover 14 %, Kontur 12 %, Pille 92 %, Leuchten 10 px/0.25, Abstände 20/16/12, Titel fett und 1.25-fach)"
 else echo "  FEHLER: Standardwerte: $(th)"; design_ok=0; fi
 setze set theme.card.opacity 0.15 theme.card.hover 0.2 theme.card.border_opacity 0.3 theme.pill.opacity 0.8
 # (auf einem hellen Testbild begrenzt die Lesbarkeit die Karte; das Glas wird dafür dunkler)
@@ -1051,12 +1057,12 @@ if jq -e --argjson o "${ohne:-null}" '.glow == 16 and .glowRoom == 16 and .y >= 
     echo "  ok: der Rand des Dashboards leuchtet (16 px Schein mit Platz im Fenster, ganz auf dem Bildschirm); ohne Leuchten kein Schein"
 else echo "  FEHLER: Leuchten um das Dashboard: mit $mit, ohne $ohne"; design_ok=0; fi
 setze set theme.spacing.scale 1.5 theme.font.title_weight demibold theme.font.title_scale 1.25
-if th_warte '.pad10 == 15 and .panelPad == 27 and .gap == 15 and .titleWeight == 600 and .strongWeight == 500 and .titleScale == 1.25'; then
+if th_warte '.pad10 == 15 and .panelPad == 30 and .gap == 18 and .titleWeight == 600 and .strongWeight == 500 and .titleScale == 1.25'; then
     echo "  ok: Abstände (Faktor 1.5) und Schrift (Titel halbfett, 1.25-fach) aus settings.json"
 else echo "  FEHLER: Abstände/Schrift: $(th)"; design_ok=0; fi
 ipc settings open look; sleep 2; bild design-abstand-schrift; ipc settings close; sleep 1
 setze reset theme
-th_warte '.card == 0.05 and .panelPad == 18 and .titleScale == 1' || { echo "  FEHLER: reset theme: $(th)"; design_ok=0; }
+th_warte '.card >= 0.07 and .panelPad == 20 and .titleScale == 1.25 and .glow == true' || { echo "  FEHLER: reset theme: $(th)"; design_ok=0; }
 
 # Sperrbildschirm (jetzt ohne ~/.face, also mit dem Ersatzbild des Installers) – nur in diesem
 # unsichtbaren Test-Compositor, nie in einer echten Sitzung. Kommt zuletzt, weil sway nach dem Beenden von hyprlock gesperrt bleibt.

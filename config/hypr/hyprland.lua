@@ -34,9 +34,9 @@ end
 local S = {
     look = {
         gaps = { inner = 6, outer = 12 },
-        border = 1,
-        rounding = 14,
-        blur = { enabled = true, size = 10, passes = 3 },
+        border = 2,
+        rounding = 18,
+        blur = { enabled = true, size = 12, passes = 2 },
         shadow = true,
         opacity = { active = 0.95, inactive = 0.88,
             exceptions = { "steam_app_[0-9]+", "gamescope", "steam", "battle.net.exe", "heroic", "lutris", "mpv", "vlc",
@@ -45,8 +45,8 @@ local S = {
         animations = { enabled = true, speed = "normal" },
     },
     theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 }, apps = { gtk = true, qt = true },
-        border = { color = "#ffffff", opacity = 0.35, opacity_inactive = 0.15, width = 1,
-            glow = false, glow_size = 10, glow_opacity = 0.25 } },
+        border = { color = "#ffffff", opacity = 0.8, opacity_inactive = 0.3, width = 2,
+            glow = true, glow_size = 10, glow_opacity = 0.25 } },
     input = {
         layout = "us", variant = "", sensitivity = 0,
         touchpad = { natural_scroll = false, tap_to_click = true },
@@ -222,8 +222,8 @@ end
 local B = (S.theme and S.theme.border) or {}
 local rand_aktiv, rand_inaktiv = colors.accent, colors.inactive
 if S.look.border_color ~= "accent" then
-    rand_aktiv   = rgba(B.color, B.opacity or 0.35)
-    rand_inaktiv = rgba(B.color, B.opacity_inactive or 0.15)
+    rand_aktiv   = rgba(B.color, B.opacity or 0.8)
+    rand_inaktiv = rgba(B.color, B.opacity_inactive or 0.3)
 end
 -- leuchtender Rand (theme.border.glow): der Schatten wird zum weichen Schein in Randfarbe, ohne
 -- Versatz (Grösse theme.border.glow_size, Deckkraft theme.border.glow_opacity); Spiele, Videos,
@@ -393,7 +393,7 @@ if F.titelleiste ~= "aus" and hl.plugin and hl.plugin.hyprbars then
     local seite = (F.knoepfe or {}).seite
     if seite ~= "rechts" and seite ~= "links" then seite = stil == "mac" and "links" or "rechts" end
     local T = S.theme or {}
-    local glas_farbe = (T.glass_color or "#2a2a2f"):gsub("^#", "")
+    local glas_farbe = (T.glass_color or "#1a1a1d"):gsub("^#", "")
     local hyprctl = "hyprctl dispatch "
     local maximieren = hyprctl .. [['hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })']]
     hl.config({
@@ -401,7 +401,7 @@ if F.titelleiste ~= "aus" and hl.plugin and hl.plugin.hyprbars then
             hyprbars = {
                 enabled = true,
                 bar_height = 28,
-                bar_color = rgba(glas_farbe, math.max(0.55, tonumber(T.glass) or 0.55)),
+                bar_color = rgba(glas_farbe, math.max(0.55, tonumber(T.glass) or 0.46)),
                 col = { text = "rgba(e6e6e6ff)" },
                 bar_text_font = (T.font and T.font.ui) or "Inter",
                 bar_text_size = 11,

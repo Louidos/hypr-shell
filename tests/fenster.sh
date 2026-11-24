@@ -47,7 +47,7 @@ LUA
 if [ -n "$lua" ]; then
     echo "== 1. Titelleiste mit hyprbars"
     w="$(leiste '{}' 1)"
-    pruefe 'grep -q "^config right rgba(2a2a2f8c) blur=true dbl=.*maximized" <<<"$w"' "Glas-Titelleiste, Knöpfe rechts, Doppelklick maximiert"
+    pruefe 'grep -q "^config right rgba(1a1a1d8c) blur=true dbl=.*maximized" <<<"$w"' "Glas-Titelleiste, Knöpfe rechts, Doppelklick maximiert"
     pruefe '[ "$(grep -c "^button" <<<"$w")" = 3 ] && grep -q "window.close()" <<<"$w" && grep -q "maximized" <<<"$w" && grep -q "shell-window minimize" <<<"$w"' "drei Knöpfe: Schliessen, Maximieren, Minimieren"
     pruefe 'grep -q "^button rgba(e8112366)" <<<"$w"' "Windows-Stil: Schliessen rot getönt"
     pruefe 'grep -q "^rule hypr-shell-bar-ausnahmen class=^(org.gnome.\*|firefox" <<<"$w" && grep -q "rule hypr-shell-bar-vollbild fullscreen=true" <<<"$w" && grep -q "rule hypr-shell-bar-dialog modal=true" <<<"$w" && grep -q "content=game" <<<"$w" && grep -q "content=video" <<<"$w"' "keine Titelleiste: Ausnahmen, Vollbild, Dialoge, Spiele, Videos"

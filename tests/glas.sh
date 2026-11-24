@@ -32,6 +32,11 @@ for f in settings/presets/look/*.json; do
     jq '[to_entries[] | select(.key | startswith("_") | not)] | reduce .[] as $e ({}; setpath($e.key | split("."); $e.value))' "$f" > "$T/p.json"
     pruefe '"$REPO/bin/shell-apply" --check "$T/p.json" >/dev/null 2>&1' "$n: alle Werte gültig"
 done
+glass_abw="$(jq -r --slurpfile s settings/schema.json 'to_entries[] | select(.key | startswith("_") | not) | select(.key != "look.preset") | . as $e | ($s[0].keys[] | select(.key == $e.key) | .default) as $d | select($d != $e.value) | "\($e.key)=\($e.value) (Standard \($d))"' settings/presets/look/glass.json)"
+pruefe '[ -z "$glass_abw" ]' "glass = genau die Standardwerte (Look wie die Vorlage)${glass_abw:+: $glass_abw}"
+pruefe 'jq -e "[\"theme.border.glow\", \"theme.card.opacity\", \"theme.spacing.gap\", \"theme.font.title_scale\"] - keys == []" settings/presets/look/minimal.json settings/presets/look/gaming.json >/dev/null' "minimal und gaming nennen auch die neuen Design-Werte"
+pruefe 'jq -e ".\"theme.border.glow\" == false" settings/presets/look/minimal.json settings/presets/look/gaming.json >/dev/null' "minimal und gaming: kein Leuchten"
+pruefe 'jq -e ".\"look.blur.enabled\" == false and .\"look.blur.size\" < 12 and .\"look.blur.passes\" < 2" settings/presets/look/gaming.json >/dev/null && [ "$(jq ".\"theme.radius.panel\"" settings/presets/look/minimal.json)" -lt 26 ]' "gaming: weniger Blur; minimal: kleinere Radien"
 "$REPO/bin/shell-look" preset gaming >/dev/null
 pruefe '[ "$(wert ".look.preset")" = "\"gaming\"" ] && [ "$(wert ".look.blur.enabled")" = false ] && jq -e ".look.opacity.active == 1" "$S" >/dev/null' "gaming: kein Blur, alles undurchsichtig"
 "$REPO/bin/shell-set" undo >/dev/null
@@ -62,7 +67,8 @@ LUA
 }
 if [ -n "$lua" ]; then
     f="$(fenster '{}')"
-    pruefe '[[ "$f" == "rgba(ffffff59)|rgba(ffffff26)|0.95|0.88|14|"* ]]' "Standard: weisser Rand 0.35/0.15, Transparenz 0.95/0.88, Rundung 14 ($f)"
+    pruefe '[[ "$f" == "rgba(ffffffcc)|rgba(ffffff4d)|0.95|0.88|18|"* ]]' "Standard wie die Vorlage: heller Rand 0.8/0.3, Transparenz 0.95/0.88, Rundung 18 ($f)"
+    pruefe '[[ "$f" == *"|true rgba(ffffff40) 10|^(steam_app_[0-9]+|"*"|vollbild" ]]' "Standard: Fenster leuchten (Schein in Randfarbe, 10 px, 0.25), Spiele, Videos und Vollbild nicht ($f)"
     pruefe '[[ "$f" == *"steam_app_[0-9]+"*"mpv"*"gimp"*"1.0 override 1.0 override|"* ]]' "Spiele, Videos, Bildbearbeitung bleiben undurchsichtig"
     f="$(fenster '{"look": {"border_color": "accent"}}')"
     pruefe '[[ "$f" == "rgba(d4d4d4ee)|"* ]]' "Akzentfarbe als Option ($f)"
@@ -81,9 +87,9 @@ fi
 echo "== 3. Leiste und rofi"
 echo '{}' > "$S"; "$REPO/bin/shell-apply" --no-reload >/dev/null 2>&1
 st="$HOME/.config/waybar/style.css"; ro="$HOME/.config/rofi/hypr-shell-settings.rasi"
-pruefe 'grep -q "background: rgba(42, 42, 47, 0.55)" "$st" && grep -q "border: 1px solid rgba(255, 255, 255, 0.35)" "$st" && grep -q "border-radius: 14px" "$st"' "Leiste: graues Glas, weisser Rand, Rundung 14"
-pruefe 'grep -q "background-color: rgba(42, 42, 47, 0.55)" "$ro" && grep -q "border-color:     rgba(255, 255, 255, 0.35)" "$ro" && grep -q "border-radius:    14px" "$ro"' "rofi: dasselbe Glas"
+pruefe 'grep -q "background: rgba(26, 26, 29, 0.46)" "$st" && grep -q "border: 2px solid rgba(255, 255, 255, 0.80)" "$st" && grep -q "border-radius: 26px" "$st"' "Leiste: graues Glas, heller Rand 2 px, Rundung 26"
+pruefe 'grep -q "background-color: rgba(26, 26, 29, 0.46)" "$ro" && grep -q "border-color:     rgba(255, 255, 255, 0.80)" "$ro" && grep -q "border-radius:    26px" "$ro"' "rofi: dasselbe Glas"
 pruefe '[ "$(sed -E "s#^[[:space:]]*//.*\$##" "$HOME/.config/waybar/config.jsonc" | jq -c "[.\"margin-top\", .\"margin-left\"]")" = "[6,12]" ]' "schwebende Leiste mit Abstand zum Rand"
 echo 0.95 > "$HOME/.local/share/hypr-shell/wallpaper-luma"; "$REPO/bin/shell-apply" --no-reload >/dev/null 2>&1
-pruefe 'grep -qE "background: rgba\(42, 42, 47, 0\.(8|9)[0-9]\)" "$st"' "sehr helles Hintergrundbild: Glas automatisch dunkler"
+pruefe 'grep -qE "background: rgba\(26, 26, 29, 0\.(8|9)[0-9]\)" "$st"' "sehr helles Hintergrundbild: Glas automatisch dunkler"
 exit "$fehler"

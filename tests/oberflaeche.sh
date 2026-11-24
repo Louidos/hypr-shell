@@ -2,6 +2,13 @@
 # Startet die Quickshell-Oberfläche in einem unsichtbaren Wayland-Compositor (sway, headless,
 # Software-Rendering), prüft das Log auf QML-Fehler und legt Screenshots nach $SCREENSHOTS
 # (Standard: ./screenshots-ci). Blur gibt es dort nicht – die Bilder zeigen Aufbau und Masse.
+#
+#   SCREENSHOT_BILD  Hintergrund der Screenshots: standard (mitgeliefertes Startbild, Standard),
+#                    grau (wallpapers/hypr-shell-grau.png) oder bunt (Testverlauf). Die Farbprüfung
+#                    mit matugen läuft immer mit dem bunten Bild, danach gilt das gewählte.
+#   SCREENSHOT_NUR   nur diese Screenshots (z. B. "desktop dashboard-dashboard panel settings-home
+#                    apps") und dann Schluss – für eine zweite, kurze Runde mit anderem Hintergrund
+#   SCREENSHOT_ENDUNG an jeden Dateinamen angehängt (z. B. -grau)
 # Läuft in der CI (archlinux); fehlt sway, quickshell oder grim, wird der Test übersprungen.
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -74,9 +81,15 @@ done
 cp "$REPO"/tests/fixtures/dock/applications/*.desktop "$HOME/.local/share/applications/"
 mkdir -p "$HOME/Downloads"
 
+# Hintergrund der Screenshots (SCREENSHOT_BILD); auch sway bekommt ihn, falls awww fehlt
+SCREENSHOT_BILD="${SCREENSHOT_BILD:-standard}"
+case "$SCREENSHOT_BILD" in
+    grau|bunt) grund="$REPO/wallpapers/hypr-shell-grau.png" ;;
+    *) grund="$REPO/wallpapers/hypr-shell-bluete.jpg"; [ -f "$grund" ] || grund="$REPO/wallpapers/hypr-shell-grau.png" ;;
+esac
 cat > "$T/sway.conf" <<CONF
 output HEADLESS-1 resolution 1920x1080 position 0 0
-output * bg $REPO/wallpapers/hypr-shell-grau.png fill
+output * bg $grund fill
 default_border none
 CONF
 # Kopie ohne Datei-Capabilities (sway hat cap_sys_nice, das ist in Containern verboten)
@@ -120,6 +133,18 @@ if command -v awww >/dev/null 2>&1 && command -v matugen >/dev/null 2>&1; then
         else echo "  FEHLER: Auswahl nicht gespeichert"; farben_ok=0; fi
     fi
 fi
+# danach für die Screenshots der gewählte Hintergrund (die Farbprüfung oben war nur eine Prüfung)
+screen_bild() {
+    command -v awww >/dev/null 2>&1 || return 0
+    case "$SCREENSHOT_BILD" in
+        bunt) [ -n "${bunt:-}" ] && "$HOME/.local/bin/shell-wallpaper" "$bunt" ;;
+        grau) "$HOME/.local/bin/shell-wallpaper" "$HOME/.local/share/hypr-shell/wallpapers/hypr-shell-grau.png" ;;
+        # Startbild ohne eigene Auswahl (das mitgelieferte Standardbild von shell-wallpaper)
+        *) rm -f "$HOME/.local/share/hypr-shell/wallpaper"; "$HOME/.local/bin/shell-wallpaper" --restore ;;
+    esac > "$T/wallpaper2.log" 2>&1 || true
+    echo "  Hintergrund der Screenshots: $SCREENSHOT_BILD ($("$HOME/.local/bin/shell-wallpaper" --current 2>/dev/null))"
+}
+screen_bild
 
 # Leiste (Waybar) – Hyprland-Module melden ohne Hyprland Fehler, das ist hier egal
 if command -v waybar >/dev/null 2>&1; then
@@ -140,7 +165,8 @@ starte_qs() {
 starte_qs
 
 # bild NAME: Screenshot, dazu den Stand des Logs (für die Lage der Bilder, siehe Probe.qml)
-bild() { grim "$OUT/$1.png" && cp "$T/qs.log" "$T/log-$1" && echo "  Screenshot: $1.png"; }
+SCREENSHOT_ENDUNG="${SCREENSHOT_ENDUNG:-}"
+bild() { grim "$OUT/$1$SCREENSHOT_ENDUNG.png" && cp "$OUT/$1$SCREENSHOT_ENDUNG.png" "$T/$1.png" && cp "$T/qs.log" "$T/log-$1" && echo "  Screenshot: $1$SCREENSHOT_ENDUNG.png"; }
 # IPC-Aufruf; schlägt er fehl, steht der Grund im Log und der Test läuft weiter (die Prüfungen danach melden es)
 ipc() {
     "$qs" -p "$cfg" ipc call "$@" >/dev/null 2>"$T/ipc.err" && return 0
@@ -160,13 +186,30 @@ bereich() {
         echo "  FEHLER: $text – nicht sichtbar (keine Lage im Log)"; bereiche_ok=0; return 0
     fi
     x=$((x + w / 5)); y=$((y + h / 5)); w=$((w * 3 / 5)); h=$((h * 3 / 5))
-    sd="$("$im" "$OUT/$shot.png" -crop "${w}x${h}+${x}+${y}" +repage -colorspace gray -format '%[fx:standard_deviation]' info:)"
+    sd="$("$im" "$T/$shot.png" -crop "${w}x${h}+${x}+${y}" +repage -colorspace gray -format '%[fx:standard_deviation]' info:)"
     if awk -v s="$sd" 'BEGIN { exit !(s > 0.04) }'; then
         echo "  ok: $text sichtbar (Streuung $sd bei ${w}x${h}+${x}+${y})"
     else
         echo "  FEHLER: $text einfarbig (Streuung $sd bei ${w}x${h}+${x}+${y})"; bereiche_ok=0
     fi
 }
+
+# kurze Runde (SCREENSHOT_NUR): nur die genannten Screenshots, dann Schluss
+if [ -n "${SCREENSHOT_NUR:-}" ]; then
+    echo "---- nur Screenshots: $SCREENSHOT_NUR ($SCREENSHOT_BILD) ----"
+    nur() { [[ " $SCREENSHOT_NUR " == *" $1 "* ]]; }
+    if nur desktop; then bild desktop; fi
+    if nur dashboard-dashboard; then ipc dashboard open dashboard; sleep 3; bild dashboard-dashboard; ipc dashboard close; sleep 1; fi
+    if nur panel; then ipc panel open; sleep 2; bild panel; ipc panel close; sleep 1; fi
+    if nur settings-home; then ipc settings open home; sleep 2.5; bild settings-home; ipc settings close; sleep 1; fi
+    if nur apps; then ipc apps open; sleep 2; bild apps; ipc apps close; sleep 1; fi
+    kill -0 "$qspid" 2>/dev/null || { echo "FEHLER: Quickshell ist abgestürzt"; exit 1; }
+    if grep -E "ERROR|TypeError|ReferenceError|Binding loop" "$T/qs.log" | grep -vE "Failed to connect to|dbus|DBus|org\.freedesktop|polkit|pipewire|Pipewire|upower|UPower|notification server|NetworkManager|bluez|Bluez|mpris|quickshell\.wayland\.buffer\.dmabuf"; then
+        echo "FEHLER: QML-Fehler im Log (siehe oben)"; exit 1
+    fi
+    echo "Kurze Runde fertig"
+    exit 0
+fi
 
 bild desktop
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dashboard'; then
@@ -1015,7 +1058,7 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
         if awk -v h="${kh:-0}" -v d="${kd:-0}" 'BEGIN { exit !(h >= 4.5 && d >= 4.5) }' && awk -v c="${karte_hell:-0}" 'BEGIN { exit !(c > 0) }'; then
             echo "  ok: Text auf Karten lesbar auf hellem ($kh:1) und dunklem Bild ($kd:1); die Karte bleibt sichtbar ($karte_hell)"
         else echo "  FEHLER: Lesbarkeit hell ${kh:-?} / dunkel ${kd:-?}, Karte ${karte_hell:-?}"; dock_ok=0; fi
-        "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-bunt.png" >/dev/null 2>&1; sleep 2
+        screen_bild; sleep 2
         "$HOME/.local/bin/shell-set" reset dock.color_mode >/dev/null 2>&1; sleep 1.5
         if [ "$(ds .glass)" = "$glas_std" ]; then echo "  ok: Standard (glass): Dock im gemeinsamen Glas, unabhängig vom Bild"
         else echo "  FEHLER: Dock-Glas im Standard: $(ds .glass) statt $glas_std"; dock_ok=0; fi

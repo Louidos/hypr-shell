@@ -4,6 +4,22 @@ Checkliste aller „Fertig, wenn“-Punkte. **Automatisch** = in der CI geprüft
 (`tests/*.sh`, Arch-Container, unsichtbarer Wayland-Compositor). **Von Hand** = nur auf
 dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 
+**Screenshots der CI** (Branch `ci/screenshots`): Die Test-Umgebung (sway ohne Grafikkarte,
+Software-Rendering) hat **keinen Blur** und keine Fenster-Schatten; die echte Optik mit
+verschwommenem Hintergrund und leuchtendem Fensterrand zeigt nur Hyprland. Die Bilder zeigen
+Aufbau, Masse, Farben, Karten und das Leuchten der Shell-Flächen. Hintergrund der Screenshots:
+`SCREENSHOT_BILD` in `tests/oberflaeche.sh` – `standard` (mitgeliefertes Startbild, Standard),
+`grau` (graues Verlaufsbild) oder `bunt` (Testverlauf der Farbprüfung). Die CI macht eine zweite,
+kurze Runde mit grauem Bild für Desktop, Dashboard, Panel, Startseite der Einstellungen und
+App-Raster (Dateinamen mit `-grau`).
+
+| Punkt | Prüfung |
+| --- | --- |
+| 1.11: Mit offenem Dashboard verdeckt das Dock nichts, nach dem Schliessen ist es sofort da | automatisch (`tests/oberflaeche.sh`, Lage von Kalender und Dock) |
+| 1.11: Karten, Pille, Leuchten, Abstände und Schrift kommen aus settings.json, sofort | automatisch (`tests/oberflaeche.sh`, Abschnitt Design-Werte; `tests/shell-set.sh`) |
+| 1.11: Fenster leuchten in Randfarbe, nicht Spiele, Videos, Bildbearbeitung und Vollbild | automatisch (`tests/glas.sh`, `tests/hyprland-echt.sh`); Aussehen von Hand |
+| 1.11: Startseite mit Profilbild, Begrüssung, Pillen, Tipp und 6 Kacheln; Backup unter System | automatisch (`tests/oberflaeche.sh`) |
+
 ## Gruppe 1: Grundgerüst und Installer
 
 | Punkt | Prüfung |

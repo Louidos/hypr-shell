@@ -106,6 +106,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Chat mit Missa direkt am Desktop (SUPER+I) und Missa-Karte im Dashboard, einschaltbar in den Einstellungen (#61)
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)
 
+### Behoben
+- Laptop: Ladegrenze und Tastaturlicht melden ohne asusctl klar, dass asusctl fehlt; das Leistungsprofil springt ohne lesbare Profile nicht mehr still auf „balanced“; der Zustand bleibt gültig, auch wenn supergfxctl Anführungszeichen ausgibt
+
 ## 1.4.0 – 2026-11-23
 
 ### Hinzugefügt

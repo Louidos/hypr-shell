@@ -91,4 +91,22 @@ pruefe '! geschrieben' "… danach kein weiterer Schreibzugriff"
 
 echo "== ohne asusctl"
 pruefe '[ "$(PATH="/usr/bin:/bin" HYPR_SHELL_SYSFS="$T/leer" "$REPO/bin/shell-laptop" caps | jq -c "[.laptop, .asusctl, .charge, .kbd, .gfx]")" = "[false,false,false,false,false]" ]' "nichts davon erscheint"
+# $befehl absichtlich ohne Anführungszeichen: wird in Wörter zerlegt
+# shellcheck disable=SC2086
+for befehl in "charge set 80" "kbd set low" "kbd color #8ab4f8"; do
+    rc=0; out="$(PATH="/usr/bin:/bin" HYPR_SHELL_SYSFS="$T/leer" "$REPO/bin/shell-laptop" $befehl 2>&1)" || rc=$?
+    pruefe '[ "$rc" != 0 ] && grep -q "needs asusctl" <<<"$out" && ! grep -q "command not found" <<<"$out"' "$befehl ohne asusctl: klare Meldung ($out)"
+done
+
+echo "== Randfälle"
+mkdir -p "$T/ppd-leer" "$T/gfx-zitat"
+# powerprofilesctl, dessen "list" nichts Lesbares liefert (z. B. eine geänderte Ausgabe)
+printf '#!/bin/sh\ncase "$1" in get) echo balanced ;; list) echo ;; set) echo "$2" > "%s/ppd-gesetzt" ;; esac\n' "$T" > "$T/ppd-leer/powerprofilesctl"
+# supergfxctl mit Anführungszeichen und Backslash in der Ausgabe
+printf '#!/bin/sh\ncase "$1" in -g) echo '"'"'Hybrid "neu" \\ x'"'"' ;; -s) echo "[Integrated, Hybrid]" ;; -p) echo '"'"'Logout "now"'"'"' ;; esac\n' > "$T/gfx-zitat/supergfxctl"
+chmod +x "$T/ppd-leer/powerprofilesctl" "$T/gfx-zitat/supergfxctl"
+rc=0; out="$(PATH="$T/ppd-leer:/usr/bin:/bin" HYPR_SHELL_SYSFS="$T/leer" "$REPO/bin/shell-laptop" profile next 2>&1)" || rc=$?
+pruefe '[ "$rc" != 0 ] && [ ! -e "$T/ppd-gesetzt" ] && ! grep -q "jq:" <<<"$out" && grep -q "no power profiles" <<<"$out"' "profile next ohne lesbare Profile: Meldung, nichts gesetzt ($out)"
+st="$(PATH="$T/gfx-zitat:/usr/bin:/bin" HYPR_SHELL_SYSFS="$T/leer" "$REPO/bin/shell-laptop" status 2>&1)" || true
+pruefe '[ "$(jq -r .gfx <<<"$st" 2>/dev/null)" = "Hybrid \"neu\" \\ x" ] && [ "$(jq -r .gfx_pending <<<"$st")" = "Logout \"now\"" ]' "status mit Anführungszeichen von supergfxctl bleibt gültiges JSON ($st)"
 exit "$fehler"

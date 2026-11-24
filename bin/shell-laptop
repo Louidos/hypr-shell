@@ -75,6 +75,7 @@ profil_liste() {
 profil_next() {
     local liste jetzt
     liste="$(profil_liste)"
+    if [ "$(jq 'length' <<<"$liste")" = 0 ]; then echo "shell-laptop: no power profiles available" >&2; return 1; fi
     jetzt="$(profil_get)" || return 1
     profil_set "$(jq -r --arg j "$jetzt" '. as $l | ($l | index($j) // -1) as $i | $l[($i + 1) % ($l | length)]' <<<"$liste")"
 }
@@ -87,16 +88,19 @@ charge_get() { local f; f="$(akku)"; [ -n "$f" ] && cat "$f"; }
 charge_set() {
     local n="$1"
     if ! [[ "$n" =~ ^[0-9]+$ ]] || [ "$n" -lt 20 ] || [ "$n" -gt 100 ]; then echo "shell-laptop: Ladegrenze 20–100" >&2; return 2; fi
+    asus_da || { echo "shell-laptop: the charge limit needs asusctl" >&2; return 1; }
     if neu; then asusctl battery limit "$n" >/dev/null; else asusctl -c "$n" >/dev/null; fi
 }
 
 kbd_set() {
     case "$1" in off|low|med|high) ;; *) echo "shell-laptop: off|low|med|high" >&2; return 2 ;; esac
+    asus_da || { echo "shell-laptop: the keyboard light needs asusctl" >&2; return 1; }
     if neu; then asusctl leds set "$1" >/dev/null; else asusctl -k "$1" >/dev/null; fi
 }
 kbd_color() {
     local c="${1#\#}"
     [[ "$c" =~ ^[0-9a-fA-F]{6}$ ]] || { echo "shell-laptop: Farbe wie #8ab4f8" >&2; return 2; }
+    asus_da || { echo "shell-laptop: the keyboard color needs asusctl" >&2; return 1; }
     # 6.3.2+: aura effect static, davor aura static
     asusctl aura effect static -c "$c" >/dev/null 2>&1 || asusctl aura static -c "$c" >/dev/null
 }
@@ -109,16 +113,15 @@ caps() {
 }
 
 status() {
-    local pr=null pl='[]' gm=null gl='[]' gp=null ch=null
-    if profil_da; then pr="\"$(profil_get)\""; pl="$(profil_liste)"; fi
-    if gfx_da; then
-        gm="\"$(supergfxctl -g 2>/dev/null)\""; gl="$(gfx_liste)"
-        gp="$(supergfxctl -p 2>/dev/null | jq -R -s -c 'rtrimstr("\n")')"
-    fi
-    if charge_da; then ch="$(charge_get || echo null)"; fi
-    jq -cn --argjson caps "$(caps)" --argjson pr "$pr" --argjson pl "$pl" --argjson gm "$gm" --argjson gl "$gl" \
-        --argjson gp "$gp" --argjson ch "${ch:-null}" \
-        '{caps: $caps, profile: $pr, profiles: $pl, gfx: $gm, gfx_modes: $gl, gfx_pending: $gp, charge: $ch}'
+    # Texte der Programme nur über --arg ins JSON (Anführungszeichen in ihrer Ausgabe brechen sonst alles)
+    local hp=false pr="" pl='[]' hg=false gm="" gl='[]' gp="" ch=""
+    if profil_da; then hp=true; pr="$(profil_get)"; pl="$(profil_liste)"; fi
+    if gfx_da; then hg=true; gm="$(supergfxctl -g 2>/dev/null)"; gl="$(gfx_liste)"; gp="$(supergfxctl -p 2>/dev/null)"; fi
+    if charge_da; then ch="$(charge_get || true)"; fi
+    jq -cn --argjson caps "$(caps)" --argjson hp "$hp" --arg pr "$pr" --argjson pl "$pl" --argjson hg "$hg" --arg gm "$gm" \
+        --argjson gl "$gl" --arg gp "$gp" --arg ch "$ch" \
+        '{caps: $caps, profile: (if $hp then $pr else null end), profiles: $pl, gfx: (if $hg then $gm else null end),
+          gfx_modes: $gl, gfx_pending: (if $hg then $gp else null end), charge: ($ch | tonumber? // null)}'
 }
 
 # Einstellungen anwenden: nur was eingestellt ist (Standard: nichts ändern)

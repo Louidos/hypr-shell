@@ -180,6 +180,15 @@ Singleton {
     property var probes: ({})
     IpcHandler {
         target: "test"
+        // ist das Element mit dieser Probe gerade da und sichtbar? (direkt, ohne das gepufferte Log)
+        function visible(name: string): bool {
+            const p = ui.probes[name]
+            if (!p || !p.parent) return false
+            for (let it = p.parent; it; it = it.parent) if (!it.visible || it.opacity === 0) return false
+            return p.parent.width >= 4 && p.parent.height >= 4
+        }
+        // Endlage des offenen Panels mit Leuchten (glow = Grösse des Scheins, glowRoom = Platz im Fenster)
+        function area(name: string): string { return JSON.stringify(ui.panelAreas[name] || {}) }
         // aktuelle Design-Werte aus Theme (Karten, Pille, Leuchten, Abstände, Schrift) als JSON
         function theme(): string {
             const a = c => Math.round(Qt.color(c).a * 100) / 100   // Farben speichern 8 Bit: auf 0.01 genau

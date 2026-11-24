@@ -1036,18 +1036,20 @@ ipc dashboard open dashboard; sleep 2; bild design-karten-hell; ipc dashboard cl
 setze set theme.border.glow true theme.border.glow_size 16 theme.border.glow_opacity 0.5
 if th_warte '.glow == true and .glowSize == 16 and .glowOpacity == 0.5'; then echo "  ok: shell-set theme.border.glow true"
 else echo "  FEHLER: Leuchten: $(th)"; design_ok=0; fi
-ipc dashboard open dashboard; sleep 2; bild design-leuchten; ipc dashboard close; sleep 1
+# Leuchten: der Schein (16 px) bekommt im Fenster des Dashboards Platz, das Dashboard bleibt ganz auf
+# dem Bildschirm; ohne Leuchten kein Schein und kein zusätzlicher Platz (Lage über IPC, nicht über
+# das Log: Quickshell schreibt es gepuffert)
+ipc dashboard open dashboard; sleep 2; bild design-leuchten
+mit="$("$qs" -p "$cfg" ipc call test area dashboard 2>/dev/null)"
+ipc dashboard close; sleep 1
 setze set theme.border.glow false
 th_warte '.glow == false' || true
-ipc dashboard open dashboard; sleep 1; n="$(wc -l < "$T/qs.log")"; sleep 1.5; bild design-ohne-leuchten; ipc dashboard close; sleep 1
-# der Schein liegt rund um das Dashboard (16 px) und ganz auf dem Bildschirm; ohne Leuchten gibt es ihn nicht
-read -r gx gy gw gh < <(grep -o "hypr-shell-probe glow-dashboard .*" "$T/log-design-leuchten" | tail -n1 | awk '{print $3, $4, $5, $6}') || true
-read -r dx dy dw dh < <(grep -o "hypr-shell-probe overlay-dashboard .*" "$T/log-design-leuchten" | tail -n1 | awk '{print $3, $4, $5, $6}') || true
-if [ -n "${gh:-}" ] && [ -n "${dh:-}" ] && [ "$gw" -ge $((dw + 30)) ] && [ "$gy" -le $((dy - 15)) ] && [ "$gy" -ge 0 ] && [ $((gy + gh)) -le 1080 ]; then
-    echo "  ok: der Rand des Dashboards leuchtet rundum (Schein ${gw}x${gh}+${gx}+${gy} um ${dw}x${dh}+${dx}+${dy}), ganz auf dem Bildschirm"
-else echo "  FEHLER: Leuchten um das Dashboard: Schein ${gw:-?}x${gh:-?}+${gx:-?}+${gy:-?}, Dashboard ${dw:-?}x${dh:-?}+${dx:-?}+${dy:-?}"; design_ok=0; fi
-if ! tail -n "+$n" "$T/log-design-ohne-leuchten" | grep -q "probe glow-dashboard "; then echo "  ok: theme.border.glow false: kein Schein"
-else echo "  FEHLER: Schein trotz theme.border.glow false"; design_ok=0; fi
+ipc dashboard open dashboard; sleep 2; bild design-ohne-leuchten
+ohne="$("$qs" -p "$cfg" ipc call test area dashboard 2>/dev/null)"
+ipc dashboard close; sleep 1
+if jq -e --argjson o "${ohne:-null}" '.glow == 16 and .glowRoom == 16 and .y >= 16 and .y + .height + 16 <= 1080 and $o.glow == 0 and $o.glowRoom == 0 and .y == $o.y - 16' <<<"${mit:-null}" >/dev/null 2>&1; then
+    echo "  ok: der Rand des Dashboards leuchtet (16 px Schein mit Platz im Fenster, ganz auf dem Bildschirm); ohne Leuchten kein Schein"
+else echo "  FEHLER: Leuchten um das Dashboard: mit $mit, ohne $ohne"; design_ok=0; fi
 setze set theme.spacing.scale 1.5 theme.font.title_weight demibold theme.font.title_scale 1.25
 if th_warte '.pad10 == 15 and .panelPad == 27 and .gap == 15 and .titleWeight == 600 and .strongWeight == 500 and .titleScale == 1.25'; then
     echo "  ok: Abstände (Faktor 1.5) und Schrift (Titel halbfett, 1.25-fach) aus settings.json"

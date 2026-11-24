@@ -167,7 +167,8 @@ Scope {
                  : animation === "fade" ? (ww - fw) / 2 : body.x0
         const by = animation === "grow" ? (atBottom ? wh - fh - margin - insetBottom : margin + insetTop)
                  : animation === "fade" ? (wh - fh) / 2 : body.y0
-        return { screen: ov.screen.name, x: Math.round(wx + bx), y: Math.round(wy + by), width: Math.round(fw), height: Math.round(fh) }
+        return { screen: ov.screen.name, x: Math.round(wx + bx), y: Math.round(wy + by), width: Math.round(fw), height: Math.round(fh),
+                 glow: glass && Theme.glow ? Theme.glowSize : 0, glowRoom: glowRoom }
     }
     onAreaChanged: if (exclusive && name !== "") Ui.setPanelArea(name, area)
 

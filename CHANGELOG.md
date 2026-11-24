@@ -6,13 +6,15 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.11.0 – 2026-11-24
+
 ### Hinzugefügt
 - Neue Einstellungen für die Optik: Helligkeit und Farbe der Karten, leuchtender Rand um Panels, Dock und Fenster, Abstände, Schriftdicke und Grösse der Überschriften (Theme und Look, mit Live-Vorschau); ohne Änderung sieht alles aus wie bisher (#139)
 
 ### Geändert
-- Dashboard, Panel, App-Raster, Starter, Benachrichtigungen, Power-Menü, Spickzettel und Desktop-Widgets im einheitlichen neuen Look: Abstände, Rundungen, Karten und Schrift kommen überall aus Theme; das App-Raster ist nur so hoch wie nötig (darüber rollt es), die GPU-Kachel ohne Wert wird ausgeblendet (`desktop.resources.hide_empty`) und das CPU-Abzeichen im Tab Performance ist wahlweise gewellt oder rund (`dashboard.perf_badge`) (#142)
-- Die Startseite der Einstellungen ist neu: grosses Profilbild, Begrüssung mit Datum und Uhrzeit, Pillen, wechselnde Tipps (abschaltbar) und Kacheln zu den wichtigsten Seiten; die offene Seite in der Seitenleiste ist eine weiche graue Pille; Profile, Export und Import liegen jetzt unter System → „Backup“ (#141)
 - Neuer Standard-Look wie in der Vorlage: hellerer, leuchtender Rand, rundere Ecken, hellere Karten, mehr Abstand, fette und grössere Überschriften und stärkerer Blur; die Voreinstellungen minimal und gaming leuchten nicht (gaming mit weniger Blur). Selbst gesetzte Werte bleiben; wer früher „Glass“ gewählt hat, klickt die Voreinstellung einmal neu an (oder `shell-set reset theme` und `shell-set reset look`) (#140)
+- Die Startseite der Einstellungen ist neu: grosses Profilbild, Begrüssung mit Datum und Uhrzeit, Pillen, wechselnde Tipps (abschaltbar) und Kacheln zu den wichtigsten Seiten; die offene Seite in der Seitenleiste ist eine weiche graue Pille; Profile, Export und Import liegen jetzt unter System → „Backup“ (#141)
+- Dashboard, Panel, App-Raster, Starter, Benachrichtigungen, Power-Menü, Spickzettel und Desktop-Widgets im einheitlichen neuen Look: Abstände, Rundungen, Karten und Schrift kommen überall aus Theme; das App-Raster ist nur so hoch wie nötig (darüber rollt es), die GPU-Kachel ohne Wert wird ausgeblendet (`desktop.resources.hide_empty`) und das CPU-Abzeichen im Tab Performance ist wahlweise gewellt oder rund (`dashboard.perf_badge`) (#142)
 
 ### Behoben
 - Das Dock verdeckt das Dashboard und andere Flächen nicht mehr; es fährt weg, solange sie offen sind, und ist nach dem Schliessen sofort wieder da (einstellbar unter Dock → „When a panel is open“: hide, behind oder stay) (#138)

@@ -39,9 +39,11 @@ LUA
 }
 
 echo "== ohne Einträge: die bisherigen Kürzel"
-# seit 1.9.1 dazu: CTRL + SUPER + Escape (Tastatur zurück, Notfall)
+# seit 1.9.1 dazu: CTRL + SUPER + Escape (Tastatur zurück, Notfall); seit 1.10: SUPER + M minimiert,
+# SUPER + SHIFT + M holt zurück, Abmelden liegt auf CTRL + SUPER + M
 erwartet="ALT + Space
 CTRL + SUPER + Escape
+CTRL + SUPER + M
 CTRL + SUPER + Return
 Print
 SHIFT + Print
@@ -61,6 +63,7 @@ SUPER + N
 SUPER + Q
 SUPER + R
 SUPER + Return
+SUPER + SHIFT + M
 SUPER + SHIFT + V
 SUPER + Tab
 SUPER + Space
@@ -92,7 +95,7 @@ SUPER + $i
 SUPER + SHIFT + $i"; done
 erwartet="$(sort <<<"$erwartet")"
 std="$(binds '{}' | cut -f1)"
-pruefe '[ "$std" = "$erwartet" ]' "genau die bisherigen $(wc -l <<<"$erwartet") Kürzel (mit dem Notfall-Kürzel)"
+pruefe '[ "$std" = "$erwartet" ]' "genau die bisherigen $(wc -l <<<"$erwartet") Kürzel (mit Notfall-Kürzel und Minimieren)"
 [ "$std" = "$erwartet" ] || diff <(echo "$erwartet") <(echo "$std") | head
 pruefe '[ "$(binds "{\"weather\": {\"location\": \"Bern\"}}" | cut -f1)" = "$erwartet" ]' "settings.json ohne keybinds (v1.1): gleiche Kürzel"
 std_binds="$(binds "{}")"
@@ -146,12 +149,17 @@ b="$(binds '{"keybinds": {"files": "SUPER + Return"}}')"
 pruefe '[ "$(grep -c "^SUPER + Return	" <<<"$b")" = 1 ] && grep -qx "SUPER + Return	exec_cmd kitty" <<<"$b" && ! grep -q "nautilus" <<<"$b"' "von Hand doppelt eingetragen: die spätere Aktion verliert die Taste, Hyprland lädt ohne Fehler"
 echo '{"keybinds": {"files": "SUPER + Return"}}' > "$T/doppelt.json"
 meldung="$(HOME="$h" "$REPO/bin/shell-apply" --check "$T/doppelt.json" || true)"
-pruefe 'grep -q "^keybinds.files: SUPER + Q is already used by Terminal" <<<"$meldung" && grep -q "^keybinds.terminal: SUPER + Q is also used by File manager" <<<"$meldung"' "Meldung nennt beide"
+pruefe 'grep -q "^keybinds.files: SUPER + Return is already used by Terminal" <<<"$meldung" && grep -q "^keybinds.terminal: SUPER + Return is also used by File manager" <<<"$meldung"' "Meldung nennt beide"
 out="$(HOME="$h" "$REPO/bin/shell-set" keybinds.terminal "SUPER + SHIFT + 1" 2>&1 || true)"
 pruefe 'grep -q "SUPER + SHIFT + 1 is also used by Move window to workspace" <<<"$out"' "Konflikt mit einer Gruppe nennt die kollidierende Kombination ($out)"
 echo '{"keybinds": {"terminal": "SUPER + SHIFT + 1"}}' > "$T/gruppe.json"
 meldung="$(HOME="$h" "$REPO/bin/shell-apply" --check "$T/gruppe.json" || true)"
 pruefe 'grep -q "^keybinds.move_mod: SUPER + SHIFT + 1 is already used by Terminal" <<<"$meldung"' "… auch in der Meldung zur Gruppe ($(head -n1 <<<"$meldung"))"
+
+echo "== eigene Belegung aus früheren Versionen bleibt"
+# wer SUPER + Q selbst für das Terminal eingetragen hat, behält es; Schliessen bleibt auf SUPER + C
+b="$(binds '{"keybinds": {"terminal": "SUPER + Q"}}')"
+pruefe 'grep -qx "SUPER + Q	exec_cmd kitty" <<<"$b" && grep -q "^SUPER + C	close" <<<"$b" && [ -z "$(cut -f1 <<<"$b" | sort | uniq -d)" ]' "eigenes SUPER + Q fürs Terminal bleibt, Schliessen auf SUPER + C, nichts doppelt"
 
 echo "== feste Tasten (Lautstärke, Helligkeit, Medien)"
 fest_lua="$(grep -oE '^hl\.bind\("[^"]+"' config/hypr/hyprland.lua | sed 's/^hl\.bind("//; s/"$//' | sort)"

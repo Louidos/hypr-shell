@@ -864,6 +864,14 @@ BIN="$HOME/.local/bin"
 if hat hypr && hypr_laeuft; then hyprctl reload >/dev/null 2>&1 || true; fi
 if hat cursor && hypr_laeuft; then hyprctl setcursor "$S_theme_cursor_name" "$S_theme_cursor_size" >/dev/null 2>&1 || true; fi
 if hat waybar; then pkill -SIGUSR2 -x waybar 2>/dev/null || true; fi
+# Programme mit eigener Titelleiste (GTK/GNOME, CSD) zeigen dieselben drei Knöpfe auf derselben Seite
+# wie die Titelleiste von hypr-shell (fenster.knoepfe.*); Minimieren dort geht über shell-window
+if command -v gsettings >/dev/null 2>&1 && [ "${S_fenster_titelleiste:-an}" != aus ]; then
+    seite="${S_fenster_knoepfe_seite:-auto}"
+    [ "$seite" = auto ] && { [ "${S_fenster_knoepfe_stil:-windows}" = mac ] && seite=links || seite=rechts; }
+    if [ "$seite" = links ]; then layout="close,minimize,maximize:"; else layout=":minimize,maximize,close"; fi
+    gsettings set org.gnome.desktop.wm.preferences button-layout "$layout" >/dev/null 2>&1 || true
+fi
 if hat hypridle && pgrep -x hypridle >/dev/null 2>&1; then
     pkill -x hypridle 2>/dev/null || true
     (sleep 0.3; setsid -f hypridle >/dev/null 2>&1) &

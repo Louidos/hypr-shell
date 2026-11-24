@@ -262,6 +262,9 @@ Scope {
         readBadge(it)
         const w = it.windows || []
         if (w.length === 0) { launch(it); return }
+        // alle Fenster minimiert: das zuletzt minimierte zurück an seine Stelle
+        const sichtbar = w.filter(t => !isMinimized(t))
+        if (sichtbar.length === 0) { restore(w[w.length - 1]); return }
         // läuft: Fenster nach vorn holen; ist eines davon schon vorn, zum nächsten
         let a = -1
         for (let i = 0; i < w.length; i++) if (w[i].activated) { a = i; break }
@@ -286,6 +289,33 @@ Scope {
         launch(it)
     }
     // "Close all": Fenster normal schliessen (wie Klick aufs X), nie Prozesse beenden
+    // ---- minimierte Fenster (shell-window: besonderer Arbeitsbereich special:minimiert)
+    readonly property var minimized: {
+        if (!Ui.hyprland) return []
+        const l = Hyprland.toplevels.values, r = []
+        for (let i = 0; i < l.length; i++)
+            if (l[i] && l[i].workspace && l[i].workspace.name === "special:minimiert" && l[i].wayland) r.push(l[i].wayland)
+        return r
+    }
+    function isMinimized(t) { return minimized.indexOf(t) >= 0 }
+    function addressOf(t) {
+        const l = Ui.hyprland ? Hyprland.toplevels.values : []
+        for (let i = 0; i < l.length; i++) if (l[i] && l[i].wayland === t) { const a = String(l[i].address); return a.indexOf("0x") === 0 ? a : "0x" + a }
+        return ""
+    }
+    function restore(t) { const a = addressOf(t); if (a !== "") Quickshell.execDetached([Settings.bin + "shell-window", "restore", a]) }
+    // Programm mit eigener Titelleiste (CSD) bittet ums Minimieren: wie der Knopf der Titelleiste;
+    // Verschieben eines Fensters (auch ins Minimiert-Versteck) frischt die Liste auf
+    Connections {
+        target: Ui.hyprland && dock.on ? Hyprland : null
+        function onRawEvent(event) {
+            if (event.name === "minimized") {
+                const p = String(event.data || "").split(",")
+                if (p.length === 2 && p[1] === "1") Quickshell.execDetached([Settings.bin + "shell-window", "minimize", p[0].indexOf("0x") === 0 ? p[0] : "0x" + p[0]])
+            } else if (event.name === "movewindowv2" || event.name === "movewindow") refreshLater.restart()
+        }
+    }
+
     // lebt das Fenster noch? (ein geschlossenes Toplevel darf nirgends mehr benutzt werden)
     function alive(t) { return !!t && toplevels.indexOf(t) >= 0 }
     function closeAll(it) {

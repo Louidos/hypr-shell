@@ -51,16 +51,20 @@ local S = {
         touchpad = { natural_scroll = false, tap_to_click = true },
     },
     monitors = { scale = "auto", outputs = {} },
+    fenster = { titelleiste = "an", knoepfe = { stil = "windows", seite = "auto" },
+        titelleiste_ausnahmen = { "org.gnome.*", "firefox", "chromium", "google-chrome", "code", "code-oss", "vesktop",
+            "discord", "steam", "steam_app_[0-9]+", "gamescope", "mpv", "vlc", "celluloid" } },
     apps = { terminal = "kitty", files = "nautilus", browser = "firefox", launcher = "builtin" },
     keybinds = {
         terminal = "SUPER + Return", files = "SUPER + E", browser = "", launcher = "SUPER + R",
         launcher_alt = "ALT + Space", launcher_space = "SUPER + Space", launcher_search = "CTRL + SUPER + Return",
         close = "SUPER + Q", close_alt = "SUPER + C", float = "SUPER + V", fullscreen = "SUPER + F",
+        minimize = "SUPER + M", restore = "SUPER + SHIFT + M",
         focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
         settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1", missa_chat = "SUPER + I", missa_voice = "SUPER + SHIFT + I", dock_focus = "SUPER + B", emergency = "CTRL + SUPER + Escape",
-        lock = "SUPER + L", exit = "SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
+        lock = "SUPER + L", exit = "CTRL + SUPER + M", screenshot_region = "Print", screenshot_screen = "SHIFT + Print",
         custom = {},
     },
 }
@@ -175,6 +179,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd(bin .. "shell-waechter waybar -- waybar")
     hl.exec_cmd("hypridle")
     hl.exec_cmd(bin .. "shell-quickshell")
+    -- Titelleiste mit Fenster-Knöpfen: hyprbars über hyprpm laden (fehlt es: Hinweis, sonst nichts)
+    hl.exec_cmd(bin .. "shell-window titlebar")
     -- Verlauf der Zwischenablage (nur mit clipboard.enabled, prüft shell-clipboard selbst)
     hl.exec_cmd(bin .. "shell-clipboard daemon")
     -- Laptop: eingestellte Ladegrenze und Tastaturlicht anwenden (Standard: nichts ändern)
@@ -348,6 +354,77 @@ do
     end
 end
 
+------------------------------
+---- TITELLEISTE (hyprbars) ----
+------------------------------
+
+-- Schmale Glas-Titelleiste mit drei Knöpfen (offizielles Plugin hyprbars aus hyprland-plugins).
+-- Ein Paket legt das Plugin unter einem festen Pfad ab, sonst lädt hyprpm es beim Start
+-- (shell-window titlebar). Fehlt es, läuft alles ohne Knöpfe weiter: es gibt hl.plugin.hyprbars
+-- dann nicht und nichts hier wird ausgeführt (keine Fehlermeldung von Hyprland).
+local F = S.fenster or {}
+if F.titelleiste ~= "aus" and hl.plugin and hl.plugin.load then
+    for _, pfad in ipairs({ "/usr/lib/hyprland-plugins/hyprbars.so", "/usr/lib/hyprland-plugins/libhyprbars.so",
+                            "/usr/lib/hyprland/plugins/hyprbars.so", "/usr/lib/hyprbars.so" }) do
+        local f = io.open(pfad, "r")
+        if f then f:close(); pcall(hl.plugin.load, pfad); break end
+    end
+end
+if F.titelleiste ~= "aus" and hl.plugin and hl.plugin.hyprbars then
+    local stil = (F.knoepfe or {}).stil == "mac" and "mac" or "windows"
+    local seite = (F.knoepfe or {}).seite
+    if seite ~= "rechts" and seite ~= "links" then seite = stil == "mac" and "links" or "rechts" end
+    local T = S.theme or {}
+    local glas_farbe = (T.glass_color or "#2a2a2f"):gsub("^#", "")
+    local hyprctl = "hyprctl dispatch "
+    local maximieren = hyprctl .. [['hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })']]
+    hl.config({
+        plugin = {
+            hyprbars = {
+                enabled = true,
+                bar_height = 28,
+                bar_color = rgba(glas_farbe, math.max(0.55, tonumber(T.glass) or 0.55)),
+                col = { text = "rgba(e6e6e6ff)" },
+                bar_text_font = (T.font and T.font.ui) or "Inter",
+                bar_text_size = 11,
+                bar_text_weight = "medium",
+                bar_text_align = stil == "mac" and "center" or "left",
+                bar_buttons_alignment = seite == "links" and "left" or "right",
+                bar_padding = 12,
+                bar_button_padding = 8,
+                bar_blur = true,
+                bar_part_of_window = true,
+                bar_precedence_over_border = true,
+                icon_on_hover = stil == "mac",
+                on_double_click = maximieren,
+            },
+        },
+    })
+    -- Knöpfe (das Plugin legt sie von aussen nach innen an): Schliessen, Maximieren, Minimieren
+    local knoepfe = {
+        { farbe = stil == "mac" and "rgb(ff5f57)" or "rgba(e8112366)", symbol = stil == "mac" and "×" or "󰖭",
+          aktion = hyprctl .. "'hl.dsp.window.close()'" },
+        { farbe = stil == "mac" and "rgb(28c840)" or "rgba(ffffff1f)", symbol = stil == "mac" and "+" or "󰖯", aktion = maximieren },
+        { farbe = stil == "mac" and "rgb(febc2e)" or "rgba(ffffff1f)", symbol = stil == "mac" and "−" or "󰖰",
+          aktion = bin .. "shell-window minimize" },
+    }
+    for _, k in ipairs(knoepfe) do
+        hl.plugin.hyprbars.add_button({ bg_color = k.farbe, fg_color = stil == "mac" and "rgb(3a3a3a)" or "rgb(e6e6e6)",
+                                        size = stil == "mac" and 12 or 16, icon = k.symbol, action = k.aktion })
+    end
+    -- keine Titelleiste: Programme mit eigener (CSD) und Spiele/Videos (Liste), Vollbild, Dialoge,
+    -- Spiele und Videos laut Inhaltstyp; bei "nur-schwebend" auch keine bei gekachelten Fenstern
+    local l = {}
+    for _, c in ipairs(S.fenster.titelleiste_ausnahmen or {}) do if type(c) == "string" and c ~= "" then l[#l + 1] = c end end
+    local function ohne(name, match) hl.window_rule({ name = name, match = match, ["hyprbars:no_bar"] = true }) end
+    if #l > 0 then ohne("hypr-shell-bar-ausnahmen", { class = "^(" .. table.concat(l, "|") .. ")$" }) end
+    ohne("hypr-shell-bar-vollbild", { fullscreen = true })
+    ohne("hypr-shell-bar-dialog", { modal = true })
+    ohne("hypr-shell-bar-spiel", { content = "game" })
+    ohne("hypr-shell-bar-video", { content = "video" })
+    if F.titelleiste == "nur-schwebend" then ohne("hypr-shell-bar-gekachelt", { float = false }) end
+end
+
 -- schwebende Hilfsfenster mittig
 hl.window_rule({
     name  = "hypr-shell-float-tools",
@@ -392,6 +469,8 @@ bind(K.launcher_space, hl.dsp.exec_cmd(launcher), "Panels: Launcher")
 bind(K.launcher_search, hl.dsp.exec_cmd(launcher), "Panels: App search")
 bind(K.float,        hl.dsp.window.float({ action = "toggle" }), "Windows: Floating / tiled")
 bind(K.fullscreen,   hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }), "Windows: Fullscreen")
+bind(K.minimize,     hl.dsp.exec_cmd(bin .. "shell-window minimize"), "Windows: Minimize")
+bind(K.restore,      hl.dsp.exec_cmd(bin .. "shell-window restore"), "Windows: Restore last minimized")
 bind(K.exit,         hl.dsp.exit(), "System: Log out (quit Hyprland)")
 bind(K.lock,         hl.dsp.exec_cmd("pidof hyprlock || hyprlock"), "System: Lock screen")
 

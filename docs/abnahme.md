@@ -385,3 +385,13 @@ Prüfliste aller Flächen: Glas (graue Fläche aus `theme.glass_color`/`theme.gl
 | **Am echten Laptop** | | von Hand: Blur hinter allen Flächen sichtbar, weisser Rand, gleiche Ecken; helles und dunkles Hintergrundbild – Text bleibt lesbar; Steam-Spiel, mpv und GIMP undurchsichtig; `shell-look preset gaming` schaltet Blur und Transparenz ab, `shell-look preset glass` zurück |
 | Lokal ohne Quickshell/Hyprland | | nicht lokal getestet, CI entscheidet |
 
+## Fenster-Knöpfe und Minimieren (#120)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Titelleiste mit drei Knöpfen, Windows- und macOS-Stil, Ausnahmen, nur-schwebend, aus | Konfiguration automatisch (`tests/fenster.sh` mit hyprbars-Attrappe); ohne Plugin keine Fehler (`tests/hyprland-echt.sh` mit echtem Hyprland) |
+| Minimieren ins Versteck, Fokus aufs nächste Fenster, Zurückholen an die alte Stelle | automatisch (`tests/fenster.sh` mit hyprctl-Attrappe) |
+| **Am echten Laptop** | von Hand: `./install.sh` richtet hyprbars ein (Paket oder hyprpm); neues kitty-Fenster hat oben rechts drei funktionierende Knöpfe; Dateimanager (Nautilus) zeigt in seiner eigenen Leiste Minimieren/Maximieren/Schliessen, Minimieren legt ihn ins Dock; Klick im Dock holt ihn an die alte Stelle; `shell-set fenster.knoepfe.stil mac` wirkt sofort (Punkte links); Steam-Spiel und mpv im Vollbild ohne Titelleiste; nach `hyprpm` absichtlich deaktiviert: Hyprland läuft, Meldung „Window buttons are off“ |
+| Doppelklick auf die Titelleiste maximiert zwischen Leiste und Dock | von Hand (hyprbars `on_double_click`) |
+| Lokal ohne Hyprland/Plugin | nicht lokal getestet, CI entscheidet; das Plugin selbst ist in der CI nicht installiert |
+

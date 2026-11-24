@@ -4,7 +4,7 @@
 d="$(dirname "$(readlink -f "$0")")"
 if [ "${1:-}" = -j ]; then
     case "$2" in
-        clients) cat "$d/hyprctl-clients.json" ;;
+        clients) cat "${HYPRCTL_CLIENTS:-$d/hyprctl-clients.json}" ;;
         workspaces) cat "$d/hyprctl-workspaces.json" ;;
         monitors) cat "$d/hyprctl-monitors.json" ;;
         activeworkspace) echo '{"id": 1, "name": "1"}' ;;

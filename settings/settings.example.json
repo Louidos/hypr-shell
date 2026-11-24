@@ -69,6 +69,29 @@
       "speed": "normal"
     }
   },
+  "fenster": {
+    "titelleiste": "an",
+    "knoepfe": {
+      "stil": "windows",
+      "seite": "auto"
+    },
+    "titelleiste_ausnahmen": [
+      "org.gnome.*",
+      "firefox",
+      "chromium",
+      "google-chrome",
+      "code",
+      "code-oss",
+      "vesktop",
+      "discord",
+      "steam",
+      "steam_app_[0-9]+",
+      "gamescope",
+      "mpv",
+      "vlc",
+      "celluloid"
+    ]
+  },
   "theme": {
     "colors": "auto",
     "accent": "#8ab4f8",
@@ -391,6 +414,8 @@
     "close_alt": "SUPER + C",
     "float": "SUPER + V",
     "fullscreen": "SUPER + F",
+    "minimize": "SUPER + M",
+    "restore": "SUPER + SHIFT + M",
     "focus_left": "SUPER + left",
     "focus_right": "SUPER + right",
     "focus_up": "SUPER + up",
@@ -414,7 +439,7 @@
     "missa_voice": "SUPER + SHIFT + I",
     "emergency": "CTRL + SUPER + Escape",
     "lock": "SUPER + L",
-    "exit": "SUPER + M",
+    "exit": "CTRL + SUPER + M",
     "screenshot_region": "Print",
     "screenshot_screen": "SHIFT + Print",
     "custom": []

@@ -23,6 +23,14 @@ Maustaste verschiebt bzw. vergrössert Fenster, `SUPER + V` schaltet schwebend/g
 | App-Suche | `SUPER + R`, `SUPER + Space`, `ALT + Space` | zusätzlich `CTRL + SUPER + Enter` |
 | Vollbild | – | `SUPER + F` (neu, Hyprland-üblich) |
 
+## Was sich geändert hat (Fenster-Knöpfe)
+
+| Funktion | vorher | jetzt |
+| --- | --- | --- |
+| Fenster minimieren | – | `SUPER + M` |
+| Minimiertes Fenster zurückholen | – | `SUPER + SHIFT + M` |
+| Abmelden | `SUPER + M` | `CTRL + SUPER + M` |
+
 Wer ein Kürzel selbst geändert hat (`shell-set keybinds.…` oder Einstellungs-App → Keybinds),
 behält es auch nach einem Update. Hat jemand früher `SUPER + Q` ausdrücklich für das Terminal
 eingetragen, bleibt das so; Schliessen liegt dann nur auf `SUPER + C`.

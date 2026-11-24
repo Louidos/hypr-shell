@@ -55,6 +55,15 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `look.animations.enabled` | `true` | `true`, `false` | Animate windows, workspaces and layers | `shell-set look.animations.enabled false` |
 | `look.animations.speed` | `normal` | `slow`, `normal`, `fast` | How fast animations play | `shell-set look.animations.speed slow` |
 
+## fenster – fenster
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `fenster.titelleiste` | `an` | `an`, `aus`, `nur-schwebend` | Slim glass title bar with window buttons: an = on every normal window, aus = off, nur-schwebend = only floating windows (needs the hyprbars plugin) | `shell-set fenster.titelleiste aus` |
+| `fenster.knoepfe.stil` | `windows` | `windows`, `mac` | windows = minimize, maximize, close as quiet symbols; mac = red, yellow and green dots | `shell-set fenster.knoepfe.stil mac` |
+| `fenster.knoepfe.seite` | `auto` | `auto`, `rechts`, `links` | auto = right for windows style, left for mac style | `shell-set fenster.knoepfe.seite rechts` |
+| `fenster.titelleiste_ausnahmen` | `["org.gnome.*","firefox","chromium","google-chrome","code","code-oss","vesktop","discord","steam","steam_app_[0-9]+","gamescope","mpv","vlc","celluloid"]` | Liste von Texten | Window classes (regular expressions) that draw their own title bar (GNOME apps, browsers) or need all the space (games, videos) | `shell-set fenster.titelleiste_ausnahmen org.gnome.*,firefox,chromium,google-chrome,code,code-oss,vesktop,discord,steam,steam_app_[0-9]+,gamescope,mpv,vlc,celluloid,code` |
+
 ## theme – Farben, Glas, Schriften, Mauszeiger
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
@@ -340,6 +349,8 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.close_alt` | `SUPER + C` | Tasten wie `SUPER + Q`, leer = keine Taste | Second key to close the focused window | `shell-set keybinds.close_alt "SUPER + B"` |
 | `keybinds.float` | `SUPER + V` | Tasten wie `SUPER + Q`, leer = keine Taste | Switch the focused window between floating and tiled | `shell-set keybinds.float "SUPER + B"` |
 | `keybinds.fullscreen` | `SUPER + F` | Tasten wie `SUPER + Q`, leer = keine Taste | Fullscreen on/off for the focused window | `shell-set keybinds.fullscreen "SUPER + B"` |
+| `keybinds.minimize` | `SUPER + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Hide the window (it stays in the dock and in ALT + Tab) | `shell-set keybinds.minimize "SUPER + B"` |
+| `keybinds.restore` | `SUPER + SHIFT + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Bring back the window minimized last | `shell-set keybinds.restore "SUPER + B"` |
 | `keybinds.focus_left` | `SUPER + left` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the left | `shell-set keybinds.focus_left "SUPER + B"` |
 | `keybinds.focus_right` | `SUPER + right` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the right | `shell-set keybinds.focus_right "SUPER + B"` |
 | `keybinds.focus_up` | `SUPER + up` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window above | `shell-set keybinds.focus_up "SUPER + B"` |
@@ -363,7 +374,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.missa_voice` | `SUPER + SHIFT + I` | Tasten wie `SUPER + Q`, leer = keine Taste | Speak with Missa; press again to stop (only when Missa and talking are switched on) | `shell-set keybinds.missa_voice "SUPER + B"` |
 | `keybinds.emergency` | `CTRL + SUPER + Escape` | Tasten wie `SUPER + Q` (nicht leer) | Emergency: closes all shell panels, leaves the dock keyboard mode and any submap, focuses the window under the mouse | `shell-set keybinds.emergency "SUPER + B"` |
 | `keybinds.lock` | `SUPER + L` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock the screen | `shell-set keybinds.lock "SUPER + B"` |
-| `keybinds.exit` | `SUPER + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Leave Hyprland | `shell-set keybinds.exit "SUPER + B"` |
+| `keybinds.exit` | `CTRL + SUPER + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Leave Hyprland | `shell-set keybinds.exit "SUPER + B"` |
 | `keybinds.screenshot_region` | `Print` | Tasten wie `SUPER + Q`, leer = keine Taste | Select a region; saved and copied | `shell-set keybinds.screenshot_region "SUPER + B"` |
 | `keybinds.screenshot_screen` | `SHIFT + Print` | Tasten wie `SUPER + Q`, leer = keine Taste | Whole screen; saved and copied | `shell-set keybinds.screenshot_screen "SUPER + B"` |
 | `keybinds.custom` | `[]` | Liste von Einträgen mit `keys`, `command` | Own key combinations that run a command | `shell-set keybinds.custom '[{"keys":"SUPER + B","command":"firefox"}]'` |

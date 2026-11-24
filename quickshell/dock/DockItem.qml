@@ -39,6 +39,8 @@ Item {
     readonly property bool separator: kind === "separator"
     readonly property var windows: item ? item.windows : []
     readonly property bool running: windows.length > 0
+    // alle Fenster minimiert: Symbol und Punkt abgedunkelt
+    readonly property bool minimizedOnly: running && windows.every(t => dock.isMinimized(t))
     readonly property bool active: {
         for (let i = 0; i < windows.length; i++) if (windows[i] && windows[i].activated) return true
         return false
@@ -67,6 +69,8 @@ Item {
         visible: !di.separator
         width: di.s
         height: di.s
+        opacity: di.minimizedOnly ? 0.5 : 1
+        Behavior on opacity { NumberAnimation { duration: 200 } }
         // Hüpfen: von der Kante weg und zurück
         transform: Translate { id: hop }
         SequentialAnimation {
@@ -176,7 +180,7 @@ Item {
                 height: di.vertical ? len : thick
                 radius: Math.min(width, height) / 2
                 color: dock.indicatorColor
-                opacity: di.active ? 1 : 0.55
+                opacity: di.minimizedOnly ? 0.3 : di.active ? 1 : 0.55
                 Behavior on color { ColorAnimation { duration: 400 } }
             }
         }

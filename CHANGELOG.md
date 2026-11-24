@@ -13,6 +13,14 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Einheitlicher Glas-Look: grau durchsichtig, feiner weisser Rand und runde Ecken (14 px) überall – Leiste (jetzt schwebend), Dock, Panels, Menüs, Benachrichtigungen, rofi – auch an den Programmfenstern (leicht durchsichtig, Spiele, Videos und Bildbearbeitung undurchsichtig); bei hellem Hintergrundbild wird das Glas automatisch dunkler; Voreinstellungen glass, minimal und gaming mit Live-Vorschau (#119)
 - Abmelden liegt jetzt auf CTRL+SUPER+M (vorher SUPER+M, das jetzt minimiert); selbst gesetzte Kürzel bleiben (#120)
 
+### Behoben
+- Ein eigenes Kürzel auf einer fest belegten Taste (Lautstärke, Helligkeit, Medien) wird abgelehnt statt die Hyprland-Konfiguration zu stören (#88)
+- Bei einem Kürzel-Konflikt mit den Arbeitsflächen-Tasten nennt die Meldung die kollidierende Kombination (z. B. `SUPER + SHIFT + 1`) statt nur den Modifikator (#88)
+- `shell-set` stürzt nicht mehr ab, wenn in settings.json eine Gruppe ein einzelner Wert ist (z. B. `{"look": 5}`); Setzen ersetzt sie, Zurücksetzen entfernt sie (#90)
+- `shell-set` lehnt `nan` als Zahl ab, statt den Wert still zu löschen (#90)
+- Klarere Meldungen bei kaputter settings.json: eine leere Datei wird als leer gemeldet, ohne „jq: parse error“ und Dateipfad davor (#90)
+- `shell-set --help` und `shell-apply --help` zeigen keine überzählige Zeile aus dem Skript mehr (#90)
+
 ## 1.9.2 – 2026-11-24
 
 ### Behoben
@@ -79,12 +87,6 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Mit Missa sprechen und Antworten vorlesen lassen (SUPER+SHIFT+I), lokal mit whisper.cpp und piper, einschaltbar in den Einstellungen (#62)
 - Chat mit Missa direkt am Desktop (SUPER+I) und Missa-Karte im Dashboard, einschaltbar in den Einstellungen (#61)
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)
-
-### Behoben
-- `shell-set` stürzt nicht mehr ab, wenn in settings.json eine Gruppe ein einzelner Wert ist (z. B. `{"look": 5}`); Setzen ersetzt sie, Zurücksetzen entfernt sie
-- `shell-set` lehnt `nan` als Zahl ab, statt den Wert still zu löschen
-- Klarere Meldungen bei kaputter settings.json: eine leere Datei wird als leer gemeldet, ohne „jq: parse error“ und Dateipfad davor
-- `shell-set --help` und `shell-apply --help` zeigen keine überzählige Zeile aus dem Skript mehr
 
 ## 1.4.0 – 2026-11-23
 

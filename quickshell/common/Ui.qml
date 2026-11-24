@@ -11,13 +11,28 @@ Singleton {
 
     // ---- immer nur ein Panel offen: Name des offenen Panels (Overlay.name) oder ""
     property string panel: ""
-    function openPanel(name) { panel = name }
+    // angemeldete Panels (Overlay meldet sich an und ab): ein Name ohne Panel – z. B. Missa, solange
+    // es aus ist – darf Ui.panel nie besetzen, sonst nimmt das Dock keine Klicks mehr an
+    property var known: ({})
+    function registerPanel(name) { const k = Object.assign({}, known); k[name] = (k[name] || 0) + 1; known = k }
+    function unregisterPanel(name) {
+        const k = Object.assign({}, known)
+        if (k[name] > 1) k[name]--; else delete k[name]
+        known = k
+        if (!known[name] && panel === name) panel = ""
+    }
+    function openPanel(name) {
+        if (!name || !known[name]) { if (name) console.info("hypr-shell: kein Panel \"" + name + "\" – nichts geöffnet"); return }
+        panel = name
+    }
     function closePanel(name) { if (name === undefined || name === "" || panel === name) panel = "" }
     function togglePanel(name) { if (panel === name) closePanel(name); else openPanel(name) }
     // "shell-quickshell ipc shell current" nennt das offene Panel, "… shell close" schliesst es
     IpcHandler {
         target: "shell"
         function current(): string { return ui.panel }
+        // für Tests und den Notfall: ein Panel öffnen wie von innen (auch ein unbekannter Name)
+        function open(name: string): string { ui.openPanel(name); return ui.panel }
         function close(): void { ui.closePanel() }
         // shell-toggle meldet den Gaming-Modus (Dock ohne Animationen)
         function gaming(on: bool): void { ui.gaming = on }

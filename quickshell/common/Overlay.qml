@@ -93,6 +93,18 @@ Scope {
         }
     }
 
+    // als Panel anmelden (Ui.openPanel öffnet nur angemeldete Namen); verschwindet das Overlay, während
+    // es offen ist (z. B. Missa wird abgeschaltet), wird Ui.panel frei
+    Component.onCompleted: if (exclusive && name !== "") Ui.registerPanel(name)
+    Component.onDestruction: if (exclusive && name !== "") Ui.unregisterPanel(name)
+    // offen, aber kein Fenster zu sehen (Bildschirm abgesteckt, kein Bildschirm): nach 1.5 s zu, damit
+    // Ui.panel nicht hängen bleibt (das Dock nähme sonst keine Klicks mehr an)
+    Timer {
+        running: ov.open && !win.visible
+        interval: 1500
+        onTriggered: if (ov.open && !win.visible) ov.hide()
+    }
+
     IpcHandler {
         target: ov.name
         enabled: ov.ipc && ov.name !== ""

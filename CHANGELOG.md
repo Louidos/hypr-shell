@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Behoben
+- Dock und Leiste reagieren nach dem Schliessen eines Programms wieder zuverlässig: Fensterliste, Vorschau und Menü eines geschlossenen Programms gehen sofort zu, ein hängengebliebenes Panel blockiert keine Klicks mehr im Dock, und stürzen Leiste oder Oberfläche ab, starten sie von selbst neu (#117)
+
 ## 1.9.1 – 2026-11-23
 
 ### Behoben

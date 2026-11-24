@@ -284,9 +284,11 @@ Scope {
         launch(it)
     }
     // "Close all": Fenster normal schliessen (wie Klick aufs X), nie Prozesse beenden
+    // lebt das Fenster noch? (ein geschlossenes Toplevel darf nirgends mehr benutzt werden)
+    function alive(t) { return !!t && toplevels.indexOf(t) >= 0 }
     function closeAll(it) {
         const w = it ? (it.windows || []).slice() : []
-        for (let i = 0; i < w.length; i++) w[i].close()
+        for (let i = 0; i < w.length; i++) if (alive(w[i])) w[i].close()
     }
     function readBadge(it) {
         if (!it || !it.entry) return
@@ -493,6 +495,26 @@ Scope {
         }
         // für Tests: Maus n-mal über das erste Dock führen (Vergrösserung), Dauer in ms
         function sweep(n: int): int { return dock.windows.length > 0 ? dock.windows[0].sweep(n) : -1 }
+        // für Tests: Fensterliste des n-ten Eintrags öffnen; Zustand des Popups und Verweise auf
+        // geschlossene Fenster ("windows:2:0" = Fensterliste, 2 Zeilen, 0 tote Verweise)
+        function openList(index: int): bool {
+            const w = dock.windows.length > 0 ? dock.windows[0] : null
+            const m = dock.model(dock.screens[0] || null)
+            if (!w || index >= m.length) return false
+            w.windowList(w.byKey[m[index].key], w.contentItem)
+            return w.popupMode === "windows"
+        }
+        function openMenu(index: int): bool {
+            const w = dock.windows.length > 0 ? dock.windows[0] : null
+            const m = dock.model(dock.screens[0] || null)
+            if (!w || index >= m.length) return false
+            w.menu(w.byKey[m[index].key], w.contentItem)
+            return w.popupMode === "menu"
+        }
+        function popup(): string {
+            const w = dock.windows.length > 0 ? dock.windows[0] : null
+            return w ? (w.popupMode || "none") + ":" + w.popupRows.length + ":" + w.staleRefs() + ":" + (w.inputOn ? "input" : "noinput") : ""
+        }
         function badge(index: int): int { const m = dock.model(dock.screens[0] || null); return index < m.length ? dock.badgeFor(m[index]) : 0 }
     }
 }

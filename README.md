@@ -507,6 +507,7 @@ automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelte
 | `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
+| `shell-waechter <name> -- <befehl>` | hält Leiste und Oberfläche am Laufen: nach einem Absturz Neustart (höchstens 5-mal in 2 Minuten, dann Benachrichtigung); `shell-waechter stop <name>` beendet ohne Neustart |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |
 | `shell-clipboard list\|paste\|delete\|clear …` | Verlauf der Zwischenablage |
 | `shell-osd volume\|mic\|brightness\|kbd …` | Lautstärke/Helligkeit ändern und anzeigen |

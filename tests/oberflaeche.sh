@@ -614,6 +614,47 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
     for _ in $(seq 1 30); do dk items | grep -q '\*1' || break; sleep 0.3; done
     if ! dk items | grep -q '\*1'; then echo "  ok: geschlossenes Fenster verschwindet wieder"
     else echo "  FEHLER: geschlossenes Fenster bleibt"; dock_ok=0; fi
+    # ---- Schliessen bei offener Fensterliste und offenem Menü; viele Male öffnen und schliessen.
+    # Danach darf kein Verweis auf ein geschlossenes Fenster übrig sein und das Dock nimmt Klicks an.
+    fenster() { "$qs" -p "$T/fenster.qml" >> "$T/fenster.log" 2>&1 & echo "$!"; }
+    lauf_index() { dk items | tr ',' '\n' | grep -n "\*$1\$" | head -n1 | cut -d: -f1; }
+    f1="$(fenster)"; f2="$(fenster)"; pids+=("$f1" "$f2")
+    for _ in $(seq 1 40); do [ -n "$(lauf_index 2)" ] && break; sleep 0.25; done
+    i="$(lauf_index 2)"
+    if [ -n "$i" ] && [ "$(dk openList $((i - 1)))" = true ] && [[ "$(dk popup)" == windows:2:0:* ]]; then
+        kill "$f2" 2>/dev/null
+        for _ in $(seq 1 8); do [[ "$(dk popup)" == none:* ]] && break; sleep 0.125; done
+        if [[ "$(dk popup)" == none:0:0:input ]]; then echo "  ok: Fenster geschlossen bei offener Fensterliste: Liste zu, kein Verweis übrig (innert 1 s)"
+        else echo "  FEHLER: Fensterliste nach dem Schliessen: $(dk popup)"; dock_ok=0; fi
+    else
+        echo "  FEHLER: Fensterliste mit zwei Fenstern ging nicht auf ($(dk items), $(dk popup))"; dock_ok=0
+    fi
+    i="$(lauf_index 1)"
+    if [ -n "$i" ] && [ "$(dk openMenu $((i - 1)))" = true ]; then
+        kill "$f1" 2>/dev/null
+        for _ in $(seq 1 8); do [[ "$(dk popup)" == none:* ]] && break; sleep 0.125; done
+        if [[ "$(dk popup)" == none:0:0:input ]]; then echo "  ok: Programm geschlossen bei offenem Menü: Menü zu, kein Verweis übrig"
+        else echo "  FEHLER: Menü nach dem Schliessen: $(dk popup)"; dock_ok=0; fi
+    else
+        echo "  FEHLER: Menü ging nicht auf ($(dk items))"; dock_ok=0; kill "$f1" 2>/dev/null
+    fi
+    langsam=0; falsch=0
+    for n in $(seq 1 25); do
+        f="$(fenster)"; pids+=("$f")
+        for _ in $(seq 1 40); do dk items | grep -q '\*1' && break; sleep 0.25; done
+        [ $((n % 5)) = 0 ] && { j="$(lauf_index 1)"; [ -n "$j" ] && dk openMenu $((j - 1)) >/dev/null; }
+        kill "$f" 2>/dev/null
+        weg=0
+        for _ in $(seq 1 8); do sleep 0.125; dk items | grep -q '\*1' || { weg=1; break; }; done
+        [ "$weg" = 1 ] || langsam=$((langsam + 1))
+        [[ "$(dk popup)" == none:0:0:input ]] || falsch=$((falsch + 1))
+    done
+    if [ "$langsam" = 0 ] && [ "$falsch" = 0 ]; then echo "  ok: 25-mal geöffnet und geschlossen: Liste stimmt jedes Mal innert 1 s, kein Verweis, Dock nimmt Klicks an"
+    else echo "  FEHLER: 25-mal öffnen/schliessen: $langsam-mal zu langsam, $falsch-mal Popup/Eingabe falsch ($(dk popup))"; dock_ok=0; fi
+    # ein Panel, das es nicht gibt (z. B. Missa aus), darf Ui.panel nie besetzen
+    "$qs" -p "$cfg" ipc call shell open missa-gibt-es-nicht >/dev/null 2>&1
+    if [ -z "$(offen)" ] && [[ "$(dk popup)" == *:input ]]; then echo "  ok: unbekanntes Panel besetzt Ui.panel nicht, Dock nimmt weiter Klicks an"
+    else echo "  FEHLER: Ui.panel = \"$(offen)\" nach unbekanntem Panel"; dock_ok=0; "$qs" -p "$cfg" ipc call shell close >/dev/null 2>&1; fi
     # ---- Bedienung: Menü, Ziehen, Lösen, Tastatur, Zähler, kaputte Liste
     m="$(dk menu 2)"
     if [ "$m" = "New window|New Private Window|Remove from Dock" ]; then echo "  ok: Rechtsklick-Menü mit den Desktop-Aktionen ($m)"
@@ -866,7 +907,7 @@ if ! kill -0 "$qspid" 2>/dev/null; then
     exit 1
 fi
 if grep -E "ERROR|TypeError|ReferenceError|is not a type|is not installed|Cannot assign|Unable to assign|Type error|SyntaxError|failed to load" "$T/qs.log" \
-    | grep -vE "Failed to connect to|dbus|DBus|org\.freedesktop|polkit|pipewire|Pipewire|upower|UPower|notification server|NetworkManager|bluez|Bluez|mpris"; then
+    | grep -vE "Failed to connect to|dbus|DBus|org\.freedesktop|polkit|pipewire|Pipewire|upower|UPower|notification server|NetworkManager|bluez|Bluez|mpris|quickshell\.wayland\.buffer\.dmabuf"; then
     echo "FEHLER: QML-Fehler im Log (siehe oben)"
     exit 1
 fi

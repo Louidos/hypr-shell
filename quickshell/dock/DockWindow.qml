@@ -254,13 +254,45 @@ PanelWindow {
     property Item popupTarget: null
     property var popupRows: []
     property string popupMode: ""
+    // Eintrag, zu dem das Popup gehört, und wie viele Fenster er beim Öffnen hatte
+    property string popupKey: ""
+    property int popupWindows: 0
     readonly property bool popupOpen: popupMode !== ""
-    function openPopup(target, mode, rows) {
+    function openPopup(target, mode, rows, key) {
         if (!rows || rows.length === 0) { closePopup(); return }
         popupTarget = target; popupRows = rows; popupMode = mode
+        popupKey = key || ""
+        popupWindows = key && byKey[key] ? (byKey[key].windows || []).length : 0
         popup.selected = keyboard && mode === "menu" ? 0 : -1
     }
-    function closePopup() { popupMode = ""; popupRows = []; popupTarget = null }
+    function closePopup() { popupMode = ""; popupRows = []; popupTarget = null; popupKey = ""; popupWindows = 0 }
+    // Ein Programm wurde geschlossen (oder geöffnet): Fensterliste ohne geschlossene Fenster (unter
+    // zwei Fenstern zu), Menü eines Eintrags, dessen Fenster sich geändert haben, zu; das Symbol des
+    // Popups ist weg (nicht angeheftetes Programm beendet) → zu. Die Tastatur-Auswahl springt auf
+    // einen Eintrag, den es noch gibt. So bleibt kein Verweis auf ein geschlossenes Fenster übrig.
+    function pruneClosed() {
+        if (popupMode === "windows") {
+            const r = popupRows.filter(x => d.alive(x.toplevel))
+            if (r.length < 2) closePopup()
+            else if (r.length !== popupRows.length) popupRows = r
+        } else if (popupMode === "menu" && popupKey !== "") {
+            const it = byKey[popupKey]
+            if (!it || (it.windows || []).length !== popupWindows) closePopup()
+        }
+        if (keyboard && selectable.indexOf(selectedKey) < 0) selectedKey = selectable.length > 0 ? selectable[0] : ""
+    }
+    // nach jeder Änderung der Fenster (ToplevelManager) – erst wenn alle Bindungen den neuen Stand
+    // haben (Qt.callLater), sonst prüfte die Bereinigung noch die alte Liste
+    onEntriesChanged: Qt.callLater(win.pruneClosed)
+    Connections { target: win.d; function onToplevelsChanged() { Qt.callLater(win.pruneClosed) } }
+    onPopupTargetChanged: if (popupOpen && popupTarget === null) closePopup()
+    // für Tests: Verweise auf Fenster, die es nicht mehr gibt (muss immer 0 sein)
+    function staleRefs() {
+        let n = 0
+        for (let i = 0; i < popupRows.length; i++) if (popupRows[i].toplevel && !d.alive(popupRows[i].toplevel)) n++
+        if (popupKey !== "" && !byKey[popupKey]) n++
+        return n
+    }
     DockPopup {
         id: popup
         // eigener Name: im Popup heissen die Eigenschaften selbst "win" und "dock"
@@ -281,12 +313,13 @@ PanelWindow {
         onTriggered: win.closePopup()
     }
     function menu(item, target) {
-        openPopup(target, "menu", d.menuFor(item))
+        openPopup(target, "menu", d.menuFor(item), item ? item.key : "")
     }
     function windowList(item, target) {
-        const w = item ? (item.windows || []) : []
+        const w = item ? (item.windows || []).filter(t => d.alive(t)) : []
         if (w.length < 2) return
-        openPopup(target, "windows", w.map(t => ({ text: t.title || item.name, appIcon: item.icon, toplevel: t, run: () => t.activate() })))
+        openPopup(target, "windows", w.map(t => ({ text: t.title || item.name, appIcon: item.icon, toplevel: t,
+                                                    run: () => { if (d.alive(t)) t.activate() } })), item.key)
     }
     property var filesFor: null
     Process {

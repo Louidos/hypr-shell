@@ -17,6 +17,8 @@ Scope {
         function toggle(): void { Ui.toggleSettings("") }
         function close(): void { Ui.closeSettings() }
         function search(text: string): void { Ui.openSettings(""); Ui.settingsSearch = text }
+        // für Tests: die offene Seite
+        function page(): string { return Ui.settingsPage }
     }
 
     Overlay {

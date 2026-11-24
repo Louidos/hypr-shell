@@ -104,7 +104,8 @@ Scope {
         keyboardFocus: WlrKeyboardFocus.Exclusive
         leaveDelay: Settings.get("dashboard.close_on_leave", true) ? 350 : -1
         // von aussen geöffnet (z. B. Ui.openPanel): Start-Tab; Daten für About und Profil holen
-        onOpened: { if (dash.tabs.indexOf(dash.tab) < 0) dash.tab = dash.startTab; if (!aboutProc.running) aboutProc.running = true; if (!gamesProc.running) gamesProc.running = true }
+        onOpened: { if (Ui.dashboardTab !== "") { dash.tab = dash.tabs.indexOf(Ui.dashboardTab) >= 0 ? Ui.dashboardTab : dash.startTab; Ui.dashboardTab = "" }
+                    if (dash.tabs.indexOf(dash.tab) < 0) dash.tab = dash.startTab; if (!aboutProc.running) aboutProc.running = true; if (!gamesProc.running) gamesProc.running = true }
 
         content: Component {
             Item {

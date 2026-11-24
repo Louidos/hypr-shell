@@ -97,6 +97,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `theme.card.hover` | `0.14` | Zahl 0 … 0.5, Schritt 0.01 | Opacity of a card under the mouse | `shell-set theme.card.hover 0.15` |
 | `theme.card.border_opacity` | `0.12` | Zahl 0 … 1, Schritt 0.01 | Opacity of the fine outline around cards | `shell-set theme.card.border_opacity 0.13` |
 | `theme.pill.opacity` | `0.92` | Zahl 0.3 … 1, Schritt 0.01 | Opacity of the white pill of active tabs, buttons and switches | `shell-set theme.pill.opacity 0.93` |
+| `theme.pill.nav` | `soft` | `soft`, `white` | soft = lighter gray pill with bold text, white = white pill like tabs and switches | `shell-set theme.pill.nav white` |
 | `theme.spacing.scale` | `1.0` | Zahl 0.5 … 2.0, Schritt 0.05 | Factor for all gaps and paddings of panels, cards and lists | `shell-set theme.spacing.scale 1.05` |
 | `theme.spacing.panel` | `20` | ganze Zahl 0 … 48 px | Space between the edge of a glass panel (e.g. the dashboard) and its content | `shell-set theme.spacing.panel 21` |
 | `theme.spacing.card` | `16` | ganze Zahl 0 … 40 px | Space between the edge of a card and its content | `shell-set theme.spacing.card 17` |
@@ -313,6 +314,12 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `nightlight.schedule` | `false` | `true`, `false` | Switch the night light on and off at the times below (the panel toggle still works in between) | `shell-set nightlight.schedule true` |
 | `nightlight.from` | `20:00` | Text (Format geprüft) | Time the night light switches on, like 20:00 | `shell-set nightlight.from 20:00` |
 | `nightlight.to` | `07:00` | Text (Format geprüft) | Time the night light switches off, like 07:00 | `shell-set nightlight.to 07:00` |
+
+## settings – settings
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `settings.home.tips` | `true` | `true`, `false` | A new tip on the home page of the settings each time they open (the × on the tip turns them off) | `shell-set settings.home.tips false` |
 
 ## laptop – laptop
 

@@ -16,6 +16,10 @@ FocusScope {
 
     Connections {
         target: Ui
+        function onSettingsGo(page, key) {
+            if (key !== "") sc.go({ page: page, key: key })
+            else { search.input.text = ""; Ui.settingsPage = page }
+        }
         function onSettingsSearchChanged() { if (Ui.settingsSearch !== "") { search.input.text = Ui.settingsSearch; Ui.settingsSearch = "" } }
     }
     Component.onCompleted: if (Ui.settingsSearch !== "") { search.input.text = Ui.settingsSearch; Ui.settingsSearch = "" }
@@ -116,24 +120,34 @@ FocusScope {
                         required property var modelData
                         readonly property bool active: sc.page.id === modelData.id
                         width: nav.width
-                        height: 36
-                        radius: 18
-                        color: active ? Theme.pill : (hov.hovered ? Theme.cardHover : "transparent")
+                        height: 40
+                        radius: 14
+                        // aktiv: weiche hellere Pille mit fetter Schrift (theme.pill.nav = soft) oder weisse Pille
+                        color: active ? Theme.navPill : (hov.hovered ? Theme.cardHover : "transparent")
+                        border.width: active && !Theme.navWhite ? 1 : 0
+                        border.color: Theme.cardBorder
                         Behavior on color { ColorAnimation { duration: 140 } }
+                        // Markierung links an der aktiven Seite (wie die Vorlage)
+                        Rectangle {
+                            visible: navItem.active && !Theme.navWhite
+                            x: 0; anchors.verticalCenter: parent.verticalCenter
+                            width: 3; height: 18; radius: 1.5
+                            color: Theme.text
+                        }
                         Glyph {
                             id: navIcon
                             anchors { left: parent.left; leftMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                             width: 20
                             text: navItem.modelData.icon
                             size: 15
-                            color: navItem.active ? Theme.pillText : Theme.text
+                            color: navItem.active ? Theme.navPillText : Theme.text
                         }
                         Txt {
                             anchors { left: navIcon.right; leftMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
                             text: navItem.modelData.title
                             size: 13
-                            strong: navItem.active
-                            color: navItem.active ? Theme.pillText : Theme.text
+                            weight: navItem.active ? Theme.titleWeight : Theme.textWeight
+                            color: navItem.active ? Theme.navPillText : Theme.text
                         }
                         HoverHandler { id: hov; cursorShape: Qt.PointingHandCursor }
                         TapHandler { onTapped: Ui.settingsPage = navItem.modelData.id }
@@ -181,7 +195,7 @@ FocusScope {
                         width: topLabel.implicitWidth + 46
                         height: 36
                         radius: 18
-                        color: active ? Theme.pill : (topHov.hovered ? Theme.cardHover : "transparent")
+                        color: active ? Theme.navPill : (topHov.hovered ? Theme.cardHover : "transparent")
                         // die gewählte Seite sichtbar halten
                         onActiveChanged: if (active) topFlick.contentX = Math.max(0, Math.min(x - 40, topFlick.contentWidth - topFlick.width))
                         Glyph {
@@ -189,15 +203,15 @@ FocusScope {
                             anchors { left: parent.left; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                             text: topItem.modelData.icon
                             size: 14
-                            color: topItem.active ? Theme.pillText : Theme.text
+                            color: topItem.active ? Theme.navPillText : Theme.text
                         }
                         Txt {
                             id: topLabel
                             anchors { left: topIcon.right; leftMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
                             text: topItem.modelData.title
                             size: 13
-                            strong: topItem.active
-                            color: topItem.active ? Theme.pillText : Theme.text
+                            weight: topItem.active ? Theme.titleWeight : Theme.textWeight
+                            color: topItem.active ? Theme.navPillText : Theme.text
                         }
                         HoverHandler { id: topHov; cursorShape: Qt.PointingHandCursor }
                         TapHandler { onTapped: Ui.settingsPage = topItem.modelData.id }
@@ -262,13 +276,14 @@ FocusScope {
                 extra: modelData.id === "home" ? homeC : modelData.id === "monitors" ? monitorsC : modelData.id === "laptop" ? laptopC : modelData.id === "integrations" ? integrationsC
                      : modelData.id === "about" ? aboutC : modelData.id === "desktop" ? desktopC : modelData.id === "dock" ? dockC
                      : modelData.id === "look" || modelData.id === "theme" ? lookC : null
-                footer: modelData.id === "dock" ? dockItemsC
+                footer: modelData.id === "dock" ? dockItemsC : modelData.id === "system" ? backupC
                       : keys.length === 0 && ["home", "about", "monitors", "integrations"].indexOf(modelData.id) < 0 ? emptyC : null
                 Component.onCompleted: pageHolder.current = sp
             }
         }
     }
-    Component { id: homeC; HomePage { } }
+    Component { id: homeC; HomePage { about: sc.about } }
+    Component { id: backupC; BackupPage { } }
     Component { id: monitorsC; MonitorsPage { } }
     Component { id: aboutC; AboutPage { } }
     Component { id: laptopC; LaptopPage { } }

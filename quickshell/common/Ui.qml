@@ -100,6 +100,12 @@ Singleton {
         openPanel("settings")
     }
     function closeSettings() { closePanel("settings") }
+    // zu einer Seite (und einem Wert darauf) springen, z. B. von den Kacheln der Startseite
+    signal settingsGo(string page, string key)
+    function goSettings(page, key) { settingsGo(page || "home", key || "") }
+    // Dashboard mit einem bestimmten Tab öffnen (z. B. Wallpaper von der Startseite)
+    property string dashboardTab: ""
+    function openDashboard(tab) { dashboardTab = tab || ""; openPanel("dashboard") }
     function toggleSettings(page) { if (settingsOpen) closeSettings(); else openSettings(page) }
 
     // ---- Bearbeiten-Modus für die Desktop-Widgets (SUPER+ALT+W): Entwurf der Positionen

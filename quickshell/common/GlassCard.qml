@@ -4,7 +4,7 @@ import QtQuick
 // theme.card.hover) mit feiner Kontur (theme.card.border_opacity); leuchtet der Rand
 // (theme.border.glow), dann halb so stark wie das Glas.
 Rectangle {
-    id: gc
+    id: glassCard
     property bool hoverable: false
     readonly property bool hovered: hover.hovered
     radius: Theme.cardRadius
@@ -13,5 +13,5 @@ Rectangle {
     border.color: Theme.cardBorder
     Behavior on color { ColorAnimation { duration: 120 } }
     HoverHandler { id: hover; enabled: parent.hoverable }
-    Glow { radius: gc.radius; size: Theme.glowSize / 2; strength: Theme.glowOpacity / 2 }
+    Glow { radius: glassCard.radius; size: Theme.glowSize / 2; strength: Theme.glowOpacity / 2 }
 }

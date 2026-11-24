@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.10.0 – 2026-11-24
+
 ### Hinzugefügt
 - Fenster haben oben rechts Knöpfe zum Minimieren, Maximieren und Schliessen (umstellbar auf macOS-Stil); minimierte Fenster liegen im Dock und kommen per Klick an ihre alte Stelle zurück (SUPER+M, SUPER+SHIFT+M) (#120)
 - Mit ALT+Tab zwischen offenen Programmen wechseln, mit Vorschaubildern: zuletzt benutzte zuerst, ALT loslassen wechselt, Escape bricht ab, auch minimierte Fenster und andere Arbeitsflächen (#121)

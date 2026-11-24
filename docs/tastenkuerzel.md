@@ -28,6 +28,9 @@ Maustaste verschiebt bzw. vergrössert Fenster, `SUPER + V` schaltet schwebend/g
 | Funktion | vorher | jetzt |
 | --- | --- | --- |
 | Fenster wechseln mit Vorschau | – | `ALT + Tab`, rückwärts `ALT + SHIFT + Tab` |
+| Fenster andocken (Hälfte, Viertel, maximieren) | – | `SUPER + Pfeile` |
+| Fokus in eine Richtung | `SUPER + Pfeile` | `SUPER + ALT + Pfeile` |
+| Fenster-Modus schwebend/kacheln | – | `SUPER + SHIFT + T` |
 | Fenster minimieren | – | `SUPER + M` |
 | Minimiertes Fenster zurückholen | – | `SUPER + SHIFT + M` |
 | Abmelden | `SUPER + M` | `CTRL + SUPER + M` |

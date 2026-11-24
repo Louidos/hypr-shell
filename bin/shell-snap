@@ -1,0 +1,213 @@
+#!/usr/bin/env bash
+# Fenster an Rand und Ecken andocken (wie Windows-Snap) und der Fenster-Modus.
+#
+#   shell-snap key left|right|up|down   per Tastatur (SUPER + Pfeile): links/rechts = Hälfte, oben =
+#                                       maximieren, unten = wiederherstellen (bzw. minimieren); aus
+#                                       einer Hälfte heraus oben/unten = Viertel
+#   shell-snap drag-start|drag-end      vom Ziehen mit SUPER + linker Maustaste: verfolgt den
+#                                       Mauszeiger nur während des Ziehens, zeigt die Glas-Vorschau
+#                                       und setzt das Fenster beim Loslassen auf die Fläche
+#   shell-snap zone <x> <y>             für Tests: Zone und Fläche an dieser Stelle ("max 12 42 1896 1026")
+#   shell-snap rect <zone> [monitor]    für Tests: Fläche einer Zone (max, left, right, tl, tr, bl, br)
+#   shell-snap modus [schwebend|kacheln|toggle]   Fenster-Modus setzen (wirkt sofort, auch auf offene Fenster)
+#
+# Nutzbare Fläche = Bildschirm ohne Leiste und Dock (von Hyprland reserviert) und ohne die Abstände
+# look.gaps.*; Zahlen in logischen Pixeln (Skalierung und Drehung eingerechnet).
+# shellcheck disable=SC2016 # jq-Ausdrücke mit $variablen
+set -uo pipefail
+fehlt() { echo "shell-snap: $1" >&2; exit 2; }
+hat() { command -v "$1" >/dev/null 2>&1; }
+hat jq || fehlt "jq fehlt"
+HIER="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+RUN="${XDG_RUNTIME_DIR:-/tmp}/hypr-shell"
+STAND="$RUN/snap.json"          # {adresse: {zone, at, size}} – angedockte Fenster und ihre alte Grösse
+mkdir -p "$RUN"
+[ -s "$STAND" ] || echo '{}' > "$STAND"
+EFF="$HOME/.local/share/hypr-shell/settings.effective.json"
+wert() { jq -r "$1 // empty" "$EFF" 2>/dev/null; }
+GO="$(wert '.look.gaps.outer')"; GO="${GO:-12}"
+GI="$(wert '.look.gaps.inner')"; GI="${GI:-6}"
+RAND="$(wert '.andocken.rand')"; RAND="${RAND:-8}"
+ECKE="$(wert '.andocken.ecke')"; ECKE="${ECKE:-60}"
+
+hypr_da() { hat hyprctl && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; }
+dsp() { hyprctl dispatch "$1" >/dev/null 2>&1; }
+merke() { local t; t="$(mktemp "$STAND.XXXX")"; jq "$@" "$STAND" > "$t" && mv -f "$t" "$STAND"; }
+ui() { "$HIER/shell-quickshell" ipc snap "$@" >/dev/null 2>&1; }
+
+# jq-Bibliothek: Bildschirme logisch, nutzbare Fläche, Zonen, Zone an einem Punkt
+JQ='
+def logisch: (if (.scale // 1) > 0 then (.scale // 1) else 1 end) as $s
+  | ((.transform // 0) % 2 == 1) as $quer
+  | {name, x: (.x // 0), y: (.y // 0),
+     w: ((if $quer then .height else .width end) / $s), h: ((if $quer then .width else .height end) / $s),
+     r: (.reserved // [0, 0, 0, 0])};
+def nutzbar($go): {x: (.x + .r[0] + $go), y: (.y + .r[1] + $go), w: (.w - .r[0] - .r[2] - 2 * $go), h: (.h - .r[1] - .r[3] - 2 * $go)};
+def zone($u; $gi; $z):
+  (($u.w - $gi) / 2) as $hw | (($u.h - $gi) / 2) as $hh
+  | {max: [$u.x, $u.y, $u.w, $u.h],
+     left: [$u.x, $u.y, $hw, $u.h], right: [$u.x + $hw + $gi, $u.y, $hw, $u.h],
+     tl: [$u.x, $u.y, $hw, $hh], tr: [$u.x + $hw + $gi, $u.y, $hw, $hh],
+     bl: [$u.x, $u.y + $hh + $gi, $hw, $hh], br: [$u.x + $hw + $gi, $u.y + $hh + $gi, $hw, $hh]}[$z]
+  | map(floor);
+# grenzt an der Kante $k ein anderer Bildschirm an? (dann dort kein Andocken, das Fenster wechselt)
+def nachbar($alle; $m; $k):
+  any($alle[] | select(.name != $m.name);
+      if $k == "left" then (.x + .w >= $m.x - 1 and .x + .w <= $m.x + 1 and .y < $m.y + $m.h and .y + .h > $m.y)
+      elif $k == "right" then (.x >= $m.x + $m.w - 1 and .x <= $m.x + $m.w + 1 and .y < $m.y + $m.h and .y + .h > $m.y)
+      elif $k == "top" then (.y + .h >= $m.y - 1 and .y + .h <= $m.y + 1 and .x < $m.x + $m.w and .x + .w > $m.x)
+      else (.y >= $m.y + $m.h - 1 and .y <= $m.y + $m.h + 1 and .x < $m.x + $m.w and .x + .w > $m.x) end);
+def zone_bei($alle; $px; $py; $rand; $ecke):
+  [$alle[] | select($px >= .x and $px < .x + .w and $py >= .y and $py < .y + .h)][0] as $m
+  | if $m == null then null else
+      ($px - $m.x) as $dx | ($m.x + $m.w - $px) as $dr | ($py - $m.y) as $dy | ($m.y + $m.h - $py) as $db
+      | (nachbar($alle; $m; "left") | not) as $l | (nachbar($alle; $m; "right") | not) as $r
+      | (nachbar($alle; $m; "top") | not) as $t | (nachbar($alle; $m; "bottom") | not) as $b
+      | (if $dx < $rand and $l then (if $dy < $ecke and $t then "tl" elif $db < $ecke and $b then "bl" else "left" end)
+         elif $dr < $rand and $r then (if $dy < $ecke and $t then "tr" elif $db < $ecke and $b then "br" else "right" end)
+         elif $dy < $rand and $t then (if $dx < $ecke and $l then "tl" elif $dr < $ecke and $r then "tr" else "max" end)
+         elif $db < $rand and $b then (if $dx < $ecke and $l then "bl" elif $dr < $ecke and $r then "br" else null end)
+         else null end) as $z
+      | if $z == null then null else {zone: $z, monitor: $m.name, m: $m} end
+    end;
+'
+monitore() { hyprctl -j monitors 2>/dev/null || echo '[]'; }
+
+# zone X Y -> "zone x y w h monitor" oder leer
+zone_an() {
+    monitore | jq -r --argjson px "$1" --argjson py "$2" --argjson rand "$RAND" --argjson ecke "$ECKE" \
+        --argjson go "$GO" --argjson gi "$GI" "$JQ"'
+        [.[] | logisch] as $alle | zone_bei($alle; $px; $py; $rand; $ecke)
+        | if . == null then empty else (.m | nutzbar($go)) as $u | zone($u; $gi; .zone) as $f
+          | "\(.zone) \($f | map(tostring) | join(" ")) \(.monitor)" end'
+}
+# rect ZONE [MONITOR] -> "x y w h"
+rect() {
+    monitore | jq -r --arg z "$1" --arg mon "${2:-}" --argjson go "$GO" --argjson gi "$GI" "$JQ"'
+        [.[] | logisch] as $alle | ([$alle[] | select(.name == $mon)][0] // $alle[0]) as $m
+        | if $m == null then empty else zone($m | nutzbar($go); $gi; $z) | map(tostring) | join(" ") end'
+}
+
+aktives() { (hyprctl -j activewindow 2>/dev/null || echo '{}'); }
+
+# Fenster (Adresse) auf die Fläche einer Zone setzen; alte Grösse merken (nur beim ersten Andocken)
+andocken() { # adresse zone monitor [alte-json]
+    local a="$1" z="$2" mon="$3" alt="${4:-}" x y w h c
+    read -r x y w h < <(rect "$z" "$mon") || return 1
+    [ -n "${h:-}" ] || return 1
+    c="${alt:-$(aktives)}"
+    if [ "$(jq -r --arg a "$a" 'has($a)' "$STAND")" != true ]; then
+        merke --arg a "$a" --argjson c "$c" '.[$a] = {zone: null, at: $c.at, size: $c.size, floating: $c.floating}'
+    fi
+    merke --arg a "$a" --arg z "$z" '.[$a].zone = $z'
+    [ "$(jq -r '.floating // false' <<<"$c")" = true ] || dsp "hl.dsp.window.float({ window = \"address:$a\", action = \"set\" })"
+    dsp "hl.dsp.window.resize({ window = \"address:$a\", x = $w, y = $h })"
+    dsp "hl.dsp.window.move({ window = \"address:$a\", x = $x, y = $y })"
+}
+# alte Grösse und Lage wiederherstellen (Wegziehen, SUPER + unten)
+zurueck() { # adresse [nur-grösse]
+    local a="$1" e
+    e="$(jq -c --arg a "$a" '.[$a] // empty' "$STAND")"
+    [ -n "$e" ] || return 1
+    dsp "hl.dsp.window.resize({ window = \"address:$a\", x = $(jq -r '.size[0]' <<<"$e"), y = $(jq -r '.size[1]' <<<"$e") })"
+    [ "${2:-}" = nur-groesse ] || dsp "hl.dsp.window.move({ window = \"address:$a\", x = $(jq -r '.at[0]' <<<"$e"), y = $(jq -r '.at[1]' <<<"$e") })"
+    [ "$(jq -r '.floating' <<<"$e")" = false ] && [ "${2:-}" != nur-groesse ] && dsp "hl.dsp.window.float({ window = \"address:$a\", action = \"unset\" })"
+    merke --arg a "$a" 'del(.[$a])'
+}
+
+taste() {
+    local r="$1" c a jetzt mon neu=""
+    hypr_da || fehlt "Hyprland läuft nicht"
+    c="$(aktives)"; a="$(jq -r '.address // empty' <<<"$c")"
+    [ -n "$a" ] || return 0
+    [ "$(jq -r '.fullscreen // 0' <<<"$c")" = 0 ] || [ "$(jq -r '.fullscreen // 0' <<<"$c")" = false ] || return 0
+    jetzt="$(jq -r --arg a "$a" '.[$a].zone // ""' "$STAND")"
+    mon="$( (hyprctl -j monitors 2>/dev/null || echo '[]') | jq -r --argjson id "$(jq -r '.monitor // 0' <<<"$c")" '[.[] | select(.id == $id)][0].name // empty')"
+    case "$r:$jetzt" in
+        left:left|left:tl|left:bl|right:right|right:tr|right:br) return 0 ;;
+        left:right) neu="" ;;              # aus der rechten Hälfte nach links: erst zurück
+        right:left) neu="" ;;
+        left:*) neu=left ;;
+        right:*) neu=right ;;
+        up:left) neu=tl ;;  up:right) neu="tr" ;;
+        up:bl) neu=left ;;  up:br) neu=right ;;
+        up:tl|up:tr|up:max) return 0 ;;
+        up:*) neu=max ;;
+        down:left) neu=bl ;;  down:right) neu=br ;;
+        down:tl) neu=left ;;  down:tr) neu=right ;;
+        down:max) zurueck "$a"; return 0 ;;
+        down:bl|down:br) return 0 ;;
+        down:) "$HIER/shell-window" minimize "$a"; return 0 ;;
+    esac
+    if [ -z "$neu" ]; then zurueck "$a"; return 0; fi
+    andocken "$a" "$neu" "$mon" "$c"
+}
+
+# ---- Ziehen: Mauszeiger nur verfolgen, solange gezogen wird (höchstens 60 s)
+drag_start() {
+    hypr_da || return 0
+    [ "$(wert '.andocken.enabled')" = false ] && return 0
+    local c a pos x y last="" z
+    c="$(aktives)"; a="$(jq -r '.address // empty' <<<"$c")"
+    [ -n "$a" ] || return 0
+    rm -f "$RUN/snap.stop"; echo "$c" > "$RUN/snap.fenster"
+    # Wegziehen aus einer angedockten Lage: alte Grösse zurück (wie Windows), Lage folgt der Maus
+    if [ "$(jq -r --arg a "$a" 'has($a)' "$STAND")" = true ]; then zurueck "$a" nur-groesse; fi
+    (
+        for _ in $(seq 1 1000); do
+            [ -f "$RUN/snap.stop" ] && break
+            pos="$(hyprctl -j cursorpos 2>/dev/null)" || break
+            x="$(jq -r '.x | floor' <<<"$pos")"; y="$(jq -r '.y | floor' <<<"$pos")"
+            z="$(zone_an "$x" "$y")"
+            if [ "$z" != "$last" ]; then
+                last="$z"; printf '%s\n' "$z" > "$RUN/snap.zone"
+                if [ -n "$z" ] && [ "$(wert '.andocken.vorschau')" != false ]; then
+                    read -r _ zx zy zw zh zm <<<"$z"; ui show "$zm" "$zx" "$zy" "$zw" "$zh"
+                else ui hide; fi
+            fi
+            sleep 0.06
+        done
+        ui hide
+    ) &
+    echo "$!" > "$RUN/snap.pid"
+}
+drag_end() {
+    local z a c
+    touch "$RUN/snap.stop"
+    [ -f "$RUN/snap.pid" ] && { wait "$(cat "$RUN/snap.pid")" 2>/dev/null || sleep 0.1; rm -f "$RUN/snap.pid"; }
+    ui hide
+    z="$(cat "$RUN/snap.zone" 2>/dev/null || true)"; rm -f "$RUN/snap.zone"
+    c="$(cat "$RUN/snap.fenster" 2>/dev/null || echo '{}')"; rm -f "$RUN/snap.fenster"
+    a="$(jq -r '.address // empty' <<<"$c")"
+    [ -n "$z" ] && [ -n "$a" ] || return 0
+    read -r zn _ _ _ _ zm <<<"$z"
+    andocken "$a" "$zn" "$zm" "$c"
+}
+
+modus() {
+    local ziel="${1:-toggle}" jetzt
+    jetzt="$(wert '.fenster.modus')"; jetzt="${jetzt:-schwebend}"
+    [ "$ziel" = toggle ] && { [ "$jetzt" = schwebend ] && ziel=kacheln || ziel=schwebend; }
+    case "$ziel" in schwebend|kacheln) ;; *) fehlt "unbekannter Modus: $ziel (schwebend, kacheln, toggle)" ;; esac
+    "$HIER/shell-set" fenster.modus "$ziel" >/dev/null || return 1
+    # offene Fenster sofort mitnehmen (neue folgen der Regel in hyprland.lua)
+    if hypr_da; then
+        local act="unset"; [ "$ziel" = schwebend ] && act="set"
+        (hyprctl -j clients 2>/dev/null || echo '[]') | jq -r '.[] | select(.workspace.id > 0 and .fullscreen == 0) | .address' \
+            | while read -r a; do dsp "hl.dsp.window.float({ window = \"address:$a\", action = \"$act\" })"; done
+        [ "$ziel" = schwebend ] && (hyprctl -j clients 2>/dev/null || echo '[]') | jq -r '.[] | select(.workspace.id > 0) | .address' \
+            | while read -r a; do dsp "hl.dsp.window.center({ window = \"address:$a\" })"; done
+    fi
+    echo "Fenster-Modus: $ziel"
+}
+
+case "${1:-}" in
+    key) case "${2:-}" in left|right|up|down) taste "$2" ;; *) fehlt "shell-snap key left|right|up|down" ;; esac ;;
+    drag-start) drag_start ;;
+    drag-end) drag_end ;;
+    zone) [ -n "${3:-}" ] || fehlt "shell-snap zone <x> <y>"; zone_an "$2" "$3" ;;
+    rect) [ -n "${2:-}" ] || fehlt "shell-snap rect <zone> [monitor]"; rect "$2" "${3:-}" ;;
+    modus|mode) modus "${2:-toggle}" ;;
+    ""|-h|--help|help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) fehlt "unbekannter Befehl: $1 (key, drag-start, drag-end, zone, rect, modus)" ;;
+esac

@@ -1,6 +1,6 @@
 -- Attrappe der Hyprland-Lua-API (Stand Wiki 0.55): kennt nur dokumentierte Funktionen.
 -- Ein Tippfehler in hyprland.lua (z. B. hl.dsp.windw.close) führt hier zu einem Fehler.
-local M = { aufrufe = {}, binds = {}, flags = {}, layer = {}, start = {}, submaps = {} }
+local M = { aufrufe = {}, binds = {}, flags = {}, layer = {}, start = {}, submaps = {}, neben = {} }
 
 local function streng(name, t)
     return setmetatable(t, {
@@ -53,7 +53,8 @@ local hl = {
     bind = function(keys, action, flags)
         if type(keys) ~= "string" or keys == "" then error("hl.bind: Tasten fehlen", 2) end
         if action == nil then error("hl.bind: Aktion fehlt für " .. keys, 2) end
-        for k in pairs(flags or {}) do
+        local f = flags or {}
+        for k in pairs(f) do
             if not bind_flags[k] then error("hl.bind: unbekannte Option " .. k, 2) end
         end
         -- Kürzel in einer Submap (hl.define_submap) zählen getrennt
@@ -61,6 +62,12 @@ local hl = {
         if M.submap then
             M.submaps[M.submap] = M.submaps[M.submap] or { binds = {}, flags = {} }
             ziel, zflags = M.submaps[M.submap].binds, M.submaps[M.submap].flags
+        end
+        -- ein zweites Kürzel auf derselben Taste, das nicht verbraucht bzw. beim Loslassen wirkt
+        -- (Hyprland erlaubt das, z. B. Andocken neben dem Ziehen), zählt als Nebenkürzel
+        if ziel[keys] and (f.non_consuming or f.release) and not M.submap then
+            M.neben[#M.neben + 1] = { keys = keys, action = action, flags = flags }
+            return
         end
         if ziel[keys] then error("hl.bind: doppelt belegt: " .. keys .. (M.submap and (" (Submap " .. M.submap .. ")") or ""), 2) end
         ziel[keys] = action

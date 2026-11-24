@@ -404,3 +404,14 @@ Prüfliste aller Flächen: Glas (graue Fläche aus `theme.glass_color`/`theme.gl
 | **Am echten Laptop** | von Hand: kurzes ALT+Tab springt zum zuletzt benutzten Fenster und man kann sofort tippen; ALT halten + mehrfach Tab, loslassen wechselt; Escape bricht ab; minimiertes Fenster und Fenster auf Arbeitsfläche 2 lassen sich holen; Leiste erscheint auf dem Bildschirm mit dem Mauszeiger; in einem Vollbild-Spiel ALT+Tab und zurück – nichts bleibt hängen (`shell-diag tastatur` zeigt danach keine Submap); öffnet in unter 150 ms auch mit 20 Fenstern (Vorschau aus: `shell-set switcher.previews false`) |
 | Lokal ohne Hyprland/Quickshell | nicht lokal getestet, CI entscheidet |
 
+## Fenster andocken (#122)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Zonen (oben maximiert, Hälften, Viertel) ohne Leiste/Dock, Skalierung, Hochformat, zwei Bildschirme | automatisch (`tests/andocken.sh`) |
+| SUPER + Pfeile (Hälfte, Viertel, maximieren, wiederherstellen, minimieren), Ziehen mit Beginn/Ende, Wegziehen | automatisch (`tests/andocken.sh` mit hyprctl-Attrappe) |
+| Fenster-Modus schwebend/kacheln ohne Neustart | automatisch |
+| **Am echten Laptop** | von Hand: kitty mit SUPER + linker Maustaste an den oberen Rand → Glas-Vorschau, beim Loslassen maximiert zwischen Leiste und Dock; an den linken/rechten Rand → genau halbe Breite; in eine Ecke → ein Viertel; wieder wegziehen → alte Grösse; SUPER + links, SUPER + oben → Viertel oben links; zweiter Monitor: an der gemeinsamen Kante kein Andocken; Spiel im Vollbild: keine Vorschau |
+| Ziehen an der hyprbars-Titelleiste | nicht unterstützt (das Plugin zieht selbst, es gibt kein Ereignis); offen |
+| Lokal ohne Hyprland | nicht lokal getestet, CI entscheidet |
+

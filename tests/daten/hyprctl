@@ -6,10 +6,10 @@ if [ "${1:-}" = -j ]; then
     case "$2" in
         clients) cat "${HYPRCTL_CLIENTS:-$d/hyprctl-clients.json}" ;;
         workspaces) cat "$d/hyprctl-workspaces.json" ;;
-        monitors) cat "$d/hyprctl-monitors.json" ;;
+        monitors) cat "${HYPRCTL_MONITORS:-$d/hyprctl-monitors.json}" ;;
         activeworkspace) echo '{"id": 1, "name": "1"}' ;;
         cursorpos) echo "${HYPRCTL_CURSOR:-{\"x\": 100, \"y\": 100\}}" ;;
-        activewindow) echo '{"class": "kitty", "title": "Terminal", "address": "0x55d3c0a1b2c0"}' ;;
+        activewindow) jq '.[0] | .title = "Terminal"' "${HYPRCTL_CLIENTS:-$d/hyprctl-clients.json}" ;;
         layers) echo '{"HEADLESS-1": {"levels": {"2": [{"namespace": "hypr-shell-dock"}, {"namespace": "waybar"}]}}}' ;;
         binds) cat "${HYPRCTL_BINDS:-$d/hyprctl-binds.json}" 2>/dev/null || echo '[]' ;;
         *) echo '{}' ;;

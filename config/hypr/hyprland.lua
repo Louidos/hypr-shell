@@ -51,7 +51,9 @@ local S = {
         touchpad = { natural_scroll = false, tap_to_click = true },
     },
     monitors = { scale = "auto", outputs = {} },
+    andocken = { enabled = true, rand = 8, ecke = 60, vorschau = true, animation = true },
     fenster = { titelleiste = "an", knoepfe = { stil = "windows", seite = "auto" },
+        modus = "schwebend",
         titelleiste_ausnahmen = { "org.gnome.*", "firefox", "chromium", "google-chrome", "code", "code-oss", "vesktop",
             "discord", "steam", "steam_app_[0-9]+", "gamescope", "mpv", "vlc", "celluloid" } },
     apps = { terminal = "kitty", files = "nautilus", browser = "firefox", launcher = "builtin" },
@@ -60,7 +62,9 @@ local S = {
         launcher_alt = "ALT + Space", launcher_space = "SUPER + Space", launcher_search = "CTRL + SUPER + Return",
         close = "SUPER + Q", close_alt = "SUPER + C", float = "SUPER + V", fullscreen = "SUPER + F",
         minimize = "SUPER + M", restore = "SUPER + SHIFT + M", switcher = "ALT + Tab", switcher_back = "ALT + SHIFT + Tab",
-        focus_left = "SUPER + left", focus_right = "SUPER + right", focus_up = "SUPER + up", focus_down = "SUPER + down",
+        focus_left = "SUPER + ALT + left", focus_right = "SUPER + ALT + right", focus_up = "SUPER + ALT + up", focus_down = "SUPER + ALT + down",
+        snap_left = "SUPER + left", snap_right = "SUPER + right", snap_up = "SUPER + up", snap_down = "SUPER + down",
+        window_mode = "SUPER + SHIFT + T",
         workspace_mod = "SUPER", move_mod = "SUPER + SHIFT", mouse_mod = "SUPER",
         dashboard = "SUPER + ALT + D", dashboard_alt = "SUPER + D", wallpaper = "SUPER + W", panel = "SUPER + A", notifications = "SUPER + N", edit_desktop = "SUPER + ALT + W",
         settings = "SUPER + U", power = "SUPER + Escape", clipboard = "SUPER + SHIFT + V", overview = "SUPER + Tab", cheatsheet = "SUPER + F1", missa_chat = "SUPER + I", missa_voice = "SUPER + SHIFT + I", dock_focus = "SUPER + B", emergency = "CTRL + SUPER + Escape",
@@ -330,6 +334,7 @@ blur_layer("hypr-shell-waybar",      "^waybar$")
 -- Quickshell-Flächen mit Glas; die grosse Uhr (hypr-shell-clock) bleibt ohne Blur
 blur_layer("hypr-shell-quickshell",  "^hypr-shell-(desktop|dashboard|panel|settings|launcher|notifications|osd|power|clipboard|overview|cheatsheet)$")
 blur_layer("hypr-shell-rofi",        "^rofi$")
+blur_layer("hypr-shell-snap",        "^hypr-shell-snap$")
 -- Dock: eigene Regel; Schatten und durchsichtige Ränder (unter 30 % Deckkraft) bleiben ohne Blur.
 -- Mit dock.blur = false gibt es die Regel nicht (kein Blur hinter dem Dock).
 if not (S.dock ~= nil and S.dock.blur == false) then
@@ -425,6 +430,12 @@ if F.titelleiste ~= "aus" and hl.plugin and hl.plugin.hyprbars then
     if F.titelleiste == "nur-schwebend" then ohne("hypr-shell-bar-gekachelt", { float = false }) end
 end
 
+-- Fenster-Modus (fenster.modus): schwebend = neue Fenster öffnen schwebend und mittig (wie Windows),
+-- kacheln = wie bisher automatisch gekachelt
+if S.fenster == nil or S.fenster.modus ~= "kacheln" then
+    hl.window_rule({ name = "hypr-shell-schwebend", match = { class = ".*" }, float = true, center = true })
+end
+
 -- schwebende Hilfsfenster mittig
 hl.window_rule({
     name  = "hypr-shell-float-tools",
@@ -491,6 +502,17 @@ bind(mit(K.workspace_mod, "mouse_up"),   hl.dsp.focus({ workspace = "e-1" }), "W
 
 -- SUPER + linke Maustaste ziehen, SUPER + rechte Maustaste Grösse ändern
 bind(mit(K.mouse_mod, "mouse:272"), hl.dsp.window.drag(),   "Windows: Move window (drag)", { mouse = true })
+-- Andocken beim Ziehen: Beginn und Ende des Ziehens (der Mauszeiger wird nur dazwischen verfolgt)
+if S.andocken == nil or S.andocken.enabled ~= false then
+    bind(mit(K.mouse_mod, "mouse:272"), hl.dsp.exec_cmd(bin .. "shell-snap drag-start"), "Windows: Snap while dragging", { non_consuming = true })
+    bind(mit(K.mouse_mod, "mouse:272"), hl.dsp.exec_cmd(bin .. "shell-snap drag-end"), "Windows: Snap when released", { release = true })
+end
+-- Andocken per Tastatur, Fenster-Modus umschalten
+bind(K.snap_left,   hl.dsp.exec_cmd(bin .. "shell-snap key left"), "Windows: Snap to the left half")
+bind(K.snap_right,  hl.dsp.exec_cmd(bin .. "shell-snap key right"), "Windows: Snap to the right half")
+bind(K.snap_up,     hl.dsp.exec_cmd(bin .. "shell-snap key up"), "Windows: Maximize / upper quarter")
+bind(K.snap_down,   hl.dsp.exec_cmd(bin .. "shell-snap key down"), "Windows: Restore / minimize / lower quarter")
+bind(K.window_mode, hl.dsp.exec_cmd(bin .. "shell-snap modus toggle"), "Windows: Floating / tiling mode")
 bind(mit(K.mouse_mod, "mouse:273"), hl.dsp.window.resize(), "Windows: Resize window (drag)", { mouse = true })
 
 -- Oberfläche (Quickshell): Dashboard, Panel, Einstellungs-App; SUPER + W öffnet den Tab Wallpaper.

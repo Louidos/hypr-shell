@@ -90,7 +90,15 @@
       "mpv",
       "vlc",
       "celluloid"
-    ]
+    ],
+    "modus": "schwebend"
+  },
+  "andocken": {
+    "enabled": true,
+    "rand": 8,
+    "ecke": 60,
+    "vorschau": true,
+    "animation": true
   },
   "theme": {
     "colors": "auto",
@@ -424,10 +432,15 @@
     "restore": "SUPER + SHIFT + M",
     "switcher": "ALT + Tab",
     "switcher_back": "ALT + SHIFT + Tab",
-    "focus_left": "SUPER + left",
-    "focus_right": "SUPER + right",
-    "focus_up": "SUPER + up",
-    "focus_down": "SUPER + down",
+    "snap_left": "SUPER + left",
+    "snap_right": "SUPER + right",
+    "snap_up": "SUPER + up",
+    "snap_down": "SUPER + down",
+    "window_mode": "SUPER + SHIFT + T",
+    "focus_left": "SUPER + ALT + left",
+    "focus_right": "SUPER + ALT + right",
+    "focus_up": "SUPER + ALT + up",
+    "focus_down": "SUPER + ALT + down",
     "workspace_mod": "SUPER",
     "move_mod": "SUPER + SHIFT",
     "mouse_mod": "SUPER",

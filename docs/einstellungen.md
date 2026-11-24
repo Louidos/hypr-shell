@@ -258,6 +258,15 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `clipboard.enabled` | `true` | `true`, `false` | Remember copied text and images (SUPER+SHIFT+V). Off: nothing is recorded | `shell-set clipboard.enabled false` |
 | `clipboard.max` | `50` | ganze Zahl 5 … 500 | How many copies the history keeps | `shell-set clipboard.max 55` |
 
+## switcher – switcher
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `switcher.enabled` | `true` | `true`, `false` | ALT + Tab shows all windows with previews, last used first; release ALT to switch | `shell-set switcher.enabled false` |
+| `switcher.scope` | `all` | `all`, `workspace` | all = every workspace and screen (and minimized windows), workspace = only the current workspace | `shell-set switcher.scope workspace` |
+| `switcher.previews` | `true` | `true`, `false` | Live picture of each window; off = icons only (faster on slow graphics) | `shell-set switcher.previews false` |
+| `switcher.size` | `medium` | `small`, `medium`, `large` | Size of the tiles | `shell-set switcher.size small` |
+
 ## nightlight – nightlight
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
@@ -351,6 +360,8 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.fullscreen` | `SUPER + F` | Tasten wie `SUPER + Q`, leer = keine Taste | Fullscreen on/off for the focused window | `shell-set keybinds.fullscreen "SUPER + B"` |
 | `keybinds.minimize` | `SUPER + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Hide the window (it stays in the dock and in ALT + Tab) | `shell-set keybinds.minimize "SUPER + B"` |
 | `keybinds.restore` | `SUPER + SHIFT + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Bring back the window minimized last | `shell-set keybinds.restore "SUPER + B"` |
+| `keybinds.switcher` | `ALT + Tab` | Tasten wie `SUPER + Q`, leer = keine Taste | Hold the modifier and press Tab: next window, release to switch; Esc cancels, Q or Delete closes the chosen window | `shell-set keybinds.switcher "SUPER + B"` |
+| `keybinds.switcher_back` | `ALT + SHIFT + Tab` | Tasten wie `SUPER + Q`, leer = keine Taste | Like Switch windows, in the other direction | `shell-set keybinds.switcher_back "SUPER + B"` |
 | `keybinds.focus_left` | `SUPER + left` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the left | `shell-set keybinds.focus_left "SUPER + B"` |
 | `keybinds.focus_right` | `SUPER + right` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the right | `shell-set keybinds.focus_right "SUPER + B"` |
 | `keybinds.focus_up` | `SUPER + up` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window above | `shell-set keybinds.focus_up "SUPER + B"` |

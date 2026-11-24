@@ -339,6 +339,12 @@
     "enabled": true,
     "max": 50
   },
+  "switcher": {
+    "enabled": true,
+    "scope": "all",
+    "previews": true,
+    "size": "medium"
+  },
   "nightlight": {
     "temperature": 4000,
     "schedule": false,
@@ -416,6 +422,8 @@
     "fullscreen": "SUPER + F",
     "minimize": "SUPER + M",
     "restore": "SUPER + SHIFT + M",
+    "switcher": "ALT + Tab",
+    "switcher_back": "ALT + SHIFT + Tab",
     "focus_left": "SUPER + left",
     "focus_right": "SUPER + right",
     "focus_up": "SUPER + up",

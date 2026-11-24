@@ -395,3 +395,12 @@ Prüfliste aller Flächen: Glas (graue Fläche aus `theme.glass_color`/`theme.gl
 | Doppelklick auf die Titelleiste maximiert zwischen Leiste und Dock | von Hand (hyprbars `on_double_click`) |
 | Lokal ohne Hyprland/Plugin | nicht lokal getestet, CI entscheidet; das Plugin selbst ist in der CI nicht installiert |
 
+## ALT + Tab (#121)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Kürzel, Submap mit Loslassen von ALT, Escape, Q/Entf, eigenes Kürzel | automatisch (`tests/umschalter.sh`) |
+| Leiste: zweites Fenster gewählt, Tab wählt weiter, Esc bricht ab, nach 5 s zu, nimmt nie die Tastatur | automatisch (`tests/oberflaeche.sh`, ohne Hyprland in Fenster-Reihenfolge) |
+| **Am echten Laptop** | von Hand: kurzes ALT+Tab springt zum zuletzt benutzten Fenster und man kann sofort tippen; ALT halten + mehrfach Tab, loslassen wechselt; Escape bricht ab; minimiertes Fenster und Fenster auf Arbeitsfläche 2 lassen sich holen; Leiste erscheint auf dem Bildschirm mit dem Mauszeiger; in einem Vollbild-Spiel ALT+Tab und zurück – nichts bleibt hängen (`shell-diag tastatur` zeigt danach keine Submap); öffnet in unter 150 ms auch mit 20 Fenstern (Vorschau aus: `shell-set switcher.previews false`) |
+| Lokal ohne Hyprland/Quickshell | nicht lokal getestet, CI entscheidet |
+

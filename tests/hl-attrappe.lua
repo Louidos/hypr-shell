@@ -1,6 +1,6 @@
 -- Attrappe der Hyprland-Lua-API (Stand Wiki 0.55): kennt nur dokumentierte Funktionen.
 -- Ein Tippfehler in hyprland.lua (z. B. hl.dsp.windw.close) führt hier zu einem Fehler.
-local M = { aufrufe = {}, binds = {}, flags = {}, layer = {}, start = {} }
+local M = { aufrufe = {}, binds = {}, flags = {}, layer = {}, start = {}, submaps = {} }
 
 local function streng(name, t)
     return setmetatable(t, {
@@ -56,9 +56,23 @@ local hl = {
         for k in pairs(flags or {}) do
             if not bind_flags[k] then error("hl.bind: unbekannte Option " .. k, 2) end
         end
-        if M.binds[keys] then error("hl.bind: doppelt belegt: " .. keys, 2) end
-        M.binds[keys] = action
-        M.flags[keys] = flags or {}
+        -- Kürzel in einer Submap (hl.define_submap) zählen getrennt
+        local ziel, zflags = M.binds, M.flags
+        if M.submap then
+            M.submaps[M.submap] = M.submaps[M.submap] or { binds = {}, flags = {} }
+            ziel, zflags = M.submaps[M.submap].binds, M.submaps[M.submap].flags
+        end
+        if ziel[keys] then error("hl.bind: doppelt belegt: " .. keys .. (M.submap and (" (Submap " .. M.submap .. ")") or ""), 2) end
+        ziel[keys] = action
+        zflags[keys] = flags or {}
+    end,
+    define_submap = function(name, a, b)
+        local fn = type(a) == "function" and a or b
+        if type(name) ~= "string" or type(fn) ~= "function" then error("hl.define_submap: Name und Funktion nötig", 2) end
+        local vorher = M.submap
+        M.submap = name
+        fn()
+        M.submap = vorher
     end,
     layer_rule = function(r)
         for k in pairs(r) do

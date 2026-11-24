@@ -13,6 +13,7 @@ import "overview"
 import "cheatsheet"
 import "missa"
 import "dock"
+import "switcher"
 import "common"
 
 // hypr-shell: Quickshell-Oberfläche (gestartet von ~/.local/bin/shell-quickshell, das das
@@ -29,6 +30,7 @@ ShellRoot {
     PowerMenu { }
     Clipboard { }
     Overview { }
+    Switcher { }
     Cheatsheet { }
     // Missa nur, wenn missa.enabled an ist (sonst kein Panel, kein IPC-Ziel, keine Netzanfrage)
     LazyLoader { active: Integrations.missa; MissaChat { } }

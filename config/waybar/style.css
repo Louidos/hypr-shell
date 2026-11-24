@@ -12,14 +12,16 @@
 }
 
 window#waybar {
-  background: rgba(10, 10, 12, 0.25);
+  background: rgba(42, 42, 47, 0.55);
   color: @text;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 14px;
 }
 
 tooltip {
-  background: rgba(12, 12, 14, 0.80);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 12px;
+  background: rgba(42, 42, 47, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
 }
 tooltip label { color: @text; font-weight: 500; }
 

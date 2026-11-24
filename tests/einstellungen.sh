@@ -132,9 +132,15 @@ h="$(neues_home b '{"theme": {"font": {"ui": "Noto Sans", "mono": "Hack Nerd Fon
   "bar": {"opacity": 0.5}, "apps": {"terminal": "foot", "launcher": "fuzzel"}}')"
 apply "$h" --no-reload
 st="$h/.config/waybar/style.css"
-pruefe 'grep -q "font-family: \"Noto Sans\", \"Hack Nerd Font\"" "$st" && grep -q "font-size: 16px" "$st" && grep -q "rgba(10, 10, 12, 0.5)" "$st"' "B: Schrift, Grösse und Deckkraft der Leiste"
+pruefe 'grep -q "font-family: \"Noto Sans\", \"Hack Nerd Font\"" "$st" && grep -q "font-size: 16px" "$st" && grep -q "rgba(42, 42, 47, 0.50)" "$st"' "B: Schrift, Grösse und Deckkraft der Leiste (graues Glas)"
+# helles Hintergrundbild: das Glas der Leiste wird so weit dunkler, dass Text lesbar bleibt
+mkdir -p "$h/.local/share/hypr-shell"; echo 0.9 > "$h/.local/share/hypr-shell/wallpaper-luma"
+apply "$h" --no-reload
+pruefe 'grep -qE "background: rgba\(42, 42, 47, 0\.(8|9)[0-9]\)" "$st"' "B: helles Hintergrundbild → Glas automatisch dunkler (Mindestkontrast)"
+rm -f "$h/.local/share/hypr-shell/wallpaper-luma"
+apply "$h" --no-reload
 pruefe 'grep -q "font_family = Oswald" "$h/.config/hypr/hyprlock.conf" && grep -q "font_size = 156" "$h/.config/hypr/hyprlock.conf"' "B: Uhrschrift und Grösse auf dem Sperrbildschirm"
-pruefe 'grep -q "icon-theme: *\"Adwaita\"" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "Noto Sans 13" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "0.6)" "$h/.config/rofi/hypr-shell-settings.rasi"' "B: Starter mit Symbolthema, Schrift und Glas"
+pruefe 'grep -q "icon-theme: *\"Adwaita\"" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "Noto Sans 13" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "rgba(42, 42, 47, 0.60)" "$h/.config/rofi/hypr-shell-settings.rasi"' "B: Starter mit Symbolthema, Schrift und Glas"
 pruefe '[ "$(waybar "$h" ".network.\"on-click\"")" = "\$HOME/.local/bin/shell-quickshell ipc panel page wifi" ] && [ "$(waybar "$h" ".\"custom/distro\".\"on-click\"")" = fuzzel ]' "B: Starter in der Leiste, WLAN öffnet die Unterseite im Panel"
 
 # Beispiel C: Bildschirme
@@ -146,7 +152,7 @@ echo "== 5. falsche Werte und kaputtes JSON"
 h="$(neues_home falsch '{"bar": {"height": "abc", "opacity": 0.4}, "look": {"rounding": 99}, "lock": {"after": 7}, "panel": {"corner": "middle"}, "bar_typo": 1}')"
 pruefe 'apply "$h" --no-reload 2>"$T/err"' "shell-apply läuft trotz falscher Werte durch"
 eff="$h/.local/share/hypr-shell/settings.effective.json"
-pruefe 'jq -e ".bar.height == 30 and .look.rounding == 12 and .panel.corner == \"bottom-right\"" "$eff" >/dev/null' "falsche Werte: Standardwert gilt"
+pruefe 'jq -e ".bar.height == 30 and .look.rounding == 14 and .panel.corner == \"bottom-right\"" "$eff" >/dev/null' "falsche Werte: Standardwert gilt"
 pruefe 'jq -e ".bar.opacity == 0.4 and .lock.after == 7" "$eff" >/dev/null && grep -q "timeout = 420" "$h/.config/hypr/hypridle.conf"' "gültige Werte daneben wirken trotzdem"
 errs="$h/.local/share/hypr-shell/settings.errors"
 pruefe 'grep -q "^bar.height: expected a whole number between 20 and 60" "$errs" && grep -q "^look.rounding: out of range" "$errs" && grep -q "^panel.corner: expected one of" "$errs" && grep -q "^bar_typo: unknown setting" "$errs"' "Meldung nennt Schlüssel und Grund"

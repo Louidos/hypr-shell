@@ -14,7 +14,7 @@ GlassPanel {
     property int timeout: 6
     readonly property bool critical: info.critical === true
     radius: popup ? 20 : Theme.cardRadius
-    color: popup ? Theme.glass(Settings.get("theme.glass", 0.44) + 0.18) : Theme.card
+    color: popup ? Theme.glass(Math.min(0.95, Theme.glassOpacity + 0.18)) : Theme.card
     border.color: critical ? Theme.warn : (popup ? Theme.glassBorder : Theme.cardBorder)
     height: col.implicitHeight + 24
 

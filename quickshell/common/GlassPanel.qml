@@ -5,6 +5,6 @@ Rectangle {
     property real glassOpacity: Theme.glassOpacity
     radius: Theme.panelRadius
     color: Theme.glass(glassOpacity)
-    border.width: 1
+    border.width: Theme.borderWidth
     border.color: Theme.glassBorder
 }

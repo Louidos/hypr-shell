@@ -218,7 +218,7 @@ Scope {
             scale: ov.animation === "fade" ? 0.97 + 0.03 * win.t : 1
             radius: ov.animation === "grow" ? Math.min(ov.radius, Math.min(width, height) / 2) : ov.radius
             color: ov.glass ? Theme.glass(ov.glassOpacity) : "transparent"
-            border.width: ov.glass ? 1 : 0
+            border.width: ov.glass ? Theme.borderWidth : 0
             border.color: Theme.glassBorder
             clip: ov.animation === "grow"
 

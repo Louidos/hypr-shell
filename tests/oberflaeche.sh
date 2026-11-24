@@ -400,6 +400,15 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
         echo "  FEHLER: Drehknopf auf der Seite Monitors (${mon:-kein Bildschirm}, $(wert .monitors))"; app_ok=0
     fi
     ipc settings close; sleep 0.5
+    # Look: Voreinstellungen per Knopf, Live-Vorschau mit Glas
+    ipc settings open look; sleep 2.5; bild settings-look-vorschau
+    if grep -q "hypr-shell-probe look-preview-glass" "$T/qs.log" && test_ipc click look-preset-gaming && warte_auf .look.preset '"gaming"' 40 \
+        && [ "$(wert .look.blur.enabled)" = false ]; then
+        echo "  ok: Look: Vorschau da, Knopf gaming setzt die Voreinstellung"
+        sleep 1.5; test_ipc click look-preset-glass && warte_auf .look.preset '"glass"' 40 || true
+    else echo "  FEHLER: Look-Seite (Vorschau oder Voreinstellung: $(wert .look))"; app_ok=0; fi
+    "$HOME/.local/bin/shell-set" reset look >/dev/null 2>&1 || true
+    ipc settings close; sleep 0.5
     # Programme mitfärben: GTK steht immer da, Firefox nur, wenn installiert
     ipc settings open theme; sleep 2
     if test_ipc click setting-theme.apps.gtk && warte_auf .theme.apps.gtk false; then echo "  ok: Theme → Apps: GTK-Schalter landet in settings.json"
@@ -840,8 +849,11 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
         [ -n "$zweiter" ] && swaymsg output "$zweiter" unplug >/dev/null 2>&1; sleep 2
         if kill -0 "$qspid" 2>/dev/null && [ "$(dk count)" = 1 ]; then echo "  ok: Abstecken: kein Absturz, ein Dock"; else echo "  FEHLER: nach dem Abstecken: $(dk count)"; dock_ok=0; fi
     fi
-    # Bildwechsel färbt das Dock um; helles und dunkles Bild für die Doku
+    # Standard: einheitliches Glas (theme.glass_color); mit dock.color_mode = wallpaper färbt ein
+    # Bildwechsel das Dock um; helles und dunkles Bild für die Doku
     if command -v awww >/dev/null 2>&1 && command -v matugen >/dev/null 2>&1 && [ -n "$im" ]; then
+        glas_std="$(ds .glass)"
+        "$HOME/.local/bin/shell-set" dock.color_mode wallpaper >/dev/null 2>&1; sleep 1.5
         vorher_glas="$(ds .glass)"
         "$im" -size 1920x1080 gradient:'#f2efe6'-'#d9e4f0' "$HOME/Pictures/Wallpapers/test-hell.png"
         "$im" -size 1920x1080 gradient:'#10131a'-'#2b1f3a' "$HOME/Pictures/Wallpapers/test-dunkel.png"
@@ -851,6 +863,9 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
         "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-dunkel.png" >/dev/null 2>&1; sleep 3
         bild dock-dunkel
         "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-bunt.png" >/dev/null 2>&1; sleep 2
+        "$HOME/.local/bin/shell-set" reset dock.color_mode >/dev/null 2>&1; sleep 1.5
+        if [ "$(ds .glass)" = "$glas_std" ]; then echo "  ok: Standard (glass): Dock im gemeinsamen Glas, unabhängig vom Bild"
+        else echo "  FEHLER: Dock-Glas im Standard: $(ds .glass) statt $glas_std"; dock_ok=0; fi
     fi
 
     # CPU in Ruhe: Quickshell 10 s messen, mit und ohne Dock

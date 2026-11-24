@@ -1,0 +1,20 @@
+{
+  "_name": "gaming",
+  "_description": "Performance first: no blur, no shadows, no animations, everything opaque",
+  "theme.glass": 0.9,
+  "theme.glass_color": "#18181b",
+  "theme.border.color": "#ffffff",
+  "theme.border.opacity": 0.2,
+  "theme.border.opacity_inactive": 0.08,
+  "theme.border.width": 1,
+  "theme.radius.panel": 10,
+  "theme.radius.card": 8,
+  "look.rounding": 6,
+  "look.border": 1,
+  "look.border_color": "white",
+  "look.opacity.active": 1.0,
+  "look.opacity.inactive": 1.0,
+  "look.blur.enabled": false,
+  "look.shadow": false,
+  "look.animations.enabled": false
+}

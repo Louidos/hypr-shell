@@ -288,6 +288,19 @@ in `lock.after`, `lock.screen_off` und `lock.suspend`.
 
 ![Sperrbildschirm](docs/screenshots/lockscreen.png)
 
+### Glas-Look
+
+Alles sieht aus wie mattes Glas: Leiste, Dock, alle Panels, Menüs, Benachrichtigungen, Starter
+und Einstellungs-App sind grau und durchsichtig mit Blur dahinter, mit einem feinen weissen Rand
+und runden Ecken (14 px); die Programmfenster haben denselben Rand und dieselbe Rundung und sind
+leicht durchsichtig (aktiv 0.95, inaktiv 0.88). Spiele, Videos, Bildbearbeitung und Vollbild
+bleiben undurchsichtig (`look.opacity.exceptions`). Ist das Hintergrundbild hell, wird das Glas von
+selbst so weit dunkler, dass Text lesbar bleibt. Alle Werte stehen unter Einstellungen → Theme
+(Glas, Rand) und Look (Fenster) mit Live-Vorschau; drei Voreinstellungen: **glass** (Standard),
+**minimal** (ruhig, fast undurchsichtig) und **gaming** (kein Blur, keine Schatten, keine
+Animationen) – auch mit `shell-look preset gaming`. Die Leiste schwebt mit Abstand zum Rand
+(`bar.floating`), das Dock nimmt standardmässig dasselbe Glas (`dock.color_mode = glass`).
+
 ### Farben und Hintergrundbild
 
 Eigene Bilder nach `~/Pictures/Wallpapers` legen und im Dashboard (SUPER + W) anklicken
@@ -508,6 +521,7 @@ automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelte
 | `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
+| `shell-look presets\|preset <name>` | Voreinstellungen für das Aussehen: glass, minimal, gaming |
 | `shell-diag tastatur\|freigeben` | wer hat die Tastatur? bzw. Tastatur zurück (wie `CTRL + SUPER + Escape`) |
 | `shell-waechter <name> -- <befehl>` | hält Leiste und Oberfläche am Laufen: nach einem Absturz Neustart (höchstens 5-mal in 2 Minuten, dann Benachrichtigung); `shell-waechter stop <name>` beendet ohne Neustart |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |

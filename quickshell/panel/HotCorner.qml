@@ -91,8 +91,8 @@ Scope {
         margin: hc.gap
         panelWidth: Settings.get("panel.width", 420)
         panelHeight: item ? item.implicitHeight : 400
-        radius: Settings.get("panel.radius", Theme.panelRadius)
-        glassOpacity: Settings.get("panel.opacity", 0.44)
+        radius: Settings.get("panel.radius", 14)
+        glassOpacity: Settings.get("panel.opacity", -1)   // -1 = gemeinsames Glas
         keyboardFocus: WlrKeyboardFocus.OnDemand
         leaveDelay: Settings.get("panel.close_on_leave", true) ? Settings.get("panel.close_delay", 400) : -1
         idleDelay: Settings.get("panel.close_on_leave", true) ? 4000 : -1

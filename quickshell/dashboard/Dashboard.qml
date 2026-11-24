@@ -100,7 +100,7 @@ Scope {
         screen: dash.screen
         panelWidth: dash.panelW
         panelHeight: dash.panelH
-        glassOpacity: Settings.get("dashboard.opacity", 0.42)
+        glassOpacity: Settings.get("dashboard.opacity", -1)   // -1 = gemeinsames Glas
         keyboardFocus: WlrKeyboardFocus.Exclusive
         leaveDelay: Settings.get("dashboard.close_on_leave", true) ? 350 : -1
         // von aussen geöffnet (z. B. Ui.openPanel): Start-Tab; Daten für About und Profil holen

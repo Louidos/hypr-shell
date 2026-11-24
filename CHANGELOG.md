@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Geändert
+- Einheitlicher Glas-Look: grau durchsichtig, feiner weisser Rand und runde Ecken (14 px) überall – Leiste (jetzt schwebend), Dock, Panels, Menüs, Benachrichtigungen, rofi – auch an den Programmfenstern (leicht durchsichtig, Spiele, Videos und Bildbearbeitung undurchsichtig); bei hellem Hintergrundbild wird das Glas automatisch dunkler; Voreinstellungen glass, minimal und gaming mit Live-Vorschau (#119)
+
 ## 1.9.2 – 2026-11-24
 
 ### Behoben

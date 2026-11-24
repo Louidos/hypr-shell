@@ -1,0 +1,20 @@
+{
+  "_name": "glass",
+  "_description": "Frosted glass everywhere: gray and see-through with blur, fine white edge, 14 px corners; windows slightly transparent",
+  "theme.glass": 0.55,
+  "theme.glass_color": "#2a2a2f",
+  "theme.border.color": "#ffffff",
+  "theme.border.opacity": 0.35,
+  "theme.border.opacity_inactive": 0.15,
+  "theme.border.width": 1,
+  "theme.radius.panel": 14,
+  "theme.radius.card": 10,
+  "look.rounding": 14,
+  "look.border": 1,
+  "look.border_color": "white",
+  "look.opacity.active": 0.95,
+  "look.opacity.inactive": 0.88,
+  "look.blur.enabled": true,
+  "look.shadow": true,
+  "look.animations.enabled": true
+}

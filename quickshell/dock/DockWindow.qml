@@ -533,6 +533,8 @@ PanelWindow {
             // Bildwechsel: Glas und Rand färben sanft um
             Behavior on color { ColorAnimation { duration: 400 } }
             Behavior on border.color { ColorAnimation { duration: 400 } }
+            // leuchtender Rand (theme.border.glow) in der Randfarbe des Docks
+            Glow { radius: glass.radius; color: win.d.borderColor }
         }
 
         Flickable {

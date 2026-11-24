@@ -92,7 +92,7 @@ Grid12 {
     // ---- Bausteine
     component Title: Txt {
         size: 17
-        weight: Font.DemiBold
+        strong: true
     }
     // gewelltes Abzeichen ("Cookie", Material 3 expressive)
     component Cookie: Canvas {
@@ -136,15 +136,15 @@ Grid12 {
             Glyph { anchors.centerIn: parent; text: cc.icon; size: 18 }
         }
         Column {
-            anchors { left: ico.right; leftMargin: 12; right: blob.left; rightMargin: 10 }
+            anchors { left: ico.right; leftMargin: Theme.pad(12); right: blob.left; rightMargin: Theme.pad(10) }
             y: 16
-            spacing: 2
-            Txt { text: cc.title; size: 18; weight: Font.DemiBold; color: Theme.accent }
+            spacing: Theme.pad(2)
+            Txt { text: cc.title; size: 18; strong: true; color: Theme.accent }
             Txt { width: parent.width; text: cc.model || "–"; size: 12 }
         }
         Row {
             x: 18; y: parent.height - 56
-            spacing: 6
+            spacing: Theme.pad(6)
             Glyph { text: "󰔏"; size: 15; color: Theme.subtext; anchors.verticalCenter: parent.verticalCenter }
             Txt {
                 anchors.verticalCenter: parent.verticalCenter
@@ -168,14 +168,14 @@ Grid12 {
         Txt { anchors.horizontalCenter: blob.horizontalCenter; y: 12; text: "Usage"; size: 12; sub: true }
         Cookie {
             id: blob
-            anchors { right: parent.right; rightMargin: 16 }
+            anchors { right: parent.right; rightMargin: Theme.pad(16) }
             y: 32 + (parent.height - 32 - height) / 2 - 6
             width: cc.bs; height: cc.bs
             Txt {
                 anchors.centerIn: parent
                 text: cc.use >= 0 ? Math.round(cc.use) + "%" : "–"
                 size: cc.bs * 0.27
-                weight: Font.DemiBold
+                strong: true
                 color: Theme.containerText
             }
         }
@@ -220,13 +220,13 @@ Grid12 {
             Column {
                 anchors.centerIn: parent
                 Glyph { anchors.horizontalCenter: parent.horizontalCenter; text: "󰋊"; size: 15; color: Theme.subtext }
-                Txt { anchors.horizontalCenter: parent.horizontalCenter; text: usage.diskTotal > 0 ? Math.round(usage.disk) + "%" : "–"; size: st.rs2 * 0.2; weight: Font.DemiBold }
+                Txt { anchors.horizontalCenter: parent.horizontalCenter; text: usage.diskTotal > 0 ? Math.round(usage.disk) + "%" : "–"; size: st.rs2 * 0.2; strong: true }
                 Txt { anchors.horizontalCenter: parent.horizontalCenter; text: "Used"; size: 11; sub: true }
             }
         }
         Column {
-            anchors { left: sr.right; leftMargin: 16; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            spacing: 4
+            anchors { left: sr.right; leftMargin: Theme.pad(16); right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
+            spacing: Theme.pad(4)
             Title { text: "Storage" }
             Txt { width: parent.width; text: usage.diskTotal > 0 ? usage.gib(usage.diskUsed) + " / " + usage.gib(usage.diskTotal) + " GiB" : "–"; size: 13; sub: true }
             Item { width: 1; height: 6 }
@@ -238,7 +238,7 @@ Grid12 {
                 Row {
                     id: dl
                     anchors.centerIn: parent
-                    spacing: 6
+                    spacing: Theme.pad(6)
                     Glyph { text: "󰋊"; size: 14; color: Theme.containerText; anchors.verticalCenter: parent.verticalCenter }
                     Txt { text: usage.diskDevice || "disk"; size: 12; color: Theme.containerText; anchors.verticalCenter: parent.verticalCenter }
                 }
@@ -253,7 +253,7 @@ Grid12 {
         narrowAt: [0, 3, 4, 1]
         Row {
             x: 16; y: 12
-            spacing: 8
+            spacing: Theme.pad(8)
             Glyph { text: "󰓡"; size: 17; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
             Title { text: "Network" }
             Txt { text: perf.iface || "offline"; size: 10; sub: true; anchors.verticalCenter: parent.verticalCenter }
@@ -293,7 +293,7 @@ Grid12 {
         Column {
             x: 16; width: parent.width - 32
             y: parent.height - 62
-            spacing: 2
+            spacing: Theme.pad(2)
             Repeater {
                 model: [
                     { icon: "󰇚", t: "Download", v: perf.iface ? perf.rate(perf.rxRate) : "–" },
@@ -305,7 +305,7 @@ Grid12 {
                     width: parent.width; height: 19
                     Glyph { text: modelData.icon; size: 14; color: Theme.subtext; anchors.verticalCenter: parent.verticalCenter }
                     Txt { x: 22; text: modelData.t; size: 12; sub: true; anchors.verticalCenter: parent.verticalCenter }
-                    Txt { anchors.right: parent.right; text: modelData.v; size: 12; weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
+                    Txt { anchors.right: parent.right; text: modelData.v; size: 12; strong: true; anchors.verticalCenter: parent.verticalCenter }
                 }
             }
         }
@@ -319,7 +319,7 @@ Grid12 {
         readonly property real rs2: Math.min(height - 70, width - 40, 96)
         Row {
             x: 16; y: 12
-            spacing: 8
+            spacing: Theme.pad(8)
             Glyph { text: "󰍛"; size: 17; color: Theme.accent; anchors.verticalCenter: parent.verticalCenter }
             Title { text: "Memory" }
         }
@@ -330,7 +330,7 @@ Grid12 {
             Ring { anchors.fill: parent; value: usage.mem; thickness: 7; gapped: true; color: Theme.accent }
             Column {
                 anchors.centerIn: parent
-                Txt { anchors.horizontalCenter: parent.horizontalCenter; text: Math.round(usage.mem) + "%"; size: mem.rs2 * 0.22; weight: Font.DemiBold }
+                Txt { anchors.horizontalCenter: parent.horizontalCenter; text: Math.round(usage.mem) + "%"; size: mem.rs2 * 0.22; strong: true }
                 Txt { anchors.horizontalCenter: parent.horizontalCenter; text: "Used"; size: 10; sub: true }
             }
         }

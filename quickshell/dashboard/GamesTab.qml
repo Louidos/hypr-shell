@@ -17,7 +17,7 @@ Item {
         flickableDirection: Flickable.HorizontalFlick
         Row {
             id: row
-            spacing: 14
+            spacing: Theme.pad(14)
             Repeater {
                 model: gt.games
                 delegate: Item {
@@ -45,11 +45,11 @@ Item {
                         Column {
                             anchors.centerIn: parent
                             visible: g.modelData.cover === ""
-                            spacing: 8
+                            spacing: Theme.pad(8)
                             Glyph { anchors.horizontalCenter: parent.horizontalCenter; text: "󰊗"; size: 40; color: Theme.subtext }
                         }
                         Rectangle {
-                            anchors { right: parent.right; top: parent.top; margins: 8 }
+                            anchors { right: parent.right; top: parent.top; margins: Theme.pad(8) }
                             width: 26; height: 26; radius: 13
                             color: Qt.rgba(0, 0, 0, 0.45)
                             Glyph { anchors.centerIn: parent; text: g.modelData.source === "steam" ? "󰓓" : "󰊴"; size: 13 }
@@ -58,11 +58,11 @@ Item {
                         Behavior on scale { NumberAnimation { duration: 140 } }
                     }
                     Txt {
-                        anchors { top: frame.bottom; topMargin: 8; left: parent.left; right: parent.right }
+                        anchors { top: frame.bottom; topMargin: Theme.pad(8); left: parent.left; right: parent.right }
                         horizontalAlignment: Text.AlignHCenter
                         text: g.modelData.name
                         size: 12
-                        weight: Font.DemiBold
+                        strong: true
                     }
                     HoverHandler { id: hov; cursorShape: Qt.PointingHandCursor }
                     TapHandler {

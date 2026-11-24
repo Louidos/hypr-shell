@@ -12,7 +12,7 @@ Row {
     property bool recording: false
     property string probe: ""
     signal picked(string combo)
-    spacing: 6
+    spacing: Theme.pad(6)
 
     readonly property var mods: ["SUPER", "SHIFT", "CTRL", "ALT"]
     function hasMod(m) { return value.split("+").map(x => x.trim()).indexOf(m) >= 0 }

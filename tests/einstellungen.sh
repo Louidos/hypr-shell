@@ -202,6 +202,13 @@ h="$(neues_home v100 "$v100")"
 pruefe 'apply "$h" --check' "settings.json von v1.0.0 ist ohne Fehler"
 apply "$h" --no-reload
 pruefe 'jq -e ".panel.corner == \"top-left\" and .desktop.resources.enabled == false and .weather.location == \"Zürich\" and .bar.height == 30" "$h/.local/share/hypr-shell/settings.effective.json" >/dev/null' "v1.0.0: eigene Werte bleiben, neue Werte mit Standard"
+# settings.json von 1.10.0 (Glas-Werte, ohne die neuen Design-Werte): eigene Werte bleiben, neue mit Standard
+v110='{"look": {"preset": "glass", "rounding": 14}, "theme": {"glass": 0.6, "border": {"opacity": 0.5, "width": 1}, "radius": {"panel": 14}}}'
+h="$(neues_home v110 "$v110")"
+pruefe 'apply "$h" --check' "settings.json von v1.10.0 ist ohne Fehler"
+apply "$h" --no-reload
+pruefe 'jq -e ".theme.glass == 0.6 and .theme.border.opacity == 0.5 and .theme.radius.panel == 14 and (.theme.card.opacity | type) == \"number\" and (.theme.border.glow | type) == \"boolean\" and (.theme.spacing.gap | type) == \"number\" and .look.rounding == 14" "$h/.local/share/hypr-shell/settings.effective.json" >/dev/null' "v1.10.0: eigene Werte bleiben, Karten, Leuchten und Abstände mit Standard"
+pruefe '[ "$(jq -c . "$h/.config/hypr-shell/settings.json")" = "$(jq -c . <<<"$v110")" ]' "v1.10.0: settings.json selbst bleibt unverändert"
 # hypr-shell-local.lua (v1.1) -> settings.json, einmalig
 h="$(neues_home umzug '{"weather": {"location": "Bern"}, "input": {"variant": "fr"}}')"
 mkdir -p "$h/.config/hypr"

@@ -1014,6 +1014,48 @@ fi
 if grep -E "dock/[A-Za-z]+\.qml" "$T/qs.log" | grep -v "hypr-shell-probe"; then echo "  FEHLER: Warnungen aus dock/ im Log"; dock_ok=0; fi
 
 
+# ---- Design-Werte (theme.card.*, theme.pill.opacity, theme.border.glow*, theme.spacing.*, theme.font.*):
+# Theme nimmt sie aus settings.json, sofort und ohne Neustart
+echo "---- Design-Werte ----"
+design_ok=1
+th() { "$qs" -p "$cfg" ipc call test theme 2>/dev/null; }
+th_warte() { # jq-Ausdruck, bis er stimmt (höchstens 8 s)
+    for _ in $(seq 1 32); do jq -e "$1" <<<"$(th)" >/dev/null 2>&1 && return 0; sleep 0.25; done; return 1
+}
+setze() { "$HOME/.local/bin/shell-set" "$@" >/dev/null 2>&1; }
+echo "  Standard: $(th)"
+if th_warte '.card == 0.05 and .cardHover == 0.08 and .cardBorder == 0.08 and .pill == 0.92 and .glow == false and .panelPad == 18 and .cardPad == 14 and .gap == 10 and .titleWeight == 700 and .strongWeight == 600 and .textWeight == 400 and .titleScale == 1'; then
+    echo "  ok: ohne geänderte Werte wie in 1.10.0 (Karten 5 %/8 %, Kontur 8 %, Pille 92 %, kein Leuchten, Abstände 18/14/10, Titel fett)"
+else echo "  FEHLER: Standardwerte: $(th)"; design_ok=0; fi
+setze set theme.card.opacity 0.15 theme.card.hover 0.2 theme.card.border_opacity 0.3 theme.pill.opacity 0.8
+if th_warte '.card >= 0.14 and .card <= 0.15 and .cardHover >= 0.19 and .cardBorder == 0.3 and .pill == 0.8'; then
+    echo "  ok: shell-set theme.card.opacity 0.15 macht die Karten sofort heller, Pille und Kontur folgen ($(th | jq -c '{card, cardHover, cardBorder, pill}'))"
+else echo "  FEHLER: Karten/Pille aus settings.json: $(th)"; design_ok=0; fi
+ipc dashboard open dashboard; sleep 2; bild design-karten-hell; ipc dashboard close; sleep 1
+setze set theme.border.glow true theme.border.glow_size 16 theme.border.glow_opacity 0.5
+if th_warte '.glow == true and .glowSize == 16 and .glowOpacity == 0.5'; then echo "  ok: shell-set theme.border.glow true"
+else echo "  FEHLER: Leuchten: $(th)"; design_ok=0; fi
+ipc dashboard open dashboard; sleep 2; bild design-leuchten
+# der Schein liegt ausserhalb der Fläche: direkt über dem Dashboard ist es heller als ohne Leuchten
+read -r ox oy ow _ < <(grep -o "hypr-shell-probe overlay-dashboard .*" "$T/qs.log" | tail -n1 | awk '{print $3, $4, $5, $6}') || true
+ipc dashboard close; sleep 1
+setze set theme.border.glow false
+th_warte '.glow == false' || true
+ipc dashboard open dashboard; sleep 2; bild design-ohne-leuchten; ipc dashboard close; sleep 1
+if [ -n "$im" ] && [ -n "${oy:-}" ]; then
+    hell() { "$im" "$OUT/$1.png" -crop "$((ow / 2))x6+$((ox + ow / 4))+$((oy - 8))" +repage -colorspace gray -format '%[fx:mean]' info:; }
+    mit="$(hell design-leuchten)"; ohne="$(hell design-ohne-leuchten)"
+    if awk -v a="$mit" -v b="$ohne" 'BEGIN { exit !(a > b + 0.02) }'; then echo "  ok: der Rand des Dashboards leuchtet (über dem Rand $mit statt $ohne)"
+    else echo "  FEHLER: kein Leuchten über dem Dashboard ($mit / $ohne)"; design_ok=0; fi
+fi
+setze set theme.spacing.scale 1.5 theme.font.title_weight demibold theme.font.title_scale 1.25
+if th_warte '.pad10 == 15 and .panelPad == 27 and .gap == 15 and .titleWeight == 600 and .strongWeight == 500 and .titleScale == 1.25'; then
+    echo "  ok: Abstände (Faktor 1.5) und Schrift (Titel halbfett, 1.25-fach) aus settings.json"
+else echo "  FEHLER: Abstände/Schrift: $(th)"; design_ok=0; fi
+ipc settings open look; sleep 2; bild design-abstand-schrift; ipc settings close; sleep 1
+setze reset theme
+th_warte '.card == 0.05 and .panelPad == 18 and .titleScale == 1' || { echo "  FEHLER: reset theme: $(th)"; design_ok=0; }
+
 # Sperrbildschirm (jetzt ohne ~/.face, also mit dem Ersatzbild des Installers) – nur in diesem
 # unsichtbaren Test-Compositor, nie in einer echten Sitzung. Kommt zuletzt, weil sway nach dem Beenden von hyprlock gesperrt bleibt.
 if command -v hyprlock >/dev/null 2>&1; then
@@ -1049,6 +1091,7 @@ echo "------------------------"
 [ "$raster_ok" -eq 1 ] || { echo "FEHLER: App-Raster (siehe oben)"; exit 1; }
 [ "$panel_ok" -eq 1 ] || { echo "FEHLER: mehr als ein Panel offen (siehe oben)"; exit 1; }
 [ "$dock_ok" -eq 1 ] || { echo "FEHLER: Dock (siehe oben)"; exit 1; }
+[ "$design_ok" -eq 1 ] || { echo "FEHLER: Design-Werte (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then
     echo "FEHLER: Quickshell ist abgestürzt"
     exit 1

@@ -8,7 +8,7 @@ import "../common"
 // neu anmelden muss. Ladegrenze und Tastaturlicht stehen darunter als normale Einstellungen.
 Column {
     id: lp
-    spacing: 12
+    spacing: Theme.pad(12)
     property var st: ({ caps: {}, profile: null, profiles: [], gfx: null, gfx_modes: [], gfx_pending: null })
     property string confirm: ""      // Grafik-Modus, der auf Bestätigung wartet
     property string message: ""
@@ -46,10 +46,10 @@ Column {
         visible: lp.st.profile !== null
         width: parent.width
         height: 64
-        Txt { anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter } text: "Power profile" + (lp.st.caps.asusctl ? "  ·  asusctl" : ""); size: 14; weight: Font.DemiBold }
+        Txt { anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter } text: "Power profile" + (lp.st.caps.asusctl ? "  ·  asusctl" : ""); size: 14; strong: true }
         Row {
-            anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            spacing: 6
+            anchors { right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
+            spacing: Theme.pad(6)
             Repeater {
                 model: lp.st.profiles
                 delegate: Pill {
@@ -72,18 +72,18 @@ Column {
             id: gfxCol
             x: 18; y: 14
             width: parent.width - 36
-            spacing: 10
+            spacing: Theme.pad(10)
             Item {
                 width: parent.width
                 height: 30
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
-                    Txt { text: "Graphics mode"; size: 14; weight: Font.DemiBold }
+                    Txt { text: "Graphics mode"; size: 14; strong: true }
                     Txt { text: "Now: " + (lp.st.gfx || "–") + (lp.st.gfx_pending && lp.st.gfx_pending.indexOf("No action") < 0 ? "  ·  " + lp.st.gfx_pending : ""); size: 12; sub: true }
                 }
                 Row {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    spacing: 6
+                    spacing: Theme.pad(6)
                     Repeater {
                         model: lp.st.gfx_modes
                         delegate: Pill {
@@ -100,17 +100,17 @@ Column {
                 width: parent.width
                 height: 52
                 radius: 14
-                color: Qt.rgba(1, 1, 1, 0.06)
+                color: Theme.field
                 Txt {
-                    anchors { left: parent.left; leftMargin: 14; right: btns.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; leftMargin: Theme.pad(14); right: btns.left; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
                     text: "Switch to " + lp.confirm + "? You have to log out (or restart) afterwards."
                     size: 12
                     wrapMode: Text.Wrap
                 }
                 Row {
                     id: btns
-                    anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                    spacing: 6
+                    anchors { right: parent.right; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
+                    spacing: Theme.pad(6)
                     Pill { text: "Cancel"; onClicked: lp.confirm = "" }
                     Pill { text: "Switch"; active: true; onClicked: { lp.run(["gfx", "set", lp.confirm]); lp.confirm = "" } }
                 }

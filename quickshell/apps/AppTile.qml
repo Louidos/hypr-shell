@@ -15,7 +15,7 @@ Item {
     signal menu(real x, real y)
 
     Rectangle {
-        anchors { fill: parent; margins: 4 }
+        anchors { fill: parent; margins: Theme.pad(4) }
         radius: Theme.cardRadius
         color: tile.selected ? Theme.cardHover : (th.hovered ? Theme.card : "transparent")
         border.width: tile.selected ? Theme.borderWidth : 0
@@ -29,13 +29,13 @@ Item {
     }
     Glyph {
         visible: tile.favorite
-        anchors { right: parent.right; top: parent.top; margins: 10 }
+        anchors { right: parent.right; top: parent.top; margins: Theme.pad(10) }
         text: "󰓎"
         size: 11
         color: Theme.accent
     }
     Txt {
-        anchors { top: ti.bottom; topMargin: 8; left: parent.left; right: parent.right; leftMargin: 8; rightMargin: 8 }
+        anchors { top: ti.bottom; topMargin: Theme.pad(8); left: parent.left; right: parent.right; leftMargin: Theme.pad(8); rightMargin: Theme.pad(8) }
         text: tile.entry ? String(tile.entry.name) : ""
         size: 12
         horizontalAlignment: Text.AlignHCenter

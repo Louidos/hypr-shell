@@ -56,7 +56,7 @@ PopupWindow {
     Column {
         id: col
         x: 8; y: 8
-        spacing: 2
+        spacing: Theme.pad(2)
         Repeater {
             model: pop.rows
             Rectangle {
@@ -73,7 +73,7 @@ PopupWindow {
                     id: rowContent
                     x: 10
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 10
+                    spacing: Theme.pad(10)
                     Item {
                         visible: pop.previews && !!row.modelData.toplevel
                         width: visible ? 150 : 0

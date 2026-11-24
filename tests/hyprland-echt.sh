@@ -69,6 +69,22 @@ if [ "$rc" -ne 0 ] || ! grep -q "config ok" "$T/verify2.log"; then
 else
     echo "  ok: Hyprland nimmt Drehung 0–7 und die Drehung von Touchscreen und Stift an"
 fi
+# leuchtender Rand (theme.border.glow): Schatten in Randfarbe, keine Schatten für Ausnahmen und Vollbild
+echo "== Hyprland --verify-config mit leuchtendem Rand"
+echo '{"theme": {"border": {"glow": true, "glow_size": 12, "glow_opacity": 0.3}}}' > "$HOME/.config/hypr-shell/settings.json"
+KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload > "$T/apply.log" 2>&1 || { cat "$T/apply.log"; fehler=1; }
+set +e
+Hyprland --verify-config -c "$cfg" > "$T/verify3.log" 2>&1
+rc=$?
+set -e
+sed -n '/Config parsing result/,$p' "$T/verify3.log"
+if [ "$rc" -ne 0 ] || ! grep -q "config ok" "$T/verify3.log"; then
+    echo "FEHLER: Hyprland lehnt den leuchtenden Rand ab (Rückgabewert $rc)"
+    grep -q "Config parsing result" "$T/verify3.log" || tail -n 40 "$T/verify3.log"
+    fehler=1
+else
+    echo "  ok: Hyprland nimmt den leuchtenden Rand an (Schatten in Randfarbe, Ausnahmen ohne Schein)"
+fi
 echo '{}' > "$HOME/.config/hypr-shell/settings.json"
 KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload > /dev/null 2>&1 || true
 

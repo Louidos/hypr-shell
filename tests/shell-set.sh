@@ -146,4 +146,17 @@ else
     pruefe 'grep -q "complete -c shell-set" settings/completions/shell-set.fish' "fish-Datei vorhanden (fish fehlt, nicht ausgeführt)"
 fi
 
+echo "== Design-Werte (Karten, Leuchten, Abstände, Schrift)"
+pruefe 'ss theme.card.opacity 0.15 >/dev/null && [ "$(wert .theme.card.opacity)" = 0.15 ]' "theme.card.opacity 0.15"
+pruefe '! ss theme.card.opacity 0.5 >/dev/null 2>&1 && ! ss theme.card.hover 0.6 >/dev/null 2>&1 && ! ss theme.card.border_opacity 2 >/dev/null 2>&1' "Karten: Werte über der Grenze (0.4, 0.5, 1) abgelehnt"
+pruefe '! ss theme.card.color blau >/dev/null 2>&1 && ss theme.card.color "#ddeeff" >/dev/null' "Kartenfarbe: nur Farben"
+pruefe 'ss theme.border.glow true >/dev/null && [ "$(wert .theme.border.glow)" = true ] && ! ss theme.border.glow vielleicht >/dev/null 2>&1' "Leuchten an, kein Unsinn"
+pruefe '! ss theme.border.glow_size 41 >/dev/null 2>&1 && ss theme.border.glow_size 40 >/dev/null && ! ss theme.border.glow_opacity 1.5 >/dev/null 2>&1' "Leuchten: Grösse 0–40, Deckkraft 0–1"
+pruefe '! ss theme.spacing.scale 0.4 >/dev/null 2>&1 && ! ss theme.spacing.scale 2.5 >/dev/null 2>&1 && ss theme.spacing.scale 1.5 >/dev/null' "Abstände: Faktor 0.5–2"
+pruefe 'ss set theme.spacing.panel 20 theme.spacing.card 16 theme.spacing.gap 12 >/dev/null && [ "$(wert "[.theme.spacing.panel, .theme.spacing.card, .theme.spacing.gap]")" = "[20,16,12]" ] && ! ss theme.spacing.gap -1 >/dev/null 2>&1' "Innenabstände und Lücke"
+pruefe 'ss theme.font.title_weight demibold >/dev/null && ! ss theme.font.title_weight heavy >/dev/null 2>&1 && ! ss theme.font.text_weight 900 >/dev/null 2>&1' "Schriftdicke: normal, medium, demibold, bold"
+pruefe '! ss theme.font.title_scale 0.5 >/dev/null 2>&1 && ss theme.font.title_scale 1.25 >/dev/null' "Titelgrösse 0.8–2"
+pruefe '! ss theme.pill.opacity 0.1 >/dev/null 2>&1 && ss theme.pill.opacity 0.8 >/dev/null' "Pille: 0.3–1"
+pruefe 'ss reset theme >/dev/null && [ "$(wert .theme)" = null ]' "reset theme entfernt alle Design-Werte wieder"
+
 exit "$fehler"

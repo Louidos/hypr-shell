@@ -10,7 +10,7 @@ Column {
     property bool sortable: true
     property string probePrefix: ""
     signal changedList(var list)
-    spacing: 4
+    spacing: Theme.pad(4)
 
     readonly property var labels: ({
         distro: "Distro icon", workspaces: "Workspaces", window: "Window title", media: "Now playing",
@@ -50,11 +50,11 @@ Column {
             width: le.width
             height: 38
             radius: 12
-            color: hover.hovered ? Theme.cardHover : Qt.rgba(1, 1, 1, 0.03)
+            color: hover.hovered ? Theme.cardHover : Theme.cardSoft
             HoverHandler { id: hover }
             Row {
-                anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                spacing: 12
+                anchors { left: parent.left; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
+                spacing: Theme.pad(12)
                 Toggle {
                     visible: le.allowed !== null
                     anchors.verticalCenter: parent.verticalCenter
@@ -70,8 +70,8 @@ Column {
                 }
             }
             Row {
-                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                spacing: 2
+                anchors { right: parent.right; rightMargin: Theme.pad(6); verticalCenter: parent.verticalCenter }
+                spacing: Theme.pad(2)
                 visible: item.modelData.on
                 IconButton {
                     visible: le.sortable

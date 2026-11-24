@@ -245,19 +245,19 @@ Scope {
                     width: parent.width - 36
                     height: 46
                     radius: 23
-                    color: Qt.rgba(1, 1, 1, 0.06)
+                    color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
                     Glyph {
                         id: lens
-                        anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+                        anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
                         text: ""
                         size: 15
                         color: Theme.subtext
                     }
                     TextInput {
                         id: field
-                        anchors { left: lens.right; leftMargin: 12; right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
+                        anchors { left: lens.right; leftMargin: Theme.pad(12); right: parent.right; rightMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
                         focus: true
                         color: Theme.text
                         font.family: Theme.sans
@@ -298,7 +298,7 @@ Scope {
                     id: chips
                     visible: ag.showCategories
                     x: 18
-                    anchors { top: box.bottom; topMargin: 12 }
+                    anchors { top: box.bottom; topMargin: Theme.pad(12) }
                     width: parent.width - 36
                     height: visible ? 30 : 0
                     contentWidth: chipRow.width
@@ -306,7 +306,7 @@ Scope {
                     boundsBehavior: Flickable.StopAtBounds
                     Row {
                         id: chipRow
-                        spacing: 6
+                        spacing: Theme.pad(6)
                         Repeater {
                             model: ["all"].concat(ag.favoriteApps.length > 0 ? ["favorites"] : []).concat(ag.categories)
                             delegate: Pill {
@@ -323,7 +323,7 @@ Scope {
                 GridView {
                     id: grid
                     x: 18
-                    anchors { top: chips.bottom; topMargin: 12; bottom: parent.bottom; bottomMargin: 14 }
+                    anchors { top: chips.bottom; topMargin: Theme.pad(12); bottom: parent.bottom; bottomMargin: Theme.pad(14) }
                     width: parent.width - 36
                     clip: true
                     cellWidth: Math.floor(width / Math.max(1, Math.floor(width / root.cell)))
@@ -336,14 +336,14 @@ Scope {
                         width: grid.width
                         visible: ag.home
                         height: ag.home ? implicitHeight : 0
-                        spacing: 6
+                        spacing: Theme.pad(6)
                         Repeater {
                             model: ag.home ? [{ title: "Favorites", list: ag.favoriteApps }, { title: "Recent", list: ag.recentApps }].filter(s => s.list.length > 0) : []
                             delegate: Column {
                                 required property var modelData
                                 width: grid.width
-                                spacing: 4
-                                Txt { text: modelData.title; size: 12; sub: true; weight: Font.DemiBold; leftPadding: 6 }
+                                spacing: Theme.pad(4)
+                                Txt { text: modelData.title; size: 12; sub: true; strong: true; leftPadding: Theme.pad(6) }
                                 Flow {
                                     width: parent.width
                                     Repeater {
@@ -366,7 +366,7 @@ Scope {
                         Item {
                             visible: ag.favoriteApps.length > 0 || ag.recentApps.length > 0
                             width: grid.width; height: visible ? 26 : 0
-                            Txt { anchors.bottom: parent.bottom; text: "All apps"; size: 12; sub: true; weight: Font.DemiBold; leftPadding: 6 }
+                            Txt { anchors.bottom: parent.bottom; text: "All apps"; size: 12; sub: true; strong: true; leftPadding: Theme.pad(6) }
                         }
                     }
                     delegate: AppTile {
@@ -425,7 +425,7 @@ Scope {
                                 Glyph { id: mi; x: 10; anchors.verticalCenter: parent.verticalCenter; text: parent.modelData.icon; size: 14; color: Theme.subtext }
                                 Txt {
                                     anchors.left: mi.right
-                                    anchors.leftMargin: 10
+                                    anchors.leftMargin: Theme.pad(10)
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: parent.modelData.text
                                     size: 13

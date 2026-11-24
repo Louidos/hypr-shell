@@ -33,7 +33,7 @@ FocusScope {
         x: 14
         y: 14
         width: parent.width - 28
-        spacing: 10
+        spacing: Theme.pad(10)
         Item {
             width: parent.width
             height: 36
@@ -45,10 +45,10 @@ FocusScope {
                 Probe { name: "panel-back" }
             }
             Txt {
-                anchors { left: back.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                anchors { left: back.right; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                 text: pc.pageTitles[pc.page] || ""
                 size: 16
-                weight: Font.Bold
+                title: true
                 font.family: Theme.mono
             }
         }
@@ -68,7 +68,7 @@ FocusScope {
         x: 14
         y: 14
         width: parent.width - 28
-        spacing: 10
+        spacing: Theme.pad(10)
 
         // ---- Kopf: Profilbild, Begrüssung, Datum, Uhrzeit
         Item {
@@ -77,23 +77,23 @@ FocusScope {
             RoundImage {
                 id: avatar
                 width: 42; height: 42; radius: 21
-                anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
+                anchors { left: parent.left; leftMargin: Theme.pad(4); verticalCenter: parent.verticalCenter }
                 source: Settings.face
                 Component.onCompleted: Settings.checkFace()
                 fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
                 probe: "panel-avatar"
             }
             Column {
-                anchors { left: avatar.right; leftMargin: 12; right: time.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                Txt { width: parent.width; text: pc.greeting() + ", " + Settings.user; size: 14; weight: Font.Bold; font.family: Theme.mono }
+                anchors { left: avatar.right; leftMargin: Theme.pad(12); right: time.left; rightMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
+                Txt { width: parent.width; text: pc.greeting() + ", " + Settings.user; size: 14; title: true; font.family: Theme.mono }
                 Txt { width: parent.width; text: Qt.locale("en_GB").toString(clock.date, "dddd, d MMMM"); size: 11; sub: true; font.family: Theme.mono }
             }
             Txt {
                 id: time
-                anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                anchors { right: parent.right; rightMargin: Theme.pad(4); verticalCenter: parent.verticalCenter }
                 text: Qt.formatTime(clock.date, "HH:mm")
                 size: 24
-                weight: Font.Bold
+                heavy: true
                 font.family: Theme.mono
             }
         }
@@ -119,21 +119,21 @@ FocusScope {
             height: 64
             IconButton {
                 id: cup
-                anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                anchors { left: parent.left; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                 icon: "󰅶"
                 active: pc.panel.st.awake
                 onClicked: pc.panel.toggle("awake")
             }
             Column {
-                anchors { left: cup.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                Txt { text: "Keep Awake"; size: 13; weight: Font.Bold; font.family: Theme.mono }
+                anchors { left: cup.right; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
+                Txt { text: "Keep Awake"; size: 13; title: true; font.family: Theme.mono }
                 Txt {
                     text: pc.panel.st.awake ? "No lock, no standby" : "Normal power management"
                     size: 11; sub: true; font.family: Theme.mono
                 }
             }
             Toggle {
-                anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                anchors { right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                 checked: pc.panel.st.awake
                 onToggled: pc.panel.toggle("awake")
             }
@@ -173,18 +173,18 @@ FocusScope {
                 id: searchRow
                 x: 12; y: 14
                 width: parent.width - 24
-                spacing: 8
+                spacing: Theme.pad(8)
                 Rectangle {
                     width: parent.width - allBtn.width - 8
                     height: 36
                     radius: 18
-                    color: Qt.rgba(1, 1, 1, 0.06)
+                    color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
-                    Glyph { id: lens; anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter } text: ""; size: 12; color: Theme.subtext }
+                    Glyph { id: lens; anchors { left: parent.left; leftMargin: Theme.pad(14); verticalCenter: parent.verticalCenter } text: ""; size: 12; color: Theme.subtext }
                     TextInput {
                         id: search
-                        anchors { left: lens.right; leftMargin: 10; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                        anchors { left: lens.right; leftMargin: Theme.pad(10); right: parent.right; rightMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                         color: Theme.text
                         font.family: Theme.mono
                         font.pixelSize: 12 * Theme.fontScale
@@ -210,10 +210,10 @@ FocusScope {
             }
             Grid {
                 id: grid
-                anchors { top: searchRow.bottom; topMargin: 10; horizontalCenter: parent.horizontalCenter }
+                anchors { top: searchRow.bottom; topMargin: Theme.pad(10); horizontalCenter: parent.horizontalCenter }
                 columns: 4
-                columnSpacing: 4
-                rowSpacing: 4
+                columnSpacing: Theme.pad(4)
+                rowSpacing: Theme.pad(4)
                 Repeater {
                     model: apps.found
                     delegate: Rectangle {
@@ -224,13 +224,13 @@ FocusScope {
                         radius: 14
                         color: tileHover.hovered ? Theme.cardHover : "transparent"
                         AppIcon {
-                            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 8 }
+                            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: Theme.pad(8) }
                             size: 32
                             icon: modelData.icon || ""
                             probe: index === 0 ? "app-icon" : ""
                         }
                         Txt {
-                            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 8 }
+                            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.pad(8) }
                             width: parent.width - 8
                             horizontalAlignment: Text.AlignHCenter
                             text: modelData.name
@@ -259,19 +259,19 @@ FocusScope {
             RoundImage {
                 id: art
                 width: 40; height: 40; radius: 10
-                anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                anchors { left: parent.left; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                 source: media.player ? media.player.trackArtUrl : ""
                 Glyph { anchors.centerIn: parent; visible: !art.ready; text: "󰎇"; size: 16; color: Theme.subtext }
             }
             Column {
-                anchors { left: art.right; leftMargin: 12; right: controls.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                Txt { width: parent.width; text: media.player && media.player.trackTitle ? media.player.trackTitle : "Nothing playing"; size: 13; weight: Font.Bold; font.family: Theme.mono }
+                anchors { left: art.right; leftMargin: Theme.pad(12); right: controls.left; rightMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
+                Txt { width: parent.width; text: media.player && media.player.trackTitle ? media.player.trackTitle : "Nothing playing"; size: 13; title: true; font.family: Theme.mono }
                 Txt { width: parent.width; visible: text !== ""; text: media.player ? (media.player.trackArtist || "") : ""; size: 11; sub: true; font.family: Theme.mono }
             }
             Row {
                 id: controls
-                anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                spacing: 2
+                anchors { right: parent.right; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
+                spacing: Theme.pad(2)
                 IconButton { flat: true; width: 30; height: 30; iconSize: 13; icon: "󰒮"; onClicked: if (media.player) media.player.previous() }
                 IconButton { flat: true; width: 30; height: 30; iconSize: 13; icon: media.player && media.player.isPlaying ? "󰏤" : "󰐊"; onClicked: if (media.player) media.player.togglePlaying() }
                 IconButton { flat: true; width: 30; height: 30; iconSize: 13; icon: "󰒭"; onClicked: if (media.player) media.player.next() }
@@ -289,7 +289,7 @@ FocusScope {
                 id: shotCol
                 x: 14; y: 14
                 width: parent.width - 28
-                spacing: 12
+                spacing: Theme.pad(12)
                 Item {
                     width: parent.width
                     height: 44
@@ -297,17 +297,17 @@ FocusScope {
                         id: camBubble
                         width: 44; height: 44; radius: 22
                         anchors.verticalCenter: parent.verticalCenter
-                        color: Qt.rgba(1, 1, 1, 0.07)
+                        color: Theme.cardStrong
                         Glyph { anchors.centerIn: parent; text: "󰄀"; size: 19 }
                     }
                     Column {
-                        anchors { left: camBubble.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                        spacing: 2
-                        Txt { text: "Screenshot"; size: 15; weight: Font.Bold; font.family: Theme.mono }
+                        anchors { left: camBubble.right; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
+                        spacing: Theme.pad(2)
+                        Txt { text: "Screenshot"; size: 15; title: true; font.family: Theme.mono }
                         Txt { text: "Saved and copied to clipboard"; size: 12; color: "#9a9aa4"; font.family: Theme.mono }
                     }
                     Glyph {
-                        anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                        anchors { right: parent.right; rightMargin: Theme.pad(4); verticalCenter: parent.verticalCenter }
                         text: "󰉋"
                         size: 15
                         color: folderHover.hovered ? "#F6F5F4" : "#8a8a8a"
@@ -316,7 +316,7 @@ FocusScope {
                     }
                 }
                 Row {
-                    spacing: 8
+                    spacing: Theme.pad(8)
                     Pill {
                         implicitHeight: 36
                         icon: "󰊓"
@@ -348,9 +348,9 @@ FocusScope {
             readonly property int perRow: Math.min(4, Math.max(1, items.length))
             readonly property real bw: (tg.width - 24 - 8 * (perRow - 1)) / perRow
             height: 16 + 20 + 10 + grid.implicitHeight + 16
-            Txt { x: 16; y: 16; text: "Quick Toggles"; size: 13; weight: Font.Bold; font.family: Theme.mono }
+            Txt { x: 16; y: 16; text: "Quick Toggles"; size: 13; title: true; font.family: Theme.mono }
             Txt {
-                anchors { right: parent.right; rightMargin: 16; top: parent.top; topMargin: 17 }
+                anchors { right: parent.right; rightMargin: Theme.pad(16); top: parent.top; topMargin: Theme.pad(17) }
                 visible: pc.panel.st.profile !== null && pc.panel.st.profile !== undefined
                 text: ({ "power-saver": "Power saver", balanced: "Balanced", performance: "Performance" })[pc.panel.st.profile] || ""
                 size: 11
@@ -360,9 +360,9 @@ FocusScope {
             Grid {
                 id: grid
                 x: 12
-                anchors { bottom: parent.bottom; bottomMargin: 16 }
+                anchors { bottom: parent.bottom; bottomMargin: Theme.pad(16) }
                 columns: tg.perRow
-                spacing: 8
+                spacing: Theme.pad(8)
                 Repeater {
                     model: tg.items
                     delegate: IconButton {
@@ -391,7 +391,7 @@ FocusScope {
                         // Pfeil zur Unterseite
                         Rectangle {
                             visible: tb.hasPage
-                            anchors { right: parent.right; bottom: parent.bottom; margins: 3 }
+                            anchors { right: parent.right; bottom: parent.bottom; margins: Theme.pad(3) }
                             width: 18; height: 18; radius: 9
                             color: arrowHover.hovered ? Theme.cardHover : "transparent"
                             Glyph {

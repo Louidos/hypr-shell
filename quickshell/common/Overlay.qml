@@ -209,6 +209,14 @@ Scope {
 
         onVisibleChanged: if (visible) keys.forceActiveFocus()
 
+        // Leuchten des Rands (theme.border.glow): neben der Fläche statt darin, weil die Fläche beim
+        // Wachsen aus der Ecke abschneidet (clip); folgt Lage, Grösse und Einblenden der Fläche
+        Item {
+            x: body.x; y: body.y; width: body.width; height: body.height
+            opacity: body.opacity; scale: body.scale
+            visible: ov.glass
+            Glow { radius: body.radius }
+        }
         Rectangle {
             id: body
             // Grösse auf dem Bildschirm (Bildschirmpixel)

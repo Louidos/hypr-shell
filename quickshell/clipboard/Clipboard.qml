@@ -80,13 +80,13 @@ Scope {
                     width: parent.width - 28 - clearBtn.width - 10
                     height: 44
                     radius: 22
-                    color: Qt.rgba(1, 1, 1, 0.06)
+                    color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
-                    Glyph { id: lens; anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter } text: "󰅍"; size: 14; color: Theme.subtext }
+                    Glyph { id: lens; anchors { left: parent.left; leftMargin: Theme.pad(16); verticalCenter: parent.verticalCenter } text: "󰅍"; size: 14; color: Theme.subtext }
                     TextInput {
                         id: field
-                        anchors { left: lens.right; leftMargin: 10; right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
+                        anchors { left: lens.right; leftMargin: Theme.pad(10); right: parent.right; rightMargin: Theme.pad(16); verticalCenter: parent.verticalCenter }
                         focus: true
                         color: Theme.text
                         font.family: Theme.sans
@@ -103,7 +103,7 @@ Scope {
                 }
                 Pill {
                     id: clearBtn
-                    anchors { right: parent.right; rightMargin: 14; verticalCenter: box.verticalCenter }
+                    anchors { right: parent.right; rightMargin: Theme.pad(14); verticalCenter: box.verticalCenter }
                     implicitHeight: 36
                     icon: "󰎟"
                     text: "Clear all"
@@ -114,10 +114,10 @@ Scope {
                 ListView {
                     id: list
                     x: 14
-                    anchors { top: box.bottom; topMargin: 12; bottom: hint.top; bottomMargin: 8 }
+                    anchors { top: box.bottom; topMargin: Theme.pad(12); bottom: hint.top; bottomMargin: Theme.pad(8) }
                     width: parent.width - 28
                     clip: true
-                    spacing: 6
+                    spacing: Theme.pad(6)
                     model: cb.shown
                     currentIndex: cb.sel
                     onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
@@ -130,13 +130,13 @@ Scope {
                         width: list.width
                         height: isImage ? 96 : Math.min(84, txt.implicitHeight + 24)
                         radius: 14
-                        color: index === cb.sel ? Theme.cardHover : (hov.hovered ? Theme.card : Qt.rgba(1, 1, 1, 0.02))
+                        color: index === cb.sel ? Theme.cardHover : (hov.hovered ? Theme.card : Theme.cardLevel(0.4))
                         border.width: 1
                         border.color: index === cb.sel ? Theme.glassBorder : "transparent"
                         Image {
                             id: prev
                             visible: row.isImage
-                            anchors { left: parent.left; leftMargin: 10; top: parent.top; topMargin: 8; bottom: parent.bottom; bottomMargin: 8 }
+                            anchors { left: parent.left; leftMargin: Theme.pad(10); top: parent.top; topMargin: Theme.pad(8); bottom: parent.bottom; bottomMargin: Theme.pad(8) }
                             width: 140
                             source: row.isImage ? "file://" + row.modelData.image : ""
                             fillMode: Image.PreserveAspectFit
@@ -147,7 +147,7 @@ Scope {
                         }
                         Txt {
                             id: txt
-                            anchors { left: row.isImage ? prev.right : parent.left; leftMargin: 14; right: del.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                            anchors { left: row.isImage ? prev.right : parent.left; leftMargin: Theme.pad(14); right: del.left; rightMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
                             text: row.isImage ? "Image" : row.modelData.text
                             size: 13
                             sub: row.isImage
@@ -157,7 +157,7 @@ Scope {
                         }
                         IconButton {
                             id: del
-                            anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                            anchors { right: parent.right; rightMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
                             width: 28; height: 28
                             flat: true
                             iconSize: 12
@@ -176,7 +176,7 @@ Scope {
                 }
                 Txt {
                     id: hint
-                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 12 }
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.pad(12) }
                     text: "Enter  paste   ·   Del  remove   ·   Esc  close"
                     size: 11
                     sub: true

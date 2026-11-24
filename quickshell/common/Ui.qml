@@ -180,6 +180,15 @@ Singleton {
     property var probes: ({})
     IpcHandler {
         target: "test"
+        // aktuelle Design-Werte aus Theme (Karten, Pille, Leuchten, Abstände, Schrift) als JSON
+        function theme(): string {
+            const a = c => Math.round(Qt.color(c).a * 1000) / 1000
+            return JSON.stringify({ card: a(Theme.card), cardHover: a(Theme.cardHover), cardBorder: a(Theme.cardBorder),
+                                    cardColor: String(Theme.cardBase), pill: a(Theme.pill), glow: Theme.glow, glowSize: Theme.glowSize,
+                                    glowOpacity: Theme.glowOpacity, panelPad: Theme.panelPad, cardPad: Theme.cardPad, gap: Theme.gap,
+                                    pad10: Theme.pad(10), titleWeight: Theme.titleWeight, textWeight: Theme.textWeight,
+                                    strongWeight: Theme.strongWeight, titleScale: Theme.titleScale, glass: a(Theme.glass()) })
+        }
         function click(name: string): bool {
             const p = ui.probes[name]
             if (!p || !p.parent) return false

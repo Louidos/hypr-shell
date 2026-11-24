@@ -4,6 +4,8 @@
 #   2. Fenster in hyprland.lua: weisser Rand mit theme.border.opacity (aktiv/inaktiv), Akzentfarbe als
 #      Option, Rundung, Transparenz aktiv/inaktiv, Ausnahmen (Spiele, Videos, Bildbearbeitung) undurchsichtig
 #   3. Leiste und rofi im selben Glas (Farbe, Rand, Rundung), Glas wird bei hellem Bild dunkler
+#   Dazu das Leuchten (theme.border.glow): Fenster-Schatten in Randfarbe, ohne Ausnahmen und Vollbild;
+#   Karten, Pillen und Leuchten der Oberfläche prüft tests/oberflaeche.sh (Abschnitt Design-Werte)
 # shellcheck disable=SC2016,SC2034,SC2329
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -51,18 +53,27 @@ for _, a in ipairs(A.aufrufe) do
     if a[1] == "config" and a[2].general and a[2].general.col then r.a = a[2].general.col.active_border; r.i = a[2].general.col.inactive_border end
     if a[1] == "config" and a[2].decoration then r.oa = a[2].decoration.active_opacity; r.oi = a[2].decoration.inactive_opacity; r.ro = a[2].decoration.rounding end
     if a[1] == "window_rule" and a[2].name == "hypr-shell-opaque" then r.ex = a[2].match.class .. " " .. a[2].opacity end
+    if a[1] == "config" and a[2].decoration and a[2].decoration.shadow then local sh = a[2].decoration.shadow; r.sh = tostring(sh.enabled) .. " " .. tostring(sh.color) .. " " .. tostring(sh.range) end
+    if a[1] == "window_rule" and a[2].name == "hypr-shell-glow-aus" and a[2].no_shadow then r.ga = a[2].match.class end
+    if a[1] == "window_rule" and a[2].name == "hypr-shell-glow-vollbild" and a[2].no_shadow and a[2].match.fullscreen then r.gv = "vollbild" end
 end
-print(table.concat({ tostring(r.a), tostring(r.i), tostring(r.oa), tostring(r.oi), tostring(r.ro), tostring(r.ex) }, "|"))
+print(table.concat({ tostring(r.a), tostring(r.i), tostring(r.oa), tostring(r.oi), tostring(r.ro), tostring(r.ex), tostring(r.sh), tostring(r.ga), tostring(r.gv) }, "|"))
 LUA
 }
 if [ -n "$lua" ]; then
     f="$(fenster '{}')"
     pruefe '[[ "$f" == "rgba(ffffff59)|rgba(ffffff26)|0.95|0.88|14|"* ]]' "Standard: weisser Rand 0.35/0.15, Transparenz 0.95/0.88, Rundung 14 ($f)"
-    pruefe '[[ "$f" == *"steam_app_[0-9]+"*"mpv"*"gimp"*"1.0 override 1.0 override" ]]' "Spiele, Videos, Bildbearbeitung bleiben undurchsichtig"
+    pruefe '[[ "$f" == *"steam_app_[0-9]+"*"mpv"*"gimp"*"1.0 override 1.0 override|"* ]]' "Spiele, Videos, Bildbearbeitung bleiben undurchsichtig"
     f="$(fenster '{"look": {"border_color": "accent"}}')"
     pruefe '[[ "$f" == "rgba(d4d4d4ee)|"* ]]' "Akzentfarbe als Option ($f)"
     f="$(fenster '{"theme": {"border": {"color": "#ff0000", "opacity": 0.5, "opacity_inactive": 0.1}}, "look": {"opacity": {"exceptions": []}}}')"
-    pruefe '[[ "$f" == "rgba(ff000080)|rgba(ff00001a)|"*"|nil" ]]' "eigene Randfarbe und Deckkraft; leere Ausnahmeliste = keine Regel ($f)"
+    pruefe '[[ "$f" == "rgba(ff000080)|rgba(ff00001a)|"*"|nil|"* ]]' "eigene Randfarbe und Deckkraft; leere Ausnahmeliste = keine Regel ($f)"
+    f="$(fenster '{"theme": {"border": {"glow": false}}}')"
+    pruefe '[[ "$f" == *"|true 1712986650 14|nil|nil" ]]' "ohne Leuchten: normaler dunkler Schatten, keine Leucht-Regeln ($f)"
+    f="$(fenster '{"theme": {"border": {"color": "#ff8800", "glow": true, "glow_size": 12, "glow_opacity": 0.5}}}')"
+    pruefe '[[ "$f" == *"|true rgba(ff880080) 12|^(steam_app_[0-9]+|"*"gimp"*")\$|vollbild" ]]' "theme.border.glow: Schatten in Randfarbe (Deckkraft glow_opacity, Grösse glow_size), nicht für Spiele, Videos, Bildbearbeitung und Vollbild ($f)"
+    f="$(fenster '{"look": {"shadow": false}, "theme": {"border": {"glow": true}}}')"
+    pruefe '[[ "$f" == *"|true rgba(ffffff40) 10|"* ]]' "Leuchten auch ohne Schatten (look.shadow aus), Standard 10 px und 0.25 ($f)"
 else
     echo "  Hinweis: lua fehlt, übersprungen"
 fi

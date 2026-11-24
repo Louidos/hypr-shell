@@ -695,6 +695,31 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
     for _ in $(seq 1 30); do dk items | grep -q '\*1' || break; sleep 0.3; done
     if ! dk items | grep -q '\*1'; then echo "  ok: geschlossenes Fenster verschwindet wieder"
     else echo "  FEHLER: geschlossenes Fenster bleibt"; dock_ok=0; fi
+    # ---- Dock bei offenem Dashboard (dock.when_panel_open): früher lag das Dock (Ebene Top, später
+    # entstanden) über dem Dashboard und verdeckte Kalender und Ringe
+    lage() { grep -o "hypr-shell-probe $1 .*" "$T/qs.log" | tail -n1 | awk '{print $3, $4, $5, $6}'; }
+    # schneiden "x y w h" "x y w h": 0 = die Flächen überlappen
+    schneiden() { awk -v a="$1" -v b="$2" 'BEGIN { split(a, p, " "); split(b, q, " ")
+        exit !(p[1] < q[1] + q[3] && p[1] + p[3] > q[1] && p[2] < q[2] + q[4] && p[2] + p[4] > q[2]) }'; }
+    ipc dashboard open dashboard; sleep 3
+    st="$(dk state)"; kal="$(lage calendar)"; db="$(lage dock-body)"
+    if jq -e '.givesWay == true' <<<"$st" >/dev/null 2>&1 && [ -n "$kal" ] && ! schneiden "$kal" "$db"; then
+        echo "  ok: Dashboard offen: Dock fährt weg, Kalender ganz sichtbar (Kalender $kal, Dock $db)"
+    else echo "  FEHLER: Dock bei offenem Dashboard: $st, Kalender ${kal:-?}, Dock ${db:-?}"; dock_ok=0; fi
+    ipc dashboard close; sleep 1.5
+    st="$(dk state)"; db="$(lage dock-body)"
+    if jq -e '.givesWay == false and .hidden == false and .input == true' <<<"$st" >/dev/null 2>&1 && [ "$(awk '{print $2 + $4}' <<<"$db")" -le 1080 ]; then
+        echo "  ok: nach dem Schliessen ist das Dock sofort wieder da und nimmt Klicks an ($db)"
+    else echo "  FEHLER: Dock nach dem Schliessen des Dashboards: $st, $db"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-set" dock.when_panel_open behind >/dev/null 2>&1; sleep 2
+    ipc dashboard open dashboard; sleep 2; st="$(dk state)"; ipc dashboard close; sleep 1
+    if jq -e '.behind == true and .top == false and .givesWay == false' <<<"$st" >/dev/null 2>&1; then echo "  ok: behind: das Dock liegt unter dem Dashboard"
+    else echo "  FEHLER: behind: $st"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-set" dock.when_panel_open stay >/dev/null 2>&1; sleep 2
+    ipc dashboard open dashboard; sleep 2; st="$(dk state)"; ipc dashboard close; sleep 1
+    if jq -e '.behind == false and .top == true and .givesWay == false' <<<"$st" >/dev/null 2>&1; then echo "  ok: stay: das alte Verhalten (Dock bleibt oben)"
+    else echo "  FEHLER: stay: $st"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-set" reset dock.when_panel_open >/dev/null 2>&1; sleep 2
     # ---- Schliessen bei offener Fensterliste und offenem Menü; viele Male öffnen und schliessen.
     # Danach darf kein Verweis auf ein geschlossenes Fenster übrig sein und das Dock nimmt Klicks an.
     fenster() { "$qs" -p "$T/fenster.qml" >> "$T/fenster.log" 2>&1 & echo "$!"; }

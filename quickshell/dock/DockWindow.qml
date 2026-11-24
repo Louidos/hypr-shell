@@ -124,19 +124,39 @@ PanelWindow {
     exclusionMode: d.reserve || (d.avoidBar && d.barSameEdge) ? ExclusionMode.Normal : ExclusionMode.Ignore
     exclusiveZone: d.reserve ? d.margin + thickness : 0
     readonly property string exclusionText: d.reserve ? "reserve" : d.avoidBar && d.barSameEdge ? "avoid" : "ignore"
-    WlrLayershell.layer: d.topLayer ? WlrLayer.Top : WlrLayer.Bottom
+    // behind: solange ein Panel das Dock überdeckt, liegt es unter der Fläche (Ebene Bottom)
+    WlrLayershell.layer: d.topLayer && !behindPanel ? WlrLayer.Top : WlrLayer.Bottom
     WlrLayershell.namespace: "hypr-shell-dock"
     // Tastatur nur, solange der Tastatur-Modus läuft UND das Dock sichtbar ist und Eingaben annimmt –
     // sonst hielte eine unsichtbare Fläche die Tastatur fest und Programme bekämen keine Tasten mehr
-    readonly property bool keyboardActive: keyboard && visible && inputOn && !hidden
+    readonly property bool keyboardActive: keyboard && visible && inputOn && !hidden && !givesWay
     WlrLayershell.keyboardFocus: keyboardActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     onKeyboardActiveChanged: { if (keyboard && !keyboardActive) d.leaveFocus(); Ui.setKeyboard("dock:" + (screen ? screen.name : ""), keyboardActive) }
     // ist ein Panel offen (Dashboard, Starter, Power-Menü …), nimmt das Dock keine Eingaben an
     readonly property bool inputOn: Ui.panel === "" || Ui.panel === "settings"
-    mask: !inputOn ? noRegion : hidden ? edgeRegion : bodyRegion
+    mask: !inputOn || givesWay ? noRegion : hidden ? edgeRegion : bodyRegion
     Region { id: bodyRegion; item: body }
     Region { id: edgeRegion; item: edgeStrip }
     Region { id: noRegion }
+
+    // ---- Panel offen (dock.when_panel_open). Dock und Panels liegen beide auf der Ebene Top; das Dock
+    // entsteht später und läge deshalb darüber. Überdeckt das offene Panel (Ui.panelAreas, Endlage)
+    // die Fläche des Docks: hide = das Dock gleitet über die Kante weg und kommt beim Schliessen
+    // sofort zurück, behind = es legt sich unter das Panel, stay = es bleibt oben (wie früher).
+    // Die offene Seite "Dock" der Einstellungen zeigt das Dock immer (Live-Vorschau).
+    readonly property var coverArea: Ui.panel !== "" && Ui.panelAreas[Ui.panel] ? Ui.panelAreas[Ui.panel] : null
+    readonly property var localRect: {
+        const sw = Settings.screenWidth(screen), sh = Settings.screenHeight(screen)
+        const wx = pos === "left" ? 0 : pos === "right" ? sw - width : (sw - width) / 2
+        const wy = pos === "top" ? 0 : pos === "bottom" ? sh - height : (sh - height) / 2
+        return { x: wx + body.x, y: wy + body.y, width: body.width, height: body.height }
+    }
+    readonly property bool panelCovers: d.whenPanelOpen !== "stay" && coverArea !== null && screen !== null
+        && coverArea.screen === screen.name && !(Ui.settingsOpen && Ui.settingsPage === "dock")
+        && V.ueberdeckt(localRect, [coverArea])
+    readonly property bool givesWay: panelCovers && d.whenPanelOpen === "hide"
+    readonly property bool behindPanel: panelCovers && d.whenPanelOpen === "behind"
+    onGivesWayChanged: if (givesWay) { if (popupOpen) closePopup(); if (keyboard) d.leaveFocus() }
 
     // ---- Verstecken (dock.autohide): never, always (Maus geht), smart (ein Fenster überdeckt das Dock).
     // Versteckt bleibt ein schmaler, unsichtbarer Streifen an der Kante; Mauskontakt dort blendet
@@ -437,7 +457,7 @@ PanelWindow {
     readonly property string tipLabel: keyboard ? ((byKey[selectedKey] ? byKey[selectedKey].name + "  ·  " : "") + "← → choose · Enter open · Esc leave") : hoverText
     Rectangle {
         id: tip
-        visible: (win.keyboard || win.d.labels === "hover") && win.tipAnchor !== null && win.tipLabel !== "" && !win.hidden
+        visible: (win.keyboard || win.d.labels === "hover") && win.tipAnchor !== null && win.tipLabel !== "" && !win.hidden && !win.givesWay
         readonly property point c: win.tipAnchor ? win.tipAnchor.mapToItem(win.contentItem, win.tipAnchor.width / 2, win.tipAnchor.height / 2) : Qt.point(0, 0)
         width: tipText.implicitWidth + 20
         height: tipText.implicitHeight + 10
@@ -468,7 +488,7 @@ PanelWindow {
         x: win.pos === "left" ? win.d.margin : win.pos === "right" ? parent.width - win.d.margin - width : Math.round((parent.width - width) / 2)
         y: win.pos === "top" ? win.d.margin : win.pos === "bottom" ? parent.height - win.d.margin - height : Math.round((parent.height - height) / 2)
         // versteckt: hinaus über die Kante gleiten
-        readonly property real away: win.hidden ? win.thickness + win.d.margin + win.shadowPad + 4 : 0
+        readonly property real away: win.hidden || win.givesWay ? win.thickness + win.d.margin + win.shadowPad + 4 : 0
         transform: Translate {
             x: win.pos === "left" ? -body.away : win.pos === "right" ? body.away : 0
             y: win.pos === "top" ? -body.away : win.pos === "bottom" ? body.away : 0

@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Behoben
+- Das Dock verdeckt das Dashboard und andere Flächen nicht mehr; es fährt weg, solange sie offen sind, und ist nach dem Schliessen sofort wieder da (einstellbar unter Dock → „When a panel is open“: hide, behind oder stay) (#138)
+
 ## 1.10.0 – 2026-11-24
 
 ### Hinzugefügt

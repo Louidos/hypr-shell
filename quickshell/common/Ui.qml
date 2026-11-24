@@ -27,6 +27,15 @@ Singleton {
     }
     function closePanel(name) { if (name === undefined || name === "" || panel === name) panel = "" }
     function togglePanel(name) { if (panel === name) closePanel(name); else openPanel(name) }
+    // Fläche jedes offenen Panels auf seinem Bildschirm ({screen, x, y, width, height}, Endlage ohne
+    // Animation); das Dock weicht aus, wenn das offene Panel es überdeckt (dock.when_panel_open)
+    property var panelAreas: ({})
+    function setPanelArea(name, area) {
+        if (!name) return
+        const k = Object.assign({}, panelAreas)
+        if (area) k[name] = area; else delete k[name]
+        panelAreas = k
+    }
 
     // ---- Tastatur: jede Fläche meldet, solange sie die Tastatur will (Exclusive/OnDemand, sichtbar
     // und offen). Regel: nur sichtbar offene Flächen dürfen die Tastatur haben; der Notfall gibt alles frei.

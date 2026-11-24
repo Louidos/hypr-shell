@@ -96,7 +96,7 @@ Scope {
     // als Panel anmelden (Ui.openPanel öffnet nur angemeldete Namen); verschwindet das Overlay, während
     // es offen ist (z. B. Missa wird abgeschaltet), wird Ui.panel frei
     Component.onCompleted: if (exclusive && name !== "") Ui.registerPanel(name)
-    Component.onDestruction: { if (exclusive && name !== "") Ui.unregisterPanel(name); Ui.setKeyboard(ov.namespace, false) }
+    Component.onDestruction: { if (exclusive && name !== "") { Ui.unregisterPanel(name); Ui.setPanelArea(name, null) } Ui.setKeyboard(ov.namespace, false) }
     // offen, aber kein Fenster zu sehen (Bildschirm abgesteckt, kein Bildschirm): nach 1.5 s zu, damit
     // Ui.panel nicht hängen bleibt (das Dock nähme sonst keine Klicks mehr an)
     Timer {
@@ -131,7 +131,7 @@ Scope {
     readonly property bool atLeft: place === "left" || place.indexOf("-left") > 0
     readonly property bool atRight: place === "right" || place.indexOf("-right") > 0
 
-    ScreenFit { id: fitter; screen: ov.screen }
+    ScreenFit { id: fitter; screen: ov.screen; forPanel: true }
     readonly property real k: uiScale > 0 ? uiScale : 1
     // Leiste und reserviertes Dock an den Kanten, an denen das Panel liegt (Bildschirmpixel)
     readonly property bool fillV: fill && (atLeft || atRight)
@@ -151,6 +151,22 @@ Scope {
     readonly property real fitWidth: fitted.w
     readonly property real fitHeight: fitted.h
     readonly property bool scrolls: scroll && fitted.scroll
+
+    // Endlage der Fläche auf dem Bildschirm (ohne Animation), für das Dock (dock.when_panel_open):
+    // überdeckt das offene Panel das Dock, fährt es weg oder legt sich dahinter
+    readonly property var area: {
+        if (!exclusive || !open || !win.visible || !ov.screen || clickThrough) return null
+        const sw = fitter.width, sh = fitter.height, ww = win.width, wh = win.height
+        const wx = win.anchors.left ? 0 : win.anchors.right ? sw - ww : (sw - ww) / 2
+        const wy = win.anchors.top ? 0 : win.anchors.bottom ? sh - wh : (sh - wh) / 2
+        const fw = body.fw, fh = body.fh
+        const bx = animation === "grow" ? (atRight ? ww - fw - margin - insetRight : margin + insetLeft)
+                 : animation === "fade" ? (ww - fw) / 2 : body.x0
+        const by = animation === "grow" ? (atBottom ? wh - fh - margin - insetBottom : margin + insetTop)
+                 : animation === "fade" ? (wh - fh) / 2 : body.y0
+        return { screen: ov.screen.name, x: Math.round(wx + bx), y: Math.round(wy + by), width: Math.round(fw), height: Math.round(fh) }
+    }
+    onAreaChanged: if (exclusive && name !== "") Ui.setPanelArea(name, area)
 
     PanelWindow {
         id: win

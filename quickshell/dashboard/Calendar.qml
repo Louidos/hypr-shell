@@ -9,6 +9,8 @@ import "../common"
 Item {
     id: cal
     property var events: []
+    // Lage im Oberflächentest (verdeckt das Dock den Kalender?)
+    Probe { name: "calendar" }
     // Termin → Date (UTC-Zeiten aus CalDAV in Ortszeit)
     function when(e) {
         if (e.allday) { const p = e.start.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]) }

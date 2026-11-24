@@ -59,6 +59,9 @@ Scope {
     readonly property var themeEffect: { const c = Qt.createComponent("DockIconTheme.qml"); return c.status === Component.Ready ? c : null }
     readonly property var iconEffect: iconStyle === "mono" ? monoEffect : iconStyle === "theme" ? themeEffect : null
     readonly property bool hideOnFullscreen: Settings.get("dock.hide_on_fullscreen", true) === true
+    // Panel offen (Dashboard, Panel, Einstellungen, App-Raster, Starter …): hide, behind oder stay
+    readonly property string whenPanelOpen: ["hide", "behind", "stay"].indexOf(Settings.get("dock.when_panel_open", "hide")) >= 0
+        ? Settings.get("dock.when_panel_open", "hide") : "hide"
     // Leiste auf derselben Kante (Waybar: bar.position top/bottom)
     readonly property bool avoidBar: Settings.get("dock.avoid_bar", true) === true
     readonly property bool barSameEdge: String(Settings.get("bar.position", "top")) === position
@@ -528,7 +531,8 @@ Scope {
         function state(): string {
             const w = dock.windows.length > 0 ? dock.windows[0] : null
             return w ? JSON.stringify({ exclusion: w.exclusionText, zone: w.exclusiveZone, fullscreen: w.fullscreenHere, input: w.inputOn, hidden: w.hidden,
-                                        glass: String(dock.glassColor), shown: w.visible }) : "{}"
+                                        glass: String(dock.glassColor), shown: w.visible, givesWay: w.givesWay, behind: w.behindPanel,
+                                        top: w.WlrLayershell.layer === WlrLayer.Top }) : "{}"
         }
         // für Tests: Maus n-mal über das erste Dock führen (Vergrösserung), Dauer in ms
         function sweep(n: int): int { return dock.windows.length > 0 ? dock.windows[0].sweep(n) : -1 }

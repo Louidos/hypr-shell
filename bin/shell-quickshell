@@ -10,7 +10,9 @@ set -euo pipefail
 cfg="$HOME/.config/quickshell/hypr-shell"
 qs="$(command -v qs || command -v quickshell || true)"
 [ -n "$qs" ] || { echo "quickshell fehlt" >&2; exit 1; }
-[ -f "$cfg/shell.qml" ] || exit 0
+# nicht installiert: Starten tut nichts; ein IPC-Befehl meldet Fehler (Aufrufer wie shell-diag oder
+# shell-powermenu sollen nicht glauben, die Oberfläche habe geantwortet)
+if [ ! -f "$cfg/shell.qml" ]; then [ "${1:-}" = ipc ] && exit 1; exit 0; fi
 
 # Symbolthema aus den Einstellungen (theme.icons), Standard Papirus-Dark
 symbole() {
@@ -33,8 +35,18 @@ benachrichtigungen() {
     fi
     if [ "$an" = true ]; then pkill -x swaync 2>/dev/null || true; fi
 }
-start() { laeuft || { benachrichtigungen; setsid -f "$qs" -p "$cfg" >/dev/null 2>&1; }; }
-stop() { pkill -f -- "-p $cfg" 2>/dev/null || true; }
+# Start über shell-waechter: stürzt die Oberfläche ab, startet sie von selbst neu (ohne Endlosschleife)
+waechter="$(dirname "$(readlink -f "$0")")/shell-waechter"
+start() {
+    laeuft && return 0
+    benachrichtigungen
+    if [ -x "$waechter" ]; then setsid -f "$waechter" quickshell -- "$qs" -p "$cfg" >/dev/null 2>&1
+    else setsid -f "$qs" -p "$cfg" >/dev/null 2>&1; fi
+}
+stop() {
+    [ -x "$waechter" ] && "$waechter" stop quickshell
+    pkill -f -- "-p $cfg" 2>/dev/null || true
+}
 
 case "${1:-start}" in
     start) start ;;
@@ -44,6 +56,7 @@ case "${1:-start}" in
         shift
         # "show" ist in qs ipc selbst vergeben: "ipc dock show" heisst intern "open"
         if [ "${2:-}" = show ]; then set -- "$1" open "${@:3}"; fi
+        laeuft || { echo "shell-quickshell: Oberfläche läuft nicht" >&2; exit 1; }
         exec "$qs" -p "$cfg" ipc call "$@" ;;
     *) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

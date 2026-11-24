@@ -119,17 +119,26 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 | `SUPER + F` | Vollbild an / aus |
 | `SUPER + E` | Dateien (Nautilus) |
 | `CTRL + SUPER + Return` / `SUPER + R` / `SUPER + Space` / `ALT + Space` | Starter (Suche nach Apps, `=` rechnet) |
+| `SUPER` allein antippen (`SUPER + Super_L` / `SUPER + Super_R`, beim Loslassen) | App-Raster (alle Apps, wie Start-Menü) |
 | `SUPER + V` | Fenster schwebend / gekachelt |
 | `SUPER + SHIFT + V` | Verlauf der Zwischenablage |
 | `SUPER + Tab` | Fenster-Übersicht aller Arbeitsflächen |
 | `SUPER + F1` | Kürzel-Spickzettel |
-| `SUPER + B` | Dock mit der Tastatur bedienen (Pfeile, Enter, Menütaste oder `SHIFT + F10`, Esc) |
+| `SUPER + B` | Dock mit der Tastatur bedienen (Pfeile, Enter, Menütaste oder `SHIFT + F10`, Esc; jede andere Taste, ein Klick daneben oder 10 s ohne Taste geben die Tastatur zurück) |
+| `CTRL + SUPER + Escape` | Notfall: Tastatur zurück (siehe [Tastatur geht nicht](docs/tastenkuerzel.md#tastatur-geht-nicht)) |
 | `SUPER + I` | Chat mit Missa (nur mit `missa.enabled`, sonst tut das Kürzel nichts) |
 | `SUPER + SHIFT + I` | mit Missa sprechen; nochmal drücken beendet (nur mit `missa.voice_enabled` und whisper.cpp) |
-| `SUPER + M` | abmelden (Hyprland beenden) |
+| `ALT + Tab` | zwischen Fenstern wechseln (ALT halten, Tab wählt weiter, loslassen wechselt; Esc bricht ab, Q/Entf schliesst) |
+| `ALT + SHIFT + Tab` | dasselbe rückwärts |
+| `SUPER + M` | Fenster minimieren (liegt dann abgedunkelt im Dock) |
+| `SUPER + SHIFT + M` | zuletzt minimiertes Fenster zurückholen |
+| `CTRL + SUPER + M` | abmelden (Hyprland beenden; bis 1.9 `SUPER + M`) |
 | `SUPER + L` | sperren |
 | `SUPER + Escape` | Power-Menü (Lock, Sleep, Logout, Restart, Shutdown) |
-| `SUPER + left` / `SUPER + right` / `SUPER + up` / `SUPER + down` | Fokus in diese Richtung |
+| `SUPER + left` / `SUPER + right` | Fenster an die linke/rechte Hälfte andocken (danach `SUPER + up`/`down`: Viertel) |
+| `SUPER + up` / `SUPER + down` | maximieren zwischen Leiste und Dock / wiederherstellen (nicht angedockt: minimieren) |
+| `SUPER + ALT + left` / `SUPER + ALT + right` / `SUPER + ALT + up` / `SUPER + ALT + down` | Fokus in diese Richtung (bis 1.9 `SUPER + Pfeile`) |
+| `SUPER + SHIFT + T` | Fenster-Modus: schwebend ↔ kacheln |
 | `SUPER + 1` … `SUPER + 0` | zu Arbeitsfläche 1–10 |
 | `SUPER + SHIFT + 1` … `SUPER + SHIFT + 0` | Fenster auf Arbeitsfläche 1–10 verschieben |
 | `SUPER + mouse_down` / `SUPER + mouse_up` (Mausrad) | nächste / vorige Arbeitsfläche |
@@ -154,7 +163,10 @@ Belegungen (`hyprctl binds -j`), also immer auf dem aktuellen Stand. Eigene Kür
 Alle Kürzel lassen sich in der Einstellungs-App auf der Seite **Keybinds** ändern (Klick, dann die
 neue Kombination drücken) oder mit `shell-set keybinds.<aktion> "SUPER + T"`; ein leeres Kürzel heisst
 „keine Taste“. Eigene Kürzel stehen in `keybinds.custom`. Eine Kombination, die schon belegt ist, wird
-abgelehnt und die belegende Aktion genannt. `SUPER + U` (Einstellungs-App) lässt sich nicht leeren.
+abgelehnt und die belegende Aktion genannt (`shell-set` und die Einstellungs-App schon bei der Eingabe).
+Steht in einer von Hand bearbeiteten settings.json eine Taste doppelt, verliert das im Schema spätere
+Kürzel seine Taste – ist das eine Gruppe wie die Arbeitsflächen-Kürzel, die ganze Gruppe –, und eine
+Benachrichtigung nennt beide. `SUPER + U` (Einstellungs-App) lässt sich nicht leeren.
 Die Medien-, Lautstärke- und Helligkeitstasten bleiben fest.
 
 Maus: Ecke **unten rechts** öffnet das Panel, die **Mitte der unteren Kante** das Dashboard.
@@ -207,12 +219,29 @@ von Hand eingeschalteter Gaming-Modus bleibt, wie er ist; abschalten mit `shell-
 
 ### Starter
 
-`SUPER + R` (oder `SUPER + Space`, `ALT + Space`, das Distro-Symbol links in der Leiste) öffnet in der
+`SUPER + R` (oder `SUPER + Space`, `ALT + Space`, Rechtsklick auf das Distro-Symbol links in der Leiste) öffnet in der
 Mitte ein Suchfeld im Glas-Look: Tippen sucht Apps nach Name, Beschreibung und Stichworten, zuletzt
 benutzte stehen oben; Pfeiltasten wählen, Enter startet, Esc schliesst. Beginnt die Eingabe mit `=`,
 wird gerechnet (`=12*8` zeigt 96, auch `^`, `%`, Klammern, `sqrt()`, `pi`); Enter kopiert das Ergebnis.
 Wer lieber rofi oder einen anderen Starter will: `shell-set apps.launcher "rofi -show drun"`
 (zurück mit `shell-set apps.launcher builtin`).
+
+### App-Raster
+
+Alle Apps auf einen Blick, wie ein Start-Menü oder Launchpad: **`SUPER` allein antippen** (drücken und
+loslassen), der **Knopf links im Dock** oder ein **Klick auf das Distro-Symbol** in der Leiste öffnet in
+der Mitte ein Glas-Raster mit allen Apps. Oben stehen ein Suchfeld (einfach lostippen), die Kategorien
+(Internet, Office, Media, Games, …), darunter die **Favoriten** und die **zuletzt benutzten** Apps, dann
+alle Apps nach Namen. Pfeiltasten wählen, Enter startet, Esc schliesst; nach dem Start ist das Raster zu
+und die Tastatur wieder frei. **Rechtsklick** (oder Menü-Taste) auf eine App: im Dock anheften/lösen,
+Favorit an/aus, neues Fenster; Mittelklick öffnet ein neues Fenster.
+
+`SUPER` mit einer anderen Taste (`SUPER + E`, `SUPER + Q`, …) wirkt wie bisher, das Raster geht dabei
+nicht auf. Einstellungen unter System → App grid: `appraster.enabled`, `appraster.super_tippen`
+(SUPER antippen an/aus), `appraster.dock_knopf`, `appraster.kategorien`, `appraster.zuletzt` (wie viele
+zuletzt benutzte, 0 = keine) und `appraster.favoriten` (Liste der `.desktop`-Namen). Zuletzt benutzt
+teilt sich das Raster mit dem Starter. Als eigenes Leisten-Modul gibt es zusätzlich `apps`
+(z. B. `shell-set bar.modules.left '["apps","workspaces","media"]'`).
 
 ### Benachrichtigungen
 
@@ -287,6 +316,98 @@ in `lock.after`, `lock.screen_off` und `lock.suspend`.
 
 ![Sperrbildschirm](docs/screenshots/lockscreen.png)
 
+### Fenster andocken und Fenster-Modus
+
+Fenster sind jetzt standardmässig **frei verschiebbar** wie bei Windows und macOS: neue Fenster
+öffnen schwebend und mittig (`fenster.modus = schwebend`; `kacheln` = automatisch gekachelt wie
+bisher, umschalten mit `SUPER + SHIFT + T` – wirkt sofort, auch auf offene Fenster). Ein Fenster mit
+`SUPER` + linker Maustaste an den **oberen Rand** ziehen: maximiert zwischen Leiste und Dock; an den
+**linken oder rechten Rand**: halbe Breite; in eine **Ecke**: ein Viertel. Beim Ziehen zeigt eine
+Glas-Fläche vorher, wo es landet; Wegziehen bringt die alte Grösse zurück. Zwischen zwei
+Bildschirmen wird nicht angedockt (das Fenster wechselt den Bildschirm). Per Tastatur:
+`SUPER + Pfeile` (siehe Tastenkürzel). Einstellungen → Look → Snapping (`andocken.*`: an/aus,
+Randabstand 8 px, Ecken 60 px, Vorschau, Animation). Im Kacheln-Modus wird ein Fenster beim
+Andocken schwebend. Hinweis: Ziehen an der Titelleiste (hyprbars) startet das Plugin selbst und dockt
+noch nicht an – dafür `SUPER` + Ziehen oder die Tastatur.
+
+### Fenster wechseln (ALT + Tab)
+
+ALT gedrückt halten und Tab drücken: In der Mitte des Bildschirms mit dem Mauszeiger erscheint eine
+Glas-Leiste mit Vorschaubildern aller offenen Fenster – zuletzt benutzte zuerst, ein kurzes
+ALT + Tab springt also zum vorherigen Fenster. Weiter Tab (oder Pfeile, Maus) wählt, ALT loslassen
+wechselt, Escape bricht ab, Q oder Entf schliesst das gewählte Fenster. Fenster anderer
+Arbeitsflächen und Bildschirme tragen eine kleine Nummer, minimierte den Hinweis „minimized“ –
+Wechseln holt die Arbeitsfläche bzw. das Fenster zurück. Die Tasten laufen über eine Submap von
+Hyprland; die Leiste nimmt nie die Tastatur und schliesst sich nach 5 s ohne Taste von selbst.
+Einstellungen → System → Window switcher (`switcher.*`: an/aus, alle Fenster oder nur die
+Arbeitsfläche, Vorschau an/aus, Grösse); `SUPER + Tab` (Übersicht) bleibt.
+
+### Fenster-Knöpfe
+
+Jedes normale Fenster hat oben eine schmale Glas-Titelleiste mit Titel und drei Knöpfen:
+**Minimieren**, **Maximieren/Wiederherstellen** und **Schliessen** – im Windows-Stil rechts
+(Standard) oder als rote, gelbe und grüne Punkte links im macOS-Stil (`fenster.knoepfe.stil`,
+`fenster.knoepfe.seite`; wirkt sofort). Doppelklick auf die Leiste maximiert, Ziehen verschiebt.
+Maximieren füllt die Fläche zwischen Leiste und Dock (kein echtes Vollbild; `SUPER + F` bleibt
+Vollbild). Minimierte Fenster verschwinden, liegen abgedunkelt im Dock und kommen per Klick an ihre
+alte Stelle auf der aktuellen Arbeitsfläche zurück (`SUPER + M` / `SUPER + SHIFT + M`,
+`shell-window minimize|restore`). Programme mit eigener Titelleiste (GNOME-Programme wie der
+Dateimanager, Browser) bekommen keine zweite – ihre eigenen Knöpfe zeigen dieselben drei Knöpfe auf
+derselben Seite, ihr Minimieren geht ebenfalls ins Dock. Keine Titelleiste bei Vollbild, Dialogen,
+Spielen und Videos (`fenster.titelleiste_ausnahmen`; `fenster.titelleiste` = an | aus |
+nur-schwebend). Die Titelleiste kommt vom offiziellen Plugin **hyprbars**; der Installer richtet es
+ein (Paket, sonst `hyprpm`), beim Start lädt `shell-window titlebar` es. Fehlt es (z. B. nach einem
+Hyprland-Update), läuft alles ohne Knöpfe weiter und eine Meldung nennt die Lösung
+(`hyprpm update && hyprpm enable hyprbars`).
+
+### Glas-Look
+
+Alles sieht aus wie mattes Glas, ohne Einstellen wie in der Vorlage: Leiste, Dock, alle Panels,
+Menüs, Benachrichtigungen, Starter und Einstellungs-App sind grau und durchsichtig mit starkem
+Blur dahinter, mit einem hellen, leicht leuchtenden Rand (2 px) und stark gerundeten Ecken
+(26 px, Karten 16 px); Karten sind spürbar heller als das Glas, es gibt viel Abstand innen und
+fette Überschriften. Die Programmfenster haben denselben hellen, leuchtenden Rand, 18 px Rundung
+und sind leicht durchsichtig (aktiv 0.95, inaktiv 0.88). Spiele, Videos, Bildbearbeitung und Vollbild
+bleiben undurchsichtig (`look.opacity.exceptions`). Ist das Hintergrundbild hell, wird das Glas von
+selbst so weit dunkler, dass Text lesbar bleibt. Alle Werte stehen unter Einstellungen → Theme
+(Glas, Rand) und Look (Fenster) mit Live-Vorschau; drei Voreinstellungen: **glass** (Standard),
+**minimal** (ruhig, fast undurchsichtig) und **gaming** (kein Blur, keine Schatten, keine
+Animationen) – auch mit `shell-look preset gaming`. Die Leiste schwebt mit Abstand zum Rand
+(`bar.floating`), das Dock nimmt standardmässig dasselbe Glas (`dock.color_mode = glass`).
+
+> **Von 1.10 auf 1.11:** Der neue Standard-Look gilt sofort für alle Werte, die nicht selbst
+> gesetzt sind. Wer früher die Voreinstellung **glass** angeklickt hat, hat die alten Zahlen in
+> settings.json stehen; sie werden nie automatisch überschrieben. Für den neuen Look
+> Einstellungen → Look → Preset → **Glass** neu anklicken oder:
+>
+> ```bash
+> shell-set reset theme
+> ```
+>
+> ```bash
+> shell-set reset look
+> ```
+
+Auch die Feinheiten sind Einstellungen (Theme → Cards, Spacing, Fonts, Glass), mit Live-Vorschau
+auf den Seiten Look und Theme und „Reset“ je Wert:
+- **Karten** (`theme.card.*`): Farbe, Helligkeit, Helligkeit beim Überfahren und Kontur der Karten
+  in Panels, Dashboard und Einstellungen; auch Text auf Karten bleibt lesbar (Kontrast 4.5:1).
+- **Leuchtender Rand** (`theme.border.glow`, `glow_size`, `glow_opacity`): weicher Schein in
+  Randfarbe um Panels, Karten, Dock und Fenster; Spiele, Videos, Bildbearbeitung und Vollbild
+  leuchten nie.
+- **Abstände** (`theme.spacing.*`): ein Faktor für alle Abstände, dazu Innenabstand der Glasflächen
+  und Karten und die Lücke zwischen Karten.
+- **Schrift** (`theme.font.title_weight`, `text_weight`, `title_scale`): Dicke von Titeln und Text,
+  Grösse der Überschriften; **aktive Pille** (`theme.pill.opacity`).
+
+```bash
+shell-set theme.card.opacity 0.15
+```
+
+```bash
+shell-set theme.border.glow true
+```
+
 ### Farben und Hintergrundbild
 
 Eigene Bilder nach `~/Pictures/Wallpapers` legen und im Dashboard (SUPER + W) anklicken
@@ -338,7 +459,15 @@ Ein Regler wirkt schon beim Ziehen. Neben einem geänderten Wert steht **Reset**
 **Reset page**, ganz oben **Undo** und **Redo**; die Suche findet Werte über Titel, Erklärung und
 Schlüssel (z. B. „blur“, „clock“, „battery“) und springt zur Zeile. Auf **Monitors** stehen die echten
 Bildschirme aus Hyprland; eine neue Auflösung oder Drehung muss innerhalb von 15 Sekunden bestätigt
-werden, sonst gilt wieder die alte. **About** öffnet `settings.json` und diese Übersicht. Weitere Seiten:
+werden, sonst gilt wieder die alte. **About** öffnet `settings.json` und diese Übersicht.
+
+Die Startseite **Home** ist luftig wie die Vorlage: grosses Profilbild, „Good evening, <name>“,
+Datum und Uhrzeit, Pillen mit Farbmodus, Laufzeit und Distro, ein Tipp, der bei jedem Öffnen
+wechselt (das × schaltet die Tipps ab, `settings.home.tips`), und Kacheln unter „Make it yours“
+zu Theme, Wallpaper (Tab im Dashboard), Notifications, Lock screen, Bar und Launcher. **Profile,
+Export und Import** stehen jetzt unter **System → Backup**. In der Seitenleiste ist die offene
+Seite eine hellere graue Pille mit fetter Schrift (`theme.pill.nav = white` gibt die weisse Pille
+zurück). Weitere Seiten:
 [Home](docs/screenshots/settings-home.png), [Bar](docs/screenshots/settings-bar.png),
 [Theme](docs/screenshots/settings-theme.png), [Monitors](docs/screenshots/settings-monitors.png),
 [Keybinds](docs/screenshots/settings-keybinds.png), [Suche](docs/screenshots/settings-suche.png).
@@ -507,6 +636,12 @@ automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelte
 | `shell-secrets set\|has\|unset <NAME>` | Zugangsdaten in `secrets.env` (Wert über stdin) |
 | `shell-net wifi\|bt …` | WLAN und Bluetooth für die Unterseiten im Panel |
 | `shell-quickshell restart` | Oberfläche neu starten |
+| `shell-snap key <richtung>\|modus [schwebend\|kacheln\|toggle]` | Andocken per Tastatur, Fenster-Modus |
+| `shell-switcher next\|prev\|commit\|cancel\|close` | ALT + Tab (von den Kürzeln aufgerufen) |
+| `shell-window minimize\|restore\|list` | Fenster minimieren, zurückholen, minimierte zeigen |
+| `shell-look presets\|preset <name>` | Voreinstellungen für das Aussehen: glass, minimal, gaming |
+| `shell-diag tastatur\|freigeben` | wer hat die Tastatur? bzw. Tastatur zurück (wie `CTRL + SUPER + Escape`) |
+| `shell-waechter <name> -- <befehl>` | hält Leiste und Oberfläche am Laufen: nach einem Absturz Neustart (höchstens 5-mal in 2 Minuten, dann Benachrichtigung); `shell-waechter stop <name>` beendet ohne Neustart |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |
 | `shell-clipboard list\|paste\|delete\|clear …` | Verlauf der Zwischenablage |
 | `shell-osd volume\|mic\|brightness\|kbd …` | Lautstärke/Helligkeit ändern und anzeigen |
@@ -530,7 +665,7 @@ haben Profilbild, Cover und Vorschaubilder dort eckige statt runde Ecken.
 
 ## Projektstand
 
-Version: **1.4.0** (siehe [`VERSION`](VERSION)). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
+Version: **1.10.0** (siehe [`VERSION`](VERSION)). Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
 Was nur auf dem echten Rechner geprüft werden kann, steht in [docs/abnahme.md](docs/abnahme.md).
 Optik und Aufbau sind an „DarkShadow's Shell“ (MIT) angelehnt; der Code ist neu geschrieben,
 übernommene Masse und Formen sind in [NOTICE](NOTICE) vermerkt.

@@ -11,13 +11,59 @@ Singleton {
 
     // ---- immer nur ein Panel offen: Name des offenen Panels (Overlay.name) oder ""
     property string panel: ""
-    function openPanel(name) { panel = name }
+    // angemeldete Panels (Overlay meldet sich an und ab): ein Name ohne Panel – z. B. Missa, solange
+    // es aus ist – darf Ui.panel nie besetzen, sonst nimmt das Dock keine Klicks mehr an
+    property var known: ({})
+    function registerPanel(name) { const k = Object.assign({}, known); k[name] = (k[name] || 0) + 1; known = k }
+    function unregisterPanel(name) {
+        const k = Object.assign({}, known)
+        if (k[name] > 1) k[name]--; else delete k[name]
+        known = k
+        if (!known[name] && panel === name) panel = ""
+    }
+    function openPanel(name) {
+        if (!name || !known[name]) { if (name) console.info("hypr-shell: kein Panel \"" + name + "\" – nichts geöffnet"); return }
+        panel = name
+    }
     function closePanel(name) { if (name === undefined || name === "" || panel === name) panel = "" }
     function togglePanel(name) { if (panel === name) closePanel(name); else openPanel(name) }
+    // Fläche jedes offenen Panels auf seinem Bildschirm ({screen, x, y, width, height}, Endlage ohne
+    // Animation); das Dock weicht aus, wenn das offene Panel es überdeckt (dock.when_panel_open)
+    property var panelAreas: ({})
+    function setPanelArea(name, area) {
+        if (!name) return
+        const k = Object.assign({}, panelAreas)
+        if (area) k[name] = area; else delete k[name]
+        panelAreas = k
+    }
+
+    // ---- Tastatur: jede Fläche meldet, solange sie die Tastatur will (Exclusive/OnDemand, sichtbar
+    // und offen). Regel: nur sichtbar offene Flächen dürfen die Tastatur haben; der Notfall gibt alles frei.
+    property var keyboardWanted: ({})
+    function setKeyboard(name, on) {
+        if (!name || (keyboardWanted[name] === true) === !!on) return
+        const k = Object.assign({}, keyboardWanted)
+        if (on) k[name] = true; else delete k[name]
+        keyboardWanted = k
+    }
+    function keyboardHolders() { return Object.keys(keyboardWanted).sort().join(",") }
+    signal released()
+    function releaseAll() {
+        closePanel()
+        editDesktop = false
+        released()           // Dock: Tastatur-Modus aus, nicht exklusive Karten zu
+    }
     // "shell-quickshell ipc shell current" nennt das offene Panel, "… shell close" schliesst es
     IpcHandler {
         target: "shell"
         function current(): string { return ui.panel }
+        // für Tests und den Notfall: ein Panel öffnen wie von innen (auch ein unbekannter Name)
+        function open(name: string): string { ui.openPanel(name); return ui.panel }
+        // welche Flächen der Shell gerade die Tastatur wollen ("" = keine) – shell-diag tastatur
+        function keyboard(): string { return ui.keyboardHolders() }
+        // Notfall (SUPER+CTRL+Escape, shell-diag freigeben): alle Panels zu, Dock-Tastatur-Modus
+        // und Bearbeiten-Modus aus – danach hält keine Fläche der Shell mehr die Tastatur
+        function release(): string { ui.releaseAll(); return ui.keyboardHolders() }
         function close(): void { ui.closePanel() }
         // shell-toggle meldet den Gaming-Modus (Dock ohne Animationen)
         function gaming(on: bool): void { ui.gaming = on }
@@ -54,6 +100,12 @@ Singleton {
         openPanel("settings")
     }
     function closeSettings() { closePanel("settings") }
+    // zu einer Seite (und einem Wert darauf) springen, z. B. von den Kacheln der Startseite
+    signal settingsGo(string page, string key)
+    function goSettings(page, key) { settingsGo(page || "home", key || "") }
+    // Dashboard mit einem bestimmten Tab öffnen (z. B. Wallpaper von der Startseite)
+    property string dashboardTab: ""
+    function openDashboard(tab) { dashboardTab = tab || ""; openPanel("dashboard") }
     function toggleSettings(page) { if (settingsOpen) closeSettings(); else openSettings(page) }
 
     // ---- Bearbeiten-Modus für die Desktop-Widgets (SUPER+ALT+W): Entwurf der Positionen
@@ -134,6 +186,31 @@ Singleton {
     property var probes: ({})
     IpcHandler {
         target: "test"
+        // ist das Element mit dieser Probe gerade da und sichtbar? (direkt, ohne das gepufferte Log)
+        function visible(name: string): bool {
+            const p = ui.probes[name]
+            if (!p || !p.parent) return false
+            for (let it = p.parent; it; it = it.parent) if (!it.visible || it.opacity === 0) return false
+            return p.parent.width >= 4 && p.parent.height >= 4
+        }
+        // Endlage des offenen Panels mit Leuchten (glow = Grösse des Scheins, glowRoom = Platz im Fenster)
+        function area(name: string): string { return JSON.stringify(ui.panelAreas[name] || {}) }
+        // Kontrast von Text auf einer Karte über dem Glas über dem Hintergrundbild (WCAG, Ziel 4.5)
+        function contrast(): real {
+            const tl = Theme.lum(Qt.color(Theme.text)), lg = Theme.lum(Qt.color(Theme.glassColor)), lc = Theme.lum(Qt.color(Theme.cardBase))
+            const ga = Qt.color(Theme.glass()).a, ca = Qt.color(Theme.card).a
+            const bg = ca * lc + (1 - ca) * (ga * lg + (1 - ga) * Theme.wallpaperLuma)
+            return Math.round((Math.max(tl, bg) + 0.05) / (Math.min(tl, bg) + 0.05) * 100) / 100
+        }
+        // aktuelle Design-Werte aus Theme (Karten, Pille, Leuchten, Abstände, Schrift) als JSON
+        function theme(): string {
+            const a = c => Math.round(Qt.color(c).a * 100) / 100   // Farben speichern 8 Bit: auf 0.01 genau
+            return JSON.stringify({ card: a(Theme.card), cardHover: a(Theme.cardHover), cardBorder: a(Theme.cardBorder),
+                                    cardColor: String(Theme.cardBase), pill: a(Theme.pill), glow: Theme.glow, glowSize: Theme.glowSize,
+                                    glowOpacity: Theme.glowOpacity, panelPad: Theme.panelPad, cardPad: Theme.cardPad, gap: Theme.gap,
+                                    pad10: Theme.pad(10), titleWeight: Theme.titleWeight, textWeight: Theme.textWeight,
+                                    strongWeight: Theme.strongWeight, titleScale: Theme.titleScale, glass: a(Theme.glass()) })
+        }
         function click(name: string): bool {
             const p = ui.probes[name]
             if (!p || !p.parent) return false

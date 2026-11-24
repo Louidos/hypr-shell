@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Fenster minimieren und zurückholen (Hyprland kennt kein echtes Minimieren: minimierte Fenster
+# liegen im besonderen Arbeitsbereich special:minimiert) und die Titelleiste (hyprbars) starten.
+#
+#   shell-window minimize [adresse]   Fenster minimieren (ohne Adresse: das aktive); der Fokus geht
+#                                     an das nächste Fenster der Arbeitsfläche
+#   shell-window restore [adresse]    zurückholen (ohne Adresse: das zuletzt minimierte) – auf die
+#                                     aktuelle Arbeitsfläche, schwebende an ihre alte Stelle
+#   shell-window list                 minimierte Fenster als JSON [{address, class, title}]
+#   shell-window titlebar             beim Start: hyprbars über hyprpm laden (fehlt es, eine
+#                                     Benachrichtigung mit Lösung, sonst nichts)
+# shellcheck disable=SC2016 # jq-Ausdrücke mit $variablen
+set -uo pipefail
+fehlt() { echo "shell-window: $1" >&2; exit 2; }
+hat() { command -v "$1" >/dev/null 2>&1; }
+hat jq || fehlt "jq fehlt"
+SPEZIAL="special:minimiert"
+RUN="${XDG_RUNTIME_DIR:-/tmp}/hypr-shell"
+STAPEL="$RUN/minimiert.json"     # [{address, workspace, floating, at, size}], zuletzt minimiert am Ende
+mkdir -p "$RUN"
+[ -s "$STAPEL" ] || echo '[]' > "$STAPEL"
+EFF="$HOME/.local/share/hypr-shell/settings.effective.json"
+
+hypr_da() { hat hyprctl && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; }
+dsp() { hyprctl dispatch "$1" >/dev/null 2>&1; }
+clients() { hyprctl -j clients 2>/dev/null || echo '[]'; }
+merke() { local tmp; tmp="$(mktemp "$STAPEL.XXXX")"; jq "$@" "$STAPEL" > "$tmp" && mv -f "$tmp" "$STAPEL"; }
+
+minimize() {
+    local a="${1:-}" c ws
+    hypr_da || fehlt "Hyprland läuft nicht"
+    [ -n "$a" ] || a="$( (hyprctl -j activewindow 2>/dev/null || echo '{}') | jq -r '.address // empty')"
+    [ -n "$a" ] || fehlt "kein Fenster"
+    c="$(clients | jq -c --arg a "$a" '.[] | select(.address == $a)')"
+    [ -n "$c" ] || fehlt "Fenster $a gibt es nicht"
+    [ "$(jq -r '.workspace.name' <<<"$c")" = "$SPEZIAL" ] && return 0        # schon minimiert
+    ws="$(jq -r '.workspace.id' <<<"$c")"
+    merke --argjson c "$c" '[.[] | select(.address != $c.address)] + [{address: $c.address, workspace: $c.workspace.id,
+        floating: $c.floating, at: $c.at, size: $c.size, class: $c.class, title: $c.title}]'
+    dsp "hl.dsp.window.move({ window = \"address:$a\", workspace = \"$SPEZIAL\", follow = false })"
+    # Tastatur nie ins Leere: das zuletzt benutzte Fenster derselben Arbeitsfläche bekommt den Fokus
+    local naechstes
+    naechstes="$(clients | jq -r --arg a "$a" --argjson ws "$ws" '[.[] | select(.workspace.id == $ws and .address != $a and .mapped != false)]
+        | sort_by(.focusHistoryID // 999) | .[0].address // empty')"
+    [ -n "$naechstes" ] && dsp "hl.dsp.focus({ window = \"address:$naechstes\" })"
+    return 0
+}
+
+restore() {
+    local a="${1:-}" e aktiv
+    hypr_da || fehlt "Hyprland läuft nicht"
+    # nur Fenster, die es noch gibt und die noch minimiert sind
+    local da
+    da="$(clients | jq -c --arg s "$SPEZIAL" '[.[] | select(.workspace.name == $s) | .address]')"
+    merke --argjson da "$da" '[.[] | select(.address as $x | $da | index($x))]'
+    if [ -z "$a" ]; then a="$(jq -r '.[-1].address // empty' "$STAPEL")"; fi
+    if [ -z "$a" ]; then a="$(jq -r '.[0] // empty' <<<"$da")"; fi     # minimiert, aber nicht gemerkt
+    [ -n "$a" ] || { echo "shell-window: nichts minimiert"; return 0; }
+    e="$(jq -c --arg a "$a" '.[] | select(.address == $a)' "$STAPEL")"
+    aktiv="$( (hyprctl -j activeworkspace 2>/dev/null || echo '{}') | jq -r '.id // 1')"
+    dsp "hl.dsp.window.move({ window = \"address:$a\", workspace = \"$aktiv\", follow = true })"
+    if [ -n "$e" ] && [ "$(jq -r '.floating' <<<"$e")" = true ]; then
+        dsp "hl.dsp.window.move({ window = \"address:$a\", x = $(jq -r '.at[0]' <<<"$e"), y = $(jq -r '.at[1]' <<<"$e") })"
+        dsp "hl.dsp.window.resize({ window = \"address:$a\", x = $(jq -r '.size[0]' <<<"$e"), y = $(jq -r '.size[1]' <<<"$e") })"
+    fi
+    dsp "hl.dsp.focus({ window = \"address:$a\" })"
+    merke --arg a "$a" '[.[] | select(.address != $a)]'
+}
+
+liste() {
+    if hypr_da; then
+        clients | jq -c --arg s "$SPEZIAL" '[.[] | select(.workspace.name == $s) | {address, class, title}]'
+    else
+        echo '[]'
+    fi
+}
+
+titlebar() {
+    local modus=an
+    [ -f "$EFF" ] && modus="$(jq -r '.fenster.titelleiste // "an"' "$EFF" 2>/dev/null || echo an)"
+    [ "$modus" = aus ] && return 0
+    hypr_da || return 0
+    # schon geladen (Paket über hyprland.lua)? dann nichts zu tun
+    if hyprctl plugin list 2>/dev/null | grep -qi hyprbars; then return 0; fi
+    if hat hyprpm && hyprpm list 2>/dev/null | grep -qi hyprbars; then
+        if hyprpm reload -n >/dev/null 2>&1 && hyprctl plugin list 2>/dev/null | grep -qi hyprbars; then
+            hyprctl reload >/dev/null 2>&1      # Einstellungen und Knöpfe für das gerade geladene Plugin
+            return 0
+        fi
+    fi
+    # nicht da oder lädt nicht (z. B. nach einem Hyprland-Update): ohne Knöpfe weiter, mit Hinweis
+    if hat notify-send; then
+        notify-send -a hypr-shell "Window buttons are off" \
+            "The hyprbars plugin is missing or does not fit this Hyprland version. Fix: hyprpm update && hyprpm enable hyprbars (or ./install.sh again)." 2>/dev/null || true
+    fi
+    return 0
+}
+
+case "${1:-}" in
+    minimize|minimise) minimize "${2:-}" ;;
+    restore) restore "${2:-}" ;;
+    list) liste ;;
+    titlebar) titlebar ;;
+    ""|-h|--help|help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) fehlt "unbekannter Befehl: $1 (minimize, restore, list, titlebar)" ;;
+esac

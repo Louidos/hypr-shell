@@ -167,7 +167,7 @@ Scope {
             width: parent.width / cards.k
             scale: cards.k
             transformOrigin: Item.TopLeft
-            spacing: 8
+            spacing: Theme.pad(8)
             Probe { name: "notification-cards"; visible: false }   // unsichtbar: kein Platz in der Spalte
             Repeater {
                 model: nc.popups

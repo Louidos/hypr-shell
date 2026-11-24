@@ -35,6 +35,10 @@ PanelWindow {
 
     // Kacheln und Reihenfolge aus settings.json (desktop.resources.tiles: cpu, ram, gpu, disk)
     readonly property var tiles: Settings.get("desktop.resources.tiles", ["cpu", "ram", "gpu"])
+    readonly property bool hideEmpty: Settings.get("desktop.resources.hide_empty", true) === true
+    // ohne Wert für die GPU ("–", z. B. keine unterstützte Karte oder sie schläft) bleibt ihre
+    // Kachel weg (desktop.resources.hide_empty); CPU und RAM haben immer einen Wert
+    readonly property var shownTiles: tiles.filter(t => tileInfo[t] !== undefined && !(t === "gpu" && hideEmpty && gpuUtil < 0))
     readonly property var tileInfo: ({
         cpu: { label: "CPU", icon: "\uf2db", value: () => usage.cpu },
         ram: { label: "RAM", icon: "󰍛", value: () => usage.mem },
@@ -59,10 +63,10 @@ PanelWindow {
 
     Column {
         id: col
-        spacing: 12 * w.k
+        spacing: Theme.pad(12) * w.k
         Probe { name: "desktop-resources"; visible: false }   // unsichtbar: kein Platz in der Spalte
         Repeater {
-            model: w.tiles.filter(t => w.tileInfo[t] !== undefined).map(t => w.tileInfo[t])
+            model: w.shownTiles.map(t => w.tileInfo[t])
             delegate: GlassPanel {
                 id: tile
                 required property var modelData
@@ -70,6 +74,7 @@ PanelWindow {
                 width: 160 * w.k
                 height: 118 * w.k
                 radius: Theme.panelRadius * w.k
+                Probe { name: "resources-" + tile.modelData.label.toLowerCase() }
                 Ring {
                     id: ring
                     width: 52 * w.k
@@ -78,7 +83,7 @@ PanelWindow {
                     value: Math.max(1, tile.v)
                     color: "#F6F5F4"
                     trackColor: Qt.rgba(1, 1, 1, 0.12)
-                    anchors { top: parent.top; right: parent.right; topMargin: 14 * w.k; rightMargin: 16 * w.k }
+                    anchors { top: parent.top; right: parent.right; topMargin: Theme.pad(14) * w.k; rightMargin: Theme.pad(16) * w.k }
                 }
                 Glyph {
                     anchors.centerIn: ring
@@ -87,13 +92,13 @@ PanelWindow {
                     color: "#c8c8cc"
                 }
                 Column {
-                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: 18 * w.k; bottomMargin: 14 * w.k }
+                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: Theme.pad(18) * w.k; bottomMargin: Theme.pad(14) * w.k }
                     spacing: 0
                     Text {
                         text: tile.v < 0 ? "–" : Math.round(tile.v) + "%"
                         font.family: Theme.mono
                         font.pixelSize: 26 * w.k
-                        font.bold: true
+                        font.weight: Theme.titleWeight
                         color: "#F6F5F4"
                     }
                     Text {

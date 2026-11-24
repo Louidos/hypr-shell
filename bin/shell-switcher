@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# ALT+Tab (Fensterwechsel mit Vorschau). Wird von den Kürzeln in hyprland.lua aufgerufen.
+#
+#   shell-switcher next|prev     Leiste öffnen bzw. weiterwählen; betritt die Submap hypr-shell-switcher
+#   shell-switcher commit        zum gewählten Fenster wechseln (Loslassen von ALT)
+#   shell-switcher cancel        abbrechen (Escape)
+#   shell-switcher close         gewähltes Fenster schliessen (Q, Entf)
+#
+# Die Leiste verlässt die Submap selbst (wechseln, abbrechen, 5 s ohne Taste). Antwortet die
+# Oberfläche nicht, wird die Submap sofort verlassen – so bleibt die Tastatur nie hängen.
+set -uo pipefail
+HIER="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+ipc() { "$HIER/shell-quickshell" ipc switcher "$@" >/dev/null 2>&1; }
+submap() { [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl >/dev/null 2>&1 && hyprctl dispatch "hl.dsp.submap(\"$1\")" >/dev/null 2>&1; }
+
+case "${1:-}" in
+    next|prev)
+        # zuerst die Submap (damit ein schnelles Loslassen von ALT schon ankommt), dann die Leiste
+        submap hypr-shell-switcher
+        ipc "$1" || submap reset ;;
+    commit) ipc commit || submap reset ;;
+    cancel) ipc cancel; submap reset ;;
+    close) ipc closeSelected || submap reset ;;
+    ""|-h|--help|help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) echo "shell-switcher: unbekannter Befehl: $1 (next, prev, commit, cancel, close)" >&2; exit 2 ;;
+esac
+exit 0

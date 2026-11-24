@@ -52,7 +52,7 @@ Hinweis mit dem Paketnamen (`rclone`, `fuse3`); installiert wird nichts ungefrag
 
 hypr-shell legt nur eigene Lesezeichen an („Nextcloud“, „Missa“) – in `~/.config/gtk-3.0/bookmarks` und
 `~/.config/gtk-4.0/bookmarks` (Nautilus, Thunar, GTK-Dialoge) und, wenn Dolphin installiert ist, in
-dessen Orteliste. Welche es angelegt hat, merkt es sich in `~/.local/share/hypr-shell/bookmarks.txt`;
+dessen Orte-Leiste. Welche es angelegt hat, merkt es sich in `~/.local/share/hypr-shell/bookmarks.txt`;
 nur diese werden wieder entfernt, fremde Lesezeichen bleiben unberührt.
 
 ## Missa-Chat

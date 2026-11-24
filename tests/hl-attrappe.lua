@@ -1,6 +1,6 @@
 -- Attrappe der Hyprland-Lua-API (Stand Wiki 0.55): kennt nur dokumentierte Funktionen.
 -- Ein Tippfehler in hyprland.lua (z. B. hl.dsp.windw.close) führt hier zu einem Fehler.
-local M = { aufrufe = {}, binds = {}, flags = {}, layer = {}, start = {} }
+local M = { aufrufe = {}, binds = {}, flags = {}, layer = {}, start = {}, submaps = {}, neben = {} }
 
 local function streng(name, t)
     return setmetatable(t, {
@@ -18,7 +18,7 @@ local monitor_keys = { output=1, mode=1, position=1, scale=1, reserved=1, reserv
     transform=1, mirror=1, bitdepth=1, cm=1, sdr_eotf=1, sdrbrightness=1, sdrsaturation=1, vrr=1, icc=1,
     supports_wide_color=1, supports_hdr=1, sdr_min_luminance=1, sdr_max_luminance=1, min_luminance=1,
     max_luminance=1, max_avg_luminance=1 }
-local config_cats = { general=1, decoration=1, animations=1, input=1, gestures=1, group=1, misc=1,
+local config_cats = { plugin=1, general=1, decoration=1, animations=1, input=1, gestures=1, group=1, misc=1,
     binds=1, xwayland=1, opengl=1, render=1, cursor=1, ecosystem=1, debug=1, dwindle=1, master=1,
     scrolling=1, monocle=1, layout=1, quirks=1 }
 
@@ -53,12 +53,33 @@ local hl = {
     bind = function(keys, action, flags)
         if type(keys) ~= "string" or keys == "" then error("hl.bind: Tasten fehlen", 2) end
         if action == nil then error("hl.bind: Aktion fehlt für " .. keys, 2) end
-        for k in pairs(flags or {}) do
+        local f = flags or {}
+        for k in pairs(f) do
             if not bind_flags[k] then error("hl.bind: unbekannte Option " .. k, 2) end
         end
-        if M.binds[keys] then error("hl.bind: doppelt belegt: " .. keys, 2) end
-        M.binds[keys] = action
-        M.flags[keys] = flags or {}
+        -- Kürzel in einer Submap (hl.define_submap) zählen getrennt
+        local ziel, zflags = M.binds, M.flags
+        if M.submap then
+            M.submaps[M.submap] = M.submaps[M.submap] or { binds = {}, flags = {} }
+            ziel, zflags = M.submaps[M.submap].binds, M.submaps[M.submap].flags
+        end
+        -- ein zweites Kürzel auf derselben Taste, das nicht verbraucht bzw. beim Loslassen wirkt
+        -- (Hyprland erlaubt das, z. B. Andocken neben dem Ziehen), zählt als Nebenkürzel
+        if ziel[keys] and (f.non_consuming or f.release) and not M.submap then
+            M.neben[#M.neben + 1] = { keys = keys, action = action, flags = flags }
+            return
+        end
+        if ziel[keys] then error("hl.bind: doppelt belegt: " .. keys .. (M.submap and (" (Submap " .. M.submap .. ")") or ""), 2) end
+        ziel[keys] = action
+        zflags[keys] = flags or {}
+    end,
+    define_submap = function(name, a, b)
+        local fn = type(a) == "function" and a or b
+        if type(name) ~= "string" or type(fn) ~= "function" then error("hl.define_submap: Name und Funktion nötig", 2) end
+        local vorher = M.submap
+        M.submap = name
+        fn()
+        M.submap = vorher
     end,
     layer_rule = function(r)
         for k in pairs(r) do
@@ -68,6 +89,16 @@ local hl = {
         table.insert(M.layer, r)
     end,
 }
+-- Plugins: hl.plugin.load; mit HL_ATTRAPPE_HYPRBARS=1 ist hyprbars geladen (hl.plugin.hyprbars)
+hl.plugin = { load = merke("plugin_load") }
+if os.getenv("HL_ATTRAPPE_HYPRBARS") == "1" then
+    hl.plugin.hyprbars = { add_button = function(b)
+        for _, k in ipairs({ "bg_color", "fg_color", "size", "icon", "action" }) do
+            if b[k] == nil then error("hyprbars.add_button: " .. k .. " fehlt", 2) end
+        end
+        table.insert(M.aufrufe, { "hyprbars_button", b })
+    end }
+end
 hl.dsp = streng("hl.dsp", {
     exec_cmd = dsp("exec_cmd"), exec_raw = dsp("exec_raw"), exit = dsp("exit"), focus = dsp("focus"),
     layout = dsp("layout"), global = dsp("global"), submap = dsp("submap"), no_op = dsp("no_op"),

@@ -90,6 +90,26 @@ echo "== kaputte settings.json"
 printf '{ "bar": ' > "$S"
 pruefe '! ss look.rounding 3 >/dev/null 2>&1 && [ "$(cat "$S")" = "{ \"bar\": " ]' "kaputtes JSON: shell-set ändert nichts und sagt, was zu tun ist"
 pruefe 'ss import "$T/gut.json" >/dev/null && [ "$(wert .bar.height)" = 33 ]' "import repariert die Datei"
+printf '{ "bar": ' > "$S"
+out="$(ss look.rounding 3 2>&1 || true)"; chk="$("$REPO/bin/shell-apply" --check || true)"
+pruefe '! grep -q "jq:" <<<"$out$chk" && ! grep -qF "$S" <<<"$out$chk" && grep -q "Unfinished JSON" <<<"$out" && grep -q "^JSON: Unfinished JSON" <<<"$chk"' "Meldung ohne »jq:« und ohne Dateipfad ($chk)"
+: > "$S"
+out="$(ss look.rounding 3 2>&1 || true)"; chk="$("$REPO/bin/shell-apply" --check || true)"
+pruefe '! ss look.rounding 3 >/dev/null 2>&1 && grep -q "(the file is empty)" <<<"$out" && [ "$chk" = "JSON: the file is empty" ]' "leere Datei: verständliche Meldung ($chk)"
+pruefe '"$REPO/bin/shell-apply" --no-reload 2>/dev/null && grep -q "^settings.json is not valid JSON (the file is empty)" "$HOME/.local/share/hypr-shell/settings.errors"' "… auch beim Anwenden"
+echo '{"look": 5, "bar": {"height": 33}}' > "$S"
+pruefe 'ss look.rounding 18 >/dev/null 2>&1 && [ "$(wert .look)" = "{\"rounding\":18}" ] && [ "$(wert .bar.height)" = 33 ]' "Gruppe als einzelner Wert ({\"look\": 5}): setzen ersetzt die Gruppe"
+echo '{"look": 5, "bar": {"height": 33}}' > "$S"
+pruefe 'ss reset look.rounding >/dev/null 2>&1 && [ "$(wert .look)" = null ] && [ "$(wert .bar.height)" = 33 ]' "… reset entfernt sie"
+echo '{"look": {"gaps": [1]}}' > "$S"
+pruefe 'ss look.gaps.inner 9 >/dev/null 2>&1 && [ "$(wert .look.gaps)" = "{\"inner\":9}" ]' "… auch tiefer verschachtelt"
+
+echo "== Zahlen"
+echo '{}' > "$S"
+for v in nan NaN -nan; do
+    pruefe '! ss bar.opacity "$v" >/dev/null 2>&1 && [ "$(jq -c . "$S")" = "{}" ]' "»$v« wird abgelehnt"
+done
+pruefe '! ss bar.opacity inf >/dev/null 2>&1 && ss bar.opacity .5 >/dev/null && [ "$(wert .bar.opacity)" = 0.5 ]' "unendlich abgelehnt, .5 geht"
 
 echo "== Vervollständigung"
 pruefe 'ss __complete keys | grep -qx look.rounding && ss __complete areas | grep -qx look.blur && [ "$(ss __complete values bar.position | tr "\n" " ")" = "top bottom " ]' "Schlüssel, Bereiche und Werte aus dem Schema"
@@ -125,5 +145,18 @@ if command -v fish >/dev/null 2>&1; then
 else
     pruefe 'grep -q "complete -c shell-set" settings/completions/shell-set.fish' "fish-Datei vorhanden (fish fehlt, nicht ausgeführt)"
 fi
+
+echo "== Design-Werte (Karten, Leuchten, Abstände, Schrift)"
+pruefe 'ss theme.card.opacity 0.15 >/dev/null && [ "$(wert .theme.card.opacity)" = 0.15 ]' "theme.card.opacity 0.15"
+pruefe '! ss theme.card.opacity 0.5 >/dev/null 2>&1 && ! ss theme.card.hover 0.6 >/dev/null 2>&1 && ! ss theme.card.border_opacity 2 >/dev/null 2>&1' "Karten: Werte über der Grenze (0.4, 0.5, 1) abgelehnt"
+pruefe '! ss theme.card.color blau >/dev/null 2>&1 && ss theme.card.color "#ddeeff" >/dev/null' "Kartenfarbe: nur Farben"
+pruefe 'ss theme.border.glow true >/dev/null && [ "$(wert .theme.border.glow)" = true ] && ! ss theme.border.glow vielleicht >/dev/null 2>&1' "Leuchten an, kein Unsinn"
+pruefe '! ss theme.border.glow_size 41 >/dev/null 2>&1 && ss theme.border.glow_size 40 >/dev/null && ! ss theme.border.glow_opacity 1.5 >/dev/null 2>&1' "Leuchten: Grösse 0–40, Deckkraft 0–1"
+pruefe '! ss theme.spacing.scale 0.4 >/dev/null 2>&1 && ! ss theme.spacing.scale 2.5 >/dev/null 2>&1 && ss theme.spacing.scale 1.5 >/dev/null' "Abstände: Faktor 0.5–2"
+pruefe 'ss set theme.spacing.panel 20 theme.spacing.card 16 theme.spacing.gap 12 >/dev/null && [ "$(wert "[.theme.spacing.panel, .theme.spacing.card, .theme.spacing.gap]")" = "[20,16,12]" ] && ! ss theme.spacing.gap -1 >/dev/null 2>&1' "Innenabstände und Lücke"
+pruefe 'ss theme.font.title_weight demibold >/dev/null && ! ss theme.font.title_weight heavy >/dev/null 2>&1 && ! ss theme.font.text_weight 900 >/dev/null 2>&1' "Schriftdicke: normal, medium, demibold, bold"
+pruefe '! ss theme.font.title_scale 0.5 >/dev/null 2>&1 && ss theme.font.title_scale 1.25 >/dev/null' "Titelgrösse 0.8–2"
+pruefe '! ss theme.pill.opacity 0.1 >/dev/null 2>&1 && ss theme.pill.opacity 0.8 >/dev/null' "Pille: 0.3–1"
+pruefe 'ss reset theme >/dev/null && [ "$(wert .theme)" = null ]' "reset theme entfernt alle Design-Werte wieder"
 
 exit "$fehler"

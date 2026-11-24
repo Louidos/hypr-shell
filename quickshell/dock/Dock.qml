@@ -59,23 +59,31 @@ Scope {
     readonly property var themeEffect: { const c = Qt.createComponent("DockIconTheme.qml"); return c.status === Component.Ready ? c : null }
     readonly property var iconEffect: iconStyle === "mono" ? monoEffect : iconStyle === "theme" ? themeEffect : null
     readonly property bool hideOnFullscreen: Settings.get("dock.hide_on_fullscreen", true) === true
+    // Panel offen (Dashboard, Panel, Einstellungen, App-Raster, Starter …): hide, behind oder stay
+    readonly property string whenPanelOpen: ["hide", "behind", "stay"].indexOf(Settings.get("dock.when_panel_open", "hide")) >= 0
+        ? Settings.get("dock.when_panel_open", "hide") : "hide"
     // Leiste auf derselben Kante (Waybar: bar.position top/bottom)
     readonly property bool avoidBar: Settings.get("dock.avoid_bar", true) === true
     readonly property bool barSameEdge: String(Settings.get("bar.position", "top")) === position
     readonly property bool launcherButton: Settings.get("dock.launcher_button", false) === true
+    // App-Raster (appraster.enabled): der Startknopf öffnet das Raster, appraster.dock_knopf zeigt ihn
+    readonly property bool gridOn: Settings.get("appraster.enabled", true) === true
+    readonly property bool gridButton: gridOn && Settings.get("appraster.dock_knopf", true) === true
     readonly property bool badges: Settings.get("dock.badges", true) === true
     readonly property bool previews: Settings.get("dock.previews", true) === true
 
     function farbe(v, auto) { return /^#[0-9a-fA-F]{6}$/.test(String(v)) ? String(v) : auto }
     readonly property color glassColor: {
-        const m = Settings.get("dock.color_mode", "wallpaper"), o = glassOpacity
+        const m = Settings.get("dock.color_mode", "glass"), o = glassOpacity
+        // glass: dieselbe graue Glasfarbe wie alle Flächen (Theme)
+        if (m === "glass") { const g = Qt.color(Theme.glassColor); return Qt.rgba(g.r, g.g, g.b, Theme.readable(o)) }
         if (m === "light") return Qt.rgba(0.95, 0.95, 0.96, o)
         if (m === "dark") return Qt.rgba(0.055, 0.055, 0.065, o)
         if (m === "custom") { const c = Qt.color(farbe(Settings.get("dock.custom_color", "#1e1e2e"), "#1e1e2e")); return Qt.rgba(c.r, c.g, c.b, o) }
         // wallpaper: Glas der Panels, leicht in der Fläche des Hintergrundbilds getönt
         const c = Qt.color(Theme.mix(Theme.c.surface, "#0e0e10", 0.45)); return Qt.rgba(c.r, c.g, c.b, o)
     }
-    readonly property bool lightGlass: Settings.get("dock.color_mode", "wallpaper") === "light"
+    readonly property bool lightGlass: Settings.get("dock.color_mode", "glass") === "light"
     readonly property color borderColor: farbe(Settings.get("dock.border_color", "auto"), "") !== ""
         ? farbe(Settings.get("dock.border_color", "auto"), "#ffffff")
         : (lightGlass ? Qt.rgba(0, 0, 0, 0.12) : Theme.glassBorder)
@@ -200,8 +208,8 @@ Scope {
                 pins.push(byKey.launcher)
             }
         }
-        // Startknopf links (dock.launcher_button), wenn er nicht schon in der Liste steht
-        if (launcherButton && !byKey.launcher) {
+        // Startknopf links (dock.launcher_button oder appraster.dock_knopf), wenn er nicht schon in der Liste steht
+        if ((launcherButton || gridButton) && !byKey.launcher) {
             byKey.launcher = { kind: "launcher", key: "launcher", name: "Apps", icon: "view-app-grid-symbolic", windows: [], pinned: true, src: -1 }
             pins.unshift(byKey.launcher)
         }
@@ -256,10 +264,13 @@ Scope {
         if (!it) return
         if (it.kind === "folder") { Quickshell.execDetached([Settings.bin + "shell-dock", "open", it.path]); return }
         if (it.kind === "trash") { Quickshell.execDetached([Settings.bin + "shell-dock", "open-trash"]); trashCheck.restart(); return }
-        if (it.kind === "launcher") { Quickshell.execDetached([Settings.bin + "shell-quickshell", "ipc", "launcher", "toggle"]); return }
+        if (it.kind === "launcher") { Quickshell.execDetached([Settings.bin + "shell-quickshell", "ipc", gridOn ? "apps" : "launcher", "toggle"]); return }
         readBadge(it)
         const w = it.windows || []
         if (w.length === 0) { launch(it); return }
+        // alle Fenster minimiert: das zuletzt minimierte zurück an seine Stelle
+        const sichtbar = w.filter(t => !isMinimized(t))
+        if (sichtbar.length === 0) { restore(w[w.length - 1]); return }
         // läuft: Fenster nach vorn holen; ist eines davon schon vorn, zum nächsten
         let a = -1
         for (let i = 0; i < w.length; i++) if (w[i].activated) { a = i; break }
@@ -284,9 +295,38 @@ Scope {
         launch(it)
     }
     // "Close all": Fenster normal schliessen (wie Klick aufs X), nie Prozesse beenden
+    // ---- minimierte Fenster (shell-window: besonderer Arbeitsbereich special:minimiert)
+    readonly property var minimized: {
+        if (!Ui.hyprland) return []
+        const l = Hyprland.toplevels.values, r = []
+        for (let i = 0; i < l.length; i++)
+            if (l[i] && l[i].workspace && l[i].workspace.name === "special:minimiert" && l[i].wayland) r.push(l[i].wayland)
+        return r
+    }
+    function isMinimized(t) { return minimized.indexOf(t) >= 0 }
+    function addressOf(t) {
+        const l = Ui.hyprland ? Hyprland.toplevels.values : []
+        for (let i = 0; i < l.length; i++) if (l[i] && l[i].wayland === t) { const a = String(l[i].address); return a.indexOf("0x") === 0 ? a : "0x" + a }
+        return ""
+    }
+    function restore(t) { const a = addressOf(t); if (a !== "") Quickshell.execDetached([Settings.bin + "shell-window", "restore", a]) }
+    // Programm mit eigener Titelleiste (CSD) bittet ums Minimieren: wie der Knopf der Titelleiste;
+    // Verschieben eines Fensters (auch ins Minimiert-Versteck) frischt die Liste auf
+    Connections {
+        target: Ui.hyprland && dock.on ? Hyprland : null
+        function onRawEvent(event) {
+            if (event.name === "minimized") {
+                const p = String(event.data || "").split(",")
+                if (p.length === 2 && p[1] === "1") Quickshell.execDetached([Settings.bin + "shell-window", "minimize", p[0].indexOf("0x") === 0 ? p[0] : "0x" + p[0]])
+            } else if (event.name === "movewindowv2" || event.name === "movewindow") refreshLater.restart()
+        }
+    }
+
+    // lebt das Fenster noch? (ein geschlossenes Toplevel darf nirgends mehr benutzt werden)
+    function alive(t) { return !!t && toplevels.indexOf(t) >= 0 }
     function closeAll(it) {
         const w = it ? (it.windows || []).slice() : []
-        for (let i = 0; i < w.length; i++) w[i].close()
+        for (let i = 0; i < w.length; i++) if (alive(w[i])) w[i].close()
     }
     function readBadge(it) {
         if (!it || !it.entry) return
@@ -397,7 +437,8 @@ Scope {
             m.push({ text: "Open", icon: "󰩹", run: () => dock.activate(it) })
             if (trash.full) m.push({ text: trashArmed ? "Click again to empty" : "Empty trash", icon: "󰗨", keep: true, run: () => dock.emptyTrash() })
         } else if (it.kind === "launcher") {
-            m.push({ text: "Open launcher", icon: "󰀻", run: () => dock.activate(it) })
+            m.push({ text: gridOn ? "Open apps" : "Open launcher", icon: "󰀻", run: () => dock.activate(it) })
+            if (gridOn) m.push({ text: "Search apps", icon: "󰍉", run: () => Quickshell.execDetached([Settings.bin + "shell-quickshell", "ipc", "launcher", "open"]) })
             if (it.src >= 0) m.push({ text: "Remove from Dock", icon: "󰐄", run: () => dock.unpin(it) })
         }
         if (it.kind === "folder" || it.kind === "trash")
@@ -420,6 +461,7 @@ Scope {
         if (w) w.startKeyboard()
     }
     function leaveFocus() { if (focusWin) focusWin.stopKeyboard(); focusWin = null }
+    Connections { target: Ui; function onReleased() { dock.leaveFocus(); for (const w of dock.windows) w.stopKeyboard() } }
 
     // ---- smart: Fensterflächen von Hyprland nur bei Fenster-Ereignissen neu holen, nie im Takt
     readonly property var refreshEvents: ["openwindow", "closewindow", "movewindow", "movewindowv2", "changefloatingmode",
@@ -489,10 +531,31 @@ Scope {
         function state(): string {
             const w = dock.windows.length > 0 ? dock.windows[0] : null
             return w ? JSON.stringify({ exclusion: w.exclusionText, zone: w.exclusiveZone, fullscreen: w.fullscreenHere, input: w.inputOn, hidden: w.hidden,
-                                        glass: String(dock.glassColor), shown: w.visible }) : "{}"
+                                        glass: String(dock.glassColor), shown: w.visible, givesWay: w.givesWay, behind: w.behindPanel,
+                                        top: w.WlrLayershell.layer === WlrLayer.Top }) : "{}"
         }
         // für Tests: Maus n-mal über das erste Dock führen (Vergrösserung), Dauer in ms
         function sweep(n: int): int { return dock.windows.length > 0 ? dock.windows[0].sweep(n) : -1 }
+        // für Tests: Fensterliste des n-ten Eintrags öffnen; Zustand des Popups und Verweise auf
+        // geschlossene Fenster ("windows:2:0" = Fensterliste, 2 Zeilen, 0 tote Verweise)
+        function openList(index: int): bool {
+            const w = dock.windows.length > 0 ? dock.windows[0] : null
+            const m = dock.model(dock.screens[0] || null)
+            if (!w || index >= m.length) return false
+            w.windowList(w.byKey[m[index].key], w.contentItem)
+            return w.popupMode === "windows"
+        }
+        function openMenu(index: int): bool {
+            const w = dock.windows.length > 0 ? dock.windows[0] : null
+            const m = dock.model(dock.screens[0] || null)
+            if (!w || index >= m.length) return false
+            w.menu(w.byKey[m[index].key], w.contentItem)
+            return w.popupMode === "menu"
+        }
+        function popup(): string {
+            const w = dock.windows.length > 0 ? dock.windows[0] : null
+            return w ? (w.popupMode || "none") + ":" + w.popupRows.length + ":" + w.staleRefs() + ":" + (w.inputOn ? "input" : "noinput") : ""
+        }
         function badge(index: int): int { const m = dock.model(dock.screens[0] || null); return index < m.length ? dock.badgeFor(m[index]) : 0 }
     }
 }

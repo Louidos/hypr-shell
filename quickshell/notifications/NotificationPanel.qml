@@ -24,7 +24,7 @@ Item {
         height: 36
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            Txt { text: "Notifications"; size: 16; weight: Font.Bold }
+            Txt { text: "Notifications"; size: 16; title: true }
             Txt {
                 text: np.center.history.length === 0 ? "All caught up" : np.center.history.length + " in history"
                 size: 11
@@ -33,7 +33,7 @@ Item {
         }
         Row {
             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-            spacing: 8
+            spacing: Theme.pad(8)
             Txt { anchors.verticalCenter: parent.verticalCenter; text: "Do not disturb"; size: 12; sub: true }
             Toggle {
                 anchors.verticalCenter: parent.verticalCenter
@@ -56,8 +56,8 @@ Item {
 
     Column {
         visible: np.center.history.length === 0
-        anchors { top: head.bottom; topMargin: 24; horizontalCenter: parent.horizontalCenter }
-        spacing: 6
+        anchors { top: head.bottom; topMargin: Theme.pad(24); horizontalCenter: parent.horizontalCenter }
+        spacing: Theme.pad(6)
         Glyph { anchors.horizontalCenter: parent.horizontalCenter; text: "󰂜"; size: 28; color: Theme.subtext }
         Txt { anchors.horizontalCenter: parent.horizontalCenter; text: "No notifications"; sub: true }
     }
@@ -66,26 +66,26 @@ Item {
         id: list
         visible: np.center.history.length > 0
         x: 12
-        anchors { top: head.bottom; topMargin: 12; bottom: parent.bottom; bottomMargin: 16 }
+        anchors { top: head.bottom; topMargin: Theme.pad(12); bottom: parent.bottom; bottomMargin: Theme.pad(16) }
         width: parent.width - 24
         clip: true
-        spacing: 12
+        spacing: Theme.pad(12)
         boundsBehavior: Flickable.StopAtBounds
         model: np.groups
         delegate: Column {
             id: grp
             required property var modelData
             width: list.width
-            spacing: 6
+            spacing: Theme.pad(6)
             Item {
                 width: parent.width
                 height: 24
                 AppIcon { id: gi; size: 18; icon: grp.modelData.icon; anchors.verticalCenter: parent.verticalCenter; x: 4 }
                 Txt {
-                    anchors { left: gi.right; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                    anchors { left: gi.right; leftMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
                     text: grp.modelData.app + "  (" + grp.modelData.items.length + ")"
                     size: 12
-                    weight: Font.DemiBold
+                    strong: true
                 }
                 IconButton {
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }

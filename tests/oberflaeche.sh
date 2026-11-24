@@ -2,6 +2,13 @@
 # Startet die Quickshell-Oberfläche in einem unsichtbaren Wayland-Compositor (sway, headless,
 # Software-Rendering), prüft das Log auf QML-Fehler und legt Screenshots nach $SCREENSHOTS
 # (Standard: ./screenshots-ci). Blur gibt es dort nicht – die Bilder zeigen Aufbau und Masse.
+#
+#   SCREENSHOT_BILD  Hintergrund der Screenshots: standard (mitgeliefertes Startbild, Standard),
+#                    grau (wallpapers/hypr-shell-grau.png) oder bunt (Testverlauf). Die Farbprüfung
+#                    mit matugen läuft immer mit dem bunten Bild, danach gilt das gewählte.
+#   SCREENSHOT_NUR   nur diese Screenshots (z. B. "desktop dashboard-dashboard panel settings-home
+#                    apps") und dann Schluss – für eine zweite, kurze Runde mit anderem Hintergrund
+#   SCREENSHOT_ENDUNG an jeden Dateinamen angehängt (z. B. -grau)
 # Läuft in der CI (archlinux); fehlt sway, quickshell oder grim, wird der Test übersprungen.
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -43,7 +50,8 @@ unset WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CONFIG_HOME
 "$REPO/install.sh" --yes --no-packages > "$T/install.log" 2>&1 || { cat "$T/install.log"; exit 1; }
 
 # Testdaten: Einstellungen, Profilbild, zwei Hintergrundbilder, Beispiel-Apps (nur in diesem Test-HOME)
-SETTINGS_JSON="${SETTINGS_JSON:-$(jq '.weather.location = "Zurich"' "$REPO/settings/settings.example.json")}"
+# Startknopf des App-Rasters im Dock erst im Abschnitt App-Raster (die Dock-Tests prüfen die Reihenfolge der Apps)
+SETTINGS_JSON="${SETTINGS_JSON:-$(jq '.weather.location = "Zurich" | .appraster.dock_knopf = false' "$REPO/settings/settings.example.json")}"
 printf '%s\n' "$SETTINGS_JSON" > "$HOME/.config/hypr-shell/settings.json"
 im="$(command -v magick || command -v convert || true)"
 ersatzbild_ok=1
@@ -73,9 +81,15 @@ done
 cp "$REPO"/tests/fixtures/dock/applications/*.desktop "$HOME/.local/share/applications/"
 mkdir -p "$HOME/Downloads"
 
+# Hintergrund der Screenshots (SCREENSHOT_BILD); auch sway bekommt ihn, falls awww fehlt
+SCREENSHOT_BILD="${SCREENSHOT_BILD:-standard}"
+case "$SCREENSHOT_BILD" in
+    grau|bunt) grund="$REPO/wallpapers/hypr-shell-grau.png" ;;
+    *) grund="$REPO/wallpapers/hypr-shell-bluete.jpg"; [ -f "$grund" ] || grund="$REPO/wallpapers/hypr-shell-grau.png" ;;
+esac
 cat > "$T/sway.conf" <<CONF
 output HEADLESS-1 resolution 1920x1080 position 0 0
-output * bg $REPO/wallpapers/hypr-shell-grau.png fill
+output * bg $grund fill
 default_border none
 CONF
 # Kopie ohne Datei-Capabilities (sway hat cap_sys_nice, das ist in Containern verboten)
@@ -119,6 +133,18 @@ if command -v awww >/dev/null 2>&1 && command -v matugen >/dev/null 2>&1; then
         else echo "  FEHLER: Auswahl nicht gespeichert"; farben_ok=0; fi
     fi
 fi
+# danach für die Screenshots der gewählte Hintergrund (die Farbprüfung oben war nur eine Prüfung)
+screen_bild() {
+    command -v awww >/dev/null 2>&1 || return 0
+    case "$SCREENSHOT_BILD" in
+        bunt) [ -n "${bunt:-}" ] && "$HOME/.local/bin/shell-wallpaper" "$bunt" ;;
+        grau) "$HOME/.local/bin/shell-wallpaper" "$HOME/.local/share/hypr-shell/wallpapers/hypr-shell-grau.png" ;;
+        # Startbild ohne eigene Auswahl (das mitgelieferte Standardbild von shell-wallpaper)
+        *) rm -f "$HOME/.local/share/hypr-shell/wallpaper"; "$HOME/.local/bin/shell-wallpaper" --restore ;;
+    esac > "$T/wallpaper2.log" 2>&1 || true
+    echo "  Hintergrund der Screenshots: $SCREENSHOT_BILD ($("$HOME/.local/bin/shell-wallpaper" --current 2>/dev/null))"
+}
+screen_bild
 
 # Leiste (Waybar) – Hyprland-Module melden ohne Hyprland Fehler, das ist hier egal
 if command -v waybar >/dev/null 2>&1; then
@@ -139,7 +165,8 @@ starte_qs() {
 starte_qs
 
 # bild NAME: Screenshot, dazu den Stand des Logs (für die Lage der Bilder, siehe Probe.qml)
-bild() { grim "$OUT/$1.png" && cp "$T/qs.log" "$T/log-$1" && echo "  Screenshot: $1.png"; }
+SCREENSHOT_ENDUNG="${SCREENSHOT_ENDUNG:-}"
+bild() { grim "$OUT/$1$SCREENSHOT_ENDUNG.png" && cp "$OUT/$1$SCREENSHOT_ENDUNG.png" "$T/$1.png" && cp "$T/qs.log" "$T/log-$1" && echo "  Screenshot: $1$SCREENSHOT_ENDUNG.png"; }
 # IPC-Aufruf; schlägt er fehl, steht der Grund im Log und der Test läuft weiter (die Prüfungen danach melden es)
 ipc() {
     "$qs" -p "$cfg" ipc call "$@" >/dev/null 2>"$T/ipc.err" && return 0
@@ -159,13 +186,30 @@ bereich() {
         echo "  FEHLER: $text – nicht sichtbar (keine Lage im Log)"; bereiche_ok=0; return 0
     fi
     x=$((x + w / 5)); y=$((y + h / 5)); w=$((w * 3 / 5)); h=$((h * 3 / 5))
-    sd="$("$im" "$OUT/$shot.png" -crop "${w}x${h}+${x}+${y}" +repage -colorspace gray -format '%[fx:standard_deviation]' info:)"
+    sd="$("$im" "$T/$shot.png" -crop "${w}x${h}+${x}+${y}" +repage -colorspace gray -format '%[fx:standard_deviation]' info:)"
     if awk -v s="$sd" 'BEGIN { exit !(s > 0.04) }'; then
         echo "  ok: $text sichtbar (Streuung $sd bei ${w}x${h}+${x}+${y})"
     else
         echo "  FEHLER: $text einfarbig (Streuung $sd bei ${w}x${h}+${x}+${y})"; bereiche_ok=0
     fi
 }
+
+# kurze Runde (SCREENSHOT_NUR): nur die genannten Screenshots, dann Schluss
+if [ -n "${SCREENSHOT_NUR:-}" ]; then
+    echo "---- nur Screenshots: $SCREENSHOT_NUR ($SCREENSHOT_BILD) ----"
+    nur() { [[ " $SCREENSHOT_NUR " == *" $1 "* ]]; }
+    if nur desktop; then bild desktop; fi
+    if nur dashboard-dashboard; then ipc dashboard open dashboard; sleep 3; bild dashboard-dashboard; ipc dashboard close; sleep 1; fi
+    if nur panel; then ipc panel open; sleep 2; bild panel; ipc panel close; sleep 1; fi
+    if nur settings-home; then ipc settings open home; sleep 2.5; bild settings-home; ipc settings close; sleep 1; fi
+    if nur apps; then ipc apps open; sleep 2; bild apps; ipc apps close; sleep 1; fi
+    kill -0 "$qspid" 2>/dev/null || { echo "FEHLER: Quickshell ist abgestürzt"; exit 1; }
+    if grep -E "ERROR|TypeError|ReferenceError|Binding loop" "$T/qs.log" | grep -vE "Failed to connect to|dbus|DBus|org\.freedesktop|polkit|pipewire|Pipewire|upower|UPower|notification server|NetworkManager|bluez|Bluez|mpris|quickshell\.wayland\.buffer\.dmabuf"; then
+        echo "FEHLER: QML-Fehler im Log (siehe oben)"; exit 1
+    fi
+    echo "Kurze Runde fertig"
+    exit 0
+fi
 
 bild desktop
 if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dashboard'; then
@@ -294,6 +338,81 @@ else
     echo "FEHLER: IPC-Ziel launcher fehlt"; starter_ok=0
 fi
 
+# ---- App-Raster (SUPER antippen, Dock, Leiste): Suche, Kategorien, Favoriten, Menü, Start gibt die Tastatur frei
+raster_ok=1
+if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target apps'; then
+    echo "---- App-Raster ----"
+    ap() { "$qs" -p "$cfg" ipc call apps "$@" 2>/dev/null; }
+    kbr() { "$qs" -p "$cfg" ipc call shell keyboard 2>/dev/null; }
+    rw() { jq -c "$1" "$HOME/.config/hypr-shell/settings.json"; }
+    cp "$HOME/.config/hypr-shell/settings.json" "$T/settings.raster"
+    ipc apps open; sleep 2; bild apps
+    # die Höhe passt sich dem Inhalt an: wenige Apps, keine halb leere Fläche (früher immer 640 px)
+    ah="$("$qs" -p "$cfg" ipc call test area apps 2>/dev/null | jq -r '.height // empty')"
+    if [ -n "$ah" ] && [ "$ah" -lt 560 ]; then echo "  ok: App-Raster nur so hoch wie nötig ($ah px bei $("$qs" -p "$cfg" ipc call apps state 2>/dev/null | cut -d: -f3) Apps)"
+    else echo "  FEHLER: App-Raster ${ah:-?} px hoch"; raster_ok=0; fi
+    st="$(ap state)"; r_kb="$(kbr)"
+    if [[ "$st" == open:0:* ]] && [ "$(cut -d: -f3 <<<"$st")" -ge 5 ] && [ "$(offen)" = apps ] && [ "$r_kb" = hypr-shell-apps ]; then
+        echo "  ok: Raster offen mit $(cut -d: -f3 <<<"$st") Apps, hält die Tastatur"
+    else echo "  FEHLER: Raster: $st, offen \"$(offen)\", Tastatur [$r_kb]"; raster_ok=0; fi
+    erst="$(ap search kit)"
+    if [ "$erst" = Kitty ]; then echo "  ok: Tippen \"kit\" findet Kitty"; else echo "  FEHLER: \"kit\" ergibt \"$erst\""; raster_ok=0; fi
+    sleep 0.5; bild apps-suche
+    ap search "" >/dev/null
+    kat="$(ap categories)"; spiele="$(ap category games)"
+    if [[ "|$kat|" == *"|games|"* ]] && [[ "$spiele" == *"Dota 2"* ]] && [[ "$spiele" != *kitty* ]]; then echo "  ok: Kategorie Games zeigt nur Spiele ($spiele)"
+    else echo "  FEHLER: Kategorien \"$kat\", Games \"$spiele\""; raster_ok=0; fi
+    ap category all >/dev/null
+    ap favorite kitty >/dev/null
+    for _ in $(seq 1 20); do [ "$(rw '.appraster.favoriten')" = '["kitty"]' ] && break; sleep 0.3; done
+    sleep 0.5
+    if [ "$(rw '.appraster.favoriten')" = '["kitty"]' ] && [ "$(ap favorites)" = kitty ] && [ "$(ap category favorites)" = kitty ]; then
+        echo "  ok: Favorit landet in settings.json und oben im Raster"
+    else echo "  FEHLER: Favoriten: $(rw .appraster.favoriten) / $(ap favorites)"; raster_ok=0; fi
+    ap category all >/dev/null; sleep 0.5; bild apps-favoriten
+    ap search kit >/dev/null; m="$(ap menu)"
+    if [ "$m" = "Open|New window|Remove from Dock|Remove from favorites" ]; then echo "  ok: Menü: $m"
+    else echo "  FEHLER: Menü \"$m\""; raster_ok=0; fi
+    sleep 0.5; bild apps-menue
+    ap search fir >/dev/null; ap pin firefox >/dev/null
+    for _ in $(seq 1 20); do [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 0 ] && break; sleep 0.3; done
+    if [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 0 ]; then echo "  ok: Lösen nimmt Firefox aus dem Dock"
+    else echo "  FEHLER: Lösen: $(rw .dock.items)"; raster_ok=0; fi
+    # erst wieder anheften, wenn auch das Raster den neuen Stand geladen hat (sonst schaltet es zurück)
+    for _ in $(seq 1 20); do [ "$(ap pinned firefox)" = false ] && break; sleep 0.3; done
+    ap pin firefox >/dev/null
+    for _ in $(seq 1 20); do [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 1 ] && break; sleep 0.3; done
+    if [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 1 ]; then echo "  ok: Anheften legt Firefox wieder ins Dock"
+    else echo "  FEHLER: Anheften: $(rw .dock.items)"; raster_ok=0; fi
+    echo '{}' > "$HOME/.local/share/hypr-shell/launcher-recent.json"; sleep 0.5
+    ap search kit >/dev/null; gestartet="$(ap launch)"; sleep 1
+    if [ "$gestartet" = Kitty ] && [ "$(ap state)" = closed ] && [ -z "$(offen)" ] && [ -z "$(kbr)" ] \
+        && jq -e 'has("kitty")' "$HOME/.local/share/hypr-shell/launcher-recent.json" >/dev/null 2>&1; then
+        echo "  ok: Enter startet Kitty, Raster zu, keine Fläche hält die Tastatur, zuletzt benutzt gemerkt"
+    else echo "  FEHLER: Start: \"$gestartet\", $(ap state), offen \"$(offen)\", Tastatur [$(kbr)]"; raster_ok=0; fi
+    # Starter und Raster teilen sich "zuletzt benutzt"
+    ipc launcher open; sleep 1
+    if [ "$("$qs" -p "$cfg" ipc call launcher search "" 2>/dev/null)" = Kitty ]; then echo "  ok: Starter kennt die im Raster gestartete App als zuletzt benutzt"
+    else echo "  FEHLER: Starter zeigt nicht Kitty zuerst"; raster_ok=0; fi
+    ipc launcher close; sleep 0.5
+    # Knopf im Dock (Standard an; hier im Test bis jetzt aus)
+    if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
+        "$HOME/.local/bin/shell-set" appraster.dock_knopf true >/dev/null 2>&1
+        for _ in $(seq 1 20); do [[ "$("$qs" -p "$cfg" ipc call dock items 2>/dev/null)" == launcher,* ]] && break; sleep 0.3; done
+        if [[ "$("$qs" -p "$cfg" ipc call dock items 2>/dev/null)" == launcher,* ]]; then echo "  ok: Startknopf vorne im Dock"
+        else echo "  FEHLER: Dock: $("$qs" -p "$cfg" ipc call dock items 2>/dev/null)"; raster_ok=0; fi
+        sleep 0.5; bild apps-dock
+    fi
+    # Raster aus: kein Ziel mehr für die Kürzel (SUPER antippen tut nichts)
+    "$HOME/.local/bin/shell-set" appraster.enabled false >/dev/null 2>&1; sleep 1.5
+    ipc apps open; sleep 1
+    if [ "$(offen)" != apps ]; then echo "  ok: appraster.enabled = false: Raster geht nicht auf"
+    else echo "  FEHLER: Raster trotz appraster.enabled = false"; raster_ok=0; ipc apps close; fi
+    cp "$T/settings.raster" "$HOME/.config/hypr-shell/settings.json"; sleep 1.5
+else
+    echo "FEHLER: IPC-Ziel apps fehlt"; raster_ok=0
+fi
+
 # ---- Kürzel-Spickzettel (SUPER+F1) aus "hyprctl binds -j" (hier: die Kürzel aus hyprland.lua über die Attrappe)
 spick_ok=1
 lua_bin="$(command -v lua5.4 || command -v lua || true)"
@@ -372,6 +491,36 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     for seite in home bar look theme desktop dashboard panel dock system integrations laptop lock input monitors apps keybinds about; do
         ipc settings open "$seite"; sleep 2; bild "settings-$seite"
     done
+    # ---- Startseite: Profilbild, Begrüssung, Pillen, Tipp, 6 Kacheln, keine Eingabefelder; Backup unter System
+    # (sichtbar? fragt die Oberfläche direkt über "ipc call test visible", nicht das gepufferte Log)
+    sichtbar() { [ "$("$qs" -p "$cfg" ipc call test visible "$1" 2>/dev/null)" = true ]; }
+    ipc settings open home; sleep 2.5
+    fehlt=""
+    for p in home-avatar home-greeting home-chips home-tips home-tips-close home-tile-0 home-tile-1 home-tile-2 home-tile-3 home-tile-4 home-tile-5; do
+        sichtbar "$p" || fehlt="$fehlt $p"
+    done
+    if [ -z "$fehlt" ]; then echo "  ok: Startseite mit Profilbild, Begrüssung, Pillen, Tipp und 6 Kacheln"
+    else echo "  FEHLER: auf der Startseite fehlt:$fehlt"; app_ok=0; fi
+    bereich settings-home home-avatar "Profilbild auf der Startseite"
+    test_ipc click home-tile-4; sleep 1
+    if [ "$("$qs" -p "$cfg" ipc call settings page 2>/dev/null)" = bar ]; then echo "  ok: Kachel Bar öffnet die Seite Bar"
+    else echo "  FEHLER: Kachel Bar: Seite $("$qs" -p "$cfg" ipc call settings page 2>/dev/null)"; app_ok=0; fi
+    ipc settings open home; sleep 1.5
+    test_ipc click home-tile-1; sleep 2
+    if [ "$(offen)" = dashboard ]; then echo "  ok: Kachel Wallpaper öffnet den Tab Wallpaper im Dashboard"; bild home-kachel-wallpaper
+    else echo "  FEHLER: Kachel Wallpaper: offen ist \"$(offen)\""; app_ok=0; fi
+    ipc settings open home; sleep 1.5
+    test_ipc click home-tips-close
+    if warte_auf .settings.home.tips false; then echo "  ok: × im Tipp schaltet die Tipps ab (settings.home.tips = false)"
+    else echo "  FEHLER: × im Tipp: $(wert .settings)"; app_ok=0; fi
+    sleep 2; bild settings-home-ohne-tipp
+    if ! sichtbar home-tips; then echo "  ok: ohne Tipps kein Banner"
+    else echo "  FEHLER: Banner trotz settings.home.tips false"; app_ok=0; fi
+    "$HOME/.local/bin/shell-set" reset settings.home.tips >/dev/null 2>&1
+    ipc settings open system; sleep 2.5
+    if sichtbar backup-section; then echo "  ok: Profile, Export und Import stehen unter System → Backup"
+    else echo "  FEHLER: kein Abschnitt Backup auf der Seite System"; app_ok=0; fi
+    ipc settings open home; sleep 2; bild settings-home
     for q in blur clock battery; do
         vorher="$(grep -c "hypr-shell-probe search-first" "$T/qs.log" || true)"
         ipc settings search "$q"; sleep 1.5
@@ -399,6 +548,15 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target settings'; then
     else
         echo "  FEHLER: Drehknopf auf der Seite Monitors (${mon:-kein Bildschirm}, $(wert .monitors))"; app_ok=0
     fi
+    ipc settings close; sleep 0.5
+    # Look: Voreinstellungen per Knopf, Live-Vorschau mit Glas
+    ipc settings open look; sleep 2.5; bild settings-look-vorschau
+    if grep -q "hypr-shell-probe look-preview-glass" "$T/qs.log" && test_ipc click look-preset-gaming && warte_auf .look.preset '"gaming"' 40 \
+        && [ "$(wert .look.blur.enabled)" = false ]; then
+        echo "  ok: Look: Vorschau da, Knopf gaming setzt die Voreinstellung"
+        sleep 1.5; test_ipc click look-preset-glass && warte_auf .look.preset '"glass"' 40 || true
+    else echo "  FEHLER: Look-Seite (Vorschau oder Voreinstellung: $(wert .look))"; app_ok=0; fi
+    "$HOME/.local/bin/shell-set" reset look >/dev/null 2>&1 || true
     ipc settings close; sleep 0.5
     # Programme mitfärben: GTK steht immer da, Firefox nur, wenn installiert
     ipc settings open theme; sleep 2
@@ -614,6 +772,88 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
     for _ in $(seq 1 30); do dk items | grep -q '\*1' || break; sleep 0.3; done
     if ! dk items | grep -q '\*1'; then echo "  ok: geschlossenes Fenster verschwindet wieder"
     else echo "  FEHLER: geschlossenes Fenster bleibt"; dock_ok=0; fi
+    # ---- Dock bei offenem Dashboard (dock.when_panel_open): früher lag das Dock (Ebene Top, später
+    # entstanden) über dem Dashboard und verdeckte Kalender und Ringe
+    lage() { grep -o "hypr-shell-probe $1 .*" "$T/qs.log" | tail -n1 | awk '{print $3, $4, $5, $6}'; }
+    # schneiden "x y w h" "x y w h": 0 = die Flächen überlappen
+    schneiden() { awk -v a="$1" -v b="$2" 'BEGIN { split(a, p, " "); split(b, q, " ")
+        exit !(p[1] < q[1] + q[3] && p[1] + p[3] > q[1] && p[2] < q[2] + q[4] && p[2] + p[4] > q[2]) }'; }
+    ipc dashboard open dashboard; sleep 3
+    st="$(dk state)"; kal="$(lage calendar)"; db="$(lage dock-body)"
+    if jq -e '.givesWay == true' <<<"$st" >/dev/null 2>&1 && [ -n "$kal" ] && ! schneiden "$kal" "$db"; then
+        echo "  ok: Dashboard offen: Dock fährt weg, Kalender ganz sichtbar (Kalender $kal, Dock $db)"
+    else echo "  FEHLER: Dock bei offenem Dashboard: $st, Kalender ${kal:-?}, Dock ${db:-?}"; dock_ok=0; fi
+    ipc dashboard close; sleep 1.5
+    st="$(dk state)"; db="$(lage dock-body)"
+    if jq -e '.givesWay == false and .hidden == false and .input == true' <<<"$st" >/dev/null 2>&1 && [ "$(awk '{print $2 + $4}' <<<"$db")" -le 1080 ]; then
+        echo "  ok: nach dem Schliessen ist das Dock sofort wieder da und nimmt Klicks an ($db)"
+    else echo "  FEHLER: Dock nach dem Schliessen des Dashboards: $st, $db"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-set" dock.when_panel_open behind >/dev/null 2>&1; sleep 2
+    ipc dashboard open dashboard; sleep 2; st="$(dk state)"; ipc dashboard close; sleep 1
+    if jq -e '.behind == true and .top == false and .givesWay == false' <<<"$st" >/dev/null 2>&1; then echo "  ok: behind: das Dock liegt unter dem Dashboard"
+    else echo "  FEHLER: behind: $st"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-set" dock.when_panel_open stay >/dev/null 2>&1; sleep 2
+    ipc dashboard open dashboard; sleep 2; st="$(dk state)"; ipc dashboard close; sleep 1
+    if jq -e '.behind == false and .top == true and .givesWay == false' <<<"$st" >/dev/null 2>&1; then echo "  ok: stay: das alte Verhalten (Dock bleibt oben)"
+    else echo "  FEHLER: stay: $st"; dock_ok=0; fi
+    "$HOME/.local/bin/shell-set" reset dock.when_panel_open >/dev/null 2>&1; sleep 2
+    # ---- Schliessen bei offener Fensterliste und offenem Menü; viele Male öffnen und schliessen.
+    # Danach darf kein Verweis auf ein geschlossenes Fenster übrig sein und das Dock nimmt Klicks an.
+    fenster() { "$qs" -p "$T/fenster.qml" >> "$T/fenster.log" 2>&1 & echo "$!"; }
+    lauf_index() { dk items | tr ',' '\n' | grep -n "\*$1\$" | head -n1 | cut -d: -f1; }
+    f1="$(fenster)"; f2="$(fenster)"; pids+=("$f1" "$f2")
+    for _ in $(seq 1 40); do [ -n "$(lauf_index 2)" ] && break; sleep 0.25; done
+    i="$(lauf_index 2)"
+    if [ -n "$i" ] && [ "$(dk openList $((i - 1)))" = true ] && [[ "$(dk popup)" == windows:2:0:* ]]; then
+        kill "$f2" 2>/dev/null
+        for _ in $(seq 1 8); do [[ "$(dk popup)" == none:* ]] && break; sleep 0.125; done
+        if [[ "$(dk popup)" == none:0:0:input ]]; then echo "  ok: Fenster geschlossen bei offener Fensterliste: Liste zu, kein Verweis übrig (innert 1 s)"
+        else echo "  FEHLER: Fensterliste nach dem Schliessen: $(dk popup)"; dock_ok=0; fi
+    else
+        echo "  FEHLER: Fensterliste mit zwei Fenstern ging nicht auf ($(dk items), $(dk popup))"; dock_ok=0
+    fi
+    i="$(lauf_index 1)"
+    if [ -n "$i" ] && [ "$(dk openMenu $((i - 1)))" = true ]; then
+        kill "$f1" 2>/dev/null
+        for _ in $(seq 1 8); do [[ "$(dk popup)" == none:* ]] && break; sleep 0.125; done
+        if [[ "$(dk popup)" == none:0:0:input ]]; then echo "  ok: Programm geschlossen bei offenem Menü: Menü zu, kein Verweis übrig"
+        else echo "  FEHLER: Menü nach dem Schliessen: $(dk popup)"; dock_ok=0; fi
+    else
+        echo "  FEHLER: Menü ging nicht auf ($(dk items))"; dock_ok=0; kill "$f1" 2>/dev/null
+    fi
+    langsam=0; falsch=0
+    for n in $(seq 1 25); do
+        f="$(fenster)"; pids+=("$f")
+        for _ in $(seq 1 40); do dk items | grep -q '\*1' && break; sleep 0.25; done
+        [ $((n % 5)) = 0 ] && { j="$(lauf_index 1)"; [ -n "$j" ] && dk openMenu $((j - 1)) >/dev/null; }
+        kill "$f" 2>/dev/null
+        weg=0
+        for _ in $(seq 1 8); do sleep 0.125; dk items | grep -q '\*1' || { weg=1; break; }; done
+        [ "$weg" = 1 ] || langsam=$((langsam + 1))
+        [[ "$(dk popup)" == none:0:0:input ]] || falsch=$((falsch + 1))
+    done
+    if [ "$langsam" = 0 ] && [ "$falsch" = 0 ]; then echo "  ok: 25-mal geöffnet und geschlossen: Liste stimmt jedes Mal innert 1 s, kein Verweis, Dock nimmt Klicks an"
+    else echo "  FEHLER: 25-mal öffnen/schliessen: $langsam-mal zu langsam, $falsch-mal Popup/Eingabe falsch ($(dk popup))"; dock_ok=0; fi
+    # ---- ALT+Tab: Umschalter mit zwei Fenstern (ohne Hyprland in der Reihenfolge der Fenster)
+    swc() { "$qs" -p "$cfg" ipc call switcher "$@" 2>/dev/null; }
+    g1="$(fenster)"; g2="$(fenster)"; pids+=("$g1" "$g2")
+    for _ in $(seq 1 40); do [ -n "$(lauf_index 2)" ] && break; sleep 0.25; done
+    swc next; sleep 0.8; s1="$(swc state)"; kb1="$("$qs" -p "$cfg" ipc call shell keyboard 2>/dev/null)"
+    bild umschalter
+    swc next; sleep 0.3; s2="$(swc state)"
+    swc cancel; sleep 0.6; s3="$(swc state)"
+    swc next; sleep 5.8; s4="$(swc state)"
+    swc next; sleep 0.5; swc commit; sleep 0.6; s5="$(swc state)"
+    echo "  Umschalter: $s1 → Tab $s2 → Esc $s3 → 5 s $s4 → wechseln $s5 (Tastatur: \"$kb1\")"
+    if [[ "$s1" == open:1:* ]] && [[ "$s2" == open:0:2 || "$s2" == open:2:* ]] && [ "$s3" = closed ] && [ "$s4" = closed ] && [ "$s5" = closed ] \
+        && [[ "$kb1" != *switcher* ]] && grep -q "hypr-shell-probe switcher-1" "$T/qs.log"; then
+        echo "  ok: ALT+Tab: zweites Fenster gewählt, Tab wählt weiter, Esc bricht ab, nach 5 s zu, Wechseln schliesst; nimmt nie die Tastatur"
+    else echo "  FEHLER: Umschalter (siehe oben)"; dock_ok=0; fi
+    kill "$g1" "$g2" 2>/dev/null; sleep 1
+    # ein Panel, das es nicht gibt (z. B. Missa aus), darf Ui.panel nie besetzen
+    "$qs" -p "$cfg" ipc call shell open missa-gibt-es-nicht >/dev/null 2>&1
+    if [ -z "$(offen)" ] && [[ "$(dk popup)" == *:input ]]; then echo "  ok: unbekanntes Panel besetzt Ui.panel nicht, Dock nimmt weiter Klicks an"
+    else echo "  FEHLER: Ui.panel = \"$(offen)\" nach unbekanntem Panel"; dock_ok=0; "$qs" -p "$cfg" ipc call shell close >/dev/null 2>&1; fi
     # ---- Bedienung: Menü, Ziehen, Lösen, Tastatur, Zähler, kaputte Liste
     m="$(dk menu 2)"
     if [ "$m" = "New window|New Private Window|Remove from Dock" ]; then echo "  ok: Rechtsklick-Menü mit den Desktop-Aktionen ($m)"
@@ -644,6 +884,24 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
     else echo "  FEHLER: Tastatur"; dock_ok=0; fi
     # was auch passiert: die Tastatur gehört danach nicht mehr dem Dock
     dk key Escape >/dev/null; dk key Escape >/dev/null
+    # ---- die Tastatur bleibt nie beim Dock hängen: jede andere Taste, ein Panel, Verstecken,
+    # Zeitüberschreitung und der Notfall beenden den Tastatur-Modus; danach hält keine Fläche die Tastatur
+    kb() { "$qs" -p "$cfg" ipc call shell keyboard 2>/dev/null; }
+    dk focus >/dev/null; sleep 0.5
+    t_an="$(dk key "")"; t_kb="$(kb)"; t_buchstabe="$(dk key a)"; t_kb2="$(kb)"
+    dk focus >/dev/null; sleep 0.5; ipc launcher open; sleep 1; t_panel="$(dk key "")"; t_kb3="$(kb)"; ipc launcher close; sleep 1
+    dk focus >/dev/null; sleep 0.5; dk hide >/dev/null; sleep 0.8; t_versteckt="$(dk key "")"; dk open >/dev/null; sleep 0.8
+    dk focus >/dev/null; sleep 0.5; t_notfall_vor="$(dk key "")"; "$qs" -p "$cfg" ipc call shell release >/dev/null 2>&1; sleep 0.3; t_notfall="$(dk key "")"
+    "$HOME/.local/bin/shell-set" dock.keyboard_timeout_s 2 >/dev/null 2>&1; sleep 1.5
+    dk focus >/dev/null; sleep 0.5; t_zeit_vor="$(dk key "")"; sleep 2.6; t_zeit="$(dk key "")"
+    "$HOME/.local/bin/shell-set" reset dock.keyboard_timeout_s >/dev/null 2>&1; sleep 1
+    t_leer="$(kb)"
+    echo "  Tastatur-Modus: an $t_an [$t_kb] → Buchstabe $t_buchstabe [$t_kb2] · Panel $t_panel [$t_kb3] · versteckt $t_versteckt · Notfall $t_notfall_vor → $t_notfall · 2 s $t_zeit_vor → $t_zeit · danach [$t_leer]"
+    if [[ "$t_an" == on:* ]] && [[ "$t_kb" == *hypr-shell-dock* || "$t_kb" == dock:* ]] && [ "$t_buchstabe" = off ] && [ -z "$t_kb2" ] \
+        && [ "$t_panel" = off ] && [ "$t_kb3" = hypr-shell-launcher ] && [ "$t_versteckt" = off ] \
+        && [[ "$t_notfall_vor" == on:* ]] && [ "$t_notfall" = off ] && [[ "$t_zeit_vor" == on:* ]] && [ "$t_zeit" = off ] && [ -z "$t_leer" ]; then
+        echo "  ok: Tastatur-Modus endet bei Buchstabe, Panel, Verstecken, Notfall und nach der Zeit; kein Panel offen → keine Fläche hält die Tastatur"
+    else echo "  FEHLER: Tastatur-Modus des Docks (siehe oben)"; dock_ok=0; fi
     if command -v notify-send >/dev/null 2>&1; then
         notify-send -a kitty "Build" "fertig" 2>/dev/null; sleep 1.5
         if [ "$(dk badge 0)" = 1 ]; then echo "  ok: Zähler für eine Meldung von kitty"; else echo "  FEHLER: Zähler $(dk badge 0)"; dock_ok=0; fi
@@ -781,17 +1039,29 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
         [ -n "$zweiter" ] && swaymsg output "$zweiter" unplug >/dev/null 2>&1; sleep 2
         if kill -0 "$qspid" 2>/dev/null && [ "$(dk count)" = 1 ]; then echo "  ok: Abstecken: kein Absturz, ein Dock"; else echo "  FEHLER: nach dem Abstecken: $(dk count)"; dock_ok=0; fi
     fi
-    # Bildwechsel färbt das Dock um; helles und dunkles Bild für die Doku
+    # Standard: einheitliches Glas (theme.glass_color); mit dock.color_mode = wallpaper färbt ein
+    # Bildwechsel das Dock um; helles und dunkles Bild für die Doku
     if command -v awww >/dev/null 2>&1 && command -v matugen >/dev/null 2>&1 && [ -n "$im" ]; then
+        glas_std="$(ds .glass)"
+        "$HOME/.local/bin/shell-set" dock.color_mode wallpaper >/dev/null 2>&1; sleep 1.5
         vorher_glas="$(ds .glass)"
         "$im" -size 1920x1080 gradient:'#f2efe6'-'#d9e4f0' "$HOME/Pictures/Wallpapers/test-hell.png"
         "$im" -size 1920x1080 gradient:'#10131a'-'#2b1f3a' "$HOME/Pictures/Wallpapers/test-dunkel.png"
         "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-hell.png" >/dev/null 2>&1; sleep 3
         bild dock-hell
+        # Mindestlesbarkeit mit dem Standard-Look (helle Karten auf grauem Glas): Text auf Karten ≥ 4.5:1
+        kh="$("$qs" -p "$cfg" ipc call test contrast 2>/dev/null)"; karte_hell="$("$qs" -p "$cfg" ipc call test theme 2>/dev/null | jq .card)"
         if [ "$(ds .glass)" != "$vorher_glas" ]; then echo "  ok: Bildwechsel färbt das Dock um"; else echo "  FEHLER: Dock-Farbe bleibt nach dem Bildwechsel"; dock_ok=0; fi
         "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-dunkel.png" >/dev/null 2>&1; sleep 3
         bild dock-dunkel
-        "$HOME/.local/bin/shell-wallpaper" "$HOME/Pictures/Wallpapers/test-bunt.png" >/dev/null 2>&1; sleep 2
+        kd="$("$qs" -p "$cfg" ipc call test contrast 2>/dev/null)"
+        if awk -v h="${kh:-0}" -v d="${kd:-0}" 'BEGIN { exit !(h >= 4.5 && d >= 4.5) }' && awk -v c="${karte_hell:-0}" 'BEGIN { exit !(c > 0) }'; then
+            echo "  ok: Text auf Karten lesbar auf hellem ($kh:1) und dunklem Bild ($kd:1); die Karte bleibt sichtbar ($karte_hell)"
+        else echo "  FEHLER: Lesbarkeit hell ${kh:-?} / dunkel ${kd:-?}, Karte ${karte_hell:-?}"; dock_ok=0; fi
+        screen_bild; sleep 2
+        "$HOME/.local/bin/shell-set" reset dock.color_mode >/dev/null 2>&1; sleep 1.5
+        if [ "$(ds .glass)" = "$glas_std" ]; then echo "  ok: Standard (glass): Dock im gemeinsamen Glas, unabhängig vom Bild"
+        else echo "  FEHLER: Dock-Glas im Standard: $(ds .glass) statt $glas_std"; dock_ok=0; fi
     fi
 
     # CPU in Ruhe: Quickshell 10 s messen, mit und ohne Dock
@@ -827,6 +1097,66 @@ fi
 if grep -E "dock/[A-Za-z]+\.qml" "$T/qs.log" | grep -v "hypr-shell-probe"; then echo "  FEHLER: Warnungen aus dock/ im Log"; dock_ok=0; fi
 
 
+design_ok=1
+# ---- Desktop-Kacheln: ohne Wert für die GPU (hier keine Grafikkarte) bleibt ihre Kachel weg
+echo "---- Desktop-Kacheln ----"
+kacheln() { "$qs" -p "$cfg" ipc call desktop shown 2>/dev/null; }
+if [ "$(kacheln)" = "cpu,ram" ]; then echo "  ok: GPU-Kachel ohne Wert ausgeblendet, CPU und RAM da"
+else echo "  FEHLER: Kacheln ohne GPU-Wert: \"$(kacheln)\" statt cpu,ram"; design_ok=0; fi
+"$HOME/.local/bin/shell-set" desktop.resources.hide_empty false >/dev/null 2>&1
+for _ in $(seq 1 20); do [ "$(kacheln)" = "cpu,ram,gpu" ] && break; sleep 0.25; done
+bild desktop-gpu-leer
+if [ "$(kacheln)" = "cpu,ram,gpu" ]; then echo "  ok: mit desktop.resources.hide_empty false ist die GPU-Kachel wieder da (–)"
+else echo "  FEHLER: GPU-Kachel fehlt trotz hide_empty false (\"$(kacheln)\")"; design_ok=0; fi
+"$HOME/.local/bin/shell-set" reset desktop.resources.hide_empty >/dev/null 2>&1
+# Performance-Tab: gewelltes Abzeichen (Standard) und Kreis
+ipc dashboard open performance; sleep 2; bild dashboard-perf-welle
+"$HOME/.local/bin/shell-set" dashboard.perf_badge circle >/dev/null 2>&1; sleep 2; bild dashboard-perf-kreis
+ipc dashboard close; sleep 1; "$HOME/.local/bin/shell-set" reset dashboard.perf_badge >/dev/null 2>&1
+
+# ---- Design-Werte (theme.card.*, theme.pill.opacity, theme.border.glow*, theme.spacing.*, theme.font.*):
+# Theme nimmt sie aus settings.json, sofort und ohne Neustart
+echo "---- Design-Werte ----"
+th() { "$qs" -p "$cfg" ipc call test theme 2>/dev/null; }
+th_warte() { # jq-Ausdruck, bis er stimmt (höchstens 8 s)
+    for _ in $(seq 1 32); do jq -e "$1" <<<"$(th)" >/dev/null 2>&1 && return 0; sleep 0.25; done; return 1
+}
+setze() { "$HOME/.local/bin/shell-set" "$@" >/dev/null 2>&1; }
+echo "  Standard: $(th)"
+if th_warte '.card >= 0.07 and .card <= 0.09 and .cardHover == 0.14 and .cardBorder == 0.12 and .pill == 0.92 and .glow == true and .glowSize == 10 and .glowOpacity == 0.25 and .panelPad == 20 and .cardPad == 16 and .gap == 12 and .titleWeight == 700 and .strongWeight == 600 and .textWeight == 400 and .titleScale == 1.25'; then
+    echo "  ok: Standard wie die Vorlage (Karten 9 % – auf hellem Testbild durch die Lesbarkeit begrenzt –, Hover 14 %, Kontur 12 %, Pille 92 %, Leuchten 10 px/0.25, Abstände 20/16/12, Titel fett und 1.25-fach)"
+else echo "  FEHLER: Standardwerte: $(th)"; design_ok=0; fi
+setze set theme.card.opacity 0.15 theme.card.hover 0.2 theme.card.border_opacity 0.3 theme.pill.opacity 0.8
+# (auf einem hellen Testbild begrenzt die Lesbarkeit die Karte; das Glas wird dafür dunkler)
+if th_warte '.card >= 0.09 and .card <= 0.15 and .cardHover == 0.2 and .cardBorder == 0.3 and .pill == 0.8'; then
+    echo "  ok: shell-set theme.card.opacity 0.15 macht die Karten sofort heller, Pille und Kontur folgen ($(th | jq -c '{card, cardHover, cardBorder, pill, glass}'))"
+else echo "  FEHLER: Karten/Pille aus settings.json: $(th)"; design_ok=0; fi
+ipc dashboard open dashboard; sleep 2; bild design-karten-hell; ipc dashboard close; sleep 1
+setze set theme.border.glow true theme.border.glow_size 16 theme.border.glow_opacity 0.5
+if th_warte '.glow == true and .glowSize == 16 and .glowOpacity == 0.5'; then echo "  ok: shell-set theme.border.glow true"
+else echo "  FEHLER: Leuchten: $(th)"; design_ok=0; fi
+# Leuchten: der Schein (16 px) bekommt im Fenster des Dashboards Platz, das Dashboard bleibt ganz auf
+# dem Bildschirm; ohne Leuchten kein Schein und kein zusätzlicher Platz (Lage über IPC, nicht über
+# das Log: Quickshell schreibt es gepuffert)
+ipc dashboard open dashboard; sleep 2; bild design-leuchten
+mit="$("$qs" -p "$cfg" ipc call test area dashboard 2>/dev/null)"
+ipc dashboard close; sleep 1
+setze set theme.border.glow false
+th_warte '.glow == false' || true
+ipc dashboard open dashboard; sleep 2; bild design-ohne-leuchten
+ohne="$("$qs" -p "$cfg" ipc call test area dashboard 2>/dev/null)"
+ipc dashboard close; sleep 1
+if jq -e --argjson o "${ohne:-null}" '.glow == 16 and .glowRoom == 16 and .y >= 16 and .y + .height + 16 <= 1080 and $o.glow == 0 and $o.glowRoom == 0 and .y == $o.y - 16' <<<"${mit:-null}" >/dev/null 2>&1; then
+    echo "  ok: der Rand des Dashboards leuchtet (16 px Schein mit Platz im Fenster, ganz auf dem Bildschirm); ohne Leuchten kein Schein"
+else echo "  FEHLER: Leuchten um das Dashboard: mit $mit, ohne $ohne"; design_ok=0; fi
+setze set theme.spacing.scale 1.5 theme.font.title_weight demibold theme.font.title_scale 1.25
+if th_warte '.pad10 == 15 and .panelPad == 30 and .gap == 18 and .titleWeight == 600 and .strongWeight == 500 and .titleScale == 1.25'; then
+    echo "  ok: Abstände (Faktor 1.5) und Schrift (Titel halbfett, 1.25-fach) aus settings.json"
+else echo "  FEHLER: Abstände/Schrift: $(th)"; design_ok=0; fi
+ipc settings open look; sleep 2; bild design-abstand-schrift; ipc settings close; sleep 1
+setze reset theme
+th_warte '.card >= 0.07 and .panelPad == 20 and .titleScale == 1.25 and .glow == true' || { echo "  FEHLER: reset theme: $(th)"; design_ok=0; }
+
 # Sperrbildschirm (jetzt ohne ~/.face, also mit dem Ersatzbild des Installers) – nur in diesem
 # unsichtbaren Test-Compositor, nie in einer echten Sitzung. Kommt zuletzt, weil sway nach dem Beenden von hyprlock gesperrt bleibt.
 if command -v hyprlock >/dev/null 2>&1; then
@@ -859,14 +1189,16 @@ echo "------------------------"
 [ "$power_ok" -eq 1 ] || { echo "FEHLER: Anzeige oder Power-Menü (siehe oben)"; exit 1; }
 [ "$note_ok" -eq 1 ] || { echo "FEHLER: Benachrichtigungen (siehe oben)"; exit 1; }
 [ "$starter_ok" -eq 1 ] || { echo "FEHLER: Starter (siehe oben)"; exit 1; }
+[ "$raster_ok" -eq 1 ] || { echo "FEHLER: App-Raster (siehe oben)"; exit 1; }
 [ "$panel_ok" -eq 1 ] || { echo "FEHLER: mehr als ein Panel offen (siehe oben)"; exit 1; }
 [ "$dock_ok" -eq 1 ] || { echo "FEHLER: Dock (siehe oben)"; exit 1; }
+[ "$design_ok" -eq 1 ] || { echo "FEHLER: Design-Werte (siehe oben)"; exit 1; }
 if ! kill -0 "$qspid" 2>/dev/null; then
     echo "FEHLER: Quickshell ist abgestürzt"
     exit 1
 fi
 if grep -E "ERROR|TypeError|ReferenceError|is not a type|is not installed|Cannot assign|Unable to assign|Type error|SyntaxError|failed to load" "$T/qs.log" \
-    | grep -vE "Failed to connect to|dbus|DBus|org\.freedesktop|polkit|pipewire|Pipewire|upower|UPower|notification server|NetworkManager|bluez|Bluez|mpris"; then
+    | grep -vE "Failed to connect to|dbus|DBus|org\.freedesktop|polkit|pipewire|Pipewire|upower|UPower|notification server|NetworkManager|bluez|Bluez|mpris|quickshell\.wayland\.buffer\.dmabuf"; then
     echo "FEHLER: QML-Fehler im Log (siehe oben)"
     exit 1
 fi

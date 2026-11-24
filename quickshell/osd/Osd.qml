@@ -48,7 +48,7 @@ Scope {
         margin: 72
         panelWidth: 320
         panelHeight: 56
-        radius: 28
+        radius: Theme.corner(28)
         keyboardFocus: WlrKeyboardFocus.None
         layer: WlrLayer.Overlay
         closeOnOutside: false
@@ -60,33 +60,33 @@ Scope {
             Item {
                 Glyph {
                     id: ico
-                    anchors { left: parent.left; leftMargin: 20; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; leftMargin: Theme.pad(20); verticalCenter: parent.verticalCenter }
                     text: osd.icon
                     size: 20
                     color: osd.muted ? Theme.subtext : Theme.text
                 }
                 Rectangle {
                     id: track
-                    anchors { left: ico.right; leftMargin: 16; right: pct.left; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                    anchors { left: ico.right; leftMargin: Theme.pad(16); right: pct.left; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                     height: 6
-                    radius: 3
+                    radius: Theme.corner(3)
                     color: Theme.track
                     Rectangle {
                         width: parent.width * osd.value / 100
                         height: parent.height
-                        radius: 3
+                        radius: Theme.corner(3)
                         color: osd.muted ? Theme.subtext : Theme.pill
                         Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                     }
                 }
                 Txt {
                     id: pct
-                    anchors { right: parent.right; rightMargin: 20; verticalCenter: parent.verticalCenter }
+                    anchors { right: parent.right; rightMargin: Theme.pad(20); verticalCenter: parent.verticalCenter }
                     width: 40
                     horizontalAlignment: Text.AlignRight
                     text: osd.muted ? "off" : osd.value + "%"
                     size: 13
-                    weight: Font.DemiBold
+                    strong: true
                     font.family: Theme.mono
                 }
             }

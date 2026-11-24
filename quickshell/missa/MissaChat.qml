@@ -225,19 +225,19 @@ Scope {
                     height: 44
                     Rectangle {
                         id: av
-                        width: 38; height: 38; radius: 19
+                        width: 38; height: 38; radius: Theme.corner(19)
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.container
                         Glyph { anchors.centerIn: parent; text: "󰚩"; size: 18; color: Theme.containerText }
                     }
                     Column {
-                        anchors { left: av.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                        Txt { text: "Missa"; size: 16; weight: Font.Bold }
+                        anchors { left: av.right; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
+                        Txt { text: "Missa"; size: 16; title: true }
                         Row {
-                            spacing: 6
+                            spacing: Theme.pad(6)
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 8; height: 8; radius: 4
+                                width: 8; height: 8; radius: Theme.corner(4)
                                 color: mc.health.state === "ok" ? "#5cc98a" : mc.health.state === "setup" ? "#e0b24f" : Theme.warn
                             }
                             Txt { text: mc.health.text || ""; size: 11; sub: true }
@@ -245,7 +245,7 @@ Scope {
                     }
                     Row {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                        spacing: 6
+                        spacing: Theme.pad(6)
                         IconButton { visible: Integrations.missaAgent; icon: "󰋚"; active: mc.showActions; onClicked: mc.showActions = !mc.showActions }
                         IconButton { icon: "󰐕"; onClicked: mc.newConversation() }
                         IconButton { icon: "󰅖"; onClicked: ov.hide() }
@@ -255,7 +255,7 @@ Scope {
                 // ---- Anleitung ohne Adresse oder Schlüssel
                 Txt {
                     visible: mc.health.state === "setup" && mc.messages.length === 0
-                    anchors { top: head.bottom; topMargin: 24; left: parent.left; leftMargin: 24; right: parent.right; rightMargin: 24 }
+                    anchors { top: head.bottom; topMargin: Theme.pad(24); left: parent.left; leftMargin: Theme.pad(24); right: parent.right; rightMargin: Theme.pad(24) }
                     text: "To chat with Missa, enter the address of Missa-Core and the API key in Settings → Integrations."
                     size: 13
                     sub: true
@@ -265,11 +265,11 @@ Scope {
                 // ---- Aktionen des Agenten (Zeit, Werkzeug, Kurzfassung, erlaubt oder abgelehnt)
                 ListView {
                     visible: mc.showActions
-                    anchors { top: head.bottom; topMargin: 12; bottom: footer.top; bottomMargin: 8; left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14 }
+                    anchors { top: head.bottom; topMargin: Theme.pad(12); bottom: footer.top; bottomMargin: Theme.pad(8); left: parent.left; leftMargin: Theme.pad(14); right: parent.right; rightMargin: Theme.pad(14) }
                     clip: true
-                    spacing: 6
+                    spacing: Theme.pad(6)
                     model: mc.actions
-                    header: Txt { text: "What Missa did on this computer"; size: 13; weight: Font.DemiBold; bottomPadding: 6 }
+                    header: Txt { text: "What Missa did on this computer"; size: 13; strong: true; bottomPadding: Theme.pad(6) }
                     delegate: GlassCard {
                         required property var modelData
                         width: ListView.view.width
@@ -279,9 +279,9 @@ Scope {
                             x: 12; y: 8
                             width: parent.width - 24
                             Row {
-                                spacing: 8
+                                spacing: Theme.pad(8)
                                 Txt { text: (modelData.zeit || "").slice(11, 16); size: 11; sub: true; font.family: Theme.mono }
-                                Txt { text: (modelData.werkzeug || "").replace("rechner_", ""); size: 12; weight: Font.DemiBold }
+                                Txt { text: (modelData.werkzeug || "").replace("rechner_", ""); size: 12; strong: true }
                                 Txt {
                                     text: modelData.ergebnis === "erlaubt" ? "allowed" : modelData.ergebnis === "abgelehnt" ? "declined" : modelData.ergebnis
                                     size: 11
@@ -297,9 +297,9 @@ Scope {
                 ListView {
                     id: list
                     visible: !mc.showActions
-                    anchors { top: head.bottom; topMargin: 12; bottom: footer.top; bottomMargin: 8; left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14 }
+                    anchors { top: head.bottom; topMargin: Theme.pad(12); bottom: footer.top; bottomMargin: Theme.pad(8); left: parent.left; leftMargin: Theme.pad(14); right: parent.right; rightMargin: Theme.pad(14) }
                     clip: true
-                    spacing: 10
+                    spacing: Theme.pad(10)
                     model: mc.messages
                     onCountChanged: positionViewAtEnd()
                     onContentHeightChanged: if (mc.busy) positionViewAtEnd()
@@ -315,7 +315,7 @@ Scope {
                             anchors.right: msg.mine ? parent.right : undefined
                             width: Math.min(list.width * 0.86, Math.max(60, body.implicitWidth + 28))
                             height: body.implicitHeight + 20
-                            radius: 16
+                            radius: Theme.corner(16)
                             color: msg.mine ? Theme.container : msg.modelData.role === "error" ? Qt.rgba(0.88, 0.42, 0.46, 0.18) : Theme.card
                             border.width: 1
                             border.color: Theme.cardBorder
@@ -334,7 +334,7 @@ Scope {
                             HoverHandler { id: copyHov }
                             IconButton {
                                 visible: copyHov.hovered && msg.modelData.text !== ""
-                                anchors { right: parent.right; top: parent.top; margins: 4 }
+                                anchors { right: parent.right; top: parent.top; margins: Theme.pad(4) }
                                 width: 24; height: 24
                                 iconSize: 10
                                 icon: "󰆏"
@@ -355,7 +355,7 @@ Scope {
                         Row {
                             visible: mc.asking
                             anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                            spacing: 8
+                            spacing: Theme.pad(8)
                             Pill { text: "Yes"; icon: "󰄬"; active: true; onClicked: mc.send("Ja", false); Probe { name: "missa-yes" } }
                             Pill { text: "No"; icon: "󰅖"; onClicked: mc.send("Nein", false) }
                         }
@@ -365,12 +365,12 @@ Scope {
                 // ---- Eingabe
                 Column {
                     id: footer
-                    anchors { bottom: parent.bottom; bottomMargin: 14; left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14 }
-                    spacing: 8
+                    anchors { bottom: parent.bottom; bottomMargin: Theme.pad(14); left: parent.left; leftMargin: Theme.pad(14); right: parent.right; rightMargin: Theme.pad(14) }
+                    spacing: Theme.pad(8)
                     Flow {
                         width: parent.width
                         visible: mc.inbox.length > 0
-                        spacing: 6
+                        spacing: Theme.pad(6)
                         Txt { text: "From Eingang:"; size: 11; sub: true; height: 26; verticalAlignment: Text.AlignVCenter }
                         Repeater {
                             model: mc.inbox
@@ -387,13 +387,13 @@ Scope {
                     Rectangle {
                         width: parent.width
                         height: Math.min(140, Math.max(48, input.contentHeight + 24))
-                        radius: 20
-                        color: Qt.rgba(1, 1, 1, 0.06)
+                        radius: Theme.corner(20)
+                        color: Theme.field
                         border.width: 1
                         border.color: drop.containsDrag ? Theme.text : Theme.cardBorder
                         Flickable {
                             id: inFlick
-                            anchors { left: parent.left; leftMargin: 16; right: mc.voiceOn ? micBtn.left : sendBtn.left; rightMargin: 8; top: parent.top; topMargin: 12; bottom: parent.bottom; bottomMargin: 12 }
+                            anchors { left: parent.left; leftMargin: Theme.pad(16); right: mc.voiceOn ? micBtn.left : sendBtn.left; rightMargin: Theme.pad(8); top: parent.top; topMargin: Theme.pad(12); bottom: parent.bottom; bottomMargin: Theme.pad(12) }
                             contentHeight: input.contentHeight
                             clip: true
                             TextEdit {
@@ -414,14 +414,14 @@ Scope {
                         IconButton {
                             id: micBtn
                             visible: mc.voiceOn
-                            anchors { right: sendBtn.left; rightMargin: 4; bottom: parent.bottom; bottomMargin: 7 }
+                            anchors { right: sendBtn.left; rightMargin: Theme.pad(4); bottom: parent.bottom; bottomMargin: Theme.pad(7) }
                             active: mc.voiceState === "listening"
                             icon: "󰍬"
                             onClicked: mc.voiceToggle()
                         }
                         IconButton {
                             id: sendBtn
-                            anchors { right: parent.right; rightMargin: 8; bottom: parent.bottom; bottomMargin: 7 }
+                            anchors { right: parent.right; rightMargin: Theme.pad(8); bottom: parent.bottom; bottomMargin: Theme.pad(7) }
                             active: mc.busy || input.text.length > 0
                             icon: mc.busy ? "󰓛" : "󰒊"
                             onClicked: { if (mc.busy) mc.cancel(); else { mc.send(input.text, false); input.text = "" } }
@@ -452,7 +452,7 @@ Scope {
         margin: 72
         panelWidth: 280
         panelHeight: 52
-        radius: 26
+        radius: Theme.corner(26)
         localOpen: mc.voiceState !== ""
         layer: WlrLayer.Overlay
         keyboardFocus: WlrKeyboardFocus.OnDemand
@@ -463,28 +463,28 @@ Scope {
                 Keys.onEscapePressed: mc.voiceStop()
                 Glyph {
                     id: vIcon
-                    anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
                     text: mc.voiceState === "speaking" ? "󰕾" : mc.voiceState === "thinking" ? "󰚩" : "󰍬"
                     size: 18
                     color: mc.voiceState === "listening" ? Theme.warn : Theme.text
                 }
                 Txt {
                     id: vText
-                    anchors { left: vIcon.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                    anchors { left: vIcon.right; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                     text: mc.voiceState === "listening" ? "Listening" : mc.voiceState === "thinking" ? "Thinking …" : "Speaking"
                     size: 13
-                    weight: Font.DemiBold
+                    strong: true
                 }
                 Rectangle {
                     visible: mc.voiceState === "listening"
-                    anchors { left: vText.right; leftMargin: 14; right: parent.right; rightMargin: 20; verticalCenter: parent.verticalCenter }
+                    anchors { left: vText.right; leftMargin: Theme.pad(14); right: parent.right; rightMargin: Theme.pad(20); verticalCenter: parent.verticalCenter }
                     height: 6
-                    radius: 3
+                    radius: Theme.corner(3)
                     color: Theme.track
                     Rectangle {
                         width: parent.width * Math.min(100, mc.level) / 100
                         height: parent.height
-                        radius: 3
+                        radius: Theme.corner(3)
                         color: Theme.pill
                         Behavior on width { NumberAnimation { duration: 100 } }
                     }

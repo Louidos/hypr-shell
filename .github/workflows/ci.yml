@@ -19,6 +19,8 @@ jobs:
   arch:
     name: Probelauf in archlinux:latest
     runs-on: ubuntu-latest
+    # ein hängender Test darf die CI nicht stundenlang blockieren
+    timeout-minutes: 45
     container: archlinux:latest
     permissions:
       contents: write
@@ -38,8 +40,13 @@ jobs:
           for t in tests/*.sh; do
             [ "$t" = tests/lint.sh ] && continue
             echo "== $t"
-            su tester -c "cd '$GITHUB_WORKSPACE' && SCREENSHOTS='$GITHUB_WORKSPACE/screenshots-ci' $t"
+            # höchstens 12 Minuten je Test; hängt einer, bricht er mit einer klaren Meldung ab
+            su tester -c "cd '$GITHUB_WORKSPACE' && SCREENSHOTS='$GITHUB_WORKSPACE/screenshots-ci' timeout -k 10 720 $t" \
+              || { rc=$?; [ "$rc" = 124 ] && echo "FEHLER: $t hängt (länger als 12 Minuten)"; exit "$rc"; }
           done
+      - name: Screenshots mit grauem Hintergrund (zweite, kurze Runde)
+        run: |
+          su tester -c "cd '$GITHUB_WORKSPACE' && SCREENSHOTS='$GITHUB_WORKSPACE/screenshots-ci' SCREENSHOT_BILD=grau SCREENSHOT_ENDUNG=-grau SCREENSHOT_NUR='desktop dashboard-dashboard panel settings-home apps' timeout -k 10 300 tests/oberflaeche.sh"
       - name: Screenshots der Oberfläche
         if: always()
         uses: actions/upload-artifact@v4

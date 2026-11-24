@@ -100,6 +100,15 @@ Starter und Fenster-Übersicht bieten kein Ziehen an; Programme kommen dort desh
     `dock.show_delay_ms` ein.
   - Menü, Fensterliste, Ziehen, Tastatur (SUPER+B) und die offene Seite „Dock“ der Einstellungen
     halten es sichtbar.
+- **Wenn ein Panel offen ist** (`dock.when_panel_open`): Dock und Panels liegen beide auf der
+  Ebene Top, früher lag das Dock deshalb über dem Dashboard und verdeckte Kalender und Ringe.
+  - `hide` (Standard): Überdeckt das offene Panel (Dashboard, Hot-Corner-Panel, Einstellungen,
+    App-Raster, Starter …) die Fläche des Docks, gleitet das Dock über die Kante weg und kommt beim
+    Schliessen sofort zurück. Ein Dock mit `dock.mode = reserve` zählt für die Panels dann nicht:
+    das Dashboard nutzt die volle Höhe. Panels, die das Dock nicht berühren (z. B. das Power-Menü
+    in der Mitte), lassen es stehen. Die offene Seite „Dock“ der Einstellungen zeigt es immer.
+  - `behind`: das Dock bleibt, liegt aber unter dem Panel (Ebene Bottom, solange es überdeckt ist).
+  - `stay`: das alte Verhalten, das Dock bleibt oben.
 - **Dashboard-Kante**: Die Mitte der unteren Kante öffnet sonst das Dashboard. Solange das Dock
   unten versteckt ist (oder gerade über die Kante kam), blendet die Kante das Dock ein; ist das
   Dock normal sichtbar, öffnet die Kante darunter wie bisher das Dashboard. `SUPER + D` öffnet es
@@ -203,6 +212,7 @@ von `shell-set profile`.
 | `dock.show_delay_ms` | `150` | 0–2000 ms | Verzögerung beim Einblenden |
 | `dock.hide_delay_ms` | `400` | 0–5000 ms | Verzögerung beim Ausblenden |
 | `dock.hide_on_fullscreen` | `true` | bool | Bei Vollbild und Gaming-Modus weg |
+| `dock.when_panel_open` | `hide` | hide, behind, stay | Wegfahren, darunter legen oder oben bleiben, solange ein Panel das Dock überdeckt |
 | `dock.avoid_bar` | `true` | bool | Abstand zur Leiste auf derselben Kante |
 | `dock.items` | Standardliste | Liste | Reihenfolge und Art der Einträge |
 | `dock.preset` | `mac` | mac, minimal, compact, island, full | Zuletzt gewählte Voreinstellung |

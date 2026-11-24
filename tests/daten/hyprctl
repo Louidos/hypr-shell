@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # Attrappe von hyprctl für Tests: -j clients|workspaces|monitors|activeworkspace|binds aus tests/daten,
-# dispatch und alles andere wird nach $HYPRCTL_LOG geschrieben.
+# dispatch und alles andere wird nach $HYPRCTL_LOG geschrieben. "submap" nennt $HYPRCTL_SUBMAP.
 d="$(dirname "$(readlink -f "$0")")"
 if [ "${1:-}" = -j ]; then
     case "$2" in
-        clients) cat "$d/hyprctl-clients.json" ;;
+        clients) cat "${HYPRCTL_CLIENTS:-$d/hyprctl-clients.json}" ;;
         workspaces) cat "$d/hyprctl-workspaces.json" ;;
-        monitors) cat "$d/hyprctl-monitors.json" ;;
+        monitors) cat "${HYPRCTL_MONITORS:-$d/hyprctl-monitors.json}" ;;
         activeworkspace) echo '{"id": 1, "name": "1"}' ;;
+        cursorpos) echo "${HYPRCTL_CURSOR:-{\"x\": 100, \"y\": 100\}}" ;;
+        activewindow) jq '.[0] | .title = "Terminal"' "${HYPRCTL_CLIENTS:-$d/hyprctl-clients.json}" ;;
+        layers) echo '{"HEADLESS-1": {"levels": {"2": [{"namespace": "hypr-shell-dock"}, {"namespace": "waybar"}]}}}' ;;
         binds) cat "${HYPRCTL_BINDS:-$d/hyprctl-binds.json}" 2>/dev/null || echo '[]' ;;
         *) echo '{}' ;;
     esac
     exit 0
 fi
+[ "${1:-}" = submap ] && { echo "${HYPRCTL_SUBMAP:-default}"; exit 0; }
 echo "$*" >> "${HYPRCTL_LOG:-/dev/null}"

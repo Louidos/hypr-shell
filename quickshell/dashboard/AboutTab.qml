@@ -19,18 +19,18 @@ Grid12 {
         property string key
         property string value
         width: parent ? parent.width : 300
-        spacing: 10
+        spacing: Theme.pad(10)
         Txt { width: 92; text: line.key; sub: true; size: 13 }
-        Txt { width: line.width - 102; text: line.value || "–"; size: 13; weight: Font.DemiBold }
+        Txt { width: line.width - 102; text: line.value || "–"; size: 13; strong: true }
     }
 
     Cell {
         col: 0; row: 0; cs: 5; rs: 2
         narrowAt: [0, 0, 6, 2]
         Column {
-            anchors { fill: parent; margins: 20 }
-            spacing: 12
-            Txt { text: "System"; size: 16; weight: Font.Bold }
+            anchors { fill: parent; margins: Theme.pad(20) }
+            spacing: Theme.pad(12)
+            Txt { text: "System"; size: 16; title: true }
             Line { key: "User"; value: ab.about.user }
             Line { key: "Host"; value: ab.about.host }
             Line { key: "Kernel"; value: ab.about.kernel }
@@ -44,9 +44,9 @@ Grid12 {
         narrowAt: [0, 2, 3, 2]
         Column {
             anchors.centerIn: parent
-            spacing: 12
+            spacing: Theme.pad(12)
             Glyph { anchors.horizontalCenter: parent.horizontalCenter; text: ab.about.icon || ""; size: 72 }
-            Txt { anchors.horizontalCenter: parent.horizontalCenter; text: ab.about.distro || "Linux"; size: 18; weight: Font.Bold }
+            Txt { anchors.horizontalCenter: parent.horizontalCenter; text: ab.about.distro || "Linux"; size: 18; title: true }
             Txt { anchors.horizontalCenter: parent.horizontalCenter; text: "Distribution"; sub: true; size: 12 }
         }
     }
@@ -54,9 +54,9 @@ Grid12 {
         col: 8; row: 0; cs: 4; rs: 2
         narrowAt: [3, 2, 3, 2]
         Column {
-            anchors { fill: parent; margins: 20 }
-            spacing: 12
-            Txt { text: "hypr-shell"; size: 16; weight: Font.Bold }
+            anchors { fill: parent; margins: Theme.pad(20) }
+            spacing: Theme.pad(12)
+            Txt { text: "hypr-shell"; size: 16; title: true }
             Txt { text: "Glass desktop for Hyprland"; sub: true; size: 12 }
             Item { width: 1; height: 4 }
             Line { key: "Version"; value: ab.about.version }

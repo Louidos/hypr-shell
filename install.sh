@@ -514,6 +514,41 @@ fehlende_programme() {
     fi
 }
 
+# Fenster-Knöpfe (Titelleiste): offizielles Plugin hyprbars. Zuerst ein Paket (CachyOS, AUR), sonst
+# hyprpm (baut das Plugin passend zur laufenden Hyprland-Version; braucht eine laufende Sitzung).
+# Ohne Plugin läuft alles weiter, nur ohne Knöpfe. Nach einem Hyprland-Update: hyprpm update.
+HYPRBARS_PAKETE=(hyprland-plugin-hyprbars hyprbars hyprland-plugins hyprbars-git)
+fensterknoepfe() {
+    [ "$DRY" -eq 1 ] && { probe "hyprbars (Fenster-Knöpfe): Paket oder hyprpm"; return 0; }
+    [ "$NOPKG" -eq 1 ] && return 0
+    local p
+    for p in "${HYPRBARS_PAKETE[@]}"; do
+        if pacman -Qq "$p" >/dev/null 2>&1; then ok "Fenster-Knöpfe: Paket $p ist installiert"; return 0; fi
+    done
+    if command -v pacman >/dev/null 2>&1; then
+        for p in "${HYPRBARS_PAKETE[@]}"; do
+            if pacman -Si "$p" >/dev/null 2>&1; then
+                sudo pacman -S --needed --noconfirm "$p" && { ok "Fenster-Knöpfe: Paket $p installiert"; return 0; }
+            fi
+        done
+    fi
+    if command -v hyprpm >/dev/null 2>&1 && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+        if hyprpm list 2>/dev/null | grep -qi hyprbars; then
+            hyprpm update >/dev/null 2>&1 || warnung "hyprpm update meldete einen Fehler (Fenster-Knöpfe evtl. aus)"
+            ok "Fenster-Knöpfe: hyprbars über hyprpm aktuell"; return 0
+        fi
+        if [ "$YES" -eq 1 ] || ja_nein "Fenster-Knöpfe einrichten: hyprbars über hyprpm bauen (braucht cmake, meson, cpio, git; einige Minuten)?"; then
+            sudo pacman -S --needed --noconfirm cmake meson cpio git >/dev/null 2>&1 || true
+            if hyprpm update && hyprpm add https://github.com/hyprwm/hyprland-plugins && hyprpm enable hyprbars; then
+                ok "Fenster-Knöpfe eingerichtet (hyprbars)"; return 0
+            fi
+            warnung "hyprbars liess sich nicht einrichten – Fenster bleiben ohne Knöpfe (später: hyprpm add https://github.com/hyprwm/hyprland-plugins && hyprpm enable hyprbars)"
+            return 0
+        fi
+    fi
+    warnung "Fenster-Knöpfe (hyprbars) fehlen – in einer Hyprland-Sitzung: hyprpm add https://github.com/hyprwm/hyprland-plugins && hyprpm enable hyprbars"
+}
+
 # Sprechen mit Missa (freiwillig): whisper.cpp, piper und ihre Modelle nur nach Rückfrage holen.
 # Mit --yes wird nicht gefragt und nichts geholt; ohne die Programme fehlen Taste und Mikrofon-Knopf.
 STIMME_PAKETE=(whisper-cpp piper-tts-bin sox)
@@ -654,6 +689,7 @@ installieren() {
     if [ "$NOPKG" -eq 0 ]; then fehlende_programme; fi
     dienste_pruefen
     laptop_hinweis
+    fensterknoepfe
     stimme_einrichten
 
     echo

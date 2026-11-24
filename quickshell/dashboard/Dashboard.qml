@@ -32,9 +32,9 @@ Scope {
     readonly property real panelW: Settings.get("dashboard.width", 1000)
     // Hochformat oder schmal: Karten in 6 statt 12 Spalten, dafür höher (Overlay rollt, wenn nötig)
     readonly property bool narrow: ov.portrait || ov.fitWidth < 760
-    // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px (schmal 5 Zeilen: 555 px), Rand 18 px
+    // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px (schmal 5 Zeilen: 555 px), Rand theme.spacing.panel
     readonly property real headH: 64
-    readonly property real pad: 18
+    readonly property real pad: Theme.panelPad
     readonly property real pageH: narrow ? 555 : 330
     readonly property real panelH: headH + 4 + pageH + pad
 
@@ -100,11 +100,12 @@ Scope {
         screen: dash.screen
         panelWidth: dash.panelW
         panelHeight: dash.panelH
-        glassOpacity: Settings.get("dashboard.opacity", 0.42)
+        glassOpacity: Settings.get("dashboard.opacity", -1)   // -1 = gemeinsames Glas
         keyboardFocus: WlrKeyboardFocus.Exclusive
         leaveDelay: Settings.get("dashboard.close_on_leave", true) ? 350 : -1
         // von aussen geöffnet (z. B. Ui.openPanel): Start-Tab; Daten für About und Profil holen
-        onOpened: { if (dash.tabs.indexOf(dash.tab) < 0) dash.tab = dash.startTab; if (!aboutProc.running) aboutProc.running = true; if (!gamesProc.running) gamesProc.running = true }
+        onOpened: { if (Ui.dashboardTab !== "") { dash.tab = dash.tabs.indexOf(Ui.dashboardTab) >= 0 ? Ui.dashboardTab : dash.startTab; Ui.dashboardTab = "" }
+                    if (dash.tabs.indexOf(dash.tab) < 0) dash.tab = dash.startTab; if (!aboutProc.running) aboutProc.running = true; if (!gamesProc.running) gamesProc.running = true }
 
         content: Component {
             Item {
@@ -149,7 +150,7 @@ Scope {
                                 height: tabBar.height
                                 Column {
                                     anchors.centerIn: parent
-                                    spacing: 1
+                                    spacing: Theme.pad(1)
                                     Glyph {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: dash.tabIcons[tb.modelData]
@@ -162,7 +163,7 @@ Scope {
                                         visible: tabBar.tw >= 64
                                         text: dash.tabNames[tb.modelData]
                                         size: 12
-                                        weight: tb.active ? Font.DemiBold : Font.Medium
+                                        strong: tb.active
                                         color: tb.active ? Theme.pillText : Theme.subtext
                                         Behavior on color { ColorAnimation { duration: 220 } }
                                     }

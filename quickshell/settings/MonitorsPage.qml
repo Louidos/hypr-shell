@@ -9,7 +9,7 @@ import "monitore.js" as M
 // innerhalb von 15 Sekunden bestätigt werden, sonst gilt wieder der vorherige Stand.
 Column {
     id: mp
-    spacing: 12
+    spacing: Theme.pad(12)
     property var monitors: []
     property bool hyprland: !!Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE")
     // Bestätigung
@@ -77,13 +77,13 @@ Column {
         height: 64
         color: Qt.rgba(1, 1, 1, 0.12)
         Txt {
-            anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+            anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
             text: "Keep this display setting? Reverting in " + mp.countdown + " s"
-            size: 14; weight: Font.DemiBold
+            size: 14; strong: true
         }
         Row {
-            anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            spacing: 8
+            anchors { right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
+            spacing: Theme.pad(8)
             Pill { icon: "󰄬"; text: "Keep"; active: true; onClicked: mp.keep(); Probe { name: "monitors-keep" } }
             Pill { icon: "󰑓"; text: "Revert"; onClicked: mp.revert(); Probe { name: "monitors-revert" } }
         }
@@ -108,12 +108,12 @@ Column {
                 id: mcol
                 x: 16; y: 14
                 width: parent.width - 32
-                spacing: 10
+                spacing: Theme.pad(10)
                 Row {
-                    spacing: 12
+                    spacing: Theme.pad(12)
                     Glyph { text: "󰍹"; size: 22; anchors.verticalCenter: parent.verticalCenter }
                     Column {
-                        Txt { text: card.modelData.name + (card.modelData.description ? " · " + card.modelData.description : ""); size: 14; weight: Font.Bold }
+                        Txt { text: card.modelData.name + (card.modelData.description ? " · " + card.modelData.description : ""); size: 14; title: true }
                         Txt {
                             text: card.modelData.width + "x" + card.modelData.height
                                   + (card.modelData.refreshRate ? " @ " + Math.round(card.modelData.refreshRate) + " Hz" : "")
@@ -123,10 +123,10 @@ Column {
                         }
                     }
                 }
-                Txt { text: "Resolution"; size: 12; weight: Font.DemiBold; color: Theme.subtext }
+                Txt { text: "Resolution"; size: 12; strong: true; color: Theme.subtext }
                 Flow {
                     width: parent.width
-                    spacing: 6
+                    spacing: Theme.pad(6)
                     Pill {
                         text: "Automatic"
                         active: card.e.resolution === ""
@@ -142,10 +142,10 @@ Column {
                         }
                     }
                 }
-                Txt { text: "Scale"; size: 12; weight: Font.DemiBold; color: Theme.subtext }
+                Txt { text: "Scale"; size: 12; strong: true; color: Theme.subtext }
                 Flow {
                     width: parent.width
-                    spacing: 6
+                    spacing: Theme.pad(6)
                     Repeater {
                         model: ["", "1", "1.25", "1.5", "1.75", "2"]
                         delegate: Pill {
@@ -157,10 +157,10 @@ Column {
                     }
                 }
                 // ---- Drehung: 0°, 90°, 180°, 270° und gespiegelt, mit Vorschau der Ausrichtung
-                Txt { text: "Rotation"; size: 12; weight: Font.DemiBold; color: Theme.subtext }
+                Txt { text: "Rotation"; size: 12; strong: true; color: Theme.subtext }
                 Row {
                     id: rotRow
-                    spacing: 14
+                    spacing: Theme.pad(14)
                     readonly property var rot: mp.rotation(card.modelData.name)
                     // Vorschau-Kachel: der Bildschirm, wie er steht (A zeigt oben und die Spiegelung)
                     Item {
@@ -170,7 +170,7 @@ Column {
                             id: tile
                             anchors.centerIn: parent
                             width: 44; height: 28
-                            radius: 5
+                            radius: Theme.corner(5)
                             color: Theme.card
                             border.width: 1
                             border.color: Theme.glassBorder
@@ -178,14 +178,14 @@ Column {
                             rotation: -rotRow.rot.grad
                             transform: Scale { origin.x: tile.width / 2; xScale: rotRow.rot.mirrored ? -1 : 1 }
                             Behavior on rotation { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                            Rectangle { x: 6; y: 3; width: parent.width - 12; height: 3; radius: 1.5; color: Theme.accent }
-                            Txt { anchors.centerIn: parent; anchors.verticalCenterOffset: 2; text: "A"; size: 12; weight: Font.Bold }
+                            Rectangle { x: 6; y: 3; width: parent.width - 12; height: 3; radius: Theme.corner(1.5); color: Theme.accent }
+                            Txt { anchors.centerIn: parent; anchors.verticalCenterOffset: 2; text: "A"; size: 12; heavy: true }
                         }
                     }
                     Flow {
                         width: card.width - 32 - 52 - 14
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 6
+                        spacing: Theme.pad(6)
                         Repeater {
                             model: [0, 90, 180, 270]
                             delegate: Pill {
@@ -198,7 +198,7 @@ Column {
                         }
                         Item { width: 8; height: 30 }
                         Row {
-                            spacing: 8
+                            spacing: Theme.pad(8)
                             height: 30
                             Txt { text: "Mirrored"; size: 12; anchors.verticalCenter: parent.verticalCenter }
                             Toggle {
@@ -222,8 +222,8 @@ Column {
                     elide: Text.ElideNone
                 }
                 Row {
-                    spacing: 8
-                    Txt { text: "Position"; size: 12; weight: Font.DemiBold; color: Theme.subtext; anchors.verticalCenter: parent.verticalCenter }
+                    spacing: Theme.pad(8)
+                    Txt { text: "Position"; size: 12; strong: true; color: Theme.subtext; anchors.verticalCenter: parent.verticalCenter }
                     Field {
                         width: 160
                         mono: true

@@ -93,6 +93,18 @@ Scope {
         }
     }
 
+    // als Panel anmelden (Ui.openPanel öffnet nur angemeldete Namen); verschwindet das Overlay, während
+    // es offen ist (z. B. Missa wird abgeschaltet), wird Ui.panel frei
+    Component.onCompleted: if (exclusive && name !== "") Ui.registerPanel(name)
+    Component.onDestruction: { if (exclusive && name !== "") { Ui.unregisterPanel(name); Ui.setPanelArea(name, null) } Ui.setKeyboard(ov.namespace, false) }
+    // offen, aber kein Fenster zu sehen (Bildschirm abgesteckt, kein Bildschirm): nach 1.5 s zu, damit
+    // Ui.panel nicht hängen bleibt (das Dock nähme sonst keine Klicks mehr an)
+    Timer {
+        running: ov.open && !win.visible
+        interval: 1500
+        onTriggered: if (ov.open && !win.visible) ov.hide()
+    }
+
     IpcHandler {
         target: ov.name
         enabled: ov.ipc && ov.name !== ""
@@ -119,7 +131,7 @@ Scope {
     readonly property bool atLeft: place === "left" || place.indexOf("-left") > 0
     readonly property bool atRight: place === "right" || place.indexOf("-right") > 0
 
-    ScreenFit { id: fitter; screen: ov.screen }
+    ScreenFit { id: fitter; screen: ov.screen; forPanel: true }
     readonly property real k: uiScale > 0 ? uiScale : 1
     // Leiste und reserviertes Dock an den Kanten, an denen das Panel liegt (Bildschirmpixel)
     readonly property bool fillV: fill && (atLeft || atRight)
@@ -130,6 +142,9 @@ Scope {
     readonly property real insetRight: atRight || fillH ? fitter.right : 0
     // freier Platz für das Panel (Bildschirmpixel); in der Mitte gleich viel Abstand oben und unten
     readonly property real gap: Math.max(8, margin)
+    // Platz für das Leuchten des Rands (theme.border.glow) rund um Kantenpanels: ohne ihn läge der
+    // Schein ausserhalb des Fensters (Ecken und Mitte haben dafür schon den Rand margin)
+    readonly property real glowRoom: glass && Theme.glow && animation === "slide" ? Math.ceil(Theme.glowSize) : 0
     readonly property real roomW: fillH ? fitter.availWidth : fitter.availWidth - 2 * gap
     readonly property real roomH: place === "center"
         ? fitter.height - 2 * Math.max(fitter.top, fitter.bottom) - 2 * gap
@@ -139,6 +154,23 @@ Scope {
     readonly property real fitWidth: fitted.w
     readonly property real fitHeight: fitted.h
     readonly property bool scrolls: scroll && fitted.scroll
+
+    // Endlage der Fläche auf dem Bildschirm (ohne Animation), für das Dock (dock.when_panel_open):
+    // überdeckt das offene Panel das Dock, fährt es weg oder legt sich dahinter
+    readonly property var area: {
+        if (!exclusive || !open || !win.visible || !ov.screen || clickThrough) return null
+        const sw = fitter.width, sh = fitter.height, ww = win.width, wh = win.height
+        const wx = win.anchors.left ? 0 : win.anchors.right ? sw - ww : (sw - ww) / 2
+        const wy = win.anchors.top ? 0 : win.anchors.bottom ? sh - wh : (sh - wh) / 2
+        const fw = body.fw, fh = body.fh
+        const bx = animation === "grow" ? (atRight ? ww - fw - margin - insetRight : margin + insetLeft)
+                 : animation === "fade" ? (ww - fw) / 2 : body.x0
+        const by = animation === "grow" ? (atBottom ? wh - fh - margin - insetBottom : margin + insetTop)
+                 : animation === "fade" ? (wh - fh) / 2 : body.y0
+        return { screen: ov.screen.name, x: Math.round(wx + bx), y: Math.round(wy + by), width: Math.round(fw), height: Math.round(fh),
+                 glow: glass && Theme.glow ? Theme.glowSize : 0, glowRoom: glowRoom }
+    }
+    onAreaChanged: if (exclusive && name !== "") Ui.setPanelArea(name, area)
 
     PanelWindow {
         id: win
@@ -164,31 +196,42 @@ Scope {
         // Ecken: Abstand ringsum; Mitte: Rand ringsum
         readonly property bool edge: ov.animation === "slide"
         implicitWidth: ov.fitWidth * ov.k + (edge ? ((ov.atLeft || ov.atRight) ? ov.margin : 0) : 2 * ov.margin)
-                       + ov.insetLeft + ov.insetRight
+                       + ov.insetLeft + ov.insetRight + 2 * ov.glowRoom
         implicitHeight: ov.fitHeight * ov.k + (edge ? ((ov.atTop || ov.atBottom) ? ov.margin : 0) : 2 * ov.margin)
-                        + ov.insetTop + ov.insetBottom
+                        + ov.insetTop + ov.insetBottom + 2 * ov.glowRoom
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: ov.layer
         WlrLayershell.namespace: ov.namespace
-        WlrLayershell.keyboardFocus: ov.open ? ov.keyboardFocus : WlrKeyboardFocus.None
+        // Tastatur nur, solange das Panel offen UND sichtbar ist (nie bei einer unsichtbaren Fläche)
+        readonly property bool wantsKeys: ov.open && visible && !ov.clickThrough && ov.keyboardFocus !== WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: wantsKeys ? ov.keyboardFocus : WlrKeyboardFocus.None
+        onWantsKeysChanged: Ui.setKeyboard(ov.namespace, wantsKeys)
         mask: ov.clickThrough ? noInput : bodyInput
         Region { id: noInput }
         Region { id: bodyInput; item: body }
 
         onVisibleChanged: if (visible) keys.forceActiveFocus()
 
+        // Leuchten des Rands (theme.border.glow): neben der Fläche statt darin, weil die Fläche beim
+        // Wachsen aus der Ecke abschneidet (clip); folgt Lage, Grösse und Einblenden der Fläche
+        Item {
+            x: body.x; y: body.y; width: body.width; height: body.height
+            opacity: body.opacity; scale: body.scale
+            visible: ov.glass
+            Glow { radius: body.radius; probe: ov.name !== "" ? "glow-" + ov.name : "" }
+        }
         Rectangle {
             id: body
             // Grösse auf dem Bildschirm (Bildschirmpixel)
-            readonly property real fw: ov.fillH ? win.width - ov.insetLeft - ov.insetRight : ov.fitWidth * ov.k
-            readonly property real fh: ov.fillV ? win.height - 2 * ov.margin - ov.insetTop - ov.insetBottom : ov.fitHeight * ov.k
+            readonly property real fw: ov.fillH ? win.width - ov.insetLeft - ov.insetRight - 2 * ov.glowRoom : ov.fitWidth * ov.k
+            readonly property real fh: ov.fillV ? win.height - 2 * ov.margin - ov.insetTop - ov.insetBottom - 2 * ov.glowRoom : ov.fitHeight * ov.k
             // Endlage im Fenster
             readonly property real x0: ov.animation === "slide"
-                ? (ov.atLeft ? ov.margin + ov.insetLeft : ov.fillH ? ov.insetLeft : 0)
+                ? (ov.atLeft ? ov.margin + ov.insetLeft : ov.fillH ? ov.insetLeft : 0) + ov.glowRoom
                 : (win.width - width) / 2
             readonly property real y0: ov.animation === "slide"
-                ? (ov.atTop ? ov.margin + ov.insetTop : ov.atBottom ? 0 : ov.fillV ? ov.margin + ov.insetTop : 0)
+                ? (ov.atTop ? ov.margin + ov.insetTop : ov.atBottom ? 0 : ov.fillV ? ov.margin + ov.insetTop : 0) + ov.glowRoom
                 : (win.height - height) / 2
 
             width: ov.animation === "grow" ? fw * (0.55 + 0.45 * win.t) : fw
@@ -203,7 +246,7 @@ Scope {
             scale: ov.animation === "fade" ? 0.97 + 0.03 * win.t : 1
             radius: ov.animation === "grow" ? Math.min(ov.radius, Math.min(width, height) / 2) : ov.radius
             color: ov.glass ? Theme.glass(ov.glassOpacity) : "transparent"
-            border.width: ov.glass ? 1 : 0
+            border.width: ov.glass ? Theme.borderWidth : 0
             border.color: Theme.glassBorder
             clip: ov.animation === "grow"
 

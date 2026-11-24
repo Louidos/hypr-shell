@@ -12,7 +12,8 @@ import "fit.js" as F
 //
 //   width, height          ganzer Bildschirm
 //   top/bottom/left/right  von Leiste (bar.position, bar.height) und einem Dock mit
-//                          dock.mode = reserve belegter Rand
+//                          dock.mode = reserve belegter Rand (forPanel und dock.when_panel_open =
+//                          hide: ohne Dock)
 //   availWidth/availHeight Platz ohne Leiste und reserviertes Dock
 //   portrait               Hochformat (höher als breit)
 //   factor                 Grössenfaktor der Oberfläche: 1 zwischen 1080 und 1440 Pixeln kürzerer
@@ -22,6 +23,9 @@ import "fit.js" as F
 QtObject {
     id: f
     property var screen: null
+    // für ein Panel (Overlay): fährt das Dock für Panels weg (dock.when_panel_open = hide), zählt
+    // sein reservierter Platz nicht – das Panel bekommt die volle Höhe
+    property bool forPanel: false
     // ohne Bildschirm: der erste, den es gibt, sonst die kleinste unterstützte Grösse 1280×720
     readonly property var target: screen ? screen : (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
     readonly property string name: target ? target.name : ""
@@ -40,6 +44,7 @@ QtObject {
         dockMargin: Settings.get("dock.margin", 10),
         dockIcon: Settings.get("dock.icon_size", 48),
         dockPadding: Settings.get("dock.padding", 8),
+        dockGivesWay: forPanel && Settings.get("dock.when_panel_open", "hide") === "hide",
         screenName: name,
         firstScreen: Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "",
         factor: factor

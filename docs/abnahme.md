@@ -4,6 +4,22 @@ Checkliste aller „Fertig, wenn“-Punkte. **Automatisch** = in der CI geprüft
 (`tests/*.sh`, Arch-Container, unsichtbarer Wayland-Compositor). **Von Hand** = nur auf
 dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 
+**Screenshots der CI** (Branch `ci/screenshots`): Die Test-Umgebung (sway ohne Grafikkarte,
+Software-Rendering) hat **keinen Blur** und keine Fenster-Schatten; die echte Optik mit
+verschwommenem Hintergrund und leuchtendem Fensterrand zeigt nur Hyprland. Die Bilder zeigen
+Aufbau, Masse, Farben, Karten und das Leuchten der Shell-Flächen. Hintergrund der Screenshots:
+`SCREENSHOT_BILD` in `tests/oberflaeche.sh` – `standard` (mitgeliefertes Startbild, Standard),
+`grau` (graues Verlaufsbild) oder `bunt` (Testverlauf der Farbprüfung). Die CI macht eine zweite,
+kurze Runde mit grauem Bild für Desktop, Dashboard, Panel, Startseite der Einstellungen und
+App-Raster (Dateinamen mit `-grau`).
+
+| Punkt | Prüfung |
+| --- | --- |
+| 1.11: Mit offenem Dashboard verdeckt das Dock nichts, nach dem Schliessen ist es sofort da | automatisch (`tests/oberflaeche.sh`, Lage von Kalender und Dock) |
+| 1.11: Karten, Pille, Leuchten, Abstände und Schrift kommen aus settings.json, sofort | automatisch (`tests/oberflaeche.sh`, Abschnitt Design-Werte; `tests/shell-set.sh`) |
+| 1.11: Fenster leuchten in Randfarbe, nicht Spiele, Videos, Bildbearbeitung und Vollbild | automatisch (`tests/glas.sh`, `tests/hyprland-echt.sh`); Aussehen von Hand |
+| 1.11: Startseite mit Profilbild, Begrüssung, Pillen, Tipp und 6 Kacheln; Backup unter System | automatisch (`tests/oberflaeche.sh`) |
+
 ## Gruppe 1: Grundgerüst und Installer
 
 | Punkt | Prüfung |
@@ -39,7 +55,7 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | Punkt | Prüfung |
 | --- | --- |
 | Kürzel und Kante öffnen, Esc schliesst | Öffnen per IPC automatisch; Kante und Esc von Hand |
-| Alle vier Tabs zeigen echte Werte | automatisch (Screenshots, Wetter mit Netz) |
+| Alle Tabs (Standard: Dashboard, Wallpaper, Performance, Games, About) zeigen echte Werte | automatisch (Screenshots aller fünf Tabs, Wetter mit Netz) |
 | Klick auf ein Bild ändert Hintergrund und Farben überall | `shell-wallpaper` automatisch; Klick von Hand |
 | Systemwerte nur bei offenem Panel | automatisch (Tabs per Loader) |
 
@@ -76,7 +92,7 @@ dem echten Rechner in einer Hyprland-Sitzung prüfbar.
 | `monitors.scale`, `input.touchpad.natural_scroll`, `input.touchpad.tap_to_click` wirken sofort | Werte an Hyprland automatisch (`tests/hyprland-lua.sh`); Wirkung von Hand |
 | XWayland-Fenster (Steam) bei Skalierung über 1 scharf | von Hand |
 | GPU-Kachel zeigt „–“, solange die NVIDIA-Karte schläft, und weckt sie nicht | automatisch mit nachgebauter Karte (`tests/dashboard.sh`); echte Karte von Hand: `cat /sys/bus/pci/devices/*/power/runtime_status` |
-| Zahnrad im Panel öffnet settings.json im Terminal | von Hand |
+| Zahnrad im Panel öffnet die Einstellungs-App | von Hand |
 | Ladegrenze auf 80, dann wieder auf 100 stellen: `cat /sys/class/power_supply/BAT*/charge_control_end_threshold` zeigt 100 | Schreiben über asusctl automatisch mit Attrappe (`tests/laptop.sh`), auch nach Reset und mit der alten Schreibweise; echter Akku von Hand |
 
 ## Einstellungen in settings.json (Schema, shell-apply)
@@ -346,3 +362,81 @@ Sensor) und der echte SDDM-Anmeldebildschirm.
 | Zwei Bildschirme mit fester Lage: Hinweis bei Überlappung | Rechenweg automatisch (`tests/monitore.sh`); Anzeige mit echtem zweitem Monitor von Hand |
 | Lokal ohne Hyprland/Quickshell | nicht lokal getestet, CI entscheidet |
 
+## Dock und Leiste nach dem Schliessen von Programmen (#117)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Liste der laufenden Programme stimmt nach jedem Schliessen innert 1 s | automatisch (`tests/oberflaeche.sh`: 25-mal öffnen und schliessen, auch mit offenem Menü) |
+| Schliessen bei offener Fensterliste/Vorschau: Popup zu, kein Verweis, keine Meldung im Log | automatisch (Fensterliste und Menü, Prüfung auf tote Verweise, Log ohne Warnungen) |
+| Ein Panel ohne Fenster (Bildschirm weg, Missa aus) blockiert das Dock nicht | automatisch (unbekanntes Panel, Rückfall nach 1.5 s) |
+| Leiste/Oberfläche starten nach einem Absturz neu, ohne Endlosschleife | automatisch (`tests/waechter.sh`) |
+| **50-mal Programm öffnen und schliessen am echten Laptop** | von Hand: kitty, Dateimanager, Firefox, ein Fenster mit Dialog, ein Vollbild-Programm; schliessen per SUPER+Q, Rechtsklick im Dock („Close“), im Programm selbst, bei offener Fensterliste und bei verstecktem Dock – danach reagieren Dock und Leiste sofort, `journalctl --user -b \| grep -i quickshell` ohne Fehler |
+| Lokal ohne Quickshell/Hyprland | nicht lokal getestet, CI entscheidet |
+
+## Tastatur bleibt nicht hängen (#118)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Nach SUPER+B und einer anderen Taste, einem Panel, Verstecken oder 10 s ohne Taste gehört die Tastatur wieder dem Programm | automatisch (`tests/oberflaeche.sh`: Buchstabe, Panel, Verstecken, Notfall, Zeitüberschreitung) |
+| Kein Panel offen → keine Fläche der Shell will die Tastatur | automatisch (`ipc shell keyboard` leer) |
+| CTRL+SUPER+Escape: Kürzel in jeder Submap, Submap verlassen, Fokus unter die Maus | automatisch (`tests/tastatur.sh` mit hyprctl-Attrappe) |
+| **Tastatur am echten Laptop** | von Hand: SUPER+B, dann einen Buchstaben → sofort in kitty tippen; SUPER+B, dann in kitty klicken → tippen; SUPER+B, dann SUPER+A (Panel) und zu → tippen; Vollbild an/aus; `hyprctl layers` zeigt ohne offenes Panel keine hypr-shell-Fläche mit Tastatur; CTRL+SUPER+Escape bei offenem Panel und bei offenem Dock-Tastatur-Modus |
+| Lokal ohne Quickshell/Hyprland | nicht lokal getestet, CI entscheidet |
+
+## Glas-Look (#119)
+
+Prüfliste aller Flächen: Glas (graue Fläche aus `theme.glass_color`/`theme.glass`), weisser Rand
+(`theme.border.*`) und derselbe Radius (`theme.radius.panel`).
+
+| Fläche | Woher | Prüfung |
+| --- | --- | --- |
+| Leiste (Waybar) | `shell-apply` → `style.css` | automatisch (`tests/glas.sh`); Blur von Hand |
+| Dock | `Dock.qml` (`dock.color_mode = glass`) | automatisch (Standard gleich dem gemeinsamen Glas, `tests/oberflaeche.sh`) |
+| Dashboard, Hot-Corner-Panel, Starter, Spickzettel, Zwischenablage, Übersicht, Power-Menü, OSD, Benachrichtigungs-Verlauf, Missa | `Overlay.qml` | gemeinsamer Baustein; Screenshots der CI |
+| Einstellungs-App, Desktop-Kacheln | `GlassPanel.qml` | gemeinsamer Baustein |
+| Benachrichtigungskarten | `NotificationCard.qml` (`Theme.glass`) | Screenshot der CI |
+| Menüs/Fensterliste im Dock, Namen am Dock | `DockPopup.qml`, `DockWindow.qml` | gemeinsamer Rand und Radius |
+| rofi | `shell-apply` → `hypr-shell-settings.rasi` | automatisch (`tests/glas.sh`) |
+| Programmfenster | `hyprland.lua` (Rand, Rundung, Transparenz, Ausnahmen) | Werte automatisch (`tests/glas.sh`), echtes Hyprland nimmt die Regeln an (`tests/hyprland-echt.sh`); Aussehen von Hand |
+| **Am echten Laptop** | | von Hand: Blur hinter allen Flächen sichtbar, weisser Rand, gleiche Ecken; helles und dunkles Hintergrundbild – Text bleibt lesbar; Steam-Spiel, mpv und GIMP undurchsichtig; `shell-look preset gaming` schaltet Blur und Transparenz ab, `shell-look preset glass` zurück |
+| Lokal ohne Quickshell/Hyprland | | nicht lokal getestet, CI entscheidet |
+
+## Fenster-Knöpfe und Minimieren (#120)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Titelleiste mit drei Knöpfen, Windows- und macOS-Stil, Ausnahmen, nur-schwebend, aus | Konfiguration automatisch (`tests/fenster.sh` mit hyprbars-Attrappe); ohne Plugin keine Fehler (`tests/hyprland-echt.sh` mit echtem Hyprland) |
+| Minimieren ins Versteck, Fokus aufs nächste Fenster, Zurückholen an die alte Stelle | automatisch (`tests/fenster.sh` mit hyprctl-Attrappe) |
+| **Am echten Laptop** | von Hand: `./install.sh` richtet hyprbars ein (Paket oder hyprpm); neues kitty-Fenster hat oben rechts drei funktionierende Knöpfe; Dateimanager (Nautilus) zeigt in seiner eigenen Leiste Minimieren/Maximieren/Schliessen, Minimieren legt ihn ins Dock; Klick im Dock holt ihn an die alte Stelle; `shell-set fenster.knoepfe.stil mac` wirkt sofort (Punkte links); Steam-Spiel und mpv im Vollbild ohne Titelleiste; nach `hyprpm` absichtlich deaktiviert: Hyprland läuft, Meldung „Window buttons are off“ |
+| Doppelklick auf die Titelleiste maximiert zwischen Leiste und Dock | von Hand (hyprbars `on_double_click`) |
+| Lokal ohne Hyprland/Plugin | nicht lokal getestet, CI entscheidet; das Plugin selbst ist in der CI nicht installiert |
+
+## ALT + Tab (#121)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Kürzel, Submap mit Loslassen von ALT, Escape, Q/Entf, eigenes Kürzel | automatisch (`tests/umschalter.sh`) |
+| Leiste: zweites Fenster gewählt, Tab wählt weiter, Esc bricht ab, nach 5 s zu, nimmt nie die Tastatur | automatisch (`tests/oberflaeche.sh`, ohne Hyprland in Fenster-Reihenfolge) |
+| **Am echten Laptop** | von Hand: kurzes ALT+Tab springt zum zuletzt benutzten Fenster und man kann sofort tippen; ALT halten + mehrfach Tab, loslassen wechselt; Escape bricht ab; minimiertes Fenster und Fenster auf Arbeitsfläche 2 lassen sich holen; Leiste erscheint auf dem Bildschirm mit dem Mauszeiger; in einem Vollbild-Spiel ALT+Tab und zurück – nichts bleibt hängen (`shell-diag tastatur` zeigt danach keine Submap); öffnet in unter 150 ms auch mit 20 Fenstern (Vorschau aus: `shell-set switcher.previews false`) |
+| Lokal ohne Hyprland/Quickshell | nicht lokal getestet, CI entscheidet |
+
+## Fenster andocken (#122)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Zonen (oben maximiert, Hälften, Viertel) ohne Leiste/Dock, Skalierung, Hochformat, zwei Bildschirme | automatisch (`tests/andocken.sh`) |
+| SUPER + Pfeile (Hälfte, Viertel, maximieren, wiederherstellen, minimieren), Ziehen mit Beginn/Ende, Wegziehen | automatisch (`tests/andocken.sh` mit hyprctl-Attrappe) |
+| Fenster-Modus schwebend/kacheln ohne Neustart | automatisch |
+| **Am echten Laptop** | von Hand: kitty mit SUPER + linker Maustaste an den oberen Rand → Glas-Vorschau, beim Loslassen maximiert zwischen Leiste und Dock; an den linken/rechten Rand → genau halbe Breite; in eine Ecke → ein Viertel; wieder wegziehen → alte Grösse; SUPER + links, SUPER + oben → Viertel oben links; zweiter Monitor: an der gemeinsamen Kante kein Andocken; Spiel im Vollbild: keine Vorschau |
+| Ziehen an der hyprbars-Titelleiste | nicht unterstützt (das Plugin zieht selbst, es gibt kein Ereignis); offen |
+| Lokal ohne Hyprland | nicht lokal getestet, CI entscheidet |
+
+## App-Raster (#123)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Einstellungen, Loslass-Kürzel auf SUPER (abschaltbar), Logo/Modul in der Leiste, Dock-Knopf, Start schliesst vor dem Starten | automatisch (`tests/appraster.sh`) |
+| Raster öffnen, Suche, Kategorie Games, Favorit (settings.json), Menü, Lösen/Anheften im Dock, Enter startet und gibt die Tastatur frei, gemeinsames „zuletzt benutzt“ mit dem Starter, Dock-Knopf, ausgeschaltet | automatisch (`tests/oberflaeche.sh`, Screenshots `apps*.png`) |
+| **Am echten Laptop** | von Hand: SUPER kurz antippen → Raster geht auf, nochmals antippen → zu; SUPER + E, SUPER + Q, SUPER + 1, SUPER + Pfeile → nur deren Wirkung, Raster bleibt zu; SUPER + Ziehen mit der Maus → kein Raster; Rechtsklick auf eine App → Menü; App starten → Fenster bekommt die Tastatur sofort |
+| SUPER + Taste ohne Kürzel (z. B. SUPER + ü) | Hyprland unterdrückt das Loslass-Kürzel nur nach einem anderen Kürzel – danach geht das Raster auf; offen, am Laptop prüfen |
+| Lokal ohne Hyprland/Quickshell | nicht lokal getestet, CI entscheidet |

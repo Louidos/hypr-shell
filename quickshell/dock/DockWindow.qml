@@ -48,7 +48,7 @@ PanelWindow {
     readonly property int thickness: icon + 2 * d.padding + labelRoom
     readonly property int radius: Math.min(d.radius, Math.floor(thickness / 2))
     readonly property int shadowPad: d.shadow === "none" ? 0 : d.shadow === "soft" ? 12 : d.shadow === "medium" ? 18 : 26
-    readonly property int tipRoom: d.labels === "hover" ? (vertical ? 240 : 44) : 0
+    readonly property int tipRoom: d.labels === "hover" || keyboard ? (vertical ? 240 : 44) : 0
     // Vergrösserung (nicht, wenn das Dock scrollt): Platz dafür ist im Fenster schon reserviert,
     // damit sich die Fenstergrösse beim Darüberfahren nicht ändert
     readonly property bool magnify: d.magnify && !scrolls
@@ -95,7 +95,7 @@ PanelWindow {
                  windowWidth: width, windowHeight: height, icon: icon, scrolls: scrolls, radius: radius, hidden: hidden }
     }
     Component.onCompleted: { const l = d.windows.slice(); l.push(win); d.windows = l }
-    Component.onDestruction: { if (d) d.windows = d.windows.filter(w => w !== win) }
+    Component.onDestruction: { if (d) d.windows = d.windows.filter(w => w !== win); Ui.setKeyboard("dock:" + (screen ? screen.name : ""), false) }
 
     anchors {
         bottom: pos === "bottom"
@@ -124,15 +124,39 @@ PanelWindow {
     exclusionMode: d.reserve || (d.avoidBar && d.barSameEdge) ? ExclusionMode.Normal : ExclusionMode.Ignore
     exclusiveZone: d.reserve ? d.margin + thickness : 0
     readonly property string exclusionText: d.reserve ? "reserve" : d.avoidBar && d.barSameEdge ? "avoid" : "ignore"
-    WlrLayershell.layer: d.topLayer ? WlrLayer.Top : WlrLayer.Bottom
+    // behind: solange ein Panel das Dock überdeckt, liegt es unter der Fläche (Ebene Bottom)
+    WlrLayershell.layer: d.topLayer && !behindPanel ? WlrLayer.Top : WlrLayer.Bottom
     WlrLayershell.namespace: "hypr-shell-dock"
-    WlrLayershell.keyboardFocus: keyboard ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // Tastatur nur, solange der Tastatur-Modus läuft UND das Dock sichtbar ist und Eingaben annimmt –
+    // sonst hielte eine unsichtbare Fläche die Tastatur fest und Programme bekämen keine Tasten mehr
+    readonly property bool keyboardActive: keyboard && visible && inputOn && !hidden && !givesWay
+    WlrLayershell.keyboardFocus: keyboardActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    onKeyboardActiveChanged: { if (keyboard && !keyboardActive) d.leaveFocus(); Ui.setKeyboard("dock:" + (screen ? screen.name : ""), keyboardActive) }
     // ist ein Panel offen (Dashboard, Starter, Power-Menü …), nimmt das Dock keine Eingaben an
     readonly property bool inputOn: Ui.panel === "" || Ui.panel === "settings"
-    mask: !inputOn ? noRegion : hidden ? edgeRegion : bodyRegion
+    mask: !inputOn || givesWay ? noRegion : hidden ? edgeRegion : bodyRegion
     Region { id: bodyRegion; item: body }
     Region { id: edgeRegion; item: edgeStrip }
     Region { id: noRegion }
+
+    // ---- Panel offen (dock.when_panel_open). Dock und Panels liegen beide auf der Ebene Top; das Dock
+    // entsteht später und läge deshalb darüber. Überdeckt das offene Panel (Ui.panelAreas, Endlage)
+    // die Fläche des Docks: hide = das Dock gleitet über die Kante weg und kommt beim Schliessen
+    // sofort zurück, behind = es legt sich unter das Panel, stay = es bleibt oben (wie früher).
+    // Die offene Seite "Dock" der Einstellungen zeigt das Dock immer (Live-Vorschau).
+    readonly property var coverArea: Ui.panel !== "" && Ui.panelAreas[Ui.panel] ? Ui.panelAreas[Ui.panel] : null
+    readonly property var localRect: {
+        const sw = Settings.screenWidth(screen), sh = Settings.screenHeight(screen)
+        const wx = pos === "left" ? 0 : pos === "right" ? sw - width : (sw - width) / 2
+        const wy = pos === "top" ? 0 : pos === "bottom" ? sh - height : (sh - height) / 2
+        return { x: wx + body.x, y: wy + body.y, width: body.width, height: body.height }
+    }
+    readonly property bool panelCovers: d.whenPanelOpen !== "stay" && coverArea !== null && screen !== null
+        && coverArea.screen === screen.name && !(Ui.settingsOpen && Ui.settingsPage === "dock")
+        && V.ueberdeckt(localRect, [coverArea])
+    readonly property bool givesWay: panelCovers && d.whenPanelOpen === "hide"
+    readonly property bool behindPanel: panelCovers && d.whenPanelOpen === "behind"
+    onGivesWayChanged: if (givesWay) { if (popupOpen) closePopup(); if (keyboard) d.leaveFocus() }
 
     // ---- Verstecken (dock.autohide): never, always (Maus geht), smart (ein Fenster überdeckt das Dock).
     // Versteckt bleibt ein schmaler, unsichtbarer Streifen an der Kante; Mauskontakt dort blendet
@@ -254,13 +278,45 @@ PanelWindow {
     property Item popupTarget: null
     property var popupRows: []
     property string popupMode: ""
+    // Eintrag, zu dem das Popup gehört, und wie viele Fenster er beim Öffnen hatte
+    property string popupKey: ""
+    property int popupWindows: 0
     readonly property bool popupOpen: popupMode !== ""
-    function openPopup(target, mode, rows) {
+    function openPopup(target, mode, rows, key) {
         if (!rows || rows.length === 0) { closePopup(); return }
         popupTarget = target; popupRows = rows; popupMode = mode
+        popupKey = key || ""
+        popupWindows = key && byKey[key] ? (byKey[key].windows || []).length : 0
         popup.selected = keyboard && mode === "menu" ? 0 : -1
     }
-    function closePopup() { popupMode = ""; popupRows = []; popupTarget = null }
+    function closePopup() { popupMode = ""; popupRows = []; popupTarget = null; popupKey = ""; popupWindows = 0 }
+    // Ein Programm wurde geschlossen (oder geöffnet): Fensterliste ohne geschlossene Fenster (unter
+    // zwei Fenstern zu), Menü eines Eintrags, dessen Fenster sich geändert haben, zu; das Symbol des
+    // Popups ist weg (nicht angeheftetes Programm beendet) → zu. Die Tastatur-Auswahl springt auf
+    // einen Eintrag, den es noch gibt. So bleibt kein Verweis auf ein geschlossenes Fenster übrig.
+    function pruneClosed() {
+        if (popupMode === "windows") {
+            const r = popupRows.filter(x => d.alive(x.toplevel))
+            if (r.length < 2) closePopup()
+            else if (r.length !== popupRows.length) popupRows = r
+        } else if (popupMode === "menu" && popupKey !== "") {
+            const it = byKey[popupKey]
+            if (!it || (it.windows || []).length !== popupWindows) closePopup()
+        }
+        if (keyboard && selectable.indexOf(selectedKey) < 0) selectedKey = selectable.length > 0 ? selectable[0] : ""
+    }
+    // nach jeder Änderung der Fenster (ToplevelManager) – erst wenn alle Bindungen den neuen Stand
+    // haben (Qt.callLater), sonst prüfte die Bereinigung noch die alte Liste
+    onEntriesChanged: Qt.callLater(win.pruneClosed)
+    Connections { target: win.d; function onToplevelsChanged() { Qt.callLater(win.pruneClosed) } }
+    onPopupTargetChanged: if (popupOpen && popupTarget === null) closePopup()
+    // für Tests: Verweise auf Fenster, die es nicht mehr gibt (muss immer 0 sein)
+    function staleRefs() {
+        let n = 0
+        for (let i = 0; i < popupRows.length; i++) if (popupRows[i].toplevel && !d.alive(popupRows[i].toplevel)) n++
+        if (popupKey !== "" && !byKey[popupKey]) n++
+        return n
+    }
     DockPopup {
         id: popup
         // eigener Name: im Popup heissen die Eigenschaften selbst "win" und "dock"
@@ -281,12 +337,13 @@ PanelWindow {
         onTriggered: win.closePopup()
     }
     function menu(item, target) {
-        openPopup(target, "menu", d.menuFor(item))
+        openPopup(target, "menu", d.menuFor(item), item ? item.key : "")
     }
     function windowList(item, target) {
-        const w = item ? (item.windows || []) : []
+        const w = item ? (item.windows || []).filter(t => d.alive(t)) : []
         if (w.length < 2) return
-        openPopup(target, "windows", w.map(t => ({ text: t.title || item.name, appIcon: item.icon, toplevel: t, run: () => t.activate() })))
+        openPopup(target, "windows", w.map(t => ({ text: t.title || item.name, appIcon: item.icon, toplevel: t,
+                                                    run: () => { if (d.alive(t)) t.activate() } })), item.key)
     }
     property var filesFor: null
     Process {
@@ -314,9 +371,29 @@ PanelWindow {
     function startKeyboard() {
         keyboard = true
         if (selectable.indexOf(selectedKey) < 0) selectedKey = selectable.length > 0 ? selectable[0] : ""
+        keyTimeout.restart()
         keys0.forceActiveFocus()
     }
-    function stopKeyboard() { keyboard = false; closePopup() }
+    function stopKeyboard() { keyboard = false; keyTimeout.stop(); closePopup() }
+    // ohne Taste nach dock.keyboard_timeout_s Sekunden (0 = nie) zurück an das Programm
+    readonly property int keyboardTimeout: Math.max(0, Math.min(120, Number(Settings.get("dock.keyboard_timeout_s", 10)) || 0))
+    Timer {
+        id: keyTimeout
+        interval: Math.max(1, win.keyboardTimeout) * 1000
+        running: win.keyboard && win.keyboardTimeout > 0
+        onTriggered: win.d.leaveFocus()
+    }
+    // Klick daneben (in ein Programm) beendet den Tastatur-Modus (wie bei den Panels)
+    HyprlandFocusGrab {
+        active: win.keyboardActive && Ui.hyprland
+        windows: [win, popup]
+        onCleared: win.d.leaveFocus()
+    }
+    // ein Panel öffnet sich: der Tastatur-Modus endet (das Panel bekommt die Tastatur)
+    Connections {
+        target: Ui
+        function onPanelChanged() { if (win.keyboard && Ui.panel !== "") win.d.leaveFocus() }
+    }
     function itemFor(key) {
         for (let i = 0; i < row.children.length; i++) if (row.children[i].item && row.children[i].item.key === key) return row.children[i]
         return null
@@ -329,7 +406,8 @@ PanelWindow {
             else if (k === "Down" || k === fwd) popup.selected = Math.min(popupRows.length - 1, popup.selected + 1)
             else if (k === "Return" || k === "Enter" || k === "Space") popup.run(popup.selected)
             else if (k === "Escape") closePopup()
-            else return false
+            else { d.leaveFocus(); return false }
+            keyTimeout.restart()
             return true
         }
         const i = selectable.indexOf(selectedKey)
@@ -340,7 +418,8 @@ PanelWindow {
         else if (k === "Return" || k === "Enter" || k === "Space") { d.activate(byKey[selectedKey]); d.leaveFocus() }
         else if (k === "Menu" || (k === "F10" && shift)) { const t = itemFor(selectedKey); if (t) menu(byKey[selectedKey], t.iconItem) }
         else if (k === "Escape") d.leaveFocus()
-        else return false
+        else { d.leaveFocus(); return false }        // jede andere Taste: zurück an das Programm
+        keyTimeout.restart()
         return true
     }
     // für Tests: Taste wie von der Tastatur
@@ -361,32 +440,40 @@ PanelWindow {
             names[Qt.Key_Menu] = "Menu"; names[Qt.Key_F10] = "F10"; names[Qt.Key_Escape] = "Escape"
             names[Qt.Key_Home] = "Home"; names[Qt.Key_End] = "End"
             const n = names[event.key]
-            if (n && win.handleKey(n, (event.modifiers & Qt.ShiftModifier) !== 0)) event.accepted = true
+            if (n) { if (win.handleKey(n, (event.modifiers & Qt.ShiftModifier) !== 0)) event.accepted = true; return }
+            // eine Taste ohne Bedeutung im Dock (Buchstabe, Zahl …) beendet den Tastatur-Modus;
+            // Umschalt-, Steuerungs-, Alt- und Super-Taste allein nicht (Teil einer Kombination)
+            const mods = [Qt.Key_Shift, Qt.Key_Control, Qt.Key_Alt, Qt.Key_Meta, Qt.Key_Super_L, Qt.Key_Super_R, Qt.Key_AltGr, Qt.Key_CapsLock]
+            if (mods.indexOf(event.key) < 0) win.d.leaveFocus()
         }
     }
 
     // Name des Symbols unter der Maus (dock.labels = hover), ausserhalb des Glases
     property var hoverItem: null
     property string hoverText: ""
+    // im Tastatur-Modus zeigt der Hinweis das gewählte Symbol und die Tasten (sichtbar, solange er läuft)
+    readonly property var kbItem: keyboard ? itemFor(selectedKey) : null
+    readonly property var tipAnchor: keyboard ? (kbItem ? kbItem.iconItem : null) : hoverItem
+    readonly property string tipLabel: keyboard ? ((byKey[selectedKey] ? byKey[selectedKey].name + "  ·  " : "") + "← → choose · Enter open · Esc leave") : hoverText
     Rectangle {
         id: tip
-        visible: win.d.labels === "hover" && win.hoverItem !== null && win.hoverText !== "" && !win.hidden
-        readonly property point c: win.hoverItem ? win.hoverItem.mapToItem(win.contentItem, win.hoverItem.width / 2, win.hoverItem.height / 2) : Qt.point(0, 0)
+        visible: (win.keyboard || win.d.labels === "hover") && win.tipAnchor !== null && win.tipLabel !== "" && !win.hidden && !win.givesWay
+        readonly property point c: win.tipAnchor ? win.tipAnchor.mapToItem(win.contentItem, win.tipAnchor.width / 2, win.tipAnchor.height / 2) : Qt.point(0, 0)
         width: tipText.implicitWidth + 20
         height: tipText.implicitHeight + 10
         radius: height / 2
         color: Theme.glass(0.82)
-        border.width: 1
+        border.width: Theme.borderWidth
         border.color: Theme.glassBorder
         x: win.vertical ? (win.pos === "left" ? Math.max(body.x + body.width, c.x + half) + 8 : Math.min(body.x, c.x - half) - width - 8)
                         : Math.max(2, Math.min(win.width - width - 2, c.x - width / 2))
-        readonly property real half: win.hoverItem ? (win.vertical ? win.hoverItem.width : win.hoverItem.height) / 2 : 0
+        readonly property real half: win.tipAnchor ? (win.vertical ? win.tipAnchor.width : win.tipAnchor.height) / 2 : 0
         y: win.vertical ? Math.max(2, Math.min(win.height - height - 2, c.y - height / 2))
                         : (win.pos === "bottom" ? Math.min(body.y, c.y - half) - height - 8 : Math.max(body.y + body.height, c.y + half) + 8)
         Txt {
             id: tipText
             anchors.centerIn: parent
-            text: win.hoverText
+            text: win.tipLabel
             size: 12
         }
     }
@@ -401,7 +488,7 @@ PanelWindow {
         x: win.pos === "left" ? win.d.margin : win.pos === "right" ? parent.width - win.d.margin - width : Math.round((parent.width - width) / 2)
         y: win.pos === "top" ? win.d.margin : win.pos === "bottom" ? parent.height - win.d.margin - height : Math.round((parent.height - height) / 2)
         // versteckt: hinaus über die Kante gleiten
-        readonly property real away: win.hidden ? win.thickness + win.d.margin + win.shadowPad + 4 : 0
+        readonly property real away: win.hidden || win.givesWay ? win.thickness + win.d.margin + win.shadowPad + 4 : 0
         transform: Translate {
             x: win.pos === "left" ? -body.away : win.pos === "right" ? body.away : 0
             y: win.pos === "top" ? -body.away : win.pos === "bottom" ? body.away : 0
@@ -446,6 +533,8 @@ PanelWindow {
             // Bildwechsel: Glas und Rand färben sanft um
             Behavior on color { ColorAnimation { duration: 400 } }
             Behavior on border.color { ColorAnimation { duration: 400 } }
+            // leuchtender Rand (theme.border.glow) in der Randfarbe des Docks
+            Glow { radius: glass.radius; color: win.d.borderColor }
         }
 
         Flickable {

@@ -56,12 +56,12 @@ Grid12 {
             width: parent.width * 0.42
             Rectangle { width: 1; height: parent.height - 24; anchors.verticalCenter: parent.verticalCenter; color: Theme.cardBorder }
             Column {
-                anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-                spacing: 2
+                anchors { left: parent.left; leftMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
+                spacing: Theme.pad(2)
                 Txt {
                     text: home.sensor.data ? home.sensor.data.value + " " + (home.sensor.data.unit || "") : "–"
                     size: 20
-                    weight: Font.Bold
+                    heavy: true
                     color: home.sensor.data && home.sensor.data.warn ? Theme.warn : Theme.text
                     Probe { name: "sensor-tile" }
                 }
@@ -75,8 +75,8 @@ Grid12 {
         }
         Row {
             visible: home.shown("weather")
-            anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
-            spacing: 14
+            anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
+            spacing: Theme.pad(14)
             Glyph {
                 text: home.weather.ok ? home.weather.icon : "󰖐"
                 size: 38
@@ -88,7 +88,7 @@ Grid12 {
                 Txt {
                     text: home.weather.ok ? home.weather.temp + home.weather.unit : "–"
                     size: 24
-                    weight: Font.Bold
+                    heavy: true
                 }
                 Txt {
                     text: home.weather.ok ? home.weather.description + " · " + home.weather.location
@@ -118,24 +118,24 @@ Grid12 {
         visible: home.shown("profile") && !Integrations.missa
         RoundImage {
             id: avatar
-            width: 62; height: 62; radius: 31
-            anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+            width: 62; height: 62; radius: Theme.corner(31)
+            anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
             source: Settings.face
             Component.onCompleted: Settings.checkFace()
             fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
             probe: "dashboard-avatar"
         }
         Column {
-            anchors { left: avatar.right; leftMargin: 16; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            spacing: 8
+            anchors { left: avatar.right; leftMargin: Theme.pad(16); right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
+            spacing: Theme.pad(8)
             Txt {
                 width: parent.width
                 text: home.greeting() + ", " + Settings.user
                 size: 18
-                weight: Font.Bold
+                title: true
             }
             Row {
-                spacing: 6
+                spacing: Theme.pad(6)
                 Pill { clickable: false; implicitHeight: 26; fontSize: 11; icon: home.about.icon || ""; text: home.about.distro || "Linux" }
                 Pill { clickable: false; implicitHeight: 26; fontSize: 11; icon: "󰄉"; text: "Up " + home.uptime(home.about.uptime) }
             }
@@ -147,7 +147,7 @@ Grid12 {
         col: 9; row: 0; cs: 3; rs: 3
         narrowAt: [0, 3, 4, 2]
         visible: home.shown("media")
-        MediaCard { anchors.fill: parent; anchors.margins: 14 }
+        MediaCard { anchors.fill: parent; anchors.margins: Theme.cardPad }
     }
 
     // ---- Uhr (2×2 bei 0,1)
@@ -172,11 +172,11 @@ Grid12 {
             }
             Txt {
                 anchors.horizontalCenter: parent.horizontalCenter
-                topPadding: 10
+                topPadding: Theme.pad(10)
                 text: Qt.locale("en_GB").dayName(clock.date.getDay(), Locale.LongFormat)
                 sub: true
                 size: 13
-                weight: Font.DemiBold
+                strong: true
             }
         }
     }
@@ -186,7 +186,7 @@ Grid12 {
         col: 2; row: 1; cs: 5; rs: 2
         narrowAt: [2, 1, 4, 2]
         visible: home.shown("calendar")
-        Calendar { anchors.fill: parent; anchors.margins: 14; today: clock.date }
+        Calendar { anchors.fill: parent; anchors.margins: Theme.cardPad; today: clock.date }
     }
 
     // ---- Ringe (2×2 bei 7,1): CPU, RAM, Datenträger untereinander, Symbol in der Mitte (wie die Vorlage)
@@ -200,7 +200,7 @@ Grid12 {
         Grid {
             anchors.centerIn: parent
             columns: rings.tall ? 1 : 3
-            spacing: rings.tall ? 6 : 16
+            spacing: Theme.pad(rings.tall ? 6 : 16)
             Repeater {
                 model: [
                     { label: "CPU", icon: "󰘚", v: () => usage.cpu },

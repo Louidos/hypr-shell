@@ -46,6 +46,7 @@ PanelWindow {
             Probe { name: "desktop-clock" }
             font.family: Theme.clock
             font.pixelSize: w.size
+            // bewusste Ausnahme: die grosse Desktop-Uhr ist immer fett (Uhr-Schrift, wie die Vorlage)
             font.bold: true
             color: "#F6F5F4"
             opacity: 0.85
@@ -55,7 +56,7 @@ PanelWindow {
             text: Qt.formatTime(clock.date, "mm")
             font.family: Theme.clock
             font.pixelSize: w.size
-            font.bold: true
+            font.bold: true   // bewusste Ausnahme, siehe oben
             color: "#F6F5F4"
             opacity: 0.45
         }

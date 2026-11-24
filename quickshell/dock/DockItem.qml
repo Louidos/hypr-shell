@@ -39,6 +39,8 @@ Item {
     readonly property bool separator: kind === "separator"
     readonly property var windows: item ? item.windows : []
     readonly property bool running: windows.length > 0
+    // alle Fenster minimiert: Symbol und Punkt abgedunkelt
+    readonly property bool minimizedOnly: running && windows.every(t => dock.isMinimized(t))
     readonly property bool active: {
         for (let i = 0; i < windows.length; i++) if (windows[i] && windows[i].activated) return true
         return false
@@ -67,6 +69,8 @@ Item {
         visible: !di.separator
         width: di.s
         height: di.s
+        opacity: di.minimizedOnly ? 0.5 : 1
+        Behavior on opacity { NumberAnimation { duration: 200 } }
         // Hüpfen: von der Kante weg und zurück
         transform: Translate { id: hop }
         SequentialAnimation {
@@ -100,7 +104,7 @@ Item {
                 anchors.centerIn: parent
                 text: (di.name || "?").charAt(0).toUpperCase()
                 size: di.s * 0.42
-                weight: Font.DemiBold
+                strong: true
                 color: Theme.containerText
             }
         }
@@ -130,7 +134,7 @@ Item {
                 anchors.centerIn: parent
                 text: di.badge > 99 ? "99+" : String(di.badge)
                 size: Math.max(9, di.size * 0.2)
-                weight: Font.DemiBold
+                strong: true
                 color: "white"
             }
         }
@@ -164,7 +168,7 @@ Item {
         readonly property int n: Math.min(2, di.windows.length)
         columns: di.vertical ? 1 : n
         rows: di.vertical ? n : 1
-        spacing: 3
+        spacing: Theme.pad(3)
         x: di.vertical ? (dock.position === "left" ? -gap - width / 2 : di.width + gap - width / 2) : (di.width - width) / 2
         y: di.vertical ? (di.height - height) / 2 : (dock.position === "top" ? -gap - height / 2 : di.height + gap - height / 2)
         Repeater {
@@ -176,7 +180,7 @@ Item {
                 height: di.vertical ? len : thick
                 radius: Math.min(width, height) / 2
                 color: dock.indicatorColor
-                opacity: di.active ? 1 : 0.55
+                opacity: di.minimizedOnly ? 0.3 : di.active ? 1 : 0.55
                 Behavior on color { ColorAnimation { duration: 400 } }
             }
         }

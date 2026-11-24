@@ -7,7 +7,7 @@ import "../common"
 // Jede Änderung geht sofort über shell-set (atomar) an das Dock.
 Column {
     id: ed
-    spacing: 10
+    spacing: Theme.pad(10)
     readonly property var items: {
         const v = Settings.get("dock.items", [{"type": "app", "desktop_id": "org.gnome.Nautilus", "path": ""}, {"type": "app", "desktop_id": "kitty", "path": ""}, {"type": "app", "desktop_id": "firefox", "path": ""}, {"type": "separator", "desktop_id": "", "path": ""}, {"type": "folder", "desktop_id": "", "path": "~/Downloads"}, {"type": "separator", "desktop_id": "", "path": ""}, {"type": "trash", "desktop_id": "", "path": ""}])
         return Array.isArray(v) ? v : []
@@ -33,7 +33,7 @@ Column {
         return ({ folder: "folder", trash: "user-trash", launcher: "view-app-grid-symbolic" })[it.type] || ""
     }
 
-    Txt { text: "Items"; size: 16; weight: Font.DemiBold }
+    Txt { text: "Items"; size: 16; strong: true }
     Txt { width: parent.width; text: "Order of the dock. Drag the handle or use the arrows; running apps that are not pinned appear after the pinned apps."; size: 12; sub: true; wrapMode: Text.Wrap }
 
     // ---- Liste
@@ -53,19 +53,19 @@ Column {
                 readonly property bool lifted: listBox.dragFrom === index
                 width: listBox.width
                 height: 38
-                radius: 12
+                radius: Theme.corner(12)
                 x: 0
                 y: lifted ? listBox.dragY - 19 : 42 * (
                     listBox.dragFrom < 0 ? index
                     : index > listBox.dragFrom && index <= listBox.dragTo ? index - 1
                     : index < listBox.dragFrom && index >= listBox.dragTo ? index + 1 : index)
                 z: lifted ? 2 : 1
-                color: hover.hovered || lifted ? Theme.cardHover : Qt.rgba(1, 1, 1, 0.03)
+                color: hover.hovered || lifted ? Theme.cardHover : Theme.cardSoft
                 Behavior on y { enabled: !rowItem.lifted; NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                 HoverHandler { id: hover }
                 Row {
-                    anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
-                    spacing: 10
+                    anchors { left: parent.left; leftMargin: Theme.pad(6); verticalCenter: parent.verticalCenter }
+                    spacing: Theme.pad(10)
                     // Griff zum Ziehen
                     Glyph {
                         anchors.verticalCenter: parent.verticalCenter
@@ -105,8 +105,8 @@ Column {
                     }
                 }
                 Row {
-                    anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                    spacing: 2
+                    anchors { right: parent.right; rightMargin: Theme.pad(6); verticalCenter: parent.verticalCenter }
+                    spacing: Theme.pad(2)
                     IconButton { flat: true; width: 28; height: 28; iconSize: 12; icon: "󰁝"; opacity: rowItem.index > 0 ? 1 : 0.3; onClicked: ed.move(rowItem.index, rowItem.index - 1) }
                     IconButton { flat: true; width: 28; height: 28; iconSize: 12; icon: "󰁅"; opacity: rowItem.index < ed.items.length - 1 ? 1 : 0.3; onClicked: ed.move(rowItem.index, rowItem.index + 1) }
                     IconButton {
@@ -122,7 +122,7 @@ Column {
     // ---- Hinzufügen
     Flow {
         width: parent.width
-        spacing: 6
+        spacing: Theme.pad(6)
         Pill { text: "Separator"; icon: "󰇜"; onClicked: ed.add({ type: "separator", desktop_id: "", path: "" }); Probe { name: "dock-add-separator" } }
         Pill { text: "Trash"; icon: "󰩹"; visible: !ed.items.some(i => i.type === "trash"); onClicked: ed.add({ type: "trash", desktop_id: "", path: "" }) }
         Pill { text: "Launcher button"; icon: "󰀻"; visible: !ed.items.some(i => i.type === "launcher"); onClicked: ed.add({ type: "launcher", desktop_id: "", path: "" }) }
@@ -130,7 +130,7 @@ Column {
     // Ordner: Pfad eintippen oder einen der Vorschläge wählen
     Row {
         width: parent.width
-        spacing: 8
+        spacing: Theme.pad(8)
         Field {
             id: folderField
             width: parent.width - addFolder.width - 8
@@ -147,7 +147,7 @@ Column {
     }
     Flow {
         width: parent.width
-        spacing: 6
+        spacing: Theme.pad(6)
         Repeater {
             model: {
                 const l = ["~/Downloads", "~/Documents", "~/Pictures", "~/Music", "~/Videos"]
@@ -172,7 +172,7 @@ Column {
     }
     Column {
         width: parent.width
-        spacing: 2
+        spacing: Theme.pad(2)
         Repeater {
             model: {
                 const q = search.input.text.trim().toLowerCase()
@@ -186,12 +186,12 @@ Column {
                 required property var modelData
                 width: parent ? parent.width : 0
                 height: 34
-                radius: 10
+                radius: Theme.corner(10)
                 color: appHover.hovered ? Theme.cardHover : "transparent"
                 HoverHandler { id: appHover }
                 Row {
-                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                    spacing: 10
+                    anchors { left: parent.left; leftMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
+                    spacing: Theme.pad(10)
                     AppIcon { anchors.verticalCenter: parent.verticalCenter; icon: modelData.icon; size: 20 }
                     Txt { anchors.verticalCenter: parent.verticalCenter; text: modelData.name; size: 13 }
                 }

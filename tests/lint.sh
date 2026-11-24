@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Prüft Syntax und Stil aller Skripte und Konfigurationsdateien.
 # Fehlt ein Prüfprogramm, wird der Teil übersprungen und das gemeldet.
+# Braucht shellcheck ab 0.10 (die CI nutzt 0.11); ältere Versionen melden SC2317/SC2015 auch dort,
+# wo der Code in Ordnung ist.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
@@ -20,6 +22,11 @@ for f in "${skripte[@]}"; do
     bash -n "$f" || melde "Bash-Syntax: $f"
 done
 if command -v shellcheck >/dev/null; then
+    sc_version="$(shellcheck --version | sed -n 's/^version: //p')"
+    echo "shellcheck ${sc_version:-?}"
+    if [ "$(printf '%s\n' "${sc_version:-0}" 0.10 | sort -V | head -n1)" != 0.10 ]; then
+        echo "Hinweis: shellcheck ${sc_version:-?} ist älter als 0.10 – Meldungen SC2317/SC2015 können Fehlalarme sein (CI: 0.11)."
+    fi
     shellcheck -x "${skripte[@]}" || melde "shellcheck"
 else
     echo "Hinweis: shellcheck fehlt, übersprungen."

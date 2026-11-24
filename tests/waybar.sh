@@ -22,7 +22,7 @@ pruefe 'j ".battery.format" | grep -q "{capacity}%" && j ".battery.\"format-char
 pruefe '[ "$(j ".\"hyprland/workspaces\".\"persistent-workspaces\".\"*\" | join(\",\")")" = "1,2,3,4" ]' "Arbeitsflächen 1–4"
 pruefe '[ "$(j .clock.format)" = "{:%H:%M}" ]' "Uhr HH:MM"
 pruefe 'j ".pulseaudio.format" | grep -q "{volume}%"' "Lautstärke in Prozent"
-pruefe 'j ".\"custom/distro\".\"on-click\"" | grep -q "ipc launcher toggle"' "Distro-Symbol öffnet den Starter"
+pruefe 'j ".\"custom/distro\".\"on-click\"" | grep -q "ipc apps toggle" && j ".\"custom/distro\".\"on-click-right\"" | grep -q "ipc launcher toggle"' "Distro-Symbol: Klick öffnet das App-Raster, Rechtsklick den Starter"
 
 # alle aufgerufenen Skripte aus ~/.local/bin müssen im Repo liegen
 while IFS= read -r s; do
@@ -31,7 +31,7 @@ done < <(grep -oE '\.local/bin/[a-z-]+' config/waybar/config.jsonc | sed 's#.*/#
 
 pruefe 'grep -q "@import \"colors.css\"" config/waybar/style.css' "Farben aus colors.css"
 pruefe 'grep -q "waybar/colors.css" config/matugen/config.toml' "matugen erzeugt colors.css für Waybar"
-pruefe 'grep -qE "rgba\(10, 10, 12, 0\.25\)" config/waybar/style.css' "Deckkraft etwa 0.25"
+pruefe 'grep -qE "background: rgba\(26, 26, 29, 0\.46\)" config/waybar/style.css && grep -q "border-radius: 26px" config/waybar/style.css' "graues Glas (0.46) mit hellem Rand und Rundung 26 wie die Vorlage"
 
 # jede @farbe in style.css muss in colors.css definiert sein
 for c in $(grep -oE '@[a-z_]+' config/waybar/style.css | grep -vE '@(import|keyframes)' | sort -u | tr -d @); do

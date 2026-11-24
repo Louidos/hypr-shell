@@ -331,6 +331,8 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target apps'; then
     for _ in $(seq 1 20); do [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 0 ] && break; sleep 0.3; done
     if [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 0 ]; then echo "  ok: Lösen nimmt Firefox aus dem Dock"
     else echo "  FEHLER: Lösen: $(rw .dock.items)"; raster_ok=0; fi
+    # erst wieder anheften, wenn auch das Raster den neuen Stand geladen hat (sonst schaltet es zurück)
+    for _ in $(seq 1 20); do [ "$(ap pinned firefox)" = false ] && break; sleep 0.3; done
     ap pin firefox >/dev/null
     for _ in $(seq 1 20); do [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 1 ] && break; sleep 0.3; done
     if [ "$(rw '[.dock.items[] | select(.desktop_id == "firefox")] | length')" = 1 ]; then echo "  ok: Anheften legt Firefox wieder ins Dock"

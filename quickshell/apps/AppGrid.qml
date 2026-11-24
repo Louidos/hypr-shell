@@ -206,6 +206,8 @@ Scope {
         function favorites(): string { return ag.favoriteApps.map(e => e.id).join("|") }
         function recent(): string { return ag.recentApps.map(e => e.id).join("|") }
         function pin(id: string): bool { return ag.togglePin(id) }
+        // für Tests: so, wie das Raster dock.items gerade sieht (nach einer Änderung kurz verzögert)
+        function pinned(id: string): bool { return ag.isPinned(id) }
         // Menü der gewählten App: Einträge, "|" getrennt
         function menu(): string {
             const e = ag.results[ag.sel]

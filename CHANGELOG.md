@@ -9,6 +9,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 ### Hinzugefügt
 - Neue Einstellungen für die Optik: Helligkeit und Farbe der Karten, leuchtender Rand um Panels, Dock und Fenster, Abstände, Schriftdicke und Grösse der Überschriften (Theme und Look, mit Live-Vorschau); ohne Änderung sieht alles aus wie bisher (#139)
 
+### Geändert
+- Neuer Standard-Look wie in der Vorlage: hellerer, leuchtender Rand, rundere Ecken, hellere Karten, mehr Abstand, fette und grössere Überschriften und stärkerer Blur; die Voreinstellungen minimal und gaming leuchten nicht (gaming mit weniger Blur). Selbst gesetzte Werte bleiben; wer früher „Glass“ gewählt hat, klickt die Voreinstellung einmal neu an (oder `shell-set reset theme` und `shell-set reset look`) (#140)
+
 ### Behoben
 - Das Dock verdeckt das Dashboard und andere Flächen nicht mehr; es fährt weg, solange sie offen sind, und ist nach dem Schliessen sofort wieder da (einstellbar unter Dock → „When a panel is open“: hide, behind oder stay) (#138)
 

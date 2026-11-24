@@ -359,16 +359,31 @@ Hyprland-Update), läuft alles ohne Knöpfe weiter und eine Meldung nennt die L�
 
 ### Glas-Look
 
-Alles sieht aus wie mattes Glas: Leiste, Dock, alle Panels, Menüs, Benachrichtigungen, Starter
-und Einstellungs-App sind grau und durchsichtig mit Blur dahinter, mit einem feinen weissen Rand
-und runden Ecken (14 px); die Programmfenster haben denselben Rand und dieselbe Rundung und sind
-leicht durchsichtig (aktiv 0.95, inaktiv 0.88). Spiele, Videos, Bildbearbeitung und Vollbild
+Alles sieht aus wie mattes Glas, ohne Einstellen wie in der Vorlage: Leiste, Dock, alle Panels,
+Menüs, Benachrichtigungen, Starter und Einstellungs-App sind grau und durchsichtig mit starkem
+Blur dahinter, mit einem hellen, leicht leuchtenden Rand (2 px) und stark gerundeten Ecken
+(26 px, Karten 16 px); Karten sind spürbar heller als das Glas, es gibt viel Abstand innen und
+fette Überschriften. Die Programmfenster haben denselben hellen, leuchtenden Rand, 18 px Rundung
+und sind leicht durchsichtig (aktiv 0.95, inaktiv 0.88). Spiele, Videos, Bildbearbeitung und Vollbild
 bleiben undurchsichtig (`look.opacity.exceptions`). Ist das Hintergrundbild hell, wird das Glas von
 selbst so weit dunkler, dass Text lesbar bleibt. Alle Werte stehen unter Einstellungen → Theme
 (Glas, Rand) und Look (Fenster) mit Live-Vorschau; drei Voreinstellungen: **glass** (Standard),
 **minimal** (ruhig, fast undurchsichtig) und **gaming** (kein Blur, keine Schatten, keine
 Animationen) – auch mit `shell-look preset gaming`. Die Leiste schwebt mit Abstand zum Rand
 (`bar.floating`), das Dock nimmt standardmässig dasselbe Glas (`dock.color_mode = glass`).
+
+> **Von 1.10 auf 1.11:** Der neue Standard-Look gilt sofort für alle Werte, die nicht selbst
+> gesetzt sind. Wer früher die Voreinstellung **glass** angeklickt hat, hat die alten Zahlen in
+> settings.json stehen; sie werden nie automatisch überschrieben. Für den neuen Look
+> Einstellungen → Look → Preset → **Glass** neu anklicken oder:
+>
+> ```bash
+> shell-set reset theme
+> ```
+>
+> ```bash
+> shell-set reset look
+> ```
 
 Auch die Feinheiten sind Einstellungen (Theme → Cards, Spacing, Fonts, Glass), mit Live-Vorschau
 auf den Seiten Look und Theme und „Reset“ je Wert:

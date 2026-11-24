@@ -189,6 +189,13 @@ Singleton {
         }
         // Endlage des offenen Panels mit Leuchten (glow = Grösse des Scheins, glowRoom = Platz im Fenster)
         function area(name: string): string { return JSON.stringify(ui.panelAreas[name] || {}) }
+        // Kontrast von Text auf einer Karte über dem Glas über dem Hintergrundbild (WCAG, Ziel 4.5)
+        function contrast(): real {
+            const tl = Theme.lum(Qt.color(Theme.text)), lg = Theme.lum(Qt.color(Theme.glassColor)), lc = Theme.lum(Qt.color(Theme.cardBase))
+            const ga = Qt.color(Theme.glass()).a, ca = Qt.color(Theme.card).a
+            const bg = ca * lc + (1 - ca) * (ga * lg + (1 - ga) * Theme.wallpaperLuma)
+            return Math.round((Math.max(tl, bg) + 0.05) / (Math.min(tl, bg) + 0.05) * 100) / 100
+        }
         // aktuelle Design-Werte aus Theme (Karten, Pille, Leuchten, Abstände, Schrift) als JSON
         function theme(): string {
             const a = c => Math.round(Qt.color(c).a * 100) / 100   // Farben speichern 8 Bit: auf 0.01 genau

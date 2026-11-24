@@ -20,8 +20,8 @@ Singleton {
 
     // Glas: graue, halbtransparente Fläche über dem Blur von Hyprland (theme.glass_color, theme.glass),
     // mit feinem Rand (theme.border.*). Alle Flächen der Shell nehmen diese Werte.
-    readonly property color glassColor: Settings.get("theme.glass_color", "#2a2a2f")
-    readonly property real glassOpacity: Settings.get("theme.glass", 0.55)
+    readonly property color glassColor: Settings.get("theme.glass_color", "#1a1a1d")
+    readonly property real glassOpacity: Settings.get("theme.glass", 0.46)
     // Mindestkontrast: Text muss über dem Hintergrundbild lesbar bleiben (WCAG 4.5:1); reicht die
     // Deckkraft dafür nicht (helles Bild), wird das Glas automatisch so weit dunkler wie nötig
     function lum(c) {
@@ -50,12 +50,12 @@ Singleton {
         return Qt.rgba(g.r, g.g, g.b, o === glassOpacity ? glassReadable : readable(o))
     }
     readonly property color borderBase: Settings.get("theme.border.color", "#ffffff")
-    readonly property real borderOpacity: Settings.get("theme.border.opacity", 0.35)
-    readonly property int borderWidth: Settings.get("theme.border.width", 1)
+    readonly property real borderOpacity: Settings.get("theme.border.opacity", 0.8)
+    readonly property int borderWidth: Settings.get("theme.border.width", 2)
     readonly property color glassBorder: Qt.rgba(Qt.color(borderBase).r, Qt.color(borderBase).g, Qt.color(borderBase).b, borderOpacity)
     // Leuchten des Rands (theme.border.glow*): weicher äusserer Schein in Randfarbe, ohne Versatz
     // (Glow.qml in GlassPanel, GlassCard, Panels und Dock; Fenster über den Schatten in hyprland.lua)
-    readonly property bool glow: Settings.get("theme.border.glow", false) === true
+    readonly property bool glow: Settings.get("theme.border.glow", true) === true
     readonly property real glowSize: Math.max(0, Math.min(40, Settings.get("theme.border.glow_size", 10)))
     readonly property real glowOpacity: Math.max(0, Math.min(1, Settings.get("theme.border.glow_opacity", 0.25)))
 
@@ -63,9 +63,9 @@ Singleton {
     // Auch für Karten gilt der Mindestkontrast: das Glas wird dafür dunkler (readable); reicht auch
     // das stärkste Glas nicht, wird die Karte so weit durchsichtiger wie nötig (readableCard)
     readonly property color cardBase: Settings.get("theme.card.color", "#ffffff")
-    readonly property real cardOpacity: Math.max(0, Math.min(0.4, Settings.get("theme.card.opacity", 0.05)))
-    readonly property real cardHoverOpacity: Math.max(0, Math.min(0.5, Settings.get("theme.card.hover", 0.08)))
-    readonly property real cardBorderOpacity: Math.max(0, Math.min(1, Settings.get("theme.card.border_opacity", 0.08)))
+    readonly property real cardOpacity: Math.max(0, Math.min(0.4, Settings.get("theme.card.opacity", 0.09)))
+    readonly property real cardHoverOpacity: Math.max(0, Math.min(0.5, Settings.get("theme.card.hover", 0.14)))
+    readonly property real cardBorderOpacity: Math.max(0, Math.min(1, Settings.get("theme.card.border_opacity", 0.12)))
     function readableCard(opacity) {
         const lc = lum(Qt.color(cardBase)), lg = lum(Qt.color(glassColor)), tl = lum(Qt.color(c.text))
         const under = glassReadable * lg + (1 - glassReadable) * wallpaperLuma
@@ -101,9 +101,9 @@ Singleton {
     // ihren Inhalt zusätzlich mit der Grössen-Hilfe (ScreenFit), die Abstände wachsen also mit.
     readonly property real spacingScale: Math.max(0.5, Math.min(2, Settings.get("theme.spacing.scale", 1.0)))
     function pad(n) { return Math.round(n * spacingScale) }
-    readonly property int panelPad: pad(Settings.get("theme.spacing.panel", 18))
-    readonly property int cardPad: pad(Settings.get("theme.spacing.card", 14))
-    readonly property int gap: pad(Settings.get("theme.spacing.gap", 10))
+    readonly property int panelPad: pad(Settings.get("theme.spacing.panel", 20))
+    readonly property int cardPad: pad(Settings.get("theme.spacing.card", 16))
+    readonly property int gap: pad(Settings.get("theme.spacing.gap", 12))
     // Abzeichen und Pillen in der Farbe des Hintergrundbilds (dunkel gemischt), Text darauf hell
     readonly property color container: mix(c.accent, "#141416", 0.8)
     readonly property color containerText: mix(c.accent, "#ffffff", 0.55)
@@ -115,8 +115,8 @@ Singleton {
     }
 
     // Radien und Schriften aus settings.json (theme.radius.*, theme.font.*)
-    readonly property int panelRadius: Settings.get("theme.radius.panel", 14)
-    readonly property int cardRadius: Settings.get("theme.radius.card", 10)
+    readonly property int panelRadius: Settings.get("theme.radius.panel", 26)
+    readonly property int cardRadius: Settings.get("theme.radius.card", 16)
 
     readonly property string sans: Settings.get("theme.font.ui", "Inter")
     readonly property string mono: Settings.get("theme.font.mono", "JetBrainsMono Nerd Font")
@@ -135,7 +135,7 @@ Singleton {
     readonly property int titleWeight: weightOf(Settings.get("theme.font.title_weight", "bold"), Font.Bold)
     readonly property int textWeight: weightOf(Settings.get("theme.font.text_weight", "normal"), Font.Normal)
     readonly property int strongWeight: Math.max(textWeight, titleWeight - 100)
-    readonly property real titleScale: Math.max(0.8, Math.min(2, Settings.get("theme.font.title_scale", 1.0)))
+    readonly property real titleScale: Math.max(0.8, Math.min(2, Settings.get("theme.font.title_scale", 1.25)))
 
     FileView {
         path: Quickshell.env("HOME") + "/.local/share/hypr-shell/wallpaper-luma"

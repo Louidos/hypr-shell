@@ -46,7 +46,7 @@ Scope {
                 y: sp.target.y - win.modelData.y
                 width: sp.target.width
                 height: sp.target.height
-                radius: Settings.get("look.rounding", 14)
+                radius: Settings.get("look.rounding", 18)
                 color: Theme.glass(0.35)
                 border.width: Math.max(1, Theme.borderWidth)
                 border.color: Theme.glassBorder

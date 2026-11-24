@@ -16,11 +16,11 @@ Column {
         command: [Settings.bin + "shell-look", "presets"]
         stdout: StdioCollector { onStreamFinished: { try { lp.presets = JSON.parse(text) } catch (e) { } } }
     }
-    readonly property real rounding: Settings.get("look.rounding", 14)
+    readonly property real rounding: Settings.get("look.rounding", 18)
     readonly property bool white: Settings.get("look.border_color", "white") === "white"
-    readonly property color borderActive: white ? Qt.rgba(Qt.color(Theme.borderBase).r, Qt.color(Theme.borderBase).g, Qt.color(Theme.borderBase).b, Settings.get("theme.border.opacity", 0.35)) : Theme.accent
-    readonly property color borderInactive: white ? Qt.rgba(Qt.color(Theme.borderBase).r, Qt.color(Theme.borderBase).g, Qt.color(Theme.borderBase).b, Settings.get("theme.border.opacity_inactive", 0.15)) : Theme.c.outline
-    readonly property int windowBorder: Settings.get("look.border", 1)
+    readonly property color borderActive: white ? Qt.rgba(Qt.color(Theme.borderBase).r, Qt.color(Theme.borderBase).g, Qt.color(Theme.borderBase).b, Settings.get("theme.border.opacity", 0.8)) : Theme.accent
+    readonly property color borderInactive: white ? Qt.rgba(Qt.color(Theme.borderBase).r, Qt.color(Theme.borderBase).g, Qt.color(Theme.borderBase).b, Settings.get("theme.border.opacity_inactive", 0.3)) : Theme.c.outline
+    readonly property int windowBorder: Settings.get("look.border", 2)
 
     GlassCard {
         width: lp.width

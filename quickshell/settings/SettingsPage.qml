@@ -42,7 +42,7 @@ Flickable {
         x: 4
         y: 8
         width: pg.width - 8
-        spacing: 12
+        spacing: Theme.pad(12)
 
         Item {
             width: parent.width
@@ -50,15 +50,15 @@ Flickable {
             height: visible ? titleCol.implicitHeight : 0
             Column {
                 id: titleCol
-                anchors { left: parent.left; right: resetPage.left; rightMargin: 12 }
-                spacing: 4
+                anchors { left: parent.left; right: resetPage.left; rightMargin: Theme.pad(12) }
+                spacing: Theme.pad(4)
                 visible: pg.showTitle
-                Txt { text: pg.page.title || ""; size: 26; weight: Font.Bold }
+                Txt { text: pg.page.title || ""; size: 26; title: true }
                 Txt { width: parent.width; text: pg.page.description || ""; sub: true; size: 13; wrapMode: Text.WordWrap; elide: Text.ElideNone }
             }
             Pill {
                 id: resetPage
-                anchors { right: parent.right; top: parent.top; topMargin: 4 }
+                anchors { right: parent.right; top: parent.top; topMargin: Theme.pad(4) }
                 visible: pg.changedKeys.length > 0
                 icon: "󰑓"
                 text: "Reset page"
@@ -80,8 +80,8 @@ Flickable {
                 id: sec
                 required property string modelData
                 width: col.width
-                spacing: 8
-                Txt { topPadding: 8; text: sec.modelData; size: 13; weight: Font.Bold; color: Theme.subtext }
+                spacing: Theme.pad(8)
+                Txt { topPadding: Theme.pad(8); text: sec.modelData; size: 13; title: true; color: Theme.subtext }
                 Repeater {
                     model: pg.keys.filter(k => k.section === sec.modelData)
                     delegate: SettingRow {

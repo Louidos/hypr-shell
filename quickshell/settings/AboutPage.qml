@@ -8,7 +8,7 @@ Column {
     id: ab
     property var about: ({})
     property string version: ""
-    spacing: 12
+    spacing: Theme.pad(12)
 
     FileView { path: Settings.dataDir + "/VERSION"; onLoaded: ab.version = text().trim() }
     Process {
@@ -37,9 +37,9 @@ Column {
         property string key
         property string value
         width: parent ? parent.width : 300
-        spacing: 10
+        spacing: Theme.pad(10)
         Txt { width: 140; text: line.key; sub: true; size: 13 }
-        Txt { width: line.width - 150; text: line.value || "–"; size: 13; weight: Font.DemiBold; font.family: Theme.mono }
+        Txt { width: line.width - 150; text: line.value || "–"; size: 13; strong: true; font.family: Theme.mono }
     }
 
     GlassCard {
@@ -49,8 +49,8 @@ Column {
             id: info
             x: 18; y: 16
             width: parent.width - 36
-            spacing: 10
-            Txt { text: "hypr-shell"; size: 18; weight: Font.Bold }
+            spacing: Theme.pad(10)
+            Txt { text: "hypr-shell"; size: 18; title: true }
             Txt { text: "Glass desktop for Hyprland"; sub: true; size: 12 }
             Item { width: 1; height: 4 }
             Line { key: "Version"; value: ab.version }
@@ -60,7 +60,7 @@ Column {
             Line { key: "Quickshell"; value: ab.about.quickshell || "" }
             Item { width: 1; height: 6 }
             Row {
-                spacing: 8
+                spacing: Theme.pad(8)
                 Pill {
                     icon: "󰈙"
                     text: "Open settings.json"

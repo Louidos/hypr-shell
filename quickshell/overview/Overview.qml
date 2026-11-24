@@ -20,12 +20,17 @@ Scope {
         for (const w of snap.workspaces) if (w.id > 0 && ids.indexOf(w.id) < 0) ids.push(w.id)
         return ids.sort((a, b) => a - b).slice(0, 10)
     }
-    readonly property int cols: wsIds.length <= 4 ? wsIds.length : Math.ceil(wsIds.length / 2)
+    // Hochformat: höchstens zwei Arbeitsflächen nebeneinander
+    readonly property int cols: Math.max(1, ov.portrait ? Math.min(2, wsIds.length) : wsIds.length <= 4 ? wsIds.length : Math.ceil(wsIds.length / 2))
     readonly property int rows: Math.ceil(wsIds.length / cols)
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
-    readonly property real sw: screen ? screen.width : 1920
-    readonly property real sh: screen ? screen.height : 1080
-    readonly property real cellW: Math.min(360, (sw - 160 - (cols - 1) * 14) / cols)
+    readonly property real sw: Settings.screenWidth(screen)
+    readonly property real sh: Settings.screenHeight(screen)
+    // Kacheln so gross, dass alle auf den freien Platz passen (Entwurfseinheiten des Overlay)
+    readonly property real roomW: ov.roomW / ov.k
+    readonly property real roomH: ov.roomH / ov.k
+    readonly property real cellW: Math.max(80, Math.min(360, (roomW - 48 - (cols - 1) * 14) / cols,
+        ((roomH - 24 - 44 - 18 - 24 - (rows - 1) * 14) / rows - 30) * sw / sh))
     readonly property real cellH: cellW * sh / sw
 
     function matches(c) {
@@ -96,17 +101,17 @@ Scope {
 
                 Rectangle {
                     id: box
-                    anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 24 }
+                    anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: Theme.pad(24) }
                     width: Math.min(420, parent.width - 48)
                     height: 44
-                    radius: 22
-                    color: Qt.rgba(1, 1, 1, 0.06)
+                    radius: Theme.corner(22)
+                    color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
-                    Glyph { id: lens; anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter } text: ""; size: 13; color: Theme.subtext }
+                    Glyph { id: lens; anchors { left: parent.left; leftMargin: Theme.pad(16); verticalCenter: parent.verticalCenter } text: ""; size: 13; color: Theme.subtext }
                     TextInput {
                         id: field
-                        anchors { left: lens.right; leftMargin: 10; right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
+                        anchors { left: lens.right; leftMargin: Theme.pad(10); right: parent.right; rightMargin: Theme.pad(16); verticalCenter: parent.verticalCenter }
                         focus: true
                         color: Theme.text
                         font.family: Theme.sans
@@ -121,9 +126,9 @@ Scope {
 
                 Grid {
                     id: grid
-                    anchors { horizontalCenter: parent.horizontalCenter; top: box.bottom; topMargin: 18 }
+                    anchors { horizontalCenter: parent.horizontalCenter; top: box.bottom; topMargin: Theme.pad(18) }
                     columns: ow.cols
-                    spacing: 14
+                    spacing: Theme.pad(14)
                     Repeater {
                         id: cells
                         model: ow.wsIds
@@ -134,12 +139,12 @@ Scope {
                             property alias frameItem: frame
                             readonly property var mon: ow.monitorOf(wsId)
                             readonly property bool hot: root.dragged !== null && frame.contains(frame.mapFromItem(root, root.dragPos.x, root.dragPos.y))
-                            spacing: 6
+                            spacing: Theme.pad(6)
                             Rectangle {
                                 id: frame
                                 width: ow.cellW
                                 height: ow.cellH
-                                radius: 14
+                                radius: Theme.corner(14)
                                 clip: true
                                 color: cell.hot ? Theme.cardHover : Theme.card
                                 border.width: ow.snap.active === cell.wsId || cell.hot ? 2 : 1
@@ -155,7 +160,7 @@ Scope {
                                         y: Math.max(0, ((modelData.at ? modelData.at[1] : 0) - cell.mon.y) * k)
                                         width: Math.max(24, (modelData.size ? modelData.size[0] : 400) * k)
                                         height: Math.max(18, (modelData.size ? modelData.size[1] : 300) * k)
-                                        radius: 8
+                                        radius: Theme.corner(8)
                                         color: Qt.rgba(1, 1, 1, wh.hovered ? 0.16 : 0.09)
                                         border.width: 1
                                         border.color: Theme.glassBorder
@@ -164,7 +169,7 @@ Scope {
                                         Column {
                                             anchors.centerIn: parent
                                             width: parent.width - 8
-                                            spacing: 2
+                                            spacing: Theme.pad(2)
                                             AppIcon {
                                                 anchors.horizontalCenter: parent.horizontalCenter
                                                 size: Math.min(28, win.height * 0.45)
@@ -211,7 +216,7 @@ Scope {
                                 text: "Workspace " + cell.wsId + (ow.clientsOn(cell.wsId).length > 0 ? "  ·  " + ow.clientsOn(cell.wsId).length : "")
                                 size: 12
                                 sub: ow.snap.active !== cell.wsId
-                                weight: ow.snap.active === cell.wsId ? Font.DemiBold : Font.Normal
+                                strong: ow.snap.active === cell.wsId
                             }
                         }
                     }
@@ -223,7 +228,7 @@ Scope {
                     x: root.dragPos.x - width / 2
                     y: root.dragPos.y - height / 2
                     width: 120; height: 34
-                    radius: 10
+                    radius: Theme.corner(10)
                     color: Theme.pill
                     Txt {
                         anchors.centerIn: parent

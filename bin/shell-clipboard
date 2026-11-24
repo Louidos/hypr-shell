@@ -10,6 +10,8 @@
 #   shell-clipboard clear                        ganzen Verlauf löschen
 # Fehlt cliphist, liefert list "[]" und die anderen Befehle tun still nichts.
 set -uo pipefail
+# fehlendes Argument: klare Meldung und Ende (statt "Zeile N: 2: … fehlt" oder still weiter)
+fehlt() { echo "shell-clipboard: $1" >&2; exit 2; }
 
 DATA="$HOME/.local/share/hypr-shell"
 EFF="$DATA/settings.effective.json"
@@ -81,16 +83,16 @@ case "${1:-}" in
             restart) stop; start ;;
         esac ;;
     list) liste ;;
-    copy) kopiere "${2:?id fehlt}" ;;
+    copy) [ -n "${2:-}" ] || fehlt "id fehlt"; kopiere "${2}" ;;
     paste)
-        kopiere "${2:?id fehlt}"
+        [ -n "${2:-}" ] || fehlt "id fehlt"; kopiere "${2}"
         # nach dem Schliessen des Panels hat das vorige Fenster wieder den Fokus
         if hat hyprctl && [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
             sleep 0.25
             hyprctl dispatch 'hl.dsp.send_shortcut({ mods = "CTRL", key = "V" })' >/dev/null 2>&1 || true
         fi ;;
     delete)
-        z="$(zeile "${2:?id fehlt}")"
+        [ -n "${2:-}" ] || fehlt "id fehlt"; z="$(zeile "${2}")"
         [ -n "$z" ] && printf '%s\n' "$z" | cliphist delete
         rm -f "$CACHE/$2.img" ;;
     clear)

@@ -74,6 +74,10 @@ Scope {
     FileView {
         id: store
         path: Settings.dataDir + "/launcher-recent.json"
+        printErrors: false
+        // gemeinsam mit dem App-Raster: dort gestartete Apps zählen auch hier als zuletzt benutzt
+        watchChanges: true
+        onFileChanged: reload()
         onLoaded: { try { const r = JSON.parse(text()); if (r && typeof r === "object") la.recent = r } catch (e) { } }
         onLoadFailed: la.recent = ({})
     }
@@ -96,7 +100,8 @@ Scope {
         margin: 0
         panelWidth: 640
         panelHeight: 76 + 7 * 56 + 14
-        glassOpacity: Settings.get("theme.glass", 0.44)
+        scroll: false
+        glassOpacity: Theme.glassOpacity
         keyboardFocus: WlrKeyboardFocus.Exclusive
         onOpened: { la.query = ""; la.sel = 0; if (ov.item) ov.item.input.text = "" }
 
@@ -112,20 +117,20 @@ Scope {
                     x: 14; y: 14
                     width: parent.width - 28
                     height: 48
-                    radius: 24
-                    color: Qt.rgba(1, 1, 1, 0.06)
+                    radius: Theme.corner(24)
+                    color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
                     Glyph {
                         id: lens
-                        anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+                        anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
                         text: la.calcMode ? "󰃬" : ""
                         size: 15
                         color: Theme.subtext
                     }
                     TextInput {
                         id: field
-                        anchors { left: lens.right; leftMargin: 12; right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
+                        anchors { left: lens.right; leftMargin: Theme.pad(12); right: parent.right; rightMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
                         focus: true
                         color: Theme.text
                         font.family: Theme.sans
@@ -151,17 +156,17 @@ Scope {
                 GlassCard {
                     visible: la.calcMode
                     x: 14
-                    anchors { top: box.bottom; topMargin: 14 }
+                    anchors { top: box.bottom; topMargin: Theme.pad(14) }
                     width: parent.width - 28
                     height: 72
                     color: Theme.cardHover
                     Column {
-                        anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
-                        spacing: 2
+                        anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
+                        spacing: Theme.pad(2)
                         Txt {
                             text: la.calcResult !== "" ? "= " + la.calcResult : "…"
                             size: 22
-                            weight: Font.Bold
+                            heavy: true
                             font.family: Theme.mono
                             Probe { name: "launcher-calc" }
                         }
@@ -174,7 +179,7 @@ Scope {
                     id: list
                     visible: !la.calcMode
                     x: 14
-                    anchors { top: box.bottom; topMargin: 14; bottom: parent.bottom; bottomMargin: 14 }
+                    anchors { top: box.bottom; topMargin: Theme.pad(14); bottom: parent.bottom; bottomMargin: Theme.pad(14) }
                     width: parent.width - 28
                     clip: true
                     spacing: 0
@@ -188,19 +193,19 @@ Scope {
                         required property int index
                         width: list.width
                         height: 56
-                        radius: 16
+                        radius: Theme.corner(16)
                         color: index === la.sel ? Theme.cardHover : (hov.hovered ? Theme.card : "transparent")
                         AppIcon {
                             id: ico
-                            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                            anchors { left: parent.left; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                             size: 32
                             icon: row.modelData.icon || ""
                             probe: row.index === 0 ? "launcher-first" : ""
                         }
                         Column {
-                            anchors { left: ico.right; leftMargin: 14; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-                            spacing: 1
-                            Txt { width: parent.width; text: row.modelData.name; size: 14; weight: Font.DemiBold }
+                            anchors { left: ico.right; leftMargin: Theme.pad(14); right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
+                            spacing: Theme.pad(1)
+                            Txt { width: parent.width; text: row.modelData.name; size: 14; strong: true }
                             Txt {
                                 width: parent.width
                                 visible: text !== ""

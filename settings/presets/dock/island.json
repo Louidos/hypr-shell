@@ -1,0 +1,8 @@
+{
+  "_name": "island",
+  "_description": "Big pill: 56 px, fully rounded, spacing 16, strong shadow",
+  "dock.icon_size": 56,
+  "dock.radius": 100,
+  "dock.spacing": 16,
+  "dock.shadow": "strong"
+}

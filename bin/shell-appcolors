@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+# Programme mit den Farben des Hintergrundbilds einfärben.
+#   shell-appcolors sync       nach den Einstellungen: eingeschaltete Programme einfärben, ausgeschaltete zurückholen
+#   shell-appcolors apply      neue Farben in die eingeschalteten Programme bringen (nach einem Bildwechsel)
+#   shell-appcolors restore    alle Programme auf den Stand vor hypr-shell zurückholen (für --uninstall)
+#   shell-appcolors caps       welche Programme da sind (JSON)
+#   shell-appcolors status     je Programm: eingeschaltet, installiert, eingefärbt (JSON)
+# Programme: gtk (GTK 3/4, z. B. Nautilus), qt (qt5ct/qt6ct), firefox, vesktop, spotify (spicetify).
+# matugen schreibt die Farben nach ~/.local/share/hypr-shell/app-colors/; jede Datei eines Programms,
+# die hier geändert wird, wird vorher gesichert und beim Abschalten zurückgelegt.
+set -euo pipefail
+
+DATA="$HOME/.local/share/hypr-shell"
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}"
+FARBEN="$DATA/app-colors"
+SICHERUNG="$FARBEN/backup"
+STAND="$FARBEN/state"
+EFF="$DATA/settings.effective.json"
+MARKE="hypr-shell"
+APPS=(gtk qt firefox vesktop spotify)
+
+hat() { command -v "$1" >/dev/null 2>&1; }
+
+wert() { # jq-pfad standard (false bleibt false)
+    local v=""
+    if hat jq && [ -f "$EFF" ]; then v="$(jq -r "($1) | if . == null then empty else . end" "$EFF" 2>/dev/null || true)"; fi
+    printf '%s\n' "${v:-$2}"
+}
+
+# eingeschaltet? (GTK und Qt standardmässig an, die anderen aus)
+an() {
+    local v
+    case "$1" in
+        gtk) v="$(wert '.theme.apps.gtk' true)" ;;
+        qt) v="$(wert '.theme.apps.qt' true)" ;;
+        firefox) v="$(wert '.theme.apps.firefox' false)" ;;
+        vesktop) v="$(wert '.theme.apps.vesktop' false)" ;;
+        spotify) v="$(wert '.theme.apps.spotify' false)" ;;
+        *) v=false ;;
+    esac
+    [ "$v" = true ]
+}
+
+# ---- installiert?
+da() {
+    case "$1" in
+        gtk) return 0 ;;
+        qt) hat qt6ct || hat qt5ct ;;
+        firefox) hat firefox ;;
+        vesktop) hat vesktop ;;
+        spotify) hat spicetify ;;
+        *) return 1 ;;
+    esac
+}
+
+# ---- Sicherung: einmal pro Datei, bevor sie zum ersten Mal geändert wird
+sichere() { # app pfad
+    local app="$1" f="$2" ziel="$SICHERUNG/$1"
+    mkdir -p "$ziel"
+    touch "$ziel/files.txt"
+    grep -qxF -- "$f" "$ziel/files.txt" && return 0
+    local kopie
+    kopie="$ziel/$(printf '%s' "$f" | md5sum | cut -c1-16)"
+    if [ -e "$f" ] || [ -L "$f" ]; then cp -P -p -- "$f" "$kopie"; else : > "$kopie.fehlte"; fi
+    printf '%s\n' "$f" >> "$ziel/files.txt"
+    # Ordner, die es noch nicht gibt, merken (tiefste zuerst), damit sie beim Zurücklegen wieder gehen
+    local d
+    d="$(dirname "$f")"
+    while [ ! -e "$d" ] && [ "$d" != "$HOME" ] && [ "$d" != / ]; do
+        grep -qxF -- "$d" "$ziel/dirs.txt" 2>/dev/null || printf '%s\n' "$d" >> "$ziel/dirs.txt"
+        d="$(dirname "$d")"
+    done
+}
+
+zurueck() { # app
+    local app="$1" ziel="$SICHERUNG/$1" f kopie
+    [ -f "$ziel/files.txt" ] || { rm -f "$STAND/$app"; return 0; }
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        kopie="$ziel/$(printf '%s' "$f" | md5sum | cut -c1-16)"
+        rm -f -- "$f"
+        if [ -e "$kopie" ] || [ -L "$kopie" ]; then cp -P -p -- "$kopie" "$f"; fi
+    done < "$ziel/files.txt"
+    if [ -f "$ziel/dirs.txt" ]; then
+        # nur leere Ordner entfernen, tiefste zuerst
+        awk '{ print length($0) "\t" $0 }' "$ziel/dirs.txt" | sort -rn | cut -f2- | while IFS= read -r f; do
+            rmdir -- "$f" 2>/dev/null || true
+        done
+    fi
+    rm -rf "${ziel:?}" "${STAND:?}/${app:?}"
+    nachher "$app" aus
+}
+
+# Zeile oben in eine Datei setzen (ein Link wird durch eine Datei mit dem gleichen Inhalt ersetzt)
+oben_einfuegen() { # datei zeile
+    local f="$1" z="$2" inhalt=""
+    [ -f "$f" ] && grep -qxF -- "$z" "$f" && return 0
+    [ -e "$f" ] && inhalt="$(cat "$f")"
+    mkdir -p "$(dirname "$f")"
+    rm -f -- "$f"
+    if [ -n "$inhalt" ]; then printf '%s\n%s\n' "$z" "$inhalt" > "$f"; else printf '%s\n' "$z" > "$f"; fi
+}
+
+# Wert in einer ini-Datei setzen (Abschnitt wird angelegt, wenn er fehlt)
+ini_setzen() { # datei abschnitt schluessel wert
+    local f="$1" tmp
+    mkdir -p "$(dirname "$f")"
+    [ -f "$f" ] || : > "$f"
+    tmp="$(mktemp)"
+    awk -v s="[$2]" -v k="$3" -v v="$4" '
+        function raus() { if (drin && !fertig) { print k "=" v; fertig = 1 } }
+        $0 == s { drin = 1; print; next }
+        /^\[/ { raus(); drin = 0 }
+        drin && index($0, k "=") == 1 { if (!fertig) print k "=" v; fertig = 1; next }
+        { print }
+        END { raus(); if (!fertig) { print ""; print s; print k "=" v } }' "$f" > "$tmp"
+    cat "$tmp" > "$f"; rm -f "$tmp"
+}
+
+# ---- die einzelnen Programme
+faerbe_gtk() {
+    local v
+    [ -f "$FARBEN/gtk.css" ] || return 1
+    for v in gtk-3.0 gtk-4.0; do
+        sichere gtk "$CONF/$v/gtk.css"
+        sichere gtk "$CONF/$v/hypr-shell-colors.css"
+        mkdir -p "$CONF/$v"
+        cp "$FARBEN/gtk.css" "$CONF/$v/hypr-shell-colors.css"
+        oben_einfuegen "$CONF/$v/gtk.css" "@import url(\"hypr-shell-colors.css\"); /* $MARKE */"
+    done
+}
+
+faerbe_qt() {
+    local v
+    [ -f "$FARBEN/qt.conf" ] || return 1
+    for v in qt5ct qt6ct; do
+        hat "$v" || continue
+        sichere qt "$CONF/$v/$v.conf"
+        sichere qt "$CONF/$v/colors/hypr-shell.conf"
+        mkdir -p "$CONF/$v/colors"
+        cp "$FARBEN/qt.conf" "$CONF/$v/colors/hypr-shell.conf"
+        ini_setzen "$CONF/$v/$v.conf" Appearance custom_palette true
+        ini_setzen "$CONF/$v/$v.conf" Appearance color_scheme_path "$CONF/$v/colors/hypr-shell.conf"
+    done
+}
+
+firefox_profile() {
+    local ini="$HOME/.mozilla/firefox/profiles.ini" p rel
+    [ -f "$ini" ] || return 0
+    awk -F= '/^\[/ { if (p != "") print r "|" p; p = ""; r = 1 } $1 == "Path" { p = $2 } $1 == "IsRelative" { r = $2 }
+             END { if (p != "") print r "|" p }' "$ini" | sort -u | while IFS='|' read -r rel p; do
+        if [ "$rel" = 1 ]; then p="$HOME/.mozilla/firefox/$p"; fi
+        [ -d "$p" ] && printf '%s\n' "$p"
+    done
+}
+
+faerbe_firefox() {
+    local p n=0
+    [ -f "$FARBEN/firefox.css" ] || return 1
+    while IFS= read -r p; do
+        n=$((n + 1))
+        sichere firefox "$p/chrome/userChrome.css"
+        sichere firefox "$p/chrome/hypr-shell-colors.css"
+        sichere firefox "$p/user.js"
+        mkdir -p "$p/chrome"
+        cp "$FARBEN/firefox.css" "$p/chrome/hypr-shell-colors.css"
+        oben_einfuegen "$p/chrome/userChrome.css" "@import url(\"hypr-shell-colors.css\"); /* $MARKE */"
+        local pref='user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true); // hypr-shell'
+        grep -qxF -- "$pref" "$p/user.js" 2>/dev/null || printf '%s\n' "$pref" >> "$p/user.js"
+    done < <(firefox_profile)
+    [ "$n" -gt 0 ]
+}
+
+faerbe_vesktop() {
+    local d="$CONF/vesktop" s
+    [ -f "$FARBEN/vesktop.css" ] || return 1
+    s="$d/settings/settings.json"
+    sichere vesktop "$d/themes/hypr-shell.theme.css"
+    sichere vesktop "$s"
+    mkdir -p "$d/themes" "$d/settings"
+    cp "$FARBEN/vesktop.css" "$d/themes/hypr-shell.theme.css"
+    [ -s "$s" ] || echo '{}' > "$s"
+    local tmp; tmp="$(mktemp)"
+    if jq '.enabledThemes = (((.enabledThemes // []) - ["hypr-shell.theme.css"]) + ["hypr-shell.theme.css"])' "$s" > "$tmp"; then
+        cat "$tmp" > "$s"
+    fi
+    rm -f "$tmp"
+}
+
+spicetify_ordner() { dirname "$(spicetify -c 2>/dev/null || echo "$CONF/spicetify/config-xpui.ini")"; }
+
+faerbe_spotify() {
+    local d schon=0
+    [ -f "$FARBEN/spicetify.ini" ] || return 1
+    d="$(spicetify_ordner)"
+    [ -f "$STAND/spotify" ] && schon=1
+    sichere spotify "$d/config-xpui.ini"
+    sichere spotify "$d/Themes/hypr-shell/color.ini"
+    sichere spotify "$d/Themes/hypr-shell/user.css"
+    mkdir -p "$d/Themes/hypr-shell"
+    cp "$FARBEN/spicetify.ini" "$d/Themes/hypr-shell/color.ini"
+    [ -f "$d/Themes/hypr-shell/user.css" ] || printf '/* hypr-shell: nur Farben (color.ini) */\n' > "$d/Themes/hypr-shell/user.css"
+    if [ "$schon" = 0 ]; then
+        spicetify config current_theme hypr-shell color_scheme hypr-shell >/dev/null 2>&1 || return 1
+        spicetify apply >/dev/null 2>&1 || true
+    else
+        spicetify refresh >/dev/null 2>&1 || spicetify apply >/dev/null 2>&1 || true
+    fi
+}
+
+# nach dem Ein- oder Ausschalten: Programme, die das brauchen, neu anstossen
+nachher() { # app an|aus
+    case "$1" in
+        spotify) if [ "$2" = aus ] && hat spicetify; then spicetify apply >/dev/null 2>&1 || true; fi ;;
+    esac
+}
+
+einfaerben() { # app
+    local app="$1"
+    da "$app" || return 0
+    mkdir -p "$STAND"
+    if "faerbe_$app"; then date +%s > "$STAND/$app"; fi
+}
+
+befehl_sync() {
+    local app
+    for app in "${APPS[@]}"; do
+        if an "$app" && da "$app"; then einfaerben "$app"
+        elif [ -d "$SICHERUNG/$app" ] || [ -f "$STAND/$app" ]; then zurueck "$app"
+        fi
+    done
+}
+
+befehl_apply() {
+    local app
+    for app in "${APPS[@]}"; do
+        if an "$app" && da "$app"; then einfaerben "$app"; fi
+    done
+}
+
+befehl_restore() {
+    local app
+    for app in "${APPS[@]}"; do
+        if [ -d "$SICHERUNG/$app" ] || [ -f "$STAND/$app" ]; then zurueck "$app"; fi
+    done
+}
+
+bool() { if "$@"; then echo true; else echo false; fi; }
+
+befehl_caps() {
+    printf '{"qtct": %s, "firefox": %s, "vesktop": %s, "spicetify": %s}\n' \
+        "$(bool da qt)" "$(bool da firefox)" "$(bool da vesktop)" "$(bool da spotify)"
+}
+
+befehl_status() {
+    local app out="{" sep=""
+    for app in "${APPS[@]}"; do
+        out+="$sep\"$app\": {\"enabled\": $(bool an "$app"), \"installed\": $(bool da "$app"), \"applied\": $([ -f "$STAND/$app" ] && echo true || echo false)}"
+        sep=", "
+    done
+    printf '%s}\n' "$out"
+}
+
+case "${1:-}" in
+    sync) befehl_sync ;;
+    apply) befehl_apply ;;
+    restore) befehl_restore ;;
+    caps) befehl_caps ;;
+    status) befehl_status ;;
+    *) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

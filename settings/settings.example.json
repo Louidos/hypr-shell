@@ -2,7 +2,8 @@
   "bar": {
     "position": "top",
     "height": 30,
-    "opacity": 0.25,
+    "opacity": -1,
+    "floating": true,
     "modules": {
       "left": [
         "distro",
@@ -27,46 +28,134 @@
     "battery": true
   },
   "look": {
+    "preset": "glass",
     "gaps": {
       "inner": 6,
       "outer": 12
     },
-    "border": 1,
-    "rounding": 12,
+    "border": 2,
+    "rounding": 18,
     "blur": {
       "enabled": true,
-      "size": 10,
-      "passes": 3
+      "size": 12,
+      "passes": 2
     },
     "shadow": true,
     "opacity": {
-      "inactive": 1.0
+      "inactive": 0.88,
+      "active": 0.95,
+      "exceptions": [
+        "steam_app_[0-9]+",
+        "gamescope",
+        "steam",
+        "battle.net.exe",
+        "heroic",
+        "lutris",
+        "mpv",
+        "vlc",
+        "celluloid",
+        "org.gnome.Totem",
+        "gimp",
+        "krita",
+        "inkscape",
+        "darktable",
+        "org.kde.kdenlive",
+        "blender"
+      ]
     },
+    "border_color": "white",
     "animations": {
       "enabled": true,
       "speed": "normal"
     }
   },
+  "fenster": {
+    "titelleiste": "an",
+    "knoepfe": {
+      "stil": "windows",
+      "seite": "auto"
+    },
+    "titelleiste_ausnahmen": [
+      "org.gnome.*",
+      "firefox",
+      "chromium",
+      "google-chrome",
+      "code",
+      "code-oss",
+      "vesktop",
+      "discord",
+      "steam",
+      "steam_app_[0-9]+",
+      "gamescope",
+      "mpv",
+      "vlc",
+      "celluloid"
+    ],
+    "modus": "schwebend"
+  },
+  "andocken": {
+    "enabled": true,
+    "rand": 8,
+    "ecke": 60,
+    "vorschau": true,
+    "animation": true
+  },
   "theme": {
     "colors": "auto",
     "accent": "#8ab4f8",
-    "glass": 0.44,
+    "glass": 0.46,
+    "glass_color": "#1a1a1d",
+    "border": {
+      "color": "#ffffff",
+      "opacity": 0.8,
+      "opacity_inactive": 0.3,
+      "width": 2,
+      "glow": true,
+      "glow_size": 10,
+      "glow_opacity": 0.25
+    },
     "radius": {
       "panel": 26,
-      "card": 18
+      "card": 16
+    },
+    "card": {
+      "color": "#ffffff",
+      "opacity": 0.09,
+      "hover": 0.14,
+      "border_opacity": 0.12
+    },
+    "pill": {
+      "opacity": 0.92,
+      "nav": "soft"
+    },
+    "spacing": {
+      "scale": 1.0,
+      "panel": 20,
+      "card": 16,
+      "gap": 12
     },
     "font": {
       "ui": "Inter",
       "mono": "JetBrainsMono Nerd Font",
       "clock": "JetBrainsMono Nerd Font",
       "display": "Bebas Neue",
-      "scale": 1.0
+      "scale": 1.0,
+      "title_weight": "bold",
+      "text_weight": "normal",
+      "title_scale": 1.25
     },
     "cursor": {
       "name": "Bibata-Modern-Ice",
       "size": 24
     },
-    "icons": "Papirus-Dark"
+    "icons": "Papirus-Dark",
+    "apps": {
+      "gtk": true,
+      "qt": true,
+      "firefox": false,
+      "vesktop": false,
+      "spotify": false
+    }
   },
   "input": {
     "layout": "us",
@@ -97,6 +186,7 @@
         "ram",
         "gpu"
       ],
+      "hide_empty": true,
       "x": 0.015,
       "y": 0.56,
       "scale": 1.0
@@ -104,7 +194,7 @@
   },
   "dashboard": {
     "width": 1000,
-    "opacity": 0.42,
+    "opacity": -1,
     "edge": true,
     "close_on_leave": true,
     "tabs": [
@@ -123,7 +213,8 @@
       "clock",
       "calendar",
       "rings"
-    ]
+    ],
+    "perf_badge": "wave"
   },
   "weather": {
     "location": "",
@@ -145,8 +236,8 @@
     "close_on_leave": true,
     "close_delay": 400,
     "width": 420,
-    "radius": 26,
-    "opacity": 0.44,
+    "radius": 14,
+    "opacity": -1,
     "sections": [
       "awake",
       "apps",
@@ -171,6 +262,87 @@
       "profile",
       "nightlight",
       "settings"
+    ]
+  },
+  "dock": {
+    "enabled": true,
+    "preset": "mac",
+    "position": "bottom",
+    "monitor": "all",
+    "running_per_monitor": false,
+    "mode": "floating",
+    "layer": "top",
+    "when_panel_open": "hide",
+    "margin": 10,
+    "icon_size": 48,
+    "icon_min_size": 24,
+    "padding": 8,
+    "spacing": 6,
+    "radius": 22,
+    "max_length": 90,
+    "glass_opacity": -1,
+    "blur": true,
+    "border_width": 1,
+    "border_color": "auto",
+    "shadow": "medium",
+    "color_mode": "glass",
+    "custom_color": "#1e1e2e",
+    "labels": "hover",
+    "indicator": "dot",
+    "indicator_color": "auto",
+    "icon_style": "original",
+    "show_running": true,
+    "trash": true,
+    "launcher_button": false,
+    "badges": true,
+    "previews": true,
+    "magnify": true,
+    "magnify_factor": 1.6,
+    "magnify_range": 2,
+    "anim_ms": 180,
+    "bounce_on_launch": true,
+    "autohide": "smart",
+    "show_delay_ms": 150,
+    "hide_delay_ms": 400,
+    "keyboard_timeout_s": 10,
+    "hide_on_fullscreen": true,
+    "avoid_bar": true,
+    "items": [
+      {
+        "type": "app",
+        "desktop_id": "org.gnome.Nautilus",
+        "path": ""
+      },
+      {
+        "type": "app",
+        "desktop_id": "kitty",
+        "path": ""
+      },
+      {
+        "type": "app",
+        "desktop_id": "firefox",
+        "path": ""
+      },
+      {
+        "type": "separator",
+        "desktop_id": "",
+        "path": ""
+      },
+      {
+        "type": "folder",
+        "desktop_id": "",
+        "path": "~/Downloads"
+      },
+      {
+        "type": "separator",
+        "desktop_id": "",
+        "path": ""
+      },
+      {
+        "type": "trash",
+        "desktop_id": "",
+        "path": ""
+      }
     ]
   },
   "lock": {
@@ -200,11 +372,30 @@
     "enabled": true,
     "max": 50
   },
+  "switcher": {
+    "enabled": true,
+    "scope": "all",
+    "previews": true,
+    "size": "medium"
+  },
+  "appraster": {
+    "enabled": true,
+    "super_tippen": true,
+    "dock_knopf": true,
+    "kategorien": true,
+    "zuletzt": 8,
+    "favoriten": []
+  },
   "nightlight": {
     "temperature": 4000,
     "schedule": false,
     "from": "20:00",
     "to": "07:00"
+  },
+  "settings": {
+    "home": {
+      "tips": true
+    }
   },
   "laptop": {
     "charge_limit": 100,
@@ -264,18 +455,30 @@
     "ca_file": ""
   },
   "keybinds": {
-    "terminal": "SUPER + Q",
+    "terminal": "SUPER + Return",
     "files": "SUPER + E",
     "browser": "",
     "launcher": "SUPER + R",
     "launcher_alt": "ALT + Space",
     "launcher_space": "SUPER + Space",
-    "close": "SUPER + C",
+    "launcher_search": "CTRL + SUPER + Return",
+    "close": "SUPER + Q",
+    "close_alt": "SUPER + C",
     "float": "SUPER + V",
-    "focus_left": "SUPER + left",
-    "focus_right": "SUPER + right",
-    "focus_up": "SUPER + up",
-    "focus_down": "SUPER + down",
+    "fullscreen": "SUPER + F",
+    "minimize": "SUPER + M",
+    "restore": "SUPER + SHIFT + M",
+    "switcher": "ALT + Tab",
+    "switcher_back": "ALT + SHIFT + Tab",
+    "snap_left": "SUPER + left",
+    "snap_right": "SUPER + right",
+    "snap_up": "SUPER + up",
+    "snap_down": "SUPER + down",
+    "window_mode": "SUPER + SHIFT + T",
+    "focus_left": "SUPER + ALT + left",
+    "focus_right": "SUPER + ALT + right",
+    "focus_up": "SUPER + ALT + up",
+    "focus_down": "SUPER + ALT + down",
     "workspace_mod": "SUPER",
     "move_mod": "SUPER + SHIFT",
     "mouse_mod": "SUPER",
@@ -290,10 +493,12 @@
     "clipboard": "SUPER + SHIFT + V",
     "overview": "SUPER + Tab",
     "cheatsheet": "SUPER + F1",
+    "dock_focus": "SUPER + B",
     "missa_chat": "SUPER + I",
     "missa_voice": "SUPER + SHIFT + I",
+    "emergency": "CTRL + SUPER + Escape",
     "lock": "SUPER + L",
-    "exit": "SUPER + M",
+    "exit": "CTRL + SUPER + M",
     "screenshot_region": "Print",
     "screenshot_screen": "SHIFT + Print",
     "custom": []

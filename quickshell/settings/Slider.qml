@@ -30,14 +30,14 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width
         height: 6
-        radius: 3
+        radius: Theme.corner(3)
         color: Theme.track
     }
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: knob.x + knob.width / 2
         height: 6
-        radius: 3
+        radius: Theme.corner(3)
         color: Qt.rgba(1, 1, 1, 0.75)
     }
     Rectangle {
@@ -45,7 +45,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: 18
         height: 18
-        radius: 9
+        radius: Theme.corner(9)
         x: sl.frac * (sl.width - width)
         color: Theme.pill
         border.width: sl.dragging ? 3 : 0

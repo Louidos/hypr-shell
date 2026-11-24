@@ -14,7 +14,7 @@ GlassPanel {
     property int timeout: 6
     readonly property bool critical: info.critical === true
     radius: popup ? 20 : Theme.cardRadius
-    color: popup ? Theme.glass(Settings.get("theme.glass", 0.44) + 0.18) : Theme.card
+    color: popup ? Theme.glass(Math.min(0.95, Theme.glassOpacity + 0.18)) : Theme.card
     border.color: critical ? Theme.warn : (popup ? Theme.glassBorder : Theme.cardBorder)
     height: col.implicitHeight + 24
 
@@ -45,7 +45,7 @@ GlassPanel {
         id: col
         x: 14; y: 12
         width: parent.width - 28
-        spacing: 6
+        spacing: Theme.pad(6)
 
         Item {
             width: parent.width
@@ -57,7 +57,7 @@ GlassPanel {
                 RoundImage {
                     id: img
                     anchors.fill: parent
-                    radius: 10
+                    radius: Theme.corner(10)
                     visible: (card.info.image || "") !== ""
                     source: card.info.image || ""
                 }
@@ -69,8 +69,8 @@ GlassPanel {
                 }
             }
             Column {
-                anchors { left: ico.right; leftMargin: 12; right: close.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                spacing: 1
+                anchors { left: ico.right; leftMargin: Theme.pad(12); right: close.left; rightMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
+                spacing: Theme.pad(1)
                 Txt {
                     width: parent.width
                     text: (card.info.app || "") + "  ·  " + card.since(card.info.time)
@@ -81,7 +81,7 @@ GlassPanel {
                     width: parent.width
                     text: card.info.summary || ""
                     size: 14
-                    weight: Font.DemiBold
+                    strong: true
                 }
             }
             IconButton {
@@ -107,7 +107,7 @@ GlassPanel {
         Flow {
             width: parent.width
             visible: (card.info.actions || []).length > 0
-            spacing: 6
+            spacing: Theme.pad(6)
             Repeater {
                 model: card.info.actions || []
                 delegate: Pill {

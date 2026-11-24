@@ -13,8 +13,13 @@ GlassCard {
     readonly property bool changed: rawv !== undefined && JSON.stringify(rawv) !== JSON.stringify(spec.default)
     readonly property bool wide: spec.type === "list" || spec.type === "stringlist" || spec.type === "objectlist"
     // hängt von einem anderen Schalter ab (z. B. der Agent von missa.enabled): grau mit Hinweis
-    readonly property bool blocked: spec.depends ? Settings.get(spec.depends, false) !== true : false
-    readonly property var dependsSpec: spec.depends ? Settings.schemaKey(spec.depends) : null
+    // "schlüssel" = Schalter muss an sein, "schlüssel=wert" = Auswahl muss diesen Wert haben
+    readonly property string dependsKey: spec.depends ? String(spec.depends).split("=")[0] : ""
+    readonly property string dependsValue: spec.depends && String(spec.depends).indexOf("=") > 0 ? String(spec.depends).split("=")[1] : ""
+    readonly property bool blocked: dependsKey === "" ? false
+        : dependsValue !== "" ? String(Settings.get(dependsKey, "")) !== dependsValue
+        : Settings.get(dependsKey, false) !== true
+    readonly property var dependsSpec: dependsKey !== "" ? Settings.schemaKey(dependsKey) : null
     // zuletzt gesetzter Wert, bis settings.json ihn bestätigt (damit Schalter sofort umspringen)
     property var pending: undefined
     readonly property var shown: pending !== undefined ? pending : value
@@ -37,6 +42,8 @@ GlassCard {
         return v.toFixed(decimals()) + (spec.unit ? " " + spec.unit : "")
     }
 
+    // schmale Zeile (Hochformat, kleiner Bildschirm): Bedienelement unter dem Text statt rechts daneben
+    readonly property bool stacked: width < controls.implicitWidth + 64 + 14 + 14 + 220
     height: head.height + (wide ? editor.height + 14 : 0)
     color: flash ? Qt.rgba(1, 1, 1, 0.14) : Theme.card
     Behavior on color { ColorAnimation { duration: 400 } }
@@ -45,20 +52,23 @@ GlassCard {
     Item {
         id: head
         width: parent.width
-        height: Math.max(64, texts.implicitHeight + 24)
+        height: row.stacked ? texts.implicitHeight + 12 + controls.height + 26 : Math.max(64, texts.implicitHeight + 24)
 
         Rectangle {
             id: bubble
-            width: 36; height: 36; radius: 18
-            anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
-            color: Qt.rgba(1, 1, 1, 0.07)
+            width: 36; height: 36; radius: Theme.corner(18)
+            x: 14
+            y: row.stacked ? 14 : (head.height - height) / 2
+            color: Theme.cardStrong
             Glyph { anchors.centerIn: parent; text: row.spec.icon || ""; size: 15 }
         }
         Column {
             id: texts
-            anchors { left: bubble.right; leftMargin: 14; right: controls.left; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            spacing: 2
-            Txt { width: parent.width; text: row.spec.title || row.key; size: 14; weight: Font.DemiBold }
+            x: bubble.x + bubble.width + 14
+            y: row.stacked ? 14 : (head.height - implicitHeight) / 2
+            width: (row.stacked ? head.width - 14 : controls.x - 14) - x
+            spacing: Theme.pad(2)
+            Txt { width: parent.width; text: row.spec.title || row.key; size: 14; strong: true }
             Txt { width: parent.width; text: row.spec.description || ""; size: 12; sub: true; wrapMode: Text.WordWrap; elide: Text.ElideNone }
             // Warnung zu einem gewählten Wert (z. B. missa.access = full): ein Satz zum Risiko
             Txt {
@@ -72,7 +82,9 @@ GlassCard {
             Txt {
                 visible: row.blocked
                 width: parent.width
-                text: "Needs \"" + (row.dependsSpec ? row.dependsSpec.title : row.spec.depends) + "\" switched on first"
+                text: row.dependsValue !== ""
+                    ? "Only used when \"" + (row.dependsSpec ? row.dependsSpec.title : row.dependsKey) + "\" is " + row.dependsValue
+                    : "Needs \"" + (row.dependsSpec ? row.dependsSpec.title : row.dependsKey) + "\" switched on first"
                 size: 11
                 color: Theme.warn
                 wrapMode: Text.WordWrap
@@ -80,8 +92,9 @@ GlassCard {
         }
         Row {
             id: controls
-            anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
-            spacing: 10
+            x: row.stacked ? texts.x : head.width - 14 - width
+            y: row.stacked ? texts.y + texts.implicitHeight + 12 : (head.height - height) / 2
+            spacing: Theme.pad(10)
             Pill {
                 visible: row.changed
                 anchors.verticalCenter: parent.verticalCenter
@@ -128,10 +141,10 @@ GlassCard {
     Component {
         id: sliderC
         Row {
-            spacing: 12
+            spacing: Theme.pad(12)
             Slider {
                 id: sl
-                width: 200
+                width: Math.max(120, Math.min(200, row.width - 64 - 14 - 14 - 82))
                 anchors.verticalCenter: parent.verticalCenter
                 from: row.spec.min
                 to: row.spec.max
@@ -141,21 +154,51 @@ GlassCard {
                 onReleased: v => row.write(v)
                 Probe { name: "setting-" + row.key }
             }
-            Txt {
+            // Zahlenfeld: Klick und Eintippen setzt den Wert genau (wird auf den Bereich begrenzt)
+            Item {
                 width: 70
+                height: 24
                 anchors.verticalCenter: parent.verticalCenter
-                horizontalAlignment: Text.AlignRight
-                text: row.fmt(sl.shown)
-                size: 13
-                weight: Font.DemiBold
-                font.family: Theme.mono
+                Txt {
+                    anchors.fill: parent
+                    visible: !numIn.activeFocus
+                    horizontalAlignment: Text.AlignRight
+                    verticalAlignment: Text.AlignVCenter
+                    text: row.fmt(sl.shown)
+                    size: 13
+                    strong: true
+                    font.family: Theme.mono
+                }
+                TextInput {
+                    id: numIn
+                    anchors.fill: parent
+                    opacity: activeFocus ? 1 : 0
+                    horizontalAlignment: TextInput.AlignRight
+                    verticalAlignment: TextInput.AlignVCenter
+                    color: Theme.text
+                    selectionColor: Theme.accent
+                    font.family: Theme.mono
+                    font.pixelSize: 13 * Theme.fontScale
+                    validator: DoubleValidator { }
+                    onActiveFocusChanged: if (activeFocus) { text = String(typeof row.shown === "number" ? row.shown : row.spec.default); selectAll() }
+                    onAccepted: {
+                        let v = Number(text)
+                        if (!isNaN(v)) {
+                            v = Math.max(row.spec.min, Math.min(row.spec.max, v))
+                            if (row.spec.type === "int") v = Math.round(v)
+                            row.write(v)
+                        }
+                        focus = false
+                    }
+                    Keys.onEscapePressed: focus = false
+                }
             }
         }
     }
     Component {
         id: choiceC
         Row {
-            spacing: 6
+            spacing: Theme.pad(6)
             Repeater {
                 model: row.spec.values || []
                 delegate: Pill {
@@ -173,7 +216,7 @@ GlassCard {
     Component {
         id: textC
         Field {
-            width: 260
+            width: Math.max(140, Math.min(260, row.width - 64 - 14 - 14))
             text: row.shown === undefined || row.shown === null ? "" : String(row.shown)
             mono: row.key.indexOf("apps.") === 0
             placeholder: row.spec.default === "" ? "empty = automatic" : String(row.spec.default)
@@ -184,14 +227,24 @@ GlassCard {
     Component {
         id: colorC
         Row {
-            spacing: 8
+            spacing: Theme.pad(8)
             readonly property var presets: ["#8ab4f8", "#a6e3a1", "#f9e2af", "#fab387", "#f38ba8", "#cba6f7", "#94e2d5", "#d4d4d4"]
+            // Farben mit "auto" (z. B. dock.border_color): automatisch wie die Oberfläche
+            Pill {
+                visible: row.spec.auto === true
+                implicitHeight: 26
+                fontSize: 12
+                text: "Auto"
+                active: row.shown === "auto"
+                onClicked: row.write("auto")
+                Probe { name: "setting-" + row.key + "=auto" }
+            }
             Repeater {
                 model: parent.presets
                 delegate: Rectangle {
                     required property string modelData
                     anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-                    width: 22; height: 22; radius: 11
+                    width: 22; height: 22; radius: Theme.corner(11)
                     color: modelData
                     border.width: String(row.shown).toLowerCase() === modelData ? 2 : 0
                     border.color: "white"

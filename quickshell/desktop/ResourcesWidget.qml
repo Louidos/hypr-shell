@@ -10,7 +10,10 @@ import "../common"
 // sie wird dafür nicht geweckt.
 PanelWindow {
     id: w
-    readonly property real k: (screen ? screen.height : 1080) / 1080 * Ui.widget("resources", "scale", 1.0)
+    // Grösse nach der kürzeren Bildschirmseite (im Hochformat die Breite), 1080 = 1
+    readonly property real sw: Settings.screenWidth(screen)
+    readonly property real sh: Settings.screenHeight(screen)
+    readonly property real k: Math.min(sw, sh) / 1080 * Ui.widget("resources", "scale", 1.0)
     property var gpu: ({ state: "unknown", util: null })
     readonly property real gpuUtil: gpu.state === "active" && typeof gpu.util === "number" ? gpu.util : -1
 
@@ -20,9 +23,11 @@ PanelWindow {
     WlrLayershell.namespace: "hypr-shell-desktop"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     anchors { top: true; left: true }
+    // Position als Anteil des Bildschirms, nach einem Wechsel von Auflösung oder Ausrichtung auf den
+    // Bildschirm begrenzt (die gespeicherte Position bleibt, das Widget ragt nur nie hinaus)
     margins {
-        left: Math.round(Ui.widget("resources", "x", 0.015) * (screen ? screen.width : 1920))
-        top: Math.round(Ui.widget("resources", "y", 0.56) * (screen ? screen.height : 1080))
+        left: Math.round(Math.max(0, Math.min(Ui.widget("resources", "x", 0.015) * w.sw, w.sw - w.implicitWidth)))
+        top: Math.round(Math.max(0, Math.min(Ui.widget("resources", "y", 0.56) * w.sh, w.sh - w.implicitHeight)))
     }
     implicitWidth: Math.ceil(col.implicitWidth)
     implicitHeight: Math.ceil(col.implicitHeight)
@@ -30,6 +35,10 @@ PanelWindow {
 
     // Kacheln und Reihenfolge aus settings.json (desktop.resources.tiles: cpu, ram, gpu, disk)
     readonly property var tiles: Settings.get("desktop.resources.tiles", ["cpu", "ram", "gpu"])
+    readonly property bool hideEmpty: Settings.get("desktop.resources.hide_empty", true) === true
+    // ohne Wert für die GPU ("–", z. B. keine unterstützte Karte oder sie schläft) bleibt ihre
+    // Kachel weg (desktop.resources.hide_empty); CPU und RAM haben immer einen Wert
+    readonly property var shownTiles: tiles.filter(t => tileInfo[t] !== undefined && !(t === "gpu" && hideEmpty && gpuUtil < 0))
     readonly property var tileInfo: ({
         cpu: { label: "CPU", icon: "\uf2db", value: () => usage.cpu },
         ram: { label: "RAM", icon: "󰍛", value: () => usage.mem },
@@ -54,9 +63,10 @@ PanelWindow {
 
     Column {
         id: col
-        spacing: 12 * w.k
+        spacing: Theme.pad(12) * w.k
+        Probe { name: "desktop-resources"; visible: false }   // unsichtbar: kein Platz in der Spalte
         Repeater {
-            model: w.tiles.filter(t => w.tileInfo[t] !== undefined).map(t => w.tileInfo[t])
+            model: w.shownTiles.map(t => w.tileInfo[t])
             delegate: GlassPanel {
                 id: tile
                 required property var modelData
@@ -64,6 +74,7 @@ PanelWindow {
                 width: 160 * w.k
                 height: 118 * w.k
                 radius: Theme.panelRadius * w.k
+                Probe { name: "resources-" + tile.modelData.label.toLowerCase() }
                 Ring {
                     id: ring
                     width: 52 * w.k
@@ -72,7 +83,7 @@ PanelWindow {
                     value: Math.max(1, tile.v)
                     color: "#F6F5F4"
                     trackColor: Qt.rgba(1, 1, 1, 0.12)
-                    anchors { top: parent.top; right: parent.right; topMargin: 14 * w.k; rightMargin: 16 * w.k }
+                    anchors { top: parent.top; right: parent.right; topMargin: Theme.pad(14) * w.k; rightMargin: Theme.pad(16) * w.k }
                 }
                 Glyph {
                     anchors.centerIn: ring
@@ -81,13 +92,13 @@ PanelWindow {
                     color: "#c8c8cc"
                 }
                 Column {
-                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: 18 * w.k; bottomMargin: 14 * w.k }
+                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: Theme.pad(18) * w.k; bottomMargin: Theme.pad(14) * w.k }
                     spacing: 0
                     Text {
                         text: tile.v < 0 ? "–" : Math.round(tile.v) + "%"
                         font.family: Theme.mono
                         font.pixelSize: 26 * w.k
-                        font.bold: true
+                        font.weight: Theme.titleWeight
                         color: "#F6F5F4"
                     }
                     Text {

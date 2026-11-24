@@ -29,7 +29,7 @@ Item {
         visible: !r.ready && r.fallbackText !== ""
         text: r.fallbackText
         size: r.height * 0.42
-        weight: Font.Bold
+        heavy: true
     }
     Loader {
         anchors.fill: parent

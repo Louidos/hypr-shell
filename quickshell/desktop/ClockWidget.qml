@@ -8,7 +8,10 @@ import "../common"
 // Position als Anteil der Bildschirmgrösse aus settings.json (desktop.clock.x / .y).
 PanelWindow {
     id: w
-    readonly property real k: (screen ? screen.height : 1080) / 1080 * Ui.widget("clock", "scale", 1.0)
+    // Grösse nach der kürzeren Bildschirmseite (im Hochformat die Breite), 1080 = 1
+    readonly property real sw: Settings.screenWidth(screen)
+    readonly property real sh: Settings.screenHeight(screen)
+    readonly property real k: Math.min(sw, sh) / 1080 * Ui.widget("clock", "scale", 1.0)
     readonly property real size: 150 * k
     readonly property bool h12: Settings.get("desktop.clock.format", "24h") === "12h"
     function hours(d) {
@@ -22,9 +25,11 @@ PanelWindow {
     WlrLayershell.namespace: "hypr-shell-clock"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     anchors { top: true; left: true }
+    // Position als Anteil des Bildschirms, nach einem Wechsel von Auflösung oder Ausrichtung auf den
+    // Bildschirm begrenzt (die gespeicherte Position bleibt, das Widget ragt nur nie hinaus)
     margins {
-        left: Math.round(Ui.widget("clock", "x", 0.02) * (screen ? screen.width : 1920))
-        top: Math.round(Ui.widget("clock", "y", 0.045) * (screen ? screen.height : 1080))
+        left: Math.round(Math.max(0, Math.min(Ui.widget("clock", "x", 0.02) * w.sw, w.sw - w.implicitWidth)))
+        top: Math.round(Math.max(0, Math.min(Ui.widget("clock", "y", 0.045) * w.sh, w.sh - w.implicitHeight)))
     }
     implicitWidth: Math.ceil(stack.implicitWidth) + 4
     implicitHeight: Math.ceil(stack.implicitHeight)
@@ -41,6 +46,7 @@ PanelWindow {
             Probe { name: "desktop-clock" }
             font.family: Theme.clock
             font.pixelSize: w.size
+            // bewusste Ausnahme: die grosse Desktop-Uhr ist immer fett (Uhr-Schrift, wie die Vorlage)
             font.bold: true
             color: "#F6F5F4"
             opacity: 0.85
@@ -50,7 +56,7 @@ PanelWindow {
             text: Qt.formatTime(clock.date, "mm")
             font.family: Theme.clock
             font.pixelSize: w.size
-            font.bold: true
+            font.bold: true   // bewusste Ausnahme, siehe oben
             color: "#F6F5F4"
             opacity: 0.45
         }

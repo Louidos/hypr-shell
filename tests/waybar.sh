@@ -22,7 +22,7 @@ pruefe 'j ".battery.format" | grep -q "{capacity}%" && j ".battery.\"format-char
 pruefe '[ "$(j ".\"hyprland/workspaces\".\"persistent-workspaces\".\"*\" | join(\",\")")" = "1,2,3,4" ]' "Arbeitsflächen 1–4"
 pruefe '[ "$(j .clock.format)" = "{:%H:%M}" ]' "Uhr HH:MM"
 pruefe 'j ".pulseaudio.format" | grep -q "{volume}%"' "Lautstärke in Prozent"
-pruefe 'j ".\"custom/distro\".\"on-click\"" | grep -q "ipc launcher toggle"' "Distro-Symbol öffnet den Starter"
+pruefe 'j ".\"custom/distro\".\"on-click\"" | grep -q "ipc apps toggle" && j ".\"custom/distro\".\"on-click-right\"" | grep -q "ipc launcher toggle"' "Distro-Symbol: Klick öffnet das App-Raster, Rechtsklick den Starter"
 
 # alle aufgerufenen Skripte aus ~/.local/bin müssen im Repo liegen
 while IFS= read -r s; do
@@ -31,12 +31,25 @@ done < <(grep -oE '\.local/bin/[a-z-]+' config/waybar/config.jsonc | sed 's#.*/#
 
 pruefe 'grep -q "@import \"colors.css\"" config/waybar/style.css' "Farben aus colors.css"
 pruefe 'grep -q "waybar/colors.css" config/matugen/config.toml' "matugen erzeugt colors.css für Waybar"
-pruefe 'grep -qE "rgba\(10, 10, 12, 0\.25\)" config/waybar/style.css' "Deckkraft etwa 0.25"
+pruefe 'grep -qE "background: rgba\(26, 26, 29, 0\.46\)" config/waybar/style.css && grep -q "border-radius: 26px" config/waybar/style.css' "graues Glas (0.46) mit hellem Rand und Rundung 26 wie die Vorlage"
 
 # jede @farbe in style.css muss in colors.css definiert sein
 for c in $(grep -oE '@[a-z_]+' config/waybar/style.css | grep -vE '@(import|keyframes)' | sort -u | tr -d @); do
     pruefe 'grep -q "@define-color $c " config/waybar/colors.css && grep -q "@define-color $c " config/matugen/templates/colors.css' "Farbe @$c definiert"
 done
+
+# Schrift passt in die Leiste: niedrige Leiste mit grosser Schrift → kleinere Schrift, Standard unverändert
+T="$(mktemp -d)"
+trap 'rm -rf "$T"' EXIT
+schrift() {
+    local h="$T/h$1"
+    mkdir -p "$h/.config/hypr-shell"
+    printf '{"bar": {"height": %s}, "theme": {"font": {"scale": %s}}}\n' "$1" "$2" > "$h/.config/hypr-shell/settings.json"
+    HOME="$h" KEINE_MELDUNG=1 bin/shell-apply --no-reload >/dev/null 2>&1
+    grep -m1 -oE 'font-size: [0-9]+px' "$h/.config/waybar/style.css" | grep -oE '[0-9]+'
+}
+pruefe '[ "$(schrift 30 1.0)" = 13 ] && [ "$(schrift 40 1.5)" = 20 ]' "Schrift der Leiste: Standard 13 px, mit Faktor 1.5 bei 40 px Höhe 20 px"
+pruefe '[ "$(schrift 20 1.5)" -le 11 ] && [ "$(schrift 24 1.0)" -le 13 ]' "niedrige Leiste (20 px, Faktor 1.5): Schrift höchstens 11 px statt 20 px"
 
 # Statusskripte geben gültiges JSON aus
 pruefe 'bin/shell-recording status | jq -e .text >/dev/null' "shell-recording liefert JSON"

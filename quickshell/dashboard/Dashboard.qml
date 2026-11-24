@@ -28,11 +28,14 @@ Scope {
     readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", games: "Games", lab: "Lab", about: "About" })
     readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", games: "󰊗", lab: "󰒋", about: "󰋽" })
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
-    readonly property real panelW: Math.min(Settings.get("dashboard.width", 1000), (screen ? screen.width : 1920) - 40)
-    // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px, Rand 18 px
+    // Breite aus dashboard.width; Overlay begrenzt sie auf den Bildschirm (mit Grössenfaktor)
+    readonly property real panelW: Settings.get("dashboard.width", 1000)
+    // Hochformat oder schmal: Karten in 6 statt 12 Spalten, dafür höher (Overlay rollt, wenn nötig)
+    readonly property bool narrow: ov.portrait || ov.fitWidth < 760
+    // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px (schmal 5 Zeilen: 555 px), Rand theme.spacing.panel
     readonly property real headH: 64
-    readonly property real pad: 18
-    readonly property real pageH: 330
+    readonly property real pad: Theme.panelPad
+    readonly property real pageH: narrow ? 555 : 330
     readonly property real panelH: headH + 4 + pageH + pad
 
     property string wantTab: ""
@@ -70,7 +73,8 @@ Scope {
     // Auslösestreifen an der Mitte der unteren Kante (unter Vollbild-Fenstern, stört also keine Spiele)
     PanelWindow {
         screen: dash.screen
-        visible: Settings.get("dashboard.edge", true) && !dash.open && dash.screen !== null
+        // liegt dort ein verstecktes Dock, blendet die Kante das Dock ein (siehe docs/dock.md)
+        visible: Settings.get("dashboard.edge", true) && !dash.open && dash.screen !== null && !Ui.dockOwnsEdge
         anchors { bottom: true }
         implicitWidth: 320
         implicitHeight: 2
@@ -96,11 +100,12 @@ Scope {
         screen: dash.screen
         panelWidth: dash.panelW
         panelHeight: dash.panelH
-        glassOpacity: Settings.get("dashboard.opacity", 0.42)
+        glassOpacity: Settings.get("dashboard.opacity", -1)   // -1 = gemeinsames Glas
         keyboardFocus: WlrKeyboardFocus.Exclusive
         leaveDelay: Settings.get("dashboard.close_on_leave", true) ? 350 : -1
         // von aussen geöffnet (z. B. Ui.openPanel): Start-Tab; Daten für About und Profil holen
-        onOpened: { if (dash.tabs.indexOf(dash.tab) < 0) dash.tab = dash.startTab; if (!aboutProc.running) aboutProc.running = true; if (!gamesProc.running) gamesProc.running = true }
+        onOpened: { if (Ui.dashboardTab !== "") { dash.tab = dash.tabs.indexOf(Ui.dashboardTab) >= 0 ? Ui.dashboardTab : dash.startTab; Ui.dashboardTab = "" }
+                    if (dash.tabs.indexOf(dash.tab) < 0) dash.tab = dash.startTab; if (!aboutProc.running) aboutProc.running = true; if (!gamesProc.running) gamesProc.running = true }
 
         content: Component {
             Item {
@@ -145,7 +150,7 @@ Scope {
                                 height: tabBar.height
                                 Column {
                                     anchors.centerIn: parent
-                                    spacing: 1
+                                    spacing: Theme.pad(1)
                                     Glyph {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: dash.tabIcons[tb.modelData]
@@ -155,9 +160,10 @@ Scope {
                                     }
                                     Txt {
                                         anchors.horizontalCenter: parent.horizontalCenter
+                                        visible: tabBar.tw >= 64
                                         text: dash.tabNames[tb.modelData]
                                         size: 12
-                                        weight: tb.active ? Font.DemiBold : Font.Medium
+                                        strong: tb.active
                                         color: tb.active ? Theme.pillText : Theme.subtext
                                         Behavior on color { ColorAnimation { duration: 220 } }
                                     }
@@ -186,10 +192,10 @@ Scope {
         }
     }
 
-    Component { id: homeTab; HomeTab { about: dash.about } }
-    Component { id: perfTab; PerfTab { } }
+    Component { id: homeTab; HomeTab { about: dash.about; narrow: dash.narrow } }
+    Component { id: perfTab; PerfTab { narrow: dash.narrow } }
     Component { id: labTab; LabTab { } }
     Component { id: gamesTab; GamesTab { games: dash.games; onCloseRequested: dash.hide() } }
     Component { id: wallTab; WallpaperTab { onCloseRequested: dash.hide() } }
-    Component { id: aboutTab; AboutTab { about: dash.about } }
+    Component { id: aboutTab; AboutTab { about: dash.about; narrow: dash.narrow } }
 }

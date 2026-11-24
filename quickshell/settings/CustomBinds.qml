@@ -7,7 +7,7 @@ Column {
     property var value: []
     property string newKeys: ""
     signal changedList(var list)
-    spacing: 6
+    spacing: Theme.pad(6)
 
     Repeater {
         model: cb.value
@@ -17,16 +17,16 @@ Column {
             required property int index
             width: cb.width
             height: 40
-            radius: 12
-            color: Qt.rgba(1, 1, 1, 0.03)
+            radius: Theme.corner(12)
+            color: Theme.cardSoft
             Row {
-                anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                spacing: 12
+                anchors { left: parent.left; leftMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
+                spacing: Theme.pad(12)
                 Pill { clickable: false; implicitHeight: 28; fontSize: 12; icon: "󰌌"; text: del.modelData.keys }
                 Txt { anchors.verticalCenter: parent.verticalCenter; text: del.modelData.command; size: 13; font.family: Theme.mono; width: cb.width - 260 }
             }
             IconButton {
-                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                anchors { right: parent.right; rightMargin: Theme.pad(6); verticalCenter: parent.verticalCenter }
                 flat: true; width: 30; height: 30; iconSize: 13; icon: "󰆴"
                 onClicked: cb.changedList(cb.value.filter((v, i) => i !== del.index))
             }
@@ -34,7 +34,7 @@ Column {
     }
     Txt { visible: cb.value.length === 0; text: "No own shortcuts yet."; sub: true; size: 12 }
     Row {
-        spacing: 8
+        spacing: Theme.pad(8)
         KeyRecorder {
             anchors.verticalCenter: parent.verticalCenter
             value: cb.newKeys
@@ -46,7 +46,7 @@ Column {
                 cb.newKeys = combo
             }
         }
-        Field { id: cmd; width: 260; mono: true; placeholder: "Command, e.g. firefox"; commitOnBlur: false }
+        Field { id: cmd; width: Math.max(140, Math.min(260, cb.width - 320)); mono: true; placeholder: "Command, e.g. firefox"; commitOnBlur: false }
         Pill {
             icon: "󰐕"
             text: "Add"

@@ -13,6 +13,8 @@ if [ -z "$lua" ]; then
 fi
 
 fake_home=$(mktemp -d)
+# keine echten Eingabegeräte dieses Rechners (Touchscreen) in die Prüfungen ziehen
+export HYPR_SHELL_INPUT_DEVICES=/nonexistent
 trap 'rm -rf "$fake_home"' EXIT
 
 HOME="$fake_home" "$lua" - <<'LUA'
@@ -82,7 +84,7 @@ dofile("config/hypr/hyprland.lua")
 local scale, ns, ttc, zero, layout, gaps, rounding
 for _, a in ipairs(A.aufrufe) do
     if a[1] == "monitor" and a[2].output == "" then scale = a[2].scale end
-    if a[1] == "config" and a[2].input then ns = a[2].input.touchpad.natural_scroll; ttc = a[2].input.touchpad.tap_to_click; layout = a[2].input.kb_layout end
+    if a[1] == "config" and a[2].input and a[2].input.touchpad then ns = a[2].input.touchpad.natural_scroll; ttc = a[2].input.touchpad.tap_to_click; layout = a[2].input.kb_layout end
     if a[1] == "config" and a[2].xwayland then zero = a[2].xwayland.force_zero_scaling end
     if a[1] == "config" and a[2].general then gaps = a[2].general.gaps_in end
     if a[1] == "config" and a[2].decoration then rounding = a[2].decoration.rounding end
@@ -92,14 +94,47 @@ LUA
 }
 fehler=0
 pruef() { if [ "$1" = "$2" ]; then echo "  ok: $3"; else echo "FEHLER: $3: $1 (erwartet: $2)"; fehler=1; fi; }
-pruef "$(werte '' '')" "auto false true true us 6 12" "ohne Dateien: Standardwerte"
+pruef "$(werte '' '')" "auto false true true us 6 18" "ohne Dateien: Standardwerte"
 pruef "$(werte 'return { kb_layout = "ch", kb_variant = "de", scale = 1.5, natural_scroll = true, tap_to_click = false }' '')" \
-    "1.5 true false true ch 6 12" "alte hypr-shell-local.lua (v1.1) wirkt weiter"
-pruef "$(werte 'return { kb_layout = "ch", kb_variant = "de" }' '')" "auto false true true ch 6 12" "ältere hypr-shell-local.lua ohne Laptop-Werte: Standard"
+    "1.5 true false true ch 6 18" "alte hypr-shell-local.lua (v1.1) wirkt weiter"
+pruef "$(werte 'return { kb_layout = "ch", kb_variant = "de" }' '')" "auto false true true ch 6 18" "ältere hypr-shell-local.lua ohne Laptop-Werte: Standard"
 pruef "$(werte '' '{"look": {"gaps": {"inner": 10}, "rounding": 20}, "input": {"layout": "de"}, "monitors": {"scale": "2"}}')" \
     "2 false true true de 10 20" "settings.json wirkt über hypr-shell-settings.lua"
 pruef "$(werte 'return { kb_layout = "ch", scale = 1.5 }' '{"input": {"layout": "fr"}}')" \
-    "1.5 false true true fr 6 12" "settings.json gewinnt, hypr-shell-local.lua füllt Lücken"
+    "1.5 false true true fr 6 18" "settings.json gewinnt, hypr-shell-local.lua füllt Lücken"
+
+# Bildschirme drehen: Wert aus monitors.outputs[].transform → Zahl 0–7 für hl.monitor; Touchscreen
+# und Stift drehen mit, aber nur, wenn es sie gibt
+drehung() { # settings-json eingabegeräte-datei -> "NAME=ZAHL … | touch=… | tablet=…"
+    rm -rf "$fake_home/dreh"; mkdir -p "$fake_home/dreh/.config/hypr-shell" "$fake_home/dreh/.config/hypr"
+    printf '%s\n' "$1" > "$fake_home/dreh/.config/hypr-shell/settings.json"
+    HOME="$fake_home/dreh" bin/shell-apply --no-reload --no-migrate 2>/dev/null || true
+    HOME="$fake_home/dreh" HYPR_SHELL_INPUT_DEVICES="${2:-/nonexistent}" "$lua" - <<'LUA'
+package.path = os.getenv("HOME") .. "/.config/hypr/?.lua;./tests/?.lua;" .. package.path
+local A = require("hl-attrappe")
+_G.hl = A.hl
+dofile("config/hypr/hyprland.lua")
+local m, touch, tablet = {}, "-", "-"
+for _, a in ipairs(A.aufrufe) do
+    if a[1] == "monitor" and a[2].output ~= "" then m[#m + 1] = a[2].output .. "=" .. tostring(a[2].transform) end
+    if a[1] == "config" and a[2].input and a[2].input.touchdevice then touch = a[2].input.touchdevice.output .. ":" .. a[2].input.touchdevice.transform end
+    if a[1] == "config" and a[2].input and a[2].input.tablet then tablet = a[2].input.tablet.output .. ":" .. a[2].input.tablet.transform end
+end
+print(table.concat(m, " ") .. " | touch=" .. touch .. " | tablet=" .. tablet)
+LUA
+}
+if command -v jq >/dev/null 2>&1; then
+    alle='{"monitors": {"outputs": [{"name": "A", "transform": "normal"}, {"name": "B", "transform": "90"}, {"name": "C", "transform": "180"}, {"name": "D", "transform": "270"}, {"name": "E", "transform": "flipped"}, {"name": "F", "transform": "flipped-90"}, {"name": "G", "transform": "flipped-180"}, {"name": "H", "transform": "flipped-270"}]}}'
+    pruef "$(drehung "$alle")" "A=0 B=1 C=2 D=3 E=4 F=5 G=6 H=7 | touch=- | tablet=-" "Drehung: normal, 90, 180, 270, gespiegelt → 0–7"
+    pruef "$(drehung '{"monitors": {"outputs": [{"name": "eDP-1", "resolution": "2560x1600", "scale": "1.6"}]}}')" "eDP-1=0 | touch=- | tablet=-" "alter Eintrag ohne transform: normal (0)"
+    pruef "$(drehung '{"monitors": {"outputs": [{"name": "eDP-1", "transform": "sideways"}]}}')" " | touch=- | tablet=-" "ungültige Drehung: shell-apply lehnt den Wert ab, der letzte gültige Stand bleibt"
+    pruef "$(drehung '{"monitors": {"outputs": [{"name": "DP-2", "transform": "90"}, {"name": "eDP-1", "transform": "270"}]}}' tests/fixtures/eingabe/touch-und-stift)" \
+        "DP-2=1 eDP-1=3 | touch=eDP-1:3 | tablet=eDP-1:3" "Touchscreen und Stift drehen mit dem eingebauten Bildschirm mit"
+    pruef "$(drehung '{"monitors": {"outputs": [{"name": "eDP-1", "transform": "90"}]}}' tests/fixtures/eingabe/nur-touchpad)" \
+        "eDP-1=1 | touch=- | tablet=-" "ohne Touchscreen und Stift: keine Eingabe-Drehung"
+    pruef "$(drehung '{"monitors": {"outputs": [{"name": "eDP-1", "transform": "normal"}]}}' tests/fixtures/eingabe/touch-und-stift)" \
+        "eDP-1=0 | touch=- | tablet=-" "nicht gedreht: Touchscreen bleibt unverändert"
+fi
 
 # Standardwerte in hyprland.lua = Standardwerte im Schema: mit und ohne erzeugte Datei gleiche Aufrufe
 aufrufe() { # mit-datei(0/1)

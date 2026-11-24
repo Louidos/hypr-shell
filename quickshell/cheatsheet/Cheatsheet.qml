@@ -88,8 +88,9 @@ Scope {
         ipc: false
         place: "center"
         margin: 0
-        panelWidth: Math.min(1120, (screen ? screen.width : 1920) - 80)
-        panelHeight: Math.min(760, (screen ? screen.height : 1080) - 80)
+        panelWidth: 1120
+        panelHeight: ov.portrait ? 1100 : 760
+        scroll: false
         keyboardFocus: WlrKeyboardFocus.Exclusive
         onOpened: { cs.query = ""; bindsProc.running = true }
 
@@ -103,21 +104,21 @@ Scope {
                     height: 44
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
-                        Txt { text: "Keyboard shortcuts"; size: 18; weight: Font.Bold }
+                        Txt { text: "Keyboard shortcuts"; size: 18; title: true }
                         Txt { text: cs.count + " shortcuts · change them in Settings → Keybinds"; size: 11; sub: true }
                     }
                     Rectangle {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                        width: 300
+                        width: Math.min(300, parent.width * 0.45)
                         height: 40
-                        radius: 20
-                        color: Qt.rgba(1, 1, 1, 0.06)
+                        radius: Theme.corner(20)
+                        color: Theme.field
                         border.width: 1
                         border.color: Theme.cardBorder
-                        Glyph { id: lens; anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter } text: ""; size: 12; color: Theme.subtext }
+                        Glyph { id: lens; anchors { left: parent.left; leftMargin: Theme.pad(14); verticalCenter: parent.verticalCenter } text: ""; size: 12; color: Theme.subtext }
                         TextInput {
                             id: field
-                            anchors { left: lens.right; leftMargin: 10; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                            anchors { left: lens.right; leftMargin: Theme.pad(10); right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                             focus: true
                             color: Theme.text
                             font.family: Theme.sans
@@ -132,7 +133,7 @@ Scope {
                 Flickable {
                     id: flick
                     x: 24
-                    anchors { top: head.bottom; topMargin: 16; bottom: parent.bottom; bottomMargin: 20 }
+                    anchors { top: head.bottom; topMargin: Theme.pad(16); bottom: parent.bottom; bottomMargin: Theme.pad(20) }
                     width: parent.width - 48
                     contentHeight: flow.implicitHeight
                     clip: true
@@ -140,23 +141,25 @@ Scope {
                     Flow {
                         id: flow
                         width: flick.width
-                        spacing: 14
+                        spacing: Theme.pad(14)
                         Repeater {
                             model: cs.groups
                             delegate: GlassCard {
                                 id: card
                                 required property var modelData
-                                width: (flow.width - 28) / 3
+                                // drei Spalten, auf schmalen Bildschirmen (Hochformat) zwei oder eine
+                                readonly property int cols: flow.width >= 880 ? 3 : flow.width >= 540 ? 2 : 1
+                                width: (flow.width - (cols - 1) * flow.spacing) / cols
                                 height: col.implicitHeight + 24
                                 Column {
                                     id: col
                                     x: 14; y: 12
                                     width: parent.width - 28
-                                    spacing: 6
+                                    spacing: Theme.pad(6)
                                     Row {
-                                        spacing: 8
+                                        spacing: Theme.pad(8)
                                         Glyph { text: cs.icons[card.modelData.group] || ""; size: 14; anchors.verticalCenter: parent.verticalCenter }
-                                        Txt { text: card.modelData.group; size: 14; weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                                        Txt { text: card.modelData.group; size: 14; title: true; anchors.verticalCenter: parent.verticalCenter }
                                     }
                                     Repeater {
                                         model: card.modelData.items
@@ -166,7 +169,7 @@ Scope {
                                             height: Math.max(26, label.implicitHeight + 6)
                                             Txt {
                                                 id: label
-                                                anchors { left: parent.left; right: keyBox.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                                                anchors { left: parent.left; right: keyBox.left; rightMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
                                                 text: modelData.text
                                                 size: 12
                                                 wrapMode: Text.Wrap
@@ -177,8 +180,8 @@ Scope {
                                                 anchors { right: parent.right; verticalCenter: parent.verticalCenter }
                                                 width: Math.min(col.width * 0.55, keyTxt.implicitWidth + 16)
                                                 height: 22
-                                                radius: 7
-                                                color: Qt.rgba(1, 1, 1, 0.08)
+                                                radius: Theme.corner(7)
+                                                color: Theme.cardHover
                                                 border.width: 1
                                                 border.color: Theme.cardBorder
                                                 Txt {

@@ -46,8 +46,11 @@ Scope {
         name: "power"
         ipc: false
         place: "center"
-        panelWidth: 5 * 132 + 4 * 12 + 2 * 24
-        panelHeight: 132 + 2 * 24 + 34
+        // fünf Knöpfe in einer Reihe; passt das nicht (schmaler Bildschirm, Hochformat), in mehreren
+        readonly property int cols: Math.max(1, Math.min(pm.actions.length, Math.floor((roomW / k - 2 * 24 + 12) / (132 + 12))))
+        readonly property int rows: Math.ceil(pm.actions.length / cols)
+        panelWidth: cols * 132 + (cols - 1) * 12 + 2 * 24
+        panelHeight: rows * 132 + (rows - 1) * 12 + 2 * 24 + 34
         keyboardFocus: WlrKeyboardFocus.Exclusive
         onOpened: { pm.sel = 0; pm.armed = "" }
 
@@ -60,9 +63,10 @@ Scope {
                 Keys.onReturnPressed: pm.press(pm.actions[pm.sel].id)
                 Keys.onEnterPressed: pm.press(pm.actions[pm.sel].id)
 
-                Row {
+                Grid {
                     x: 24; y: 24
-                    spacing: 12
+                    columns: ov.cols
+                    spacing: Theme.pad(12)
                     Repeater {
                         model: pm.actions
                         delegate: Rectangle {
@@ -79,7 +83,7 @@ Scope {
                             Behavior on color { ColorAnimation { duration: 140 } }
                             Column {
                                 anchors.centerIn: parent
-                                spacing: 10
+                                spacing: Theme.pad(10)
                                 Glyph {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: btn.modelData.icon
@@ -90,7 +94,7 @@ Scope {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: btn.modelData.text
                                     size: 13
-                                    weight: Font.DemiBold
+                                    strong: true
                                     color: btn.active || btn.isArmed ? Theme.pillText : Theme.text
                                 }
                             }
@@ -101,7 +105,7 @@ Scope {
                     }
                 }
                 Txt {
-                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 16 }
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.pad(16) }
                     text: pm.armed !== "" ? "Press " + (pm.armed === "reboot" ? "Restart" : "Shutdown") + " again to confirm"
                                           : "←  →  choose   ·   Enter  confirm   ·   Esc  close"
                     size: 12

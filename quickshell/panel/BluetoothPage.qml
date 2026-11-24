@@ -11,7 +11,7 @@ Column {
     property var devices: []
     property string busy: ""
     property string message: ""
-    spacing: 6
+    spacing: Theme.pad(6)
 
     function reload() { if (!listProc.running) listProc.running = true }
     function act(what, mac) {
@@ -48,7 +48,7 @@ Column {
     }
 
     Row {
-        spacing: 8
+        spacing: Theme.pad(8)
         Pill {
             implicitHeight: 30
             fontSize: 11
@@ -69,13 +69,13 @@ Column {
             height: 48
             Glyph {
                 id: ico
-                anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                anchors { left: parent.left; leftMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                 text: dev.modelData.connected ? "󰂱" : "󰂯"
                 size: 16
             }
             Column {
-                anchors { left: ico.right; leftMargin: 12; right: btn.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                Txt { width: parent.width; text: dev.modelData.name; size: 13; weight: dev.modelData.connected ? Font.Bold : Font.Normal }
+                anchors { left: ico.right; leftMargin: Theme.pad(12); right: btn.left; rightMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
+                Txt { width: parent.width; text: dev.modelData.name; size: 13; weight: dev.modelData.connected ? Theme.titleWeight : Theme.textWeight }
                 Txt {
                     width: parent.width
                     text: (dev.modelData.connected ? "Connected" : dev.modelData.paired ? "Paired" : "New")
@@ -86,7 +86,7 @@ Column {
             }
             Pill {
                 id: btn
-                anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                anchors { right: parent.right; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
                 implicitHeight: 28
                 fontSize: 11
                 text: bp.busy === dev.modelData.mac ? "…" : dev.modelData.connected ? "Disconnect" : dev.modelData.paired ? "Connect" : "Pair"

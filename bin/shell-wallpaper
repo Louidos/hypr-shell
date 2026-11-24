@@ -64,6 +64,19 @@ farbmodus() {
 # Kennung der Farben: Bild, Modus und Akzentfarbe
 kennung() { printf '%s|%s\n' "$1" "$(farbmodus)"; }
 
+# mittlere Helligkeit des Bilds (relative Luminanz 0–1) für die Lesbarkeit des Glases: ist das Bild
+# hell, wird das Glas so weit dunkler, dass Text lesbar bleibt (Theme.qml, shell-apply)
+helligkeit() {
+    local im l
+    im="$(command -v magick || command -v convert || true)"
+    [ -n "$im" ] || return 0
+    l="$("$im" "$1" -resize 64x64\! -colorspace RGB -grayscale Rec709Luminance -format '%[fx:mean]' info: 2>/dev/null)" || return 0
+    [[ "$l" =~ ^[0-9.]+$ ]] || return 0
+    printf '%s\n' "$l" > "$DATA/wallpaper-luma"
+    # Leiste und rofi tragen das Glas als feste Farbe: neu erzeugen
+    if [ -x "$HOME/.local/bin/shell-apply" ]; then KEINE_MELDUNG=1 "$HOME/.local/bin/shell-apply" --no-reload >/dev/null 2>&1 || true; fi
+}
+
 farben() {
     local bild="$1" args modus akzent
     command -v matugen >/dev/null 2>&1 || { echo "matugen fehlt, Farben bleiben" >&2; return 0; }
@@ -77,6 +90,9 @@ farben() {
     if [ "$modus" != custom ] && matugen --help 2>&1 | grep -q -- '--source-color-index'; then args+=(--source-color-index 0); fi
     matugen "${args[@]}" >/dev/null
     kennung "$bild" > "$FARBEN_FUER"
+    helligkeit "$bild"
+    # eingeschaltete Programme (GTK, Qt, …) bekommen die neuen Farben
+    if [ -x "$HOME/.local/bin/shell-appcolors" ]; then "$HOME/.local/bin/shell-appcolors" apply >/dev/null 2>&1 || true; fi
 }
 
 neu_laden() {

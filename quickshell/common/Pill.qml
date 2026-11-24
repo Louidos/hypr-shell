@@ -21,7 +21,7 @@ Rectangle {
     Row {
         id: row
         anchors.centerIn: parent
-        spacing: 6
+        spacing: Theme.pad(6)
         Glyph {
             visible: p.icon !== ""
             text: p.icon
@@ -33,7 +33,7 @@ Rectangle {
             visible: p.text !== ""
             text: p.text
             size: p.fontSize
-            weight: Font.DemiBold
+            strong: true
             color: p.active ? Theme.pillText : Theme.text
             anchors.verticalCenter: parent.verticalCenter
         }

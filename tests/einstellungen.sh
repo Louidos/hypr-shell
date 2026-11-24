@@ -3,7 +3,8 @@
 #   1. jeder Schlüssel im Schema hat Typ, Standard, Titel, Erklärung, Seite und Abschnitt;
 #      Standardwerte sind selbst gültig, kein Schlüssel ist Teil eines anderen
 #   2. settings/settings.example.json passt zum Schema (= shell-apply --example)
-#   3. jeder Schlüssel wird irgendwo gelesen (Quickshell, hyprland.lua oder shell-apply)
+#   3. jeder Schlüssel wird irgendwo gelesen (Quickshell, hyprland.lua oder shell-apply); jeder
+#      Schlüssel, den die Oberfläche liest, steht im Schema, mit gleichem Standard als Rückfall
 #   4. shell-apply erzeugt in einem leeren HOME mit den Standardwerten genau die Dateien aus config/
 #      (gleiches Aussehen wie vorher) und für drei Beispiel-Einstellungen die erwarteten Dateien
 #   5. ein falscher Wert und kaputtes JSON brechen nichts (Standardwert bzw. letzter gültiger Stand)
@@ -33,7 +34,7 @@ fehlend="$(jq -r '.keys[] | select((.key and .type and has("default") and .title
 pruefe '[ -z "$fehlend" ]' "jeder Schlüssel hat Typ, Standard, Titel, Erklärung, Seite und Abschnitt ($fehlend)"
 seiten="$(jq -r '[.pages[].id] as $p | .keys[] | select(.page as $x | $p | index([$x]) | not) | .key' $SCHEMA)"
 pruefe '[ -z "$seiten" ]' "jede Seite gibt es in pages ($seiten)"
-pruefe '[ "$(jq -r "[.pages[].id] | join(\",\")" $SCHEMA)" = "home,bar,look,theme,desktop,dashboard,panel,system,laptop,integrations,lock,input,monitors,apps,keybinds,about" ]' "Seiten in der Reihenfolge der App"
+pruefe '[ "$(jq -r "[.pages[].id] | join(\",\")" $SCHEMA)" = "home,bar,look,theme,desktop,dashboard,panel,dock,system,laptop,integrations,lock,input,monitors,apps,keybinds,about" ]' "Seiten in der Reihenfolge der App"
 doppelt="$(jq -r '[.keys[].key] as $k | $k[] as $a | $k[] | select(startswith($a + ".")) | "\($a) < \(.)"' $SCHEMA)"
 pruefe '[ -z "$doppelt" ]' "kein Schlüssel ist Teil eines anderen ($doppelt)"
 pruefe '[ "$(jq "[.keys[].key] | length" $SCHEMA)" = "$(jq "[.keys[].key] | unique | length" $SCHEMA)" ]' "keine doppelten Schlüssel"
@@ -59,6 +60,44 @@ while IFS= read -r k; do
         || grep -rqF "'.$k " bin || grep -rqF "'.$k'" bin; then :; else tot+=("$k"); fi
 done < <(jq -r '.keys[].key' $SCHEMA)
 pruefe '[ "${#tot[@]}" -eq 0 ]' "kein Wert ohne Wirkung (${tot[*]:-})"
+
+echo "== 3b. Schema und Oberfläche stimmen überein"
+# Jedes Settings.get("schlüssel", rückfall) (und num("schlüssel", rückfall, …) im Dock) nennt einen
+# Schlüssel aus dem Schema; ein fester Rückfallwert ist genau der Standard aus dem Schema.
+# Rückfälle aus Ausdrücken (z. B. Theme.panelRadius) prüft das nicht.
+if command -v python3 >/dev/null; then
+    abweichung="$(python3 - "$SCHEMA" quickshell <<'PY'
+import json, os, re, sys
+keys = {k["key"]: k for k in json.load(open(sys.argv[1]))["keys"]}
+muster = re.compile(r'(?:Settings\.get|\bnum)\(\s*"([^"]+)"\s*(?:,\s*((?:[^()]|\([^()]*\))*?))?\s*(?:\)|,)')
+for wurzel, _, dateien in os.walk(sys.argv[2]):
+    for f in sorted(dateien):
+        if not f.endswith((".qml", ".js")):
+            continue
+        p = os.path.join(wurzel, f)
+        s = open(p, encoding="utf-8").read()
+        for m in muster.finditer(s):
+            k, d = m.group(1), m.group(2)
+            ort = "%s:%d" % (p, s[:m.start()].count("\n") + 1)
+            if k not in keys:
+                if not any(x.startswith(k + ".") for x in keys):
+                    print("%s: %s fehlt im Schema" % (ort, k))
+                continue
+            if d is None:
+                continue
+            try:
+                wert = json.loads(d)
+            except ValueError:
+                continue
+            if wert != keys[k]["default"]:
+                print("%s: %s Rückfall %s, Schema %s" % (ort, k, d.strip(), json.dumps(keys[k]["default"])))
+PY
+)"
+    pruefe '[ -z "$abweichung" ]' "jeder Settings.get-Schlüssel steht im Schema, Rückfall = Standard${abweichung:+:
+$abweichung}"
+else
+    echo "  Hinweis: python3 fehlt, Abgleich übersprungen"
+fi
 
 echo "== 4. erzeugte Dateien"
 h="$(neues_home std "$(cat settings/settings.example.json)")"
@@ -93,10 +132,16 @@ h="$(neues_home b '{"theme": {"font": {"ui": "Noto Sans", "mono": "Hack Nerd Fon
   "bar": {"opacity": 0.5}, "apps": {"terminal": "foot", "launcher": "fuzzel"}}')"
 apply "$h" --no-reload
 st="$h/.config/waybar/style.css"
-pruefe 'grep -q "font-family: \"Noto Sans\", \"Hack Nerd Font\"" "$st" && grep -q "font-size: 16px" "$st" && grep -q "rgba(10, 10, 12, 0.5)" "$st"' "B: Schrift, Grösse und Deckkraft der Leiste"
+pruefe 'grep -q "font-family: \"Noto Sans\", \"Hack Nerd Font\"" "$st" && grep -q "font-size: 16px" "$st" && grep -q "rgba(26, 26, 29, 0.50)" "$st"' "B: Schrift, Grösse und Deckkraft der Leiste (graues Glas)"
+# helles Hintergrundbild: das Glas der Leiste wird so weit dunkler, dass Text lesbar bleibt
+mkdir -p "$h/.local/share/hypr-shell"; echo 0.9 > "$h/.local/share/hypr-shell/wallpaper-luma"
+apply "$h" --no-reload
+pruefe 'grep -qE "background: rgba\(26, 26, 29, 0\.(8|9)[0-9]\)" "$st"' "B: helles Hintergrundbild → Glas automatisch dunkler (Mindestkontrast)"
+rm -f "$h/.local/share/hypr-shell/wallpaper-luma"
+apply "$h" --no-reload
 pruefe 'grep -q "font_family = Oswald" "$h/.config/hypr/hyprlock.conf" && grep -q "font_size = 156" "$h/.config/hypr/hyprlock.conf"' "B: Uhrschrift und Grösse auf dem Sperrbildschirm"
-pruefe 'grep -q "icon-theme: *\"Adwaita\"" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "Noto Sans 13" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "0.6)" "$h/.config/rofi/hypr-shell-settings.rasi"' "B: Starter mit Symbolthema, Schrift und Glas"
-pruefe '[ "$(waybar "$h" ".network.\"on-click\"")" = "\$HOME/.local/bin/shell-quickshell ipc panel page wifi" ] && [ "$(waybar "$h" ".\"custom/distro\".\"on-click\"")" = fuzzel ]' "B: Starter in der Leiste, WLAN öffnet die Unterseite im Panel"
+pruefe 'grep -q "icon-theme: *\"Adwaita\"" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "Noto Sans 13" "$h/.config/rofi/hypr-shell-settings.rasi" && grep -q "rgba(26, 26, 29, 0.60)" "$h/.config/rofi/hypr-shell-settings.rasi"' "B: Starter mit Symbolthema, Schrift und Glas"
+pruefe '[ "$(waybar "$h" ".network.\"on-click\"")" = "\$HOME/.local/bin/shell-quickshell ipc panel page wifi" ] && [ "$(waybar "$h" ".\"custom/distro\".\"on-click-right\"")" = fuzzel ] && [ "$(waybar "$h" ".\"custom/distro\".\"on-click\"")" = "\$HOME/.local/bin/shell-quickshell ipc apps toggle" ]' "B: Logo in der Leiste: Klick = App-Raster, Rechtsklick = eigener Starter; WLAN öffnet die Unterseite im Panel"
 
 # Beispiel C: Bildschirme
 h="$(neues_home c '{"monitors": {"scale": "1.25", "outputs": [{"name": "eDP-1", "resolution": "2560x1600", "refresh": 165, "scale": "1.6"}, {"name": "HDMI-A-1", "position": "2560x0"}]}}')"
@@ -107,7 +152,7 @@ echo "== 5. falsche Werte und kaputtes JSON"
 h="$(neues_home falsch '{"bar": {"height": "abc", "opacity": 0.4}, "look": {"rounding": 99}, "lock": {"after": 7}, "panel": {"corner": "middle"}, "bar_typo": 1}')"
 pruefe 'apply "$h" --no-reload 2>"$T/err"' "shell-apply läuft trotz falscher Werte durch"
 eff="$h/.local/share/hypr-shell/settings.effective.json"
-pruefe 'jq -e ".bar.height == 30 and .look.rounding == 12 and .panel.corner == \"bottom-right\"" "$eff" >/dev/null' "falsche Werte: Standardwert gilt"
+pruefe 'jq -e ".bar.height == 30 and .look.rounding == 18 and .panel.corner == \"bottom-right\"" "$eff" >/dev/null' "falsche Werte: Standardwert gilt"
 pruefe 'jq -e ".bar.opacity == 0.4 and .lock.after == 7" "$eff" >/dev/null && grep -q "timeout = 420" "$h/.config/hypr/hypridle.conf"' "gültige Werte daneben wirken trotzdem"
 errs="$h/.local/share/hypr-shell/settings.errors"
 pruefe 'grep -q "^bar.height: expected a whole number between 20 and 60" "$errs" && grep -q "^look.rounding: out of range" "$errs" && grep -q "^panel.corner: expected one of" "$errs" && grep -q "^bar_typo: unknown setting" "$errs"' "Meldung nennt Schlüssel und Grund"
@@ -125,6 +170,29 @@ pruefe 'apply "$h2" --no-reload 2>/dev/null && jq -e ".bar.height == 30" "$h2/.l
 h3="$T/ohne-datei"; mkdir -p "$h3"
 pruefe 'apply "$h3" --no-reload && [ -f "$h3/.config/waybar/config.jsonc" ]' "ohne settings.json: Standardwerte"
 
+echo "== 5b. Namen von Schriften, Mauszeiger, Symbolen und Programmen"
+h="$(neues_home namen '{}')"
+ss() { HOME="$h" "$REPO/bin/shell-set" "$@"; }
+for v in 'Inter"' "Inter\\" 'Inter; x' 'Inter{' 'Inter}' '' '   '; do
+    pruefe '! ss theme.font.ui "$v" >/dev/null 2>&1 && [ "$(jq -c . "$h/.config/hypr-shell/settings.json")" = "{}" ]' "Schriftname »$v« wird abgelehnt"
+done
+pruefe '! ss theme.cursor.name "Bibata\"" >/dev/null 2>&1 && ! ss theme.icons "" >/dev/null 2>&1 && ! ss theme.font.display "  " >/dev/null 2>&1' "Mauszeiger, Symbole und Anzeigeschrift ebenso"
+pruefe 'ss theme.font.ui "Noto Sans CJK JP" >/dev/null && ss theme.font.mono "JetBrainsMono Nerd Font" >/dev/null && ss theme.cursor.name Bibata-Modern-Ice >/dev/null && ss theme.icons Papirus-Dark >/dev/null && ss theme.font.clock "Font Awesome 6 Free (Solid)" >/dev/null' "übliche Namen bleiben gültig"
+for k in terminal files browser launcher; do
+    pruefe '! ss "apps.$k" "  " >/dev/null 2>&1' "apps.$k aus Leerzeichen wird abgelehnt"
+done
+pruefe 'ss apps.terminal "foot -e tmux" >/dev/null && ss apps.launcher "rofi -show drun" >/dev/null' "Befehle mit Leerzeichen bleiben gültig"
+# von Hand eingetragen: der Standard gilt, die Leiste bleibt lesbares CSS
+h="$(neues_home schrift-hand '{"theme": {"font": {"ui": "Inter\"; } * { color: red; } x {", "mono": "Hack\\"}}}')"
+apply "$h" --no-reload 2>/dev/null
+pruefe 'grep -q "^  font-family: \"Inter\", \"JetBrainsMono Nerd Font\", sans-serif;" "$h/.config/waybar/style.css" && ! grep -q "color: red" "$h/.config/waybar/style.css"' "von Hand eingetragener kaputter Name: Standardschrift in der Leiste"
+pruefe 'grep -q "^theme.font.ui: invalid format" "$h/.local/share/hypr-shell/settings.errors" && grep -q "^theme.font.mono: invalid format" "$h/.local/share/hypr-shell/settings.errors"' "… und gemeldet"
+# zweite Sicherung: auch ein Wert, den das Schema durchliesse, bricht nicht aus der CSS-Zeichenkette aus
+jq '(.keys[] | select(.key | startswith("theme.font."))) |= del(.pattern)' "$SCHEMA" > "$T/schema-ohne-muster.json"
+h="$(neues_home schrift-maskiert '{"theme": {"font": {"ui": "Inter\"; } * { color: red; } x {"}}}')"
+HYPR_SHELL_SCHEMA="$T/schema-ohne-muster.json" apply "$h" --no-reload 2>/dev/null
+pruefe 'grep -qF "  font-family: \"Inter\\\"; } * { color: red; } x {\", \"JetBrainsMono Nerd Font\", sans-serif;" "$h/.config/waybar/style.css"' "Anführungszeichen werden im CSS maskiert"
+
 echo "== 6. ältere Versionen"
 v100='{"weather": {"location": "Zürich", "units": "metric"}, "desktop": {"screen": "", "clock": {"enabled": true, "x": 0.02, "y": 0.045, "scale": 1.0},
   "resources": {"enabled": false, "x": 0.015, "y": 0.56, "scale": 1.0}}, "dashboard": {"width": 1000, "edge": true, "opacity": 0.42},
@@ -134,6 +202,13 @@ h="$(neues_home v100 "$v100")"
 pruefe 'apply "$h" --check' "settings.json von v1.0.0 ist ohne Fehler"
 apply "$h" --no-reload
 pruefe 'jq -e ".panel.corner == \"top-left\" and .desktop.resources.enabled == false and .weather.location == \"Zürich\" and .bar.height == 30" "$h/.local/share/hypr-shell/settings.effective.json" >/dev/null' "v1.0.0: eigene Werte bleiben, neue Werte mit Standard"
+# settings.json von 1.10.0 (Glas-Werte, ohne die neuen Design-Werte): eigene Werte bleiben, neue mit Standard
+v110='{"look": {"preset": "glass", "rounding": 14}, "theme": {"glass": 0.6, "border": {"opacity": 0.5, "width": 1}, "radius": {"panel": 14}}}'
+h="$(neues_home v110 "$v110")"
+pruefe 'apply "$h" --check' "settings.json von v1.10.0 ist ohne Fehler"
+apply "$h" --no-reload
+pruefe 'jq -e ".theme.glass == 0.6 and .theme.border.opacity == 0.5 and .theme.radius.panel == 14 and (.theme.card.opacity | type) == \"number\" and (.theme.border.glow | type) == \"boolean\" and (.theme.spacing.gap | type) == \"number\" and .look.rounding == 14" "$h/.local/share/hypr-shell/settings.effective.json" >/dev/null' "v1.10.0: eigene Werte bleiben, Karten, Leuchten und Abstände mit Standard"
+pruefe '[ "$(jq -c . "$h/.config/hypr-shell/settings.json")" = "$(jq -c . <<<"$v110")" ]' "v1.10.0: settings.json selbst bleibt unverändert"
 # hypr-shell-local.lua (v1.1) -> settings.json, einmalig
 h="$(neues_home umzug '{"weather": {"location": "Bern"}, "input": {"variant": "fr"}}')"
 mkdir -p "$h/.config/hypr"

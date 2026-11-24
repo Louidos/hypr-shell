@@ -13,6 +13,8 @@
 # Befehle nach asusctl 6.3+ (profile get/set, battery limit, leds set, aura effect static) mit Rückfall
 # auf die alte Schreibweise bis 6.2 (profile -p/-P, -c, -k, aura static); supergfxctl -g/-s/-m/-p.
 set -uo pipefail
+# fehlendes Argument: klare Meldung und Ende (statt "Zeile N: 2: … fehlt" oder still weiter)
+fehlt() { echo "shell-laptop: $1" >&2; exit 2; }
 
 DATA="$HOME/.local/share/hypr-shell"
 EFF="$DATA/settings.effective.json"
@@ -73,6 +75,7 @@ profil_liste() {
 profil_next() {
     local liste jetzt
     liste="$(profil_liste)"
+    if [ "$(jq 'length' <<<"$liste")" = 0 ]; then echo "shell-laptop: no power profiles available" >&2; return 1; fi
     jetzt="$(profil_get)" || return 1
     profil_set "$(jq -r --arg j "$jetzt" '. as $l | ($l | index($j) // -1) as $i | $l[($i + 1) % ($l | length)]' <<<"$liste")"
 }
@@ -85,16 +88,19 @@ charge_get() { local f; f="$(akku)"; [ -n "$f" ] && cat "$f"; }
 charge_set() {
     local n="$1"
     if ! [[ "$n" =~ ^[0-9]+$ ]] || [ "$n" -lt 20 ] || [ "$n" -gt 100 ]; then echo "shell-laptop: Ladegrenze 20–100" >&2; return 2; fi
+    asus_da || { echo "shell-laptop: the charge limit needs asusctl" >&2; return 1; }
     if neu; then asusctl battery limit "$n" >/dev/null; else asusctl -c "$n" >/dev/null; fi
 }
 
 kbd_set() {
     case "$1" in off|low|med|high) ;; *) echo "shell-laptop: off|low|med|high" >&2; return 2 ;; esac
+    asus_da || { echo "shell-laptop: the keyboard light needs asusctl" >&2; return 1; }
     if neu; then asusctl leds set "$1" >/dev/null; else asusctl -k "$1" >/dev/null; fi
 }
 kbd_color() {
     local c="${1#\#}"
     [[ "$c" =~ ^[0-9a-fA-F]{6}$ ]] || { echo "shell-laptop: Farbe wie #8ab4f8" >&2; return 2; }
+    asus_da || { echo "shell-laptop: the keyboard color needs asusctl" >&2; return 1; }
     # 6.3.2+: aura effect static, davor aura static
     asusctl aura effect static -c "$c" >/dev/null 2>&1 || asusctl aura static -c "$c" >/dev/null
 }
@@ -107,16 +113,15 @@ caps() {
 }
 
 status() {
-    local pr=null pl='[]' gm=null gl='[]' gp=null ch=null
-    if profil_da; then pr="\"$(profil_get)\""; pl="$(profil_liste)"; fi
-    if gfx_da; then
-        gm="\"$(supergfxctl -g 2>/dev/null)\""; gl="$(gfx_liste)"
-        gp="$(supergfxctl -p 2>/dev/null | jq -R -s -c 'rtrimstr("\n")')"
-    fi
-    if charge_da; then ch="$(charge_get || echo null)"; fi
-    jq -cn --argjson caps "$(caps)" --argjson pr "$pr" --argjson pl "$pl" --argjson gm "$gm" --argjson gl "$gl" \
-        --argjson gp "$gp" --argjson ch "${ch:-null}" \
-        '{caps: $caps, profile: $pr, profiles: $pl, gfx: $gm, gfx_modes: $gl, gfx_pending: $gp, charge: $ch}'
+    # Texte der Programme nur über --arg ins JSON (Anführungszeichen in ihrer Ausgabe brechen sonst alles)
+    local hp=false pr="" pl='[]' hg=false gm="" gl='[]' gp="" ch=""
+    if profil_da; then hp=true; pr="$(profil_get)"; pl="$(profil_liste)"; fi
+    if gfx_da; then hg=true; gm="$(supergfxctl -g 2>/dev/null)"; gl="$(gfx_liste)"; gp="$(supergfxctl -p 2>/dev/null)"; fi
+    if charge_da; then ch="$(charge_get || true)"; fi
+    jq -cn --argjson caps "$(caps)" --argjson hp "$hp" --arg pr "$pr" --argjson pl "$pl" --argjson hg "$hg" --arg gm "$gm" \
+        --argjson gl "$gl" --arg gp "$gp" --arg ch "$ch" \
+        '{caps: $caps, profile: (if $hp then $pr else null end), profiles: $pl, gfx: (if $hg then $gm else null end),
+          gfx_modes: $gl, gfx_pending: (if $hg then $gp else null end), charge: ($ch | tonumber? // null)}'
 }
 
 # Einstellungen anwenden: nur was eingestellt ist (Standard: nichts ändern)
@@ -145,18 +150,18 @@ case "${1:-} ${2:-}" in
     "profile get") profil_get ;;
     "profile list") profil_liste ;;
     "profile next") profil_next ;;
-    "profile set") profil_set "${3:?Profil fehlt}" ;;
+    "profile set") [ -n "${3:-}" ] || fehlt "Profil fehlt"; profil_set "${3}" ;;
     "gfx get") gfx_da && supergfxctl -g ;;
     "gfx list") if gfx_da; then gfx_liste; else echo '[]'; fi ;;
     "gfx pending") gfx_da && supergfxctl -p ;;
     "gfx set")
         gfx_da || { echo "supergfxctl fehlt" >&2; exit 1; }
-        jq -e --arg m "${3:?Modus fehlt}" 'index($m) != null' <<<"$(gfx_liste)" >/dev/null || { echo "shell-laptop: unbekannter Modus $3" >&2; exit 2; }
+        [ -n "${3:-}" ] || fehlt "Modus fehlt"; jq -e --arg m "${3}" 'index($m) != null' <<<"$(gfx_liste)" >/dev/null || { echo "shell-laptop: unbekannter Modus $3" >&2; exit 2; }
         supergfxctl -m "$3" ;;
     "charge get") charge_get ;;
-    "charge set") charge_set "${3:?Prozent fehlen}" ;;
-    "kbd set") kbd_set "${3:?Stufe fehlt}" ;;
-    "kbd color") kbd_color "${3:?Farbe fehlt}" ;;
+    "charge set") [ -n "${3:-}" ] || fehlt "Prozent fehlen"; charge_set "${3}" ;;
+    "kbd set") [ -n "${3:-}" ] || fehlt "Stufe fehlt"; kbd_set "${3}" ;;
+    "kbd color") [ -n "${3:-}" ] || fehlt "Farbe fehlt"; kbd_color "${3}" ;;
     "apply "*) apply ;;
     *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

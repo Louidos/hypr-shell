@@ -12,7 +12,7 @@ Column {
     property bool busy: false
     property string asking: ""      // SSID, für die gerade das Passwort abgefragt wird
     property string message: ""
-    spacing: 6
+    spacing: Theme.pad(6)
 
     function reload() { if (!listProc.running) listProc.running = true }
     function connect(ssid, pw) {
@@ -71,20 +71,20 @@ Column {
                 height: 48
                 Glyph {
                     id: bars
-                    anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; leftMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                     text: net.modelData.signal > 75 ? "󰤨" : net.modelData.signal > 50 ? "󰤥" : net.modelData.signal > 25 ? "󰤢" : "󰤟"
                     size: 16
                 }
                 Txt {
-                    anchors { left: bars.right; leftMargin: 12; right: side.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                    anchors { left: bars.right; leftMargin: Theme.pad(12); right: side.left; rightMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
                     text: net.modelData.ssid
                     size: 13
-                    weight: net.modelData.active ? Font.Bold : Font.Normal
+                    weight: net.modelData.active ? Theme.titleWeight : Theme.textWeight
                 }
                 Row {
                     id: side
-                    anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                    spacing: 6
+                    anchors { right: parent.right; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
+                    spacing: Theme.pad(6)
                     Glyph { visible: net.modelData.secure; anchors.verticalCenter: parent.verticalCenter; text: "󰌾"; size: 11; color: Theme.subtext }
                     Txt { anchors.verticalCenter: parent.verticalCenter; text: net.modelData.signal + "%"; size: 11; sub: true }
                     Pill {
@@ -106,17 +106,17 @@ Column {
             Row {
                 visible: net.open
                 x: 12; y: 54
-                spacing: 8
+                spacing: Theme.pad(8)
                 Rectangle {
                     width: net.width - 24 - joinBtn.width - 8
                     height: 36
                     radius: 18
-                    color: Qt.rgba(1, 1, 1, 0.06)
+                    color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
                     TextInput {
                         id: pw
-                        anchors { left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                        anchors { left: parent.left; leftMargin: Theme.pad(14); right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                         echoMode: TextInput.Password
                         color: Theme.text
                         font.pixelSize: 12 * Theme.fontScale

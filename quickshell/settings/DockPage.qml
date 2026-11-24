@@ -9,7 +9,7 @@ import "../common"
 // bleibt, solange diese Seite offen ist.
 Column {
     id: dp
-    spacing: 12
+    spacing: Theme.pad(12)
     property var presets: []
     property string message: ""
     property string file: Settings.home + "/hypr-shell-dock.json"
@@ -43,12 +43,12 @@ Column {
             id: presetCol
             x: 18; y: 14
             width: parent.width - 36
-            spacing: 10
-            Txt { text: "Presets"; size: 14; weight: Font.DemiBold }
+            spacing: Theme.pad(10)
+            Txt { text: "Presets"; size: 14; strong: true }
             Txt { width: parent.width; text: "Change only the dock values – your items stay as they are."; size: 12; sub: true; wrapMode: Text.Wrap }
             Flow {
                 width: parent.width
-                spacing: 6
+                spacing: Theme.pad(6)
                 Repeater {
                     model: dp.presets
                     delegate: Pill {
@@ -78,8 +78,8 @@ Column {
             id: fileCol
             x: 18; y: 14
             width: parent.width - 36
-            spacing: 10
-            Txt { text: "Export and import"; size: 14; weight: Font.DemiBold }
+            spacing: Theme.pad(10)
+            Txt { text: "Export and import"; size: 14; strong: true }
             Field {
                 width: parent.width
                 mono: true
@@ -87,7 +87,7 @@ Column {
                 onAccepted: t => dp.file = t.trim()
             }
             Row {
-                spacing: 6
+                spacing: Theme.pad(6)
                 Pill { text: "Export"; icon: "󰈝"; onClicked: dp.run(["export", dp.file]); Probe { name: "dock-export" } }
                 Pill { text: "Import"; icon: "󰈞"; onClicked: dp.run(["import", dp.file]); Probe { name: "dock-import" } }
                 Pill {

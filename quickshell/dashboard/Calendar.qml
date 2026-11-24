@@ -43,11 +43,11 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: cal.loc.standaloneMonthName(cal.shown.getMonth(), Locale.LongFormat) + " " + cal.shown.getFullYear()
             size: 15
-            weight: Font.Bold
+            title: true
         }
         Row {
             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-            spacing: 6
+            spacing: Theme.pad(6)
             IconButton { width: 28; height: 28; icon: ""; iconSize: 11; onClicked: cal.offset-- }
             IconButton { width: 28; height: 28; icon: ""; iconSize: 11; onClicked: cal.offset++ }
         }
@@ -56,7 +56,7 @@ Item {
 
     Grid {
         id: grid
-        anchors { top: head.bottom; topMargin: 6; left: parent.left; right: parent.right; bottom: next.top; bottomMargin: next.visible ? 4 : 0 }
+        anchors { top: head.bottom; topMargin: Theme.pad(6); left: parent.left; right: parent.right; bottom: next.top; bottomMargin: next.visible ? Theme.pad(4) : 0 }
         columns: 7
         readonly property real cw: width / 7
         readonly property real ch: height / 7
@@ -70,7 +70,7 @@ Item {
                 text: cal.loc.dayName((index + 1) % 7, Locale.ShortFormat).substring(0, 2)
                 sub: true
                 size: 11
-                weight: Font.DemiBold
+                strong: true
             }
         }
         Repeater {
@@ -93,7 +93,7 @@ Item {
                 // Punkt an Tagen mit Terminen
                 Rectangle {
                     visible: Integrations.calendar && day.inMonth && cal.hasEvent(day.d)
-                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 1 }
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.pad(1) }
                     width: 4; height: 4; radius: 2
                     color: day.isToday ? Theme.pillText : Theme.accent
                 }
@@ -101,7 +101,7 @@ Item {
                     anchors.centerIn: parent
                     text: day.d.getDate()
                     size: 12
-                    weight: day.isToday ? Font.Bold : Font.Normal
+                    weight: day.isToday ? Theme.titleWeight : Theme.textWeight
                     color: day.isToday ? Theme.pillText : (day.inMonth ? Theme.text : Qt.rgba(1, 1, 1, 0.25))
                 }
             }
@@ -114,7 +114,7 @@ Item {
         visible: Integrations.calendar && cal.upcoming.length > 0
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         height: visible ? implicitHeight : 0
-        spacing: 1
+        spacing: Theme.pad(1)
         Repeater {
             model: cal.upcoming
             delegate: Txt {

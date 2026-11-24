@@ -109,18 +109,39 @@
       "color": "#ffffff",
       "opacity": 0.35,
       "opacity_inactive": 0.15,
-      "width": 1
+      "width": 1,
+      "glow": false,
+      "glow_size": 10,
+      "glow_opacity": 0.25
     },
     "radius": {
       "panel": 14,
       "card": 10
+    },
+    "card": {
+      "color": "#ffffff",
+      "opacity": 0.05,
+      "hover": 0.08,
+      "border_opacity": 0.08
+    },
+    "pill": {
+      "opacity": 0.92
+    },
+    "spacing": {
+      "scale": 1.0,
+      "panel": 18,
+      "card": 14,
+      "gap": 10
     },
     "font": {
       "ui": "Inter",
       "mono": "JetBrainsMono Nerd Font",
       "clock": "JetBrainsMono Nerd Font",
       "display": "Bebas Neue",
-      "scale": 1.0
+      "scale": 1.0,
+      "title_weight": "bold",
+      "text_weight": "normal",
+      "title_scale": 1.0
     },
     "cursor": {
       "name": "Bibata-Modern-Ice",

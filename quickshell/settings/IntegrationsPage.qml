@@ -9,7 +9,7 @@ import "../common"
 // Eingeschaltet ohne Zugangsdaten steht eine kurze Anleitung da statt eines Fehlers.
 Column {
     id: ip
-    spacing: 14
+    spacing: Theme.pad(14)
     property var mounts: ({})        // shell-mount status
     property var secrets: []         // gesetzte Namen (ohne Werte)
 
@@ -91,15 +91,15 @@ Column {
                 id: col
                 x: 14; y: 14
                 width: parent.width - 28
-                spacing: 8
+                spacing: Theme.pad(8)
                 Item {
                     width: parent.width
                     height: 34
                     Glyph { id: ic; anchors.verticalCenter: parent.verticalCenter; text: card.modelData.icon; size: 18 }
-                    Txt { anchors { left: ic.right; leftMargin: 12; verticalCenter: parent.verticalCenter } text: card.modelData.title; size: 16; weight: Font.Bold }
+                    Txt { anchors { left: ic.right; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter } text: card.modelData.title; size: 16; title: true }
                     Row {
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                        spacing: 8
+                        spacing: Theme.pad(8)
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 10; height: 10; radius: 5
@@ -131,25 +131,25 @@ Column {
                     width: col.width
                     height: 52
                     radius: 14
-                    color: Qt.rgba(1, 1, 1, 0.04)
+                    color: Theme.cardFaint
                     Txt {
                         id: secLabel
-                        anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                        anchors { left: parent.left; leftMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                         width: 120
                         text: card.modelData.secretTitle || ""
                         size: 13
-                        weight: Font.DemiBold
+                        strong: true
                     }
                     Rectangle {
-                        anchors { left: secLabel.right; leftMargin: 8; right: secBtns.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                        anchors { left: secLabel.right; leftMargin: Theme.pad(8); right: secBtns.left; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
                         height: 34
                         radius: 17
-                        color: Qt.rgba(1, 1, 1, 0.06)
+                        color: Theme.field
                         border.width: 1
                         border.color: Theme.cardBorder
                         TextInput {
                             id: secInput
-                            anchors { left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                            anchors { left: parent.left; leftMargin: Theme.pad(14); right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                             echoMode: TextInput.Password
                             color: Theme.text
                             font.pixelSize: 12 * Theme.fontScale
@@ -166,8 +166,8 @@ Column {
                     }
                     Row {
                         id: secBtns
-                        anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                        spacing: 6
+                        anchors { right: parent.right; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
+                        spacing: Theme.pad(6)
                         Pill {
                             id: saveBtn
                             text: "Save"

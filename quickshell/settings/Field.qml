@@ -15,7 +15,7 @@ Rectangle {
     implicitWidth: 220
     implicitHeight: 34
     radius: 12
-    color: Qt.rgba(1, 1, 1, 0.06)
+    color: Theme.field
     border.width: 1
     border.color: inp.activeFocus ? Qt.rgba(1, 1, 1, 0.35) : Theme.cardBorder
 
@@ -23,7 +23,7 @@ Rectangle {
 
     TextInput {
         id: inp
-        anchors { left: parent.left; right: parent.right; leftMargin: 12; rightMargin: 12; verticalCenter: parent.verticalCenter }
+        anchors { left: parent.left; right: parent.right; leftMargin: Theme.pad(12); rightMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
         text: f.text
         color: Theme.text
         font.family: f.mono ? Theme.mono : Theme.sans

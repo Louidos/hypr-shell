@@ -64,11 +64,11 @@ Scope {
                     id: col
                     x: 20; y: 18
                     width: parent.width - 40
-                    spacing: 12
+                    spacing: Theme.pad(12)
                     Row {
-                        spacing: 10
+                        spacing: Theme.pad(10)
                         Glyph { text: "󰚩"; size: 18; color: Theme.warn; anchors.verticalCenter: parent.verticalCenter }
-                        Txt { text: "Missa wants to " + (ma.current ? ma.current.tool.replace("rechner_", "").replace("_", " ") : ""); size: 15; weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                        Txt { text: "Missa wants to " + (ma.current ? ma.current.tool.replace("rechner_", "").replace("_", " ") : ""); size: 15; title: true; anchors.verticalCenter: parent.verticalCenter }
                     }
                     Rectangle {
                         width: parent.width
@@ -94,7 +94,7 @@ Scope {
                         Txt { anchors.verticalCenter: parent.verticalCenter; text: "Declined in " + ma.left + " s"; size: 12; sub: true }
                         Row {
                             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                            spacing: 8
+                            spacing: Theme.pad(8)
                             Pill { implicitHeight: 34; text: "Deny  (Esc)"; onClicked: ma.answer(false) }
                             Pill { implicitHeight: 34; text: "Allow  (Enter)"; active: true; onClicked: ma.answer(true); Probe { name: "missa-allow" } }
                         }

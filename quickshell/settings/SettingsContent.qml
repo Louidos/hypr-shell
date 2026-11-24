@@ -89,7 +89,7 @@ FocusScope {
             id: who
             x: 16; y: 18
             width: parent.width - 32
-            spacing: 8
+            spacing: Theme.pad(8)
             RoundImage {
                 width: 56; height: 56; radius: 28
                 source: Settings.face
@@ -97,18 +97,18 @@ FocusScope {
                 fallbackText: Settings.user.length > 0 ? Settings.user[0].toUpperCase() : "?"
                 probe: "settings-avatar"
             }
-            Txt { width: parent.width; text: Settings.user; size: 16; weight: Font.Bold }
+            Txt { width: parent.width; text: Settings.user; size: 16; title: true }
             Pill { clickable: false; implicitHeight: 24; fontSize: 11; icon: sc.about.icon || ""; text: sc.about.distro || "Linux" }
         }
         Flickable {
-            anchors { top: who.bottom; topMargin: 16; left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 10; leftMargin: 10; rightMargin: 10 }
+            anchors { top: who.bottom; topMargin: Theme.pad(16); left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: Theme.pad(10); leftMargin: Theme.pad(10); rightMargin: Theme.pad(10) }
             contentHeight: nav.implicitHeight
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             Column {
                 id: nav
                 width: parent.width
-                spacing: 2
+                spacing: Theme.pad(2)
                 Repeater {
                     model: sc.compact ? [] : sc.pages
                     delegate: Rectangle {
@@ -122,17 +122,17 @@ FocusScope {
                         Behavior on color { ColorAnimation { duration: 140 } }
                         Glyph {
                             id: navIcon
-                            anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
+                            anchors { left: parent.left; leftMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                             width: 20
                             text: navItem.modelData.icon
                             size: 15
                             color: navItem.active ? Theme.pillText : Theme.text
                         }
                         Txt {
-                            anchors { left: navIcon.right; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                            anchors { left: navIcon.right; leftMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
                             text: navItem.modelData.title
                             size: 13
-                            weight: navItem.active ? Font.DemiBold : Font.Medium
+                            strong: navItem.active
                             color: navItem.active ? Theme.pillText : Theme.text
                         }
                         HoverHandler { id: hov; cursorShape: Qt.PointingHandCursor }
@@ -162,7 +162,7 @@ FocusScope {
         }
         Flickable {
             id: topFlick
-            anchors { left: topFace.right; leftMargin: 8; right: parent.right; rightMargin: 8; top: parent.top; bottom: parent.bottom }
+            anchors { left: topFace.right; leftMargin: Theme.pad(8); right: parent.right; rightMargin: Theme.pad(8); top: parent.top; bottom: parent.bottom }
             contentWidth: topRow.implicitWidth
             flickableDirection: Flickable.HorizontalFlick
             boundsBehavior: Flickable.StopAtBounds
@@ -170,7 +170,7 @@ FocusScope {
             Row {
                 id: topRow
                 height: topFlick.height
-                spacing: 2
+                spacing: Theme.pad(2)
                 Repeater {
                     model: sc.compact ? sc.pages : []
                     delegate: Rectangle {
@@ -186,17 +186,17 @@ FocusScope {
                         onActiveChanged: if (active) topFlick.contentX = Math.max(0, Math.min(x - 40, topFlick.contentWidth - topFlick.width))
                         Glyph {
                             id: topIcon
-                            anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                            anchors { left: parent.left; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
                             text: topItem.modelData.icon
                             size: 14
                             color: topItem.active ? Theme.pillText : Theme.text
                         }
                         Txt {
                             id: topLabel
-                            anchors { left: topIcon.right; leftMargin: 8; verticalCenter: parent.verticalCenter }
+                            anchors { left: topIcon.right; leftMargin: Theme.pad(8); verticalCenter: parent.verticalCenter }
                             text: topItem.modelData.title
                             size: 13
-                            weight: topItem.active ? Font.DemiBold : Font.Medium
+                            strong: topItem.active
                             color: topItem.active ? Theme.pillText : Theme.text
                         }
                         HoverHandler { id: topHov; cursorShape: Qt.PointingHandCursor }
@@ -211,7 +211,7 @@ FocusScope {
     // ---- Kopf: Suche, Fehler, Undo/Redo, Schliessen
     Item {
         id: head
-        anchors { left: sc.compact ? parent.left : side.right; leftMargin: sc.compact ? 14 : 18; right: parent.right; rightMargin: sc.compact ? 14 : 18 }
+        anchors { left: sc.compact ? parent.left : side.right; leftMargin: Theme.pad(sc.compact ? 14 : 18); right: parent.right; rightMargin: Theme.pad(sc.compact ? 14 : 18) }
         y: sc.compact ? topNav.y + topNav.height + 12 : 18
         height: 40
 
@@ -226,7 +226,7 @@ FocusScope {
             Probe { name: "settings-search" }
         }
         Txt {
-            anchors { left: search.right; leftMargin: 12; right: buttons.left; rightMargin: 12; verticalCenter: parent.verticalCenter }
+            anchors { left: search.right; leftMargin: Theme.pad(12); right: buttons.left; rightMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
             text: Ui.lastError
             color: Theme.warn
             size: 12
@@ -234,7 +234,7 @@ FocusScope {
         Row {
             id: buttons
             anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-            spacing: 6
+            spacing: Theme.pad(6)
             Pill { icon: "󰕌"; text: "Undo"; onClicked: Ui.undo(); Probe { name: "settings-undo" } }
             Pill { icon: "󰑎"; text: "Redo"; onClicked: Ui.redo() }
             IconButton { icon: "󰅖"; onClicked: Ui.closeSettings() }
@@ -244,7 +244,7 @@ FocusScope {
     // ---- Seite (bei jedem Seitenwechsel neu erzeugt, oben beginnend)
     Item {
         id: pageHolder
-        anchors { top: head.bottom; topMargin: 14; left: sc.compact ? parent.left : side.right; leftMargin: sc.compact ? 14 : 18; right: parent.right; rightMargin: 14; bottom: parent.bottom; bottomMargin: 14 }
+        anchors { top: head.bottom; topMargin: Theme.pad(14); left: sc.compact ? parent.left : side.right; leftMargin: Theme.pad(sc.compact ? 14 : 18); right: parent.right; rightMargin: Theme.pad(14); bottom: parent.bottom; bottomMargin: Theme.pad(14) }
         property var current: null
         Repeater {
             model: [sc.page]
@@ -281,12 +281,12 @@ FocusScope {
         GlassCard {
             height: 64
             Txt {
-                anchors { left: parent.left; leftMargin: 18; verticalCenter: parent.verticalCenter }
+                anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
                 text: "Move and resize the clock and tiles with the mouse (SUPER + ALT + W)"
                 size: 13
             }
             Pill {
-                anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                anchors { right: parent.right; rightMargin: Theme.pad(14); verticalCenter: parent.verticalCenter }
                 icon: "󰆾"
                 text: "Edit on desktop"
                 active: true
@@ -323,8 +323,8 @@ FocusScope {
                     radius: 12
                     color: rh.hovered ? Theme.cardHover : "transparent"
                     Column {
-                        anchors { left: parent.left; leftMargin: 12; right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                        Txt { width: parent.width; text: res.modelData.title + "  ·  " + res.pg.title; size: 13; weight: Font.DemiBold }
+                        anchors { left: parent.left; leftMargin: Theme.pad(12); right: parent.right; rightMargin: Theme.pad(12); verticalCenter: parent.verticalCenter }
+                        Txt { width: parent.width; text: res.modelData.title + "  ·  " + res.pg.title; size: 13; strong: true }
                         Txt { width: parent.width; text: res.modelData.key + " – " + res.modelData.description; size: 11; sub: true }
                     }
                     HoverHandler { id: rh; cursorShape: Qt.PointingHandCursor }

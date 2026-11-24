@@ -87,13 +87,28 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `theme.border.opacity` | `0.35` | Zahl 0 … 1, Schritt 0.01 | Edge of the active window and of glass surfaces | `shell-set theme.border.opacity 0.36` |
 | `theme.border.opacity_inactive` | `0.15` | Zahl 0 … 1, Schritt 0.01 | Edge of windows without focus | `shell-set theme.border.opacity_inactive 0.16` |
 | `theme.border.width` | `1` | ganze Zahl 0 … 4 px | Width of the edge of glass surfaces | `shell-set theme.border.width 2` |
+| `theme.border.glow` | `false` | `true`, `false` | Soft outer glow in the border color around glass panels, cards, the dock and windows (never for games, videos and image editors in Look → Always opaque, nor for fullscreen) | `shell-set theme.border.glow true` |
+| `theme.border.glow_size` | `10` | ganze Zahl 0 … 40 px | How far the glow reaches beyond the border | `shell-set theme.border.glow_size 11` |
+| `theme.border.glow_opacity` | `0.25` | Zahl 0 … 1, Schritt 0.01 | Opacity of the glow next to the border | `shell-set theme.border.glow_opacity 0.26` |
 | `theme.radius.panel` | `14` | ganze Zahl 0 … 40 px | Corner radius of glass panels | `shell-set theme.radius.panel 15` |
 | `theme.radius.card` | `10` | ganze Zahl 0 … 30 px | Corner radius of cards inside panels | `shell-set theme.radius.card 11` |
+| `theme.card.color` | `#ffffff` | Farbe `#rrggbb` | Tint of the cards inside panels, the dashboard and the settings | `shell-set theme.card.color "#a6e3a1"` |
+| `theme.card.opacity` | `0.05` | Zahl 0 … 0.4, Schritt 0.01 | Opacity of the cards on the glass; higher = brighter cards (kept readable automatically) | `shell-set theme.card.opacity 0.06` |
+| `theme.card.hover` | `0.08` | Zahl 0 … 0.5, Schritt 0.01 | Opacity of a card under the mouse | `shell-set theme.card.hover 0.09` |
+| `theme.card.border_opacity` | `0.08` | Zahl 0 … 1, Schritt 0.01 | Opacity of the fine outline around cards | `shell-set theme.card.border_opacity 0.09` |
+| `theme.pill.opacity` | `0.92` | Zahl 0.3 … 1, Schritt 0.01 | Opacity of the white pill of active tabs, buttons and switches | `shell-set theme.pill.opacity 0.93` |
+| `theme.spacing.scale` | `1.0` | Zahl 0.5 … 2.0, Schritt 0.05 | Factor for all gaps and paddings of panels, cards and lists | `shell-set theme.spacing.scale 1.05` |
+| `theme.spacing.panel` | `18` | ganze Zahl 0 … 48 px | Space between the edge of a glass panel (e.g. the dashboard) and its content | `shell-set theme.spacing.panel 19` |
+| `theme.spacing.card` | `14` | ganze Zahl 0 … 40 px | Space between the edge of a card and its content | `shell-set theme.spacing.card 15` |
+| `theme.spacing.gap` | `10` | ganze Zahl 0 … 40 px | Space between two cards | `shell-set theme.spacing.gap 11` |
 | `theme.font.ui` | `Inter` | Text (Format geprüft) | Font for text in the bar, dashboard, panel and lock screen | `shell-set theme.font.ui "Noto Sans"` |
 | `theme.font.mono` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font for symbols and numbers (needs Nerd Font symbols) | `shell-set theme.font.mono "Noto Sans"` |
 | `theme.font.clock` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font of the big clock on the desktop | `shell-set theme.font.clock "Noto Sans"` |
 | `theme.font.display` | `Bebas Neue` | Text (Format geprüft) | Font of the clocks in the dashboard and on the lock screen | `shell-set theme.font.display "Noto Sans"` |
 | `theme.font.scale` | `1.0` | Zahl 0.8 … 1.5, Schritt 0.05 | Factor for all font sizes | `shell-set theme.font.scale 1.05` |
+| `theme.font.title_weight` | `bold` | `normal`, `medium`, `demibold`, `bold` | Thickness of titles; labels and pill texts are one step lighter | `shell-set theme.font.title_weight normal` |
+| `theme.font.text_weight` | `normal` | `normal`, `medium`, `demibold`, `bold` | Thickness of normal text | `shell-set theme.font.text_weight medium` |
+| `theme.font.title_scale` | `1.0` | Zahl 0.8 … 2.0, Schritt 0.05 | Size of titles relative to the normal text | `shell-set theme.font.title_scale 1.05` |
 | `theme.cursor.name` | `Bibata-Modern-Ice` | Text (Format geprüft) | Name of the mouse cursor theme | `shell-set theme.cursor.name Adwaita` |
 | `theme.cursor.size` | `24` | ganze Zahl 16 … 64 px | Size of the mouse cursor | `shell-set theme.cursor.size 26` |
 | `theme.icons` | `Papirus-Dark` | Text (Format geprüft) | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |

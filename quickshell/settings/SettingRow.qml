@@ -59,7 +59,7 @@ GlassCard {
             width: 36; height: 36; radius: 18
             x: 14
             y: row.stacked ? 14 : (head.height - height) / 2
-            color: Qt.rgba(1, 1, 1, 0.07)
+            color: Theme.cardStrong
             Glyph { anchors.centerIn: parent; text: row.spec.icon || ""; size: 15 }
         }
         Column {
@@ -67,8 +67,8 @@ GlassCard {
             x: bubble.x + bubble.width + 14
             y: row.stacked ? 14 : (head.height - implicitHeight) / 2
             width: (row.stacked ? head.width - 14 : controls.x - 14) - x
-            spacing: 2
-            Txt { width: parent.width; text: row.spec.title || row.key; size: 14; weight: Font.DemiBold }
+            spacing: Theme.pad(2)
+            Txt { width: parent.width; text: row.spec.title || row.key; size: 14; strong: true }
             Txt { width: parent.width; text: row.spec.description || ""; size: 12; sub: true; wrapMode: Text.WordWrap; elide: Text.ElideNone }
             // Warnung zu einem gewählten Wert (z. B. missa.access = full): ein Satz zum Risiko
             Txt {
@@ -94,7 +94,7 @@ GlassCard {
             id: controls
             x: row.stacked ? texts.x : head.width - 14 - width
             y: row.stacked ? texts.y + texts.implicitHeight + 12 : (head.height - height) / 2
-            spacing: 10
+            spacing: Theme.pad(10)
             Pill {
                 visible: row.changed
                 anchors.verticalCenter: parent.verticalCenter
@@ -141,7 +141,7 @@ GlassCard {
     Component {
         id: sliderC
         Row {
-            spacing: 12
+            spacing: Theme.pad(12)
             Slider {
                 id: sl
                 width: Math.max(120, Math.min(200, row.width - 64 - 14 - 14 - 82))
@@ -166,7 +166,7 @@ GlassCard {
                     verticalAlignment: Text.AlignVCenter
                     text: row.fmt(sl.shown)
                     size: 13
-                    weight: Font.DemiBold
+                    strong: true
                     font.family: Theme.mono
                 }
                 TextInput {
@@ -198,7 +198,7 @@ GlassCard {
     Component {
         id: choiceC
         Row {
-            spacing: 6
+            spacing: Theme.pad(6)
             Repeater {
                 model: row.spec.values || []
                 delegate: Pill {
@@ -227,7 +227,7 @@ GlassCard {
     Component {
         id: colorC
         Row {
-            spacing: 8
+            spacing: Theme.pad(8)
             readonly property var presets: ["#8ab4f8", "#a6e3a1", "#f9e2af", "#fab387", "#f38ba8", "#cba6f7", "#94e2d5", "#d4d4d4"]
             // Farben mit "auto" (z. B. dock.border_color): automatisch wie die Oberfläche
             Pill {

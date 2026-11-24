@@ -30,11 +30,13 @@ Singleton {
     }
     // Helligkeit des Hintergrundbilds (shell-wallpaper → wallpaper-luma), ohne Angabe eher dunkel
     property real wallpaperLuma: 0.2
+    // Gerechnet wird mit einer Karte (theme.card.*) auf dem Glas: so bleibt auch Text auf Karten lesbar,
+    // ohne dass die Karten auf hellen Bildern verschwinden
     function readable(opacity) {
-        const lg = lum(Qt.color(glassColor)), tl = lum(Qt.color(c.text))
+        const lg = lum(Qt.color(glassColor)), tl = lum(Qt.color(c.text)), lc = lum(Qt.color(cardBase))
         let a = Math.max(0, Math.min(1, opacity))
         for (let i = 0; i < 100 && a < 0.95; i++) {
-            const bg = a * lg + (1 - a) * wallpaperLuma
+            const bg = cardOpacity * lc + (1 - cardOpacity) * (a * lg + (1 - a) * wallpaperLuma)
             if ((Math.max(tl, bg) + 0.05) / (Math.min(tl, bg) + 0.05) >= 4.5) break
             a += 0.01
         }
@@ -51,14 +53,57 @@ Singleton {
     readonly property real borderOpacity: Settings.get("theme.border.opacity", 0.35)
     readonly property int borderWidth: Settings.get("theme.border.width", 1)
     readonly property color glassBorder: Qt.rgba(Qt.color(borderBase).r, Qt.color(borderBase).g, Qt.color(borderBase).b, borderOpacity)
-    // Karten innen: Weiss mit 5 % Deckkraft und feiner heller Kontur
-    readonly property color card: Qt.rgba(1, 1, 1, 0.05)
-    readonly property color cardHover: Qt.rgba(1, 1, 1, 0.08)
-    readonly property color cardBorder: Qt.rgba(1, 1, 1, 0.08)
-    // aktive Schalter und Tabs: weisse Pille mit dunklem Symbol
-    readonly property color pill: Qt.rgba(1, 1, 1, 0.92)
+    // Leuchten des Rands (theme.border.glow*): weicher äusserer Schein in Randfarbe, ohne Versatz
+    // (Glow.qml in GlassPanel, GlassCard, Panels und Dock; Fenster über den Schatten in hyprland.lua)
+    readonly property bool glow: Settings.get("theme.border.glow", false) === true
+    readonly property real glowSize: Math.max(0, Math.min(40, Settings.get("theme.border.glow_size", 10)))
+    readonly property real glowOpacity: Math.max(0, Math.min(1, Settings.get("theme.border.glow_opacity", 0.25)))
+
+    // Karten innen (theme.card.*): Kartenfarbe mit wenig Deckkraft über dem Glas, feine Kontur.
+    // Auch für Karten gilt der Mindestkontrast: das Glas wird dafür dunkler (readable); reicht auch
+    // das stärkste Glas nicht, wird die Karte so weit durchsichtiger wie nötig (readableCard)
+    readonly property color cardBase: Settings.get("theme.card.color", "#ffffff")
+    readonly property real cardOpacity: Math.max(0, Math.min(0.4, Settings.get("theme.card.opacity", 0.05)))
+    readonly property real cardHoverOpacity: Math.max(0, Math.min(0.5, Settings.get("theme.card.hover", 0.08)))
+    readonly property real cardBorderOpacity: Math.max(0, Math.min(1, Settings.get("theme.card.border_opacity", 0.08)))
+    function readableCard(opacity) {
+        const lc = lum(Qt.color(cardBase)), lg = lum(Qt.color(glassColor)), tl = lum(Qt.color(c.text))
+        const under = glassReadable * lg + (1 - glassReadable) * wallpaperLuma
+        let a = Math.max(0, opacity)
+        for (let i = 0; i < 100 && a > 0; i++) {
+            const bg = a * lc + (1 - a) * under
+            if ((Math.max(tl, bg) + 0.05) / (Math.min(tl, bg) + 0.05) >= 4.5) break
+            a = Math.max(0, a - 0.01)
+        }
+        return a
+    }
+    function cardTint(opacity) { const b = Qt.color(cardBase); return Qt.rgba(b.r, b.g, b.b, opacity) }
+    readonly property color card: cardTint(readableCard(cardOpacity))
+    // der kurze Hover-Zustand bleibt so hell wie eingestellt (eine sichtbare Rückmeldung), mindestens
+    // so hell wie die Karte
+    readonly property color cardHover: cardTint(Math.max(cardHoverOpacity, Qt.color(card).a))
+    readonly property color cardBorder: cardTint(cardBorderOpacity)
+    // Abstufungen relativ zur Karte (wachsen mit theme.card.opacity): cardLevel(k) = Karte × k
+    function cardLevel(k) { return cardTint(readableCard(cardOpacity * k)) }
+    readonly property color cardSoft: cardLevel(0.6)      // Zeilen in Karten
+    readonly property color cardFaint: cardLevel(0.8)
+    readonly property color field: cardLevel(1.2)         // Such- und Eingabefelder
+    readonly property color cardStrong: cardLevel(1.4)    // Symbol-Blasen, Zellen
+    // aktive Schalter und Tabs: weisse Pille mit dunklem Symbol (theme.pill.opacity)
+    readonly property real pillOpacity: Math.max(0.3, Math.min(1, Settings.get("theme.pill.opacity", 0.92)))
+    readonly property color pill: Qt.rgba(1, 1, 1, pillOpacity)
     readonly property color pillText: "#121214"
     readonly property color track: Qt.rgba(1, 1, 1, 0.10)
+
+    // Abstände (theme.spacing.*): scale ist der Faktor für alle Abstände der Oberfläche; panel ist der
+    // Innenabstand der Glasflächen, card der Innenabstand der Karten, gap die Lücke zwischen Karten.
+    // Alle Abstände in quickshell/ gehen über pad(n) (Entwurfswert n mal Faktor). Panels skalieren
+    // ihren Inhalt zusätzlich mit der Grössen-Hilfe (ScreenFit), die Abstände wachsen also mit.
+    readonly property real spacingScale: Math.max(0.5, Math.min(2, Settings.get("theme.spacing.scale", 1.0)))
+    function pad(n) { return Math.round(n * spacingScale) }
+    readonly property int panelPad: pad(Settings.get("theme.spacing.panel", 18))
+    readonly property int cardPad: pad(Settings.get("theme.spacing.card", 14))
+    readonly property int gap: pad(Settings.get("theme.spacing.gap", 10))
     // Abzeichen und Pillen in der Farbe des Hintergrundbilds (dunkel gemischt), Text darauf hell
     readonly property color container: mix(c.accent, "#141416", 0.8)
     readonly property color containerText: mix(c.accent, "#ffffff", 0.55)
@@ -81,6 +126,16 @@ Singleton {
     readonly property string display: displayName === "Bebas Neue" && bebas.status === FontLoader.Ready ? bebas.name : displayName
     // Faktor für alle Schriftgrössen
     readonly property real fontScale: Settings.get("theme.font.scale", 1.0)
+    // Schriftdicke (theme.font.title_weight, text_weight) und Grösse der Überschriften im Verhältnis
+    // zum Text (title_scale). Txt { title: true } nimmt titleWeight und titleScale, Txt { strong: true }
+    // (Beschriftungen, Pillen) eine Stufe leichter als Titel, normaler Text textWeight.
+    function weightOf(name, fallback) {
+        return ({ normal: Font.Normal, medium: Font.Medium, demibold: Font.DemiBold, bold: Font.Bold })[name] || fallback
+    }
+    readonly property int titleWeight: weightOf(Settings.get("theme.font.title_weight", "bold"), Font.Bold)
+    readonly property int textWeight: weightOf(Settings.get("theme.font.text_weight", "normal"), Font.Normal)
+    readonly property int strongWeight: Math.max(textWeight, titleWeight - 100)
+    readonly property real titleScale: Math.max(0.8, Math.min(2, Settings.get("theme.font.title_scale", 1.0)))
 
     FileView {
         path: Quickshell.env("HOME") + "/.local/share/hypr-shell/wallpaper-luma"

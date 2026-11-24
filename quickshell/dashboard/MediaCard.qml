@@ -28,14 +28,14 @@ Item {
         }
     }
     Column {
-        anchors { top: cover.bottom; topMargin: 12; left: parent.left; right: parent.right }
-        spacing: 2
+        anchors { top: cover.bottom; topMargin: Theme.pad(12); left: parent.left; right: parent.right }
+        spacing: Theme.pad(2)
         Txt {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: m.player && m.player.trackTitle ? m.player.trackTitle : "Nothing playing"
             size: 14
-            weight: Font.Bold
+            title: true
         }
         Txt {
             width: parent.width
@@ -47,7 +47,7 @@ Item {
     }
     Row {
         anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
-        spacing: 10
+        spacing: Theme.pad(10)
         IconButton { icon: "󰒮"; flat: true; onClicked: if (m.player && m.player.canGoPrevious) m.player.previous() }
         IconButton {
             icon: m.player && m.player.isPlaying ? "󰏤" : "󰐊"

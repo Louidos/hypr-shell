@@ -167,7 +167,7 @@ Scope {
                 Flow {
                     x: 10; y: 10
                     width: parent.width - 20
-                    spacing: 12
+                    spacing: Theme.pad(12)
                     Repeater {
                         model: sw.items
                         delegate: Rectangle {
@@ -205,7 +205,7 @@ Scope {
                                 // andere Arbeitsfläche oder minimiert: kleiner Hinweis
                                 Pill {
                                     visible: cell.modelData.other || cell.modelData.minimized
-                                    anchors { right: parent.right; top: parent.top; margins: 4 }
+                                    anchors { right: parent.right; top: parent.top; margins: Theme.pad(4) }
                                     clickable: false
                                     implicitHeight: 20
                                     fontSize: 10
@@ -217,7 +217,7 @@ Scope {
                                 width: parent.width - 20
                                 text: cell.modelData.title !== "" ? cell.modelData.title : cell.modelData.cls
                                 size: 12
-                                weight: cell.active ? Font.DemiBold : Font.Normal
+                                strong: cell.active
                                 horizontalAlignment: Text.AlignHCenter
                             }
                             HoverHandler { cursorShape: Qt.PointingHandCursor; onHoveredChanged: if (hovered) { sw.sel = cell.index; idle.restart() } }

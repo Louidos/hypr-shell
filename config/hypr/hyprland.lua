@@ -45,7 +45,8 @@ local S = {
         animations = { enabled = true, speed = "normal" },
     },
     theme = { cursor = { name = "Bibata-Modern-Ice", size = 24 }, apps = { gtk = true, qt = true },
-        border = { color = "#ffffff", opacity = 0.35, opacity_inactive = 0.15, width = 1 } },
+        border = { color = "#ffffff", opacity = 0.35, opacity_inactive = 0.15, width = 1,
+            glow = false, glow_size = 10, glow_opacity = 0.25 } },
     input = {
         layout = "us", variant = "", sensitivity = 0,
         touchpad = { natural_scroll = false, tap_to_click = true },
@@ -224,6 +225,10 @@ if S.look.border_color ~= "accent" then
     rand_aktiv   = rgba(B.color, B.opacity or 0.35)
     rand_inaktiv = rgba(B.color, B.opacity_inactive or 0.15)
 end
+-- leuchtender Rand (theme.border.glow): der Schatten wird zum weichen Schein in Randfarbe, ohne
+-- Versatz (Grösse theme.border.glow_size, Deckkraft theme.border.glow_opacity); Spiele, Videos,
+-- Bildbearbeitung (look.opacity.exceptions) und Vollbild leuchten nie
+local glow = B.glow == true
 
 hl.config({
     general = {
@@ -247,10 +252,10 @@ hl.config({
         fullscreen_opacity = 1.0,
 
         shadow = {
-            enabled      = S.look.shadow,
-            range        = 14,
-            render_power = 3,
-            color        = 0x661a1a1a,
+            enabled      = S.look.shadow or glow,
+            range        = glow and math.max(1, math.floor(tonumber(B.glow_size) or 10)) or 14,
+            render_power = glow and 2 or 3,
+            color        = glow and rgba(B.color, B.glow_opacity or 0.25) or 0x661a1a1a,
         },
 
         blur = {
@@ -356,6 +361,14 @@ do
             match   = { class = "^(" .. table.concat(l, "|") .. ")$" },
             opacity = "1.0 override 1.0 override",
         })
+        -- kein Leuchten für Spiele, Videos und Bildbearbeitung
+        if glow then
+            hl.window_rule({ name = "hypr-shell-glow-aus", match = { class = "^(" .. table.concat(l, "|") .. ")$" }, no_shadow = true })
+        end
+    end
+    -- und nie im Vollbild
+    if glow then
+        hl.window_rule({ name = "hypr-shell-glow-vollbild", match = { fullscreen = true }, no_shadow = true })
     end
 end
 

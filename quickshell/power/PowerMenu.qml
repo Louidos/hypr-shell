@@ -66,7 +66,7 @@ Scope {
                 Grid {
                     x: 24; y: 24
                     columns: ov.cols
-                    spacing: 12
+                    spacing: Theme.pad(12)
                     Repeater {
                         model: pm.actions
                         delegate: Rectangle {
@@ -83,7 +83,7 @@ Scope {
                             Behavior on color { ColorAnimation { duration: 140 } }
                             Column {
                                 anchors.centerIn: parent
-                                spacing: 10
+                                spacing: Theme.pad(10)
                                 Glyph {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: btn.modelData.icon
@@ -94,7 +94,7 @@ Scope {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: btn.modelData.text
                                     size: 13
-                                    weight: Font.DemiBold
+                                    strong: true
                                     color: btn.active || btn.isArmed ? Theme.pillText : Theme.text
                                 }
                             }
@@ -105,7 +105,7 @@ Scope {
                     }
                 }
                 Txt {
-                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 16 }
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.pad(16) }
                     text: pm.armed !== "" ? "Press " + (pm.armed === "reboot" ? "Restart" : "Shutdown") + " again to confirm"
                                           : "←  →  choose   ·   Enter  confirm   ·   Esc  close"
                     size: 12

@@ -370,6 +370,26 @@ selbst so weit dunkler, dass Text lesbar bleibt. Alle Werte stehen unter Einstel
 Animationen) – auch mit `shell-look preset gaming`. Die Leiste schwebt mit Abstand zum Rand
 (`bar.floating`), das Dock nimmt standardmässig dasselbe Glas (`dock.color_mode = glass`).
 
+Auch die Feinheiten sind Einstellungen (Theme → Cards, Spacing, Fonts, Glass), mit Live-Vorschau
+auf den Seiten Look und Theme und „Reset“ je Wert:
+- **Karten** (`theme.card.*`): Farbe, Helligkeit, Helligkeit beim Überfahren und Kontur der Karten
+  in Panels, Dashboard und Einstellungen; auch Text auf Karten bleibt lesbar (Kontrast 4.5:1).
+- **Leuchtender Rand** (`theme.border.glow`, `glow_size`, `glow_opacity`): weicher Schein in
+  Randfarbe um Panels, Karten, Dock und Fenster; Spiele, Videos, Bildbearbeitung und Vollbild
+  leuchten nie.
+- **Abstände** (`theme.spacing.*`): ein Faktor für alle Abstände, dazu Innenabstand der Glasflächen
+  und Karten und die Lücke zwischen Karten.
+- **Schrift** (`theme.font.title_weight`, `text_weight`, `title_scale`): Dicke von Titeln und Text,
+  Grösse der Überschriften; **aktive Pille** (`theme.pill.opacity`).
+
+```bash
+shell-set theme.card.opacity 0.15
+```
+
+```bash
+shell-set theme.border.glow true
+```
+
 ### Farben und Hintergrundbild
 
 Eigene Bilder nach `~/Pictures/Wallpapers` legen und im Dashboard (SUPER + W) anklicken

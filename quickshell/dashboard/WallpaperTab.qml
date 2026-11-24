@@ -26,10 +26,10 @@ Item {
         anchors { top: parent.top; left: parent.left; right: parent.right }
         height: 40
         radius: 20
-        Glyph { id: lens; anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter } text: ""; size: 13; color: Theme.subtext }
+        Glyph { id: lens; anchors { left: parent.left; leftMargin: Theme.pad(16); verticalCenter: parent.verticalCenter } text: ""; size: 13; color: Theme.subtext }
         TextInput {
             id: input
-            anchors { left: lens.right; leftMargin: 10; right: count.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
+            anchors { left: lens.right; leftMargin: Theme.pad(10); right: count.left; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
             color: Theme.text
             font.family: Theme.sans
             font.pixelSize: 13 * Theme.fontScale
@@ -38,7 +38,7 @@ Item {
             Keys.onEscapePressed: text.length > 0 ? text = "" : wt.closeRequested()
             Txt { visible: input.text.length === 0; text: "Search wallpapers"; sub: true; size: 13 }
         }
-        Txt { id: count; anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter } text: files.count + (files.count === 1 ? " image" : " images"); sub: true; size: 11 }
+        Txt { id: count; anchors { right: parent.right; rightMargin: Theme.pad(16); verticalCenter: parent.verticalCenter } text: files.count + (files.count === 1 ? " image" : " images"); sub: true; size: 11 }
     }
 
     FolderListModel {
@@ -52,7 +52,7 @@ Item {
 
     GridView {
         id: view
-        anchors { top: search.bottom; topMargin: 12; left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors { top: search.bottom; topMargin: Theme.pad(12); left: parent.left; right: parent.right; bottom: parent.bottom }
         clip: true
         cellWidth: width / 3
         cellHeight: cellWidth * 0.6
@@ -68,7 +68,7 @@ Item {
             readonly property bool isCurrent: filePath === wt.current
             RoundImage {
                 id: thumb
-                anchors { fill: parent; margins: 6 }
+                anchors { fill: parent; margins: Theme.pad(6) }
                 radius: 14
                 source: "file://" + cardItem.filePath
                 sourceWidth: 480
@@ -84,7 +84,7 @@ Item {
             }
             Rectangle {
                 visible: cardItem.isCurrent
-                anchors { top: thumb.top; right: thumb.right; margins: 8 }
+                anchors { top: thumb.top; right: thumb.right; margins: Theme.pad(8) }
                 width: 24; height: 24; radius: 12
                 color: Theme.pill
                 Glyph { anchors.centerIn: parent; text: ""; size: 11; color: Theme.pillText }

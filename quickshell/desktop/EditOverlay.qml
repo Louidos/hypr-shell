@@ -72,13 +72,13 @@ PanelWindow {
             y: win ? win.margins.top : Ui.widget(which, "y", 0) * ov.sh
             width: win ? win.implicitWidth : 100
             height: win ? win.implicitHeight : 100
-            color: drag.pressed ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.04)
+            color: drag.pressed ? Qt.rgba(1, 1, 1, 0.10) : Theme.cardFaint
             radius: 14
             border.width: 2
             border.color: drag.pressed || hov.hovered ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.55)
 
             Pill {
-                anchors { left: parent.left; bottom: parent.top; bottomMargin: 8 }
+                anchors { left: parent.left; bottom: parent.top; bottomMargin: Theme.pad(8) }
                 clickable: false
                 implicitHeight: 26
                 fontSize: 11
@@ -127,7 +127,7 @@ PanelWindow {
     // ---- Leiste oben: Done, Cancel, Reset positions
     GlassPanel {
         id: bar
-        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 48 }
+        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: Theme.pad(48) }
         width: barRow.implicitWidth + 28
         height: 52
         radius: 26
@@ -135,8 +135,8 @@ PanelWindow {
         Row {
             id: barRow
             anchors.centerIn: parent
-            spacing: 10
-            Txt { anchors.verticalCenter: parent.verticalCenter; text: "Drag to move · scroll to resize · Esc cancels"; size: 13; weight: Font.DemiBold; rightPadding: 6 }
+            spacing: Theme.pad(10)
+            Txt { anchors.verticalCenter: parent.verticalCenter; text: "Drag to move · scroll to resize · Esc cancels"; size: 13; strong: true; rightPadding: Theme.pad(6) }
             Pill { text: "Reset positions"; icon: "󰑓"; onClicked: Ui.resetDraft(); Probe { name: "edit-reset" } }
             Pill { text: "Cancel"; icon: "󰅖"; onClicked: Ui.cancelEdit(); Probe { name: "edit-cancel" } }
             Pill { text: "Done"; icon: "󰄬"; active: true; onClicked: Ui.finishEdit(); Probe { name: "edit-done" } }

@@ -36,7 +36,7 @@ Item {
         visible: lab.res.error === "setup"
         anchors.centerIn: parent
         width: parent.width * 0.6
-        spacing: 8
+        spacing: Theme.pad(8)
         Glyph { anchors.horizontalCenter: parent.horizontalCenter; text: "󰒋"; size: 34; color: Theme.subtext }
         Txt { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; text: "The Lab tab reads your homelab through Missa-Core. Enter the Missa-Core address and the API key in Settings → Integrations."; size: 13; sub: true }
     }
@@ -44,7 +44,7 @@ Item {
     Row {
         visible: lab.res.error !== "setup"
         anchors.fill: parent
-        spacing: 12
+        spacing: Theme.pad(12)
         readonly property real cw: (width - 36) / 4
 
         component Box: GlassCard {
@@ -56,15 +56,15 @@ Item {
             Row {
                 id: hdr
                 x: 14; y: 12
-                spacing: 8
+                spacing: Theme.pad(8)
                 Glyph { text: icon; size: 14 }
-                Txt { text: title; size: 13; weight: Font.Bold }
+                Txt { text: title; size: 13; title: true }
             }
             Flickable {
-                anchors { top: hdr.bottom; topMargin: 8; left: parent.left; leftMargin: 14; right: parent.right; rightMargin: 10; bottom: parent.bottom; bottomMargin: 10 }
+                anchors { top: hdr.bottom; topMargin: Theme.pad(8); left: parent.left; leftMargin: Theme.pad(14); right: parent.right; rightMargin: Theme.pad(10); bottom: parent.bottom; bottomMargin: Theme.pad(10) }
                 contentHeight: body.implicitHeight
                 clip: true
-                Column { id: body; width: parent.width; spacing: 4 }
+                Column { id: body; width: parent.width; spacing: Theme.pad(4) }
             }
         }
         component Line: Row {
@@ -72,7 +72,7 @@ Item {
             property string text: ""
             property string side: ""
             width: parent ? parent.width : 0
-            spacing: 6
+            spacing: Theme.pad(6)
             Rectangle { width: 7; height: 7; radius: 3.5; color: dot; anchors.verticalCenter: parent.verticalCenter }
             Txt { width: parent.width - 13 - sideT.implicitWidth - 6; text: parent.text; size: 11 }
             Txt { id: sideT; text: parent.side; size: 11; sub: true }

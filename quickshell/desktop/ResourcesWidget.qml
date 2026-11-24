@@ -59,7 +59,7 @@ PanelWindow {
 
     Column {
         id: col
-        spacing: 12 * w.k
+        spacing: Theme.pad(12) * w.k
         Probe { name: "desktop-resources"; visible: false }   // unsichtbar: kein Platz in der Spalte
         Repeater {
             model: w.tiles.filter(t => w.tileInfo[t] !== undefined).map(t => w.tileInfo[t])
@@ -78,7 +78,7 @@ PanelWindow {
                     value: Math.max(1, tile.v)
                     color: "#F6F5F4"
                     trackColor: Qt.rgba(1, 1, 1, 0.12)
-                    anchors { top: parent.top; right: parent.right; topMargin: 14 * w.k; rightMargin: 16 * w.k }
+                    anchors { top: parent.top; right: parent.right; topMargin: Theme.pad(14) * w.k; rightMargin: Theme.pad(16) * w.k }
                 }
                 Glyph {
                     anchors.centerIn: ring
@@ -87,13 +87,13 @@ PanelWindow {
                     color: "#c8c8cc"
                 }
                 Column {
-                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: 18 * w.k; bottomMargin: 14 * w.k }
+                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: Theme.pad(18) * w.k; bottomMargin: Theme.pad(14) * w.k }
                     spacing: 0
                     Text {
                         text: tile.v < 0 ? "–" : Math.round(tile.v) + "%"
                         font.family: Theme.mono
                         font.pixelSize: 26 * w.k
-                        font.bold: true
+                        font.weight: Theme.titleWeight
                         color: "#F6F5F4"
                     }
                     Text {

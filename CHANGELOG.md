@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Hinzugefügt
+- Neue Einstellungen für die Optik: Helligkeit und Farbe der Karten, leuchtender Rand um Panels, Dock und Fenster, Abstände, Schriftdicke und Grösse der Überschriften (Theme und Look, mit Live-Vorschau); ohne Änderung sieht alles aus wie bisher (#139)
+
 ### Behoben
 - Das Dock verdeckt das Dashboard und andere Flächen nicht mehr; es fährt weg, solange sie offen sind, und ist nach dem Schliessen sofort wieder da (einstellbar unter Dock → „When a panel is open“: hide, behind oder stay) (#138)
 

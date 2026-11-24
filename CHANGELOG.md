@@ -74,8 +74,10 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)
 
 ### Behoben
-- Ein eigenes Kürzel auf einer fest belegten Taste (Lautstärke, Helligkeit, Medien) wird abgelehnt statt die Hyprland-Konfiguration zu stören
-- Bei einem Kürzel-Konflikt mit den Arbeitsflächen-Tasten nennt die Meldung die kollidierende Kombination (z. B. `SUPER + SHIFT + 1`) statt nur den Modifikator
+- `shell-set` stürzt nicht mehr ab, wenn in settings.json eine Gruppe ein einzelner Wert ist (z. B. `{"look": 5}`); Setzen ersetzt sie, Zurücksetzen entfernt sie
+- `shell-set` lehnt `nan` als Zahl ab, statt den Wert still zu löschen
+- Klarere Meldungen bei kaputter settings.json: eine leere Datei wird als leer gemeldet, ohne „jq: parse error“ und Dateipfad davor
+- `shell-set --help` und `shell-apply --help` zeigen keine überzählige Zeile aus dem Skript mehr
 
 ## 1.4.0 – 2026-11-23
 

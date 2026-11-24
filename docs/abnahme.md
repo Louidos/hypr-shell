@@ -357,3 +357,13 @@ Sensor) und der echte SDDM-Anmeldebildschirm.
 | **50-mal Programm öffnen und schliessen am echten Laptop** | von Hand: kitty, Dateimanager, Firefox, ein Fenster mit Dialog, ein Vollbild-Programm; schliessen per SUPER+Q, Rechtsklick im Dock („Close“), im Programm selbst, bei offener Fensterliste und bei verstecktem Dock – danach reagieren Dock und Leiste sofort, `journalctl --user -b \| grep -i quickshell` ohne Fehler |
 | Lokal ohne Quickshell/Hyprland | nicht lokal getestet, CI entscheidet |
 
+## Tastatur bleibt nicht hängen (#118)
+
+| Punkt | Prüfung |
+| --- | --- |
+| Nach SUPER+B und einer anderen Taste, einem Panel, Verstecken oder 10 s ohne Taste gehört die Tastatur wieder dem Programm | automatisch (`tests/oberflaeche.sh`: Buchstabe, Panel, Verstecken, Notfall, Zeitüberschreitung) |
+| Kein Panel offen → keine Fläche der Shell will die Tastatur | automatisch (`ipc shell keyboard` leer) |
+| CTRL+SUPER+Escape: Kürzel in jeder Submap, Submap verlassen, Fokus unter die Maus | automatisch (`tests/tastatur.sh` mit hyprctl-Attrappe) |
+| **Tastatur am echten Laptop** | von Hand: SUPER+B, dann einen Buchstaben → sofort in kitty tippen; SUPER+B, dann in kitty klicken → tippen; SUPER+B, dann SUPER+A (Panel) und zu → tippen; Vollbild an/aus; `hyprctl layers` zeigt ohne offenes Panel keine hypr-shell-Fläche mit Tastatur; CTRL+SUPER+Escape bei offenem Panel und bei offenem Dock-Tastatur-Modus |
+| Lokal ohne Quickshell/Hyprland | nicht lokal getestet, CI entscheidet |
+

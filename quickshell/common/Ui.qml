@@ -27,12 +27,34 @@ Singleton {
     }
     function closePanel(name) { if (name === undefined || name === "" || panel === name) panel = "" }
     function togglePanel(name) { if (panel === name) closePanel(name); else openPanel(name) }
+
+    // ---- Tastatur: jede Fläche meldet, solange sie die Tastatur will (Exclusive/OnDemand, sichtbar
+    // und offen). Regel: nur sichtbar offene Flächen dürfen die Tastatur haben; der Notfall gibt alles frei.
+    property var keyboardWanted: ({})
+    function setKeyboard(name, on) {
+        if (!name || (keyboardWanted[name] === true) === !!on) return
+        const k = Object.assign({}, keyboardWanted)
+        if (on) k[name] = true; else delete k[name]
+        keyboardWanted = k
+    }
+    function keyboardHolders() { return Object.keys(keyboardWanted).sort().join(",") }
+    signal released()
+    function releaseAll() {
+        closePanel()
+        editDesktop = false
+        released()           // Dock: Tastatur-Modus aus, nicht exklusive Karten zu
+    }
     // "shell-quickshell ipc shell current" nennt das offene Panel, "… shell close" schliesst es
     IpcHandler {
         target: "shell"
         function current(): string { return ui.panel }
         // für Tests und den Notfall: ein Panel öffnen wie von innen (auch ein unbekannter Name)
         function open(name: string): string { ui.openPanel(name); return ui.panel }
+        // welche Flächen der Shell gerade die Tastatur wollen ("" = keine) – shell-diag tastatur
+        function keyboard(): string { return ui.keyboardHolders() }
+        // Notfall (SUPER+CTRL+Escape, shell-diag freigeben): alle Panels zu, Dock-Tastatur-Modus
+        // und Bearbeiten-Modus aus – danach hält keine Fläche der Shell mehr die Tastatur
+        function release(): string { ui.releaseAll(); return ui.keyboardHolders() }
         function close(): void { ui.closePanel() }
         // shell-toggle meldet den Gaming-Modus (Dock ohne Animationen)
         function gaming(on: bool): void { ui.gaming = on }

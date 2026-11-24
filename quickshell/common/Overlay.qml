@@ -96,7 +96,7 @@ Scope {
     // als Panel anmelden (Ui.openPanel öffnet nur angemeldete Namen); verschwindet das Overlay, während
     // es offen ist (z. B. Missa wird abgeschaltet), wird Ui.panel frei
     Component.onCompleted: if (exclusive && name !== "") Ui.registerPanel(name)
-    Component.onDestruction: if (exclusive && name !== "") Ui.unregisterPanel(name)
+    Component.onDestruction: { if (exclusive && name !== "") Ui.unregisterPanel(name); Ui.setKeyboard(ov.namespace, false) }
     // offen, aber kein Fenster zu sehen (Bildschirm abgesteckt, kein Bildschirm): nach 1.5 s zu, damit
     // Ui.panel nicht hängen bleibt (das Dock nähme sonst keine Klicks mehr an)
     Timer {
@@ -183,7 +183,10 @@ Scope {
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: ov.layer
         WlrLayershell.namespace: ov.namespace
-        WlrLayershell.keyboardFocus: ov.open ? ov.keyboardFocus : WlrKeyboardFocus.None
+        // Tastatur nur, solange das Panel offen UND sichtbar ist (nie bei einer unsichtbaren Fläche)
+        readonly property bool wantsKeys: ov.open && visible && !ov.clickThrough && ov.keyboardFocus !== WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: wantsKeys ? ov.keyboardFocus : WlrKeyboardFocus.None
+        onWantsKeysChanged: Ui.setKeyboard(ov.namespace, wantsKeys)
         mask: ov.clickThrough ? noInput : bodyInput
         Region { id: noInput }
         Region { id: bodyInput; item: body }

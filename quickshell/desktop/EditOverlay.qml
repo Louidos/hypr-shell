@@ -26,7 +26,8 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "hypr-shell-edit"
-    WlrLayershell.keyboardFocus: Ui.editDesktop ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // Tastatur nur, solange der Bearbeiten-Modus sichtbar läuft
+    WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     Item {
         id: keys
@@ -34,7 +35,7 @@ PanelWindow {
         focus: true
         Keys.onEscapePressed: Ui.cancelEdit()
     }
-    onVisibleChanged: if (visible) { guides = []; keys.forceActiveFocus() }
+    onVisibleChanged: { Ui.setKeyboard("hypr-shell-edit", visible); if (visible) { guides = []; keys.forceActiveFocus() } }
 
     // ---- feste Hilfslinien: Mitte und Ränder (2 %)
     Repeater {

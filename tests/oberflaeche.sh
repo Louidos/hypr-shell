@@ -685,6 +685,24 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
     else echo "  FEHLER: Tastatur"; dock_ok=0; fi
     # was auch passiert: die Tastatur gehört danach nicht mehr dem Dock
     dk key Escape >/dev/null; dk key Escape >/dev/null
+    # ---- die Tastatur bleibt nie beim Dock hängen: jede andere Taste, ein Panel, Verstecken,
+    # Zeitüberschreitung und der Notfall beenden den Tastatur-Modus; danach hält keine Fläche die Tastatur
+    kb() { "$qs" -p "$cfg" ipc call shell keyboard 2>/dev/null; }
+    dk focus >/dev/null; sleep 0.5
+    t_an="$(dk key "")"; t_kb="$(kb)"; t_buchstabe="$(dk key a)"; t_kb2="$(kb)"
+    dk focus >/dev/null; sleep 0.5; ipc launcher open; sleep 1; t_panel="$(dk key "")"; t_kb3="$(kb)"; ipc launcher close; sleep 1
+    dk focus >/dev/null; sleep 0.5; dk hide >/dev/null; sleep 0.8; t_versteckt="$(dk key "")"; dk open >/dev/null; sleep 0.8
+    dk focus >/dev/null; sleep 0.5; t_notfall_vor="$(dk key "")"; "$qs" -p "$cfg" ipc call shell release >/dev/null 2>&1; sleep 0.3; t_notfall="$(dk key "")"
+    "$HOME/.local/bin/shell-set" dock.keyboard_timeout_s 2 >/dev/null 2>&1; sleep 1.5
+    dk focus >/dev/null; sleep 0.5; t_zeit_vor="$(dk key "")"; sleep 2.6; t_zeit="$(dk key "")"
+    "$HOME/.local/bin/shell-set" reset dock.keyboard_timeout_s >/dev/null 2>&1; sleep 1
+    t_leer="$(kb)"
+    echo "  Tastatur-Modus: an $t_an [$t_kb] → Buchstabe $t_buchstabe [$t_kb2] · Panel $t_panel [$t_kb3] · versteckt $t_versteckt · Notfall $t_notfall_vor → $t_notfall · 2 s $t_zeit_vor → $t_zeit · danach [$t_leer]"
+    if [[ "$t_an" == on:* ]] && [[ "$t_kb" == *hypr-shell-dock* || "$t_kb" == dock:* ]] && [ "$t_buchstabe" = off ] && [ -z "$t_kb2" ] \
+        && [ "$t_panel" = off ] && [ "$t_kb3" = hypr-shell-launcher ] && [ "$t_versteckt" = off ] \
+        && [[ "$t_notfall_vor" == on:* ]] && [ "$t_notfall" = off ] && [[ "$t_zeit_vor" == on:* ]] && [ "$t_zeit" = off ] && [ -z "$t_leer" ]; then
+        echo "  ok: Tastatur-Modus endet bei Buchstabe, Panel, Verstecken, Notfall und nach der Zeit; kein Panel offen → keine Fläche hält die Tastatur"
+    else echo "  FEHLER: Tastatur-Modus des Docks (siehe oben)"; dock_ok=0; fi
     if command -v notify-send >/dev/null 2>&1; then
         notify-send -a kitty "Build" "fertig" 2>/dev/null; sleep 1.5
         if [ "$(dk badge 0)" = 1 ]; then echo "  ok: Zähler für eine Meldung von kitty"; else echo "  FEHLER: Zähler $(dk badge 0)"; dock_ok=0; fi

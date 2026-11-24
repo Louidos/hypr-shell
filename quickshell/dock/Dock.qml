@@ -422,6 +422,7 @@ Scope {
         if (w) w.startKeyboard()
     }
     function leaveFocus() { if (focusWin) focusWin.stopKeyboard(); focusWin = null }
+    Connections { target: Ui; function onReleased() { dock.leaveFocus(); for (const w of dock.windows) w.stopKeyboard() } }
 
     // ---- smart: Fensterflächen von Hyprland nur bei Fenster-Ereignissen neu holen, nie im Takt
     readonly property var refreshEvents: ["openwindow", "closewindow", "movewindow", "movewindowv2", "changefloatingmode",

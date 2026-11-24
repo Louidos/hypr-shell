@@ -38,6 +38,9 @@ Scope {
         function deny(): void { ma.answer(false) }
     }
 
+    // Notfall-Freigabe der Tastatur (SUPER+CTRL+Escape): eine offene Rückfrage gilt als abgelehnt
+    Connections { target: Ui; function onReleased() { if (ma.current !== null) ma.answer(false) } }
+
     Overlay {
         name: "missa-ask"
         exclusive: false

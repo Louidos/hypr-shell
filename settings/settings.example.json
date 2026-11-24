@@ -219,6 +219,7 @@
     "autohide": "smart",
     "show_delay_ms": 150,
     "hide_delay_ms": 400,
+    "keyboard_timeout_s": 10,
     "hide_on_fullscreen": true,
     "avoid_bar": true,
     "items": [
@@ -382,6 +383,7 @@
     "dock_focus": "SUPER + B",
     "missa_chat": "SUPER + I",
     "missa_voice": "SUPER + SHIFT + I",
+    "emergency": "CTRL + SUPER + Escape",
     "lock": "SUPER + L",
     "exit": "SUPER + M",
     "screenshot_region": "Print",

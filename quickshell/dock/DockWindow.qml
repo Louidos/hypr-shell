@@ -48,7 +48,7 @@ PanelWindow {
     readonly property int thickness: icon + 2 * d.padding + labelRoom
     readonly property int radius: Math.min(d.radius, Math.floor(thickness / 2))
     readonly property int shadowPad: d.shadow === "none" ? 0 : d.shadow === "soft" ? 12 : d.shadow === "medium" ? 18 : 26
-    readonly property int tipRoom: d.labels === "hover" ? (vertical ? 240 : 44) : 0
+    readonly property int tipRoom: d.labels === "hover" || keyboard ? (vertical ? 240 : 44) : 0
     // Vergrösserung (nicht, wenn das Dock scrollt): Platz dafür ist im Fenster schon reserviert,
     // damit sich die Fenstergrösse beim Darüberfahren nicht ändert
     readonly property bool magnify: d.magnify && !scrolls
@@ -95,7 +95,7 @@ PanelWindow {
                  windowWidth: width, windowHeight: height, icon: icon, scrolls: scrolls, radius: radius, hidden: hidden }
     }
     Component.onCompleted: { const l = d.windows.slice(); l.push(win); d.windows = l }
-    Component.onDestruction: { if (d) d.windows = d.windows.filter(w => w !== win) }
+    Component.onDestruction: { if (d) d.windows = d.windows.filter(w => w !== win); Ui.setKeyboard("dock:" + (screen ? screen.name : ""), false) }
 
     anchors {
         bottom: pos === "bottom"
@@ -126,7 +126,11 @@ PanelWindow {
     readonly property string exclusionText: d.reserve ? "reserve" : d.avoidBar && d.barSameEdge ? "avoid" : "ignore"
     WlrLayershell.layer: d.topLayer ? WlrLayer.Top : WlrLayer.Bottom
     WlrLayershell.namespace: "hypr-shell-dock"
-    WlrLayershell.keyboardFocus: keyboard ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    // Tastatur nur, solange der Tastatur-Modus läuft UND das Dock sichtbar ist und Eingaben annimmt –
+    // sonst hielte eine unsichtbare Fläche die Tastatur fest und Programme bekämen keine Tasten mehr
+    readonly property bool keyboardActive: keyboard && visible && inputOn && !hidden
+    WlrLayershell.keyboardFocus: keyboardActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    onKeyboardActiveChanged: { if (keyboard && !keyboardActive) d.leaveFocus(); Ui.setKeyboard("dock:" + (screen ? screen.name : ""), keyboardActive) }
     // ist ein Panel offen (Dashboard, Starter, Power-Menü …), nimmt das Dock keine Eingaben an
     readonly property bool inputOn: Ui.panel === "" || Ui.panel === "settings"
     mask: !inputOn ? noRegion : hidden ? edgeRegion : bodyRegion
@@ -347,9 +351,29 @@ PanelWindow {
     function startKeyboard() {
         keyboard = true
         if (selectable.indexOf(selectedKey) < 0) selectedKey = selectable.length > 0 ? selectable[0] : ""
+        keyTimeout.restart()
         keys0.forceActiveFocus()
     }
-    function stopKeyboard() { keyboard = false; closePopup() }
+    function stopKeyboard() { keyboard = false; keyTimeout.stop(); closePopup() }
+    // ohne Taste nach dock.keyboard_timeout_s Sekunden (0 = nie) zurück an das Programm
+    readonly property int keyboardTimeout: Math.max(0, Math.min(120, Number(Settings.get("dock.keyboard_timeout_s", 10)) || 0))
+    Timer {
+        id: keyTimeout
+        interval: Math.max(1, win.keyboardTimeout) * 1000
+        running: win.keyboard && win.keyboardTimeout > 0
+        onTriggered: win.d.leaveFocus()
+    }
+    // Klick daneben (in ein Programm) beendet den Tastatur-Modus (wie bei den Panels)
+    HyprlandFocusGrab {
+        active: win.keyboardActive && Ui.hyprland
+        windows: [win, popup]
+        onCleared: win.d.leaveFocus()
+    }
+    // ein Panel öffnet sich: der Tastatur-Modus endet (das Panel bekommt die Tastatur)
+    Connections {
+        target: Ui
+        function onPanelChanged() { if (win.keyboard && Ui.panel !== "") win.d.leaveFocus() }
+    }
     function itemFor(key) {
         for (let i = 0; i < row.children.length; i++) if (row.children[i].item && row.children[i].item.key === key) return row.children[i]
         return null
@@ -362,7 +386,8 @@ PanelWindow {
             else if (k === "Down" || k === fwd) popup.selected = Math.min(popupRows.length - 1, popup.selected + 1)
             else if (k === "Return" || k === "Enter" || k === "Space") popup.run(popup.selected)
             else if (k === "Escape") closePopup()
-            else return false
+            else { d.leaveFocus(); return false }
+            keyTimeout.restart()
             return true
         }
         const i = selectable.indexOf(selectedKey)
@@ -373,7 +398,8 @@ PanelWindow {
         else if (k === "Return" || k === "Enter" || k === "Space") { d.activate(byKey[selectedKey]); d.leaveFocus() }
         else if (k === "Menu" || (k === "F10" && shift)) { const t = itemFor(selectedKey); if (t) menu(byKey[selectedKey], t.iconItem) }
         else if (k === "Escape") d.leaveFocus()
-        else return false
+        else { d.leaveFocus(); return false }        // jede andere Taste: zurück an das Programm
+        keyTimeout.restart()
         return true
     }
     // für Tests: Taste wie von der Tastatur
@@ -394,17 +420,25 @@ PanelWindow {
             names[Qt.Key_Menu] = "Menu"; names[Qt.Key_F10] = "F10"; names[Qt.Key_Escape] = "Escape"
             names[Qt.Key_Home] = "Home"; names[Qt.Key_End] = "End"
             const n = names[event.key]
-            if (n && win.handleKey(n, (event.modifiers & Qt.ShiftModifier) !== 0)) event.accepted = true
+            if (n) { if (win.handleKey(n, (event.modifiers & Qt.ShiftModifier) !== 0)) event.accepted = true; return }
+            // eine Taste ohne Bedeutung im Dock (Buchstabe, Zahl …) beendet den Tastatur-Modus;
+            // Umschalt-, Steuerungs-, Alt- und Super-Taste allein nicht (Teil einer Kombination)
+            const mods = [Qt.Key_Shift, Qt.Key_Control, Qt.Key_Alt, Qt.Key_Meta, Qt.Key_Super_L, Qt.Key_Super_R, Qt.Key_AltGr, Qt.Key_CapsLock]
+            if (mods.indexOf(event.key) < 0) win.d.leaveFocus()
         }
     }
 
     // Name des Symbols unter der Maus (dock.labels = hover), ausserhalb des Glases
     property var hoverItem: null
     property string hoverText: ""
+    // im Tastatur-Modus zeigt der Hinweis das gewählte Symbol und die Tasten (sichtbar, solange er läuft)
+    readonly property var kbItem: keyboard ? itemFor(selectedKey) : null
+    readonly property var tipAnchor: keyboard ? (kbItem ? kbItem.iconItem : null) : hoverItem
+    readonly property string tipLabel: keyboard ? ((byKey[selectedKey] ? byKey[selectedKey].name + "  ·  " : "") + "← → choose · Enter open · Esc leave") : hoverText
     Rectangle {
         id: tip
-        visible: win.d.labels === "hover" && win.hoverItem !== null && win.hoverText !== "" && !win.hidden
-        readonly property point c: win.hoverItem ? win.hoverItem.mapToItem(win.contentItem, win.hoverItem.width / 2, win.hoverItem.height / 2) : Qt.point(0, 0)
+        visible: (win.keyboard || win.d.labels === "hover") && win.tipAnchor !== null && win.tipLabel !== "" && !win.hidden
+        readonly property point c: win.tipAnchor ? win.tipAnchor.mapToItem(win.contentItem, win.tipAnchor.width / 2, win.tipAnchor.height / 2) : Qt.point(0, 0)
         width: tipText.implicitWidth + 20
         height: tipText.implicitHeight + 10
         radius: height / 2
@@ -413,13 +447,13 @@ PanelWindow {
         border.color: Theme.glassBorder
         x: win.vertical ? (win.pos === "left" ? Math.max(body.x + body.width, c.x + half) + 8 : Math.min(body.x, c.x - half) - width - 8)
                         : Math.max(2, Math.min(win.width - width - 2, c.x - width / 2))
-        readonly property real half: win.hoverItem ? (win.vertical ? win.hoverItem.width : win.hoverItem.height) / 2 : 0
+        readonly property real half: win.tipAnchor ? (win.vertical ? win.tipAnchor.width : win.tipAnchor.height) / 2 : 0
         y: win.vertical ? Math.max(2, Math.min(win.height - height - 2, c.y - height / 2))
                         : (win.pos === "bottom" ? Math.min(body.y, c.y - half) - height - 8 : Math.max(body.y + body.height, c.y + half) + 8)
         Txt {
             id: tipText
             anchors.centerIn: parent
-            text: win.hoverText
+            text: win.tipLabel
             size: 12
         }
     }

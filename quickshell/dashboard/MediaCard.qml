@@ -16,7 +16,7 @@ Item {
         anchors { top: parent.top; horizontalCenter: parent.horizontalCenter }
         width: Math.min(parent.width, parent.height - 110)
         height: width
-        radius: 14
+        radius: Theme.corner(14)
         source: m.player ? m.player.trackArtUrl : ""
         sourceWidth: 400
         Glyph {

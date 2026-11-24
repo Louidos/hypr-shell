@@ -99,7 +99,7 @@ Column {
                 visible: lp.confirm !== ""
                 width: parent.width
                 height: 52
-                radius: 14
+                radius: Theme.corner(14)
                 color: Theme.field
                 Txt {
                     anchors { left: parent.left; leftMargin: Theme.pad(14); right: btns.left; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }

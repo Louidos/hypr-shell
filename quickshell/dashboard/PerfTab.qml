@@ -94,11 +94,13 @@ Grid12 {
         size: 17
         strong: true
     }
-    // gewelltes Abzeichen ("Cookie", Material 3 expressive)
+    // gewelltes Abzeichen ("Cookie", Material 3 expressive, wie die Vorlage) oder ein Kreis
+    // (dashboard.perf_badge = wave | circle)
     component Cookie: Canvas {
         id: ck
         property color fill: Theme.container
-        property int bumps: 9
+        property int bumps: Settings.get("dashboard.perf_badge", "wave") === "circle" ? 0 : 9
+        onBumpsChanged: requestPaint()
         onFillChanged: requestPaint()
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -109,7 +111,7 @@ Grid12 {
             g.beginPath()
             for (let i = 0; i <= 180; i++) {
                 const a = i / 180 * Math.PI * 2
-                const r = R * (0.9 + 0.1 * Math.cos(a * ck.bumps))
+                const r = ck.bumps > 0 ? R * (0.9 + 0.1 * Math.cos(a * ck.bumps)) : R * 0.95
                 const x = cx + r * Math.cos(a), y = cy + r * Math.sin(a)
                 if (i === 0) g.moveTo(x, y); else g.lineTo(x, y)
             }
@@ -156,11 +158,11 @@ Grid12 {
         Item {
             x: 18; y: parent.height - 28
             width: blob.x - 34; height: 6
-            Rectangle { anchors.fill: parent; radius: 3; color: Theme.track }
+            Rectangle { anchors.fill: parent; radius: Theme.corner(3); color: Theme.track }
             Rectangle {
                 width: parent.width * Math.max(0, Math.min(1, (typeof cc.temp === "number" ? cc.temp : 0) / 100))
                 height: parent.height
-                radius: 3
+                radius: Theme.corner(3)
                 color: (cc.temp || 0) >= 85 ? Theme.warn : Theme.accent
                 Behavior on width { NumberAnimation { duration: 600; easing.type: Easing.OutCubic } }
             }
@@ -168,6 +170,7 @@ Grid12 {
         Txt { anchors.horizontalCenter: blob.horizontalCenter; y: 12; text: "Usage"; size: 12; sub: true }
         Cookie {
             id: blob
+            Probe { name: "perf-badge" }
             anchors { right: parent.right; rightMargin: Theme.pad(16) }
             y: 32 + (parent.height - 32 - height) / 2 - 6
             width: cc.bs; height: cc.bs
@@ -233,7 +236,7 @@ Grid12 {
             Rectangle {
                 width: Math.min(parent.width, dl.implicitWidth + 34)
                 height: 32
-                radius: 16
+                radius: Theme.corner(16)
                 color: Theme.container
                 Row {
                     id: dl

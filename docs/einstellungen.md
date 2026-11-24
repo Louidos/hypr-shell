@@ -148,6 +148,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `desktop.clock.scale` | `1.0` | Zahl 0.3 … 3, Schritt 0.05 | Size factor of the clock | `shell-set desktop.clock.scale 1.05` |
 | `desktop.resources.enabled` | `true` | `true`, `false` | Usage tiles on the desktop | `shell-set desktop.resources.enabled false` |
 | `desktop.resources.tiles` | `["cpu","ram","gpu"]` | Liste aus `cpu`, `ram`, `gpu`, `disk` | Tiles and their order | `shell-set desktop.resources.tiles cpu,ram` |
+| `desktop.resources.hide_empty` | `true` | `true`, `false` | Leave out the GPU tile while it has no value (–), e.g. without a supported graphics card or while it sleeps | `shell-set desktop.resources.hide_empty false` |
 | `desktop.resources.x` | `0.015` | Zahl 0 … 1, Schritt 0.005 | Distance from the left as a share of the screen width | `shell-set desktop.resources.x 0.02` |
 | `desktop.resources.y` | `0.56` | Zahl 0 … 1, Schritt 0.005 | Distance from the top as a share of the screen height | `shell-set desktop.resources.y 0.565` |
 | `desktop.resources.scale` | `1.0` | Zahl 0.3 … 3, Schritt 0.05 | Size factor of the tiles | `shell-set desktop.resources.scale 1.05` |
@@ -163,6 +164,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dashboard.tabs` | `["dashboard","wallpaper","performance","games","lab","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `games`, `lab`, `about` | Tabs in this order (Games only with Steam games or own entries, Lab only with lab.enabled) | `shell-set dashboard.tabs dashboard,wallpaper` |
 | `dashboard.start` | `dashboard` | `dashboard`, `wallpaper`, `performance`, `games`, `lab`, `about` | Tab shown when the dashboard opens | `shell-set dashboard.start wallpaper` |
 | `dashboard.cards` | `["weather","profile","media","clock","calendar","rings"]` | Liste aus `weather`, `profile`, `media`, `clock`, `calendar`, `rings` | Cards on the Dashboard tab | `shell-set dashboard.cards weather,profile` |
+| `dashboard.perf_badge` | `wave` | `wave`, `circle` | Shape behind the CPU and GPU percentage in the Performance tab: wave (like the template) or circle | `shell-set dashboard.perf_badge circle` |
 
 ## weather – Wetter
 

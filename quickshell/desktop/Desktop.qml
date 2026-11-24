@@ -14,6 +14,8 @@ Scope {
         function edit(): void { Ui.startEdit() }
         function done(): void { if (Ui.editDesktop) Ui.finishEdit() }
         function cancel(): void { Ui.cancelEdit() }
+        // für Tests: die sichtbaren Kacheln, z. B. "cpu,ram" (ohne Wert ausgeblendete GPU fehlt)
+        function shown(): string { return tiles.shownTiles.join(",") }
     }
 
     ClockWidget {

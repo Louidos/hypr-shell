@@ -55,7 +55,7 @@ Column {
                     required property string modelData
                     width: profCol.width
                     height: 40
-                    radius: 12
+                    radius: Theme.corner(12)
                     color: Theme.cardSoft
                     Txt { anchors { left: parent.left; leftMargin: Theme.pad(12); verticalCenter: parent.verticalCenter } text: modelData; size: 13; strong: true }
                     Row {

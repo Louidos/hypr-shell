@@ -102,7 +102,7 @@ Column {
                         spacing: Theme.pad(8)
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 10; height: 10; radius: 5
+                            width: 10; height: 10; radius: Theme.corner(5)
                             color: card.st.state === "ready" ? "#5cc98a" : card.st.state === "off" ? Theme.track
                                  : card.st.state === "setup" ? "#e0b24f" : Theme.warn
                             Probe { name: "status-" + card.modelData.id }
@@ -130,7 +130,7 @@ Column {
                     visible: card.on && card.modelData.secret !== ""
                     width: col.width
                     height: 52
-                    radius: 14
+                    radius: Theme.corner(14)
                     color: Theme.cardFaint
                     Txt {
                         id: secLabel
@@ -143,7 +143,7 @@ Column {
                     Rectangle {
                         anchors { left: secLabel.right; leftMargin: Theme.pad(8); right: secBtns.left; rightMargin: Theme.pad(10); verticalCenter: parent.verticalCenter }
                         height: 34
-                        radius: 17
+                        radius: Theme.corner(17)
                         color: Theme.field
                         border.width: 1
                         border.color: Theme.cardBorder

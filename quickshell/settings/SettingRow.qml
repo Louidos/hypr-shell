@@ -56,7 +56,7 @@ GlassCard {
 
         Rectangle {
             id: bubble
-            width: 36; height: 36; radius: 18
+            width: 36; height: 36; radius: Theme.corner(18)
             x: 14
             y: row.stacked ? 14 : (head.height - height) / 2
             color: Theme.cardStrong
@@ -244,7 +244,7 @@ GlassCard {
                 delegate: Rectangle {
                     required property string modelData
                     anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-                    width: 22; height: 22; radius: 11
+                    width: 22; height: 22; radius: Theme.corner(11)
                     color: modelData
                     border.width: String(row.shown).toLowerCase() === modelData ? 2 : 0
                     border.color: "white"

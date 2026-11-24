@@ -170,7 +170,7 @@ Column {
                             id: tile
                             anchors.centerIn: parent
                             width: 44; height: 28
-                            radius: 5
+                            radius: Theme.corner(5)
                             color: Theme.card
                             border.width: 1
                             border.color: Theme.glassBorder
@@ -178,7 +178,7 @@ Column {
                             rotation: -rotRow.rot.grad
                             transform: Scale { origin.x: tile.width / 2; xScale: rotRow.rot.mirrored ? -1 : 1 }
                             Behavior on rotation { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                            Rectangle { x: 6; y: 3; width: parent.width - 12; height: 3; radius: 1.5; color: Theme.accent }
+                            Rectangle { x: 6; y: 3; width: parent.width - 12; height: 3; radius: Theme.corner(1.5); color: Theme.accent }
                             Txt { anchors.centerIn: parent; anchors.verticalCenterOffset: 2; text: "A"; size: 12; heavy: true }
                         }
                     }

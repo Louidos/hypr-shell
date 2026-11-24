@@ -73,7 +73,7 @@ Item {
             property string side: ""
             width: parent ? parent.width : 0
             spacing: Theme.pad(6)
-            Rectangle { width: 7; height: 7; radius: 3.5; color: dot; anchors.verticalCenter: parent.verticalCenter }
+            Rectangle { width: 7; height: 7; radius: Theme.corner(3.5); color: dot; anchors.verticalCenter: parent.verticalCenter }
             Txt { width: parent.width - 13 - sideT.implicitWidth - 6; text: parent.text; size: 11 }
             Txt { id: sideT; text: parent.side; size: 11; sub: true }
         }

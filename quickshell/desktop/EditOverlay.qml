@@ -73,7 +73,7 @@ PanelWindow {
             width: win ? win.implicitWidth : 100
             height: win ? win.implicitHeight : 100
             color: drag.pressed ? Qt.rgba(1, 1, 1, 0.10) : Theme.cardFaint
-            radius: 14
+            radius: Theme.corner(14)
             border.width: 2
             border.color: drag.pressed || hov.hovered ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.55)
 
@@ -130,7 +130,7 @@ PanelWindow {
         anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: Theme.pad(48) }
         width: barRow.implicitWidth + 28
         height: 52
-        radius: 26
+        radius: Theme.corner(26)
         glassOpacity: 0.85
         Row {
             id: barRow

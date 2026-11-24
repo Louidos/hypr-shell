@@ -118,7 +118,7 @@ Grid12 {
         visible: home.shown("profile") && !Integrations.missa
         RoundImage {
             id: avatar
-            width: 62; height: 62; radius: 31
+            width: 62; height: 62; radius: Theme.corner(31)
             anchors { left: parent.left; leftMargin: Theme.pad(18); verticalCenter: parent.verticalCenter }
             source: Settings.face
             Component.onCompleted: Settings.checkFace()

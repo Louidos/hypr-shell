@@ -104,7 +104,7 @@ Scope {
                     anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: Theme.pad(24) }
                     width: Math.min(420, parent.width - 48)
                     height: 44
-                    radius: 22
+                    radius: Theme.corner(22)
                     color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
@@ -144,7 +144,7 @@ Scope {
                                 id: frame
                                 width: ow.cellW
                                 height: ow.cellH
-                                radius: 14
+                                radius: Theme.corner(14)
                                 clip: true
                                 color: cell.hot ? Theme.cardHover : Theme.card
                                 border.width: ow.snap.active === cell.wsId || cell.hot ? 2 : 1
@@ -160,7 +160,7 @@ Scope {
                                         y: Math.max(0, ((modelData.at ? modelData.at[1] : 0) - cell.mon.y) * k)
                                         width: Math.max(24, (modelData.size ? modelData.size[0] : 400) * k)
                                         height: Math.max(18, (modelData.size ? modelData.size[1] : 300) * k)
-                                        radius: 8
+                                        radius: Theme.corner(8)
                                         color: Qt.rgba(1, 1, 1, wh.hovered ? 0.16 : 0.09)
                                         border.width: 1
                                         border.color: Theme.glassBorder
@@ -228,7 +228,7 @@ Scope {
                     x: root.dragPos.x - width / 2
                     y: root.dragPos.y - height / 2
                     width: 120; height: 34
-                    radius: 10
+                    radius: Theme.corner(10)
                     color: Theme.pill
                     Txt {
                         anchors.centerIn: parent

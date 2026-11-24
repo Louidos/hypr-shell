@@ -225,7 +225,7 @@ Scope {
                     height: 44
                     Rectangle {
                         id: av
-                        width: 38; height: 38; radius: 19
+                        width: 38; height: 38; radius: Theme.corner(19)
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.container
                         Glyph { anchors.centerIn: parent; text: "󰚩"; size: 18; color: Theme.containerText }
@@ -237,7 +237,7 @@ Scope {
                             spacing: Theme.pad(6)
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 8; height: 8; radius: 4
+                                width: 8; height: 8; radius: Theme.corner(4)
                                 color: mc.health.state === "ok" ? "#5cc98a" : mc.health.state === "setup" ? "#e0b24f" : Theme.warn
                             }
                             Txt { text: mc.health.text || ""; size: 11; sub: true }
@@ -315,7 +315,7 @@ Scope {
                             anchors.right: msg.mine ? parent.right : undefined
                             width: Math.min(list.width * 0.86, Math.max(60, body.implicitWidth + 28))
                             height: body.implicitHeight + 20
-                            radius: 16
+                            radius: Theme.corner(16)
                             color: msg.mine ? Theme.container : msg.modelData.role === "error" ? Qt.rgba(0.88, 0.42, 0.46, 0.18) : Theme.card
                             border.width: 1
                             border.color: Theme.cardBorder
@@ -387,7 +387,7 @@ Scope {
                     Rectangle {
                         width: parent.width
                         height: Math.min(140, Math.max(48, input.contentHeight + 24))
-                        radius: 20
+                        radius: Theme.corner(20)
                         color: Theme.field
                         border.width: 1
                         border.color: drop.containsDrag ? Theme.text : Theme.cardBorder
@@ -452,7 +452,7 @@ Scope {
         margin: 72
         panelWidth: 280
         panelHeight: 52
-        radius: 26
+        radius: Theme.corner(26)
         localOpen: mc.voiceState !== ""
         layer: WlrLayer.Overlay
         keyboardFocus: WlrKeyboardFocus.OnDemand
@@ -479,12 +479,12 @@ Scope {
                     visible: mc.voiceState === "listening"
                     anchors { left: vText.right; leftMargin: Theme.pad(14); right: parent.right; rightMargin: Theme.pad(20); verticalCenter: parent.verticalCenter }
                     height: 6
-                    radius: 3
+                    radius: Theme.corner(3)
                     color: Theme.track
                     Rectangle {
                         width: parent.width * Math.min(100, mc.level) / 100
                         height: parent.height
-                        radius: 3
+                        radius: Theme.corner(3)
                         color: Theme.pill
                         Behavior on width { NumberAnimation { duration: 100 } }
                     }

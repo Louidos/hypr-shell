@@ -22,6 +22,8 @@ Scope {
     }
 
     property string query: ""
+    // Höhe, die das Raster ohne Suche braucht (vom Inhalt gemeldet, siehe Overlay)
+    property real naturalH: 640
     property string category: "all"
     property int sel: 0
     property var recent: ({})
@@ -224,7 +226,9 @@ Scope {
         place: "center"
         margin: 0
         panelWidth: 860
-        panelHeight: 640
+        // Höhe nach dem Inhalt (alle Apps, ohne Suche): keine halb leere Fläche; höchstens 640,
+        // darüber rollt das Raster; beim Suchen bleibt die Höhe, damit das Panel nicht springt
+        panelHeight: Math.max(300, Math.min(640, ag.naturalH))
         scroll: false
         glassOpacity: Theme.glassOpacity
         keyboardFocus: WlrKeyboardFocus.Exclusive
@@ -237,14 +241,17 @@ Scope {
                 property alias input: field
                 focus: true
                 readonly property real cell: 116
+                // Höhe, die der ganze Inhalt braucht (Suchfeld, Kategorien, Raster mit Kopf)
+                readonly property real wantH: grid.y + grid.contentHeight + Theme.panelPad
+                onWantHChanged: if (ag.query === "" && ag.category === "all") ag.naturalH = wantH
 
                 // ---- Suchfeld
                 Rectangle {
                     id: box
-                    x: 18; y: 18
-                    width: parent.width - 36
+                    x: Theme.panelPad; y: Theme.panelPad
+                    width: parent.width - 2 * Theme.panelPad
                     height: 46
-                    radius: 23
+                    radius: Theme.corner(23)
                     color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
@@ -297,9 +304,9 @@ Scope {
                 Flickable {
                     id: chips
                     visible: ag.showCategories
-                    x: 18
+                    x: Theme.panelPad
                     anchors { top: box.bottom; topMargin: Theme.pad(12) }
-                    width: parent.width - 36
+                    width: parent.width - 2 * Theme.panelPad
                     height: visible ? 30 : 0
                     contentWidth: chipRow.width
                     clip: true
@@ -322,9 +329,9 @@ Scope {
                 // ---- Raster (oben Favoriten und zuletzt benutzt, wenn nichts gesucht wird)
                 GridView {
                     id: grid
-                    x: 18
-                    anchors { top: chips.bottom; topMargin: Theme.pad(12); bottom: parent.bottom; bottomMargin: Theme.pad(14) }
-                    width: parent.width - 36
+                    x: Theme.panelPad
+                    anchors { top: chips.bottom; topMargin: Theme.pad(12); bottom: parent.bottom; bottomMargin: Theme.panelPad }
+                    width: parent.width - 2 * Theme.panelPad
                     clip: true
                     cellWidth: Math.floor(width / Math.max(1, Math.floor(width / root.cell)))
                     cellHeight: root.cell
@@ -420,7 +427,7 @@ Scope {
                                 required property int index
                                 width: menuCol.width
                                 height: 34
-                                radius: 8
+                                radius: Theme.corner(8)
                                 color: mh.hovered ? Theme.cardHover : "transparent"
                                 Glyph { id: mi; x: 10; anchors.verticalCenter: parent.verticalCenter; text: parent.modelData.icon; size: 14; color: Theme.subtext }
                                 Txt {

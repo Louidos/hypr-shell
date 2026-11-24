@@ -79,7 +79,7 @@ Scope {
                     x: 14; y: 14
                     width: parent.width - 28 - clearBtn.width - 10
                     height: 44
-                    radius: 22
+                    radius: Theme.corner(22)
                     color: Theme.field
                     border.width: 1
                     border.color: Theme.cardBorder
@@ -129,7 +129,7 @@ Scope {
                         readonly property bool isImage: modelData.image !== ""
                         width: list.width
                         height: isImage ? 96 : Math.min(84, txt.implicitHeight + 24)
-                        radius: 14
+                        radius: Theme.corner(14)
                         color: index === cb.sel ? Theme.cardHover : (hov.hovered ? Theme.card : Theme.cardLevel(0.4))
                         border.width: 1
                         border.color: index === cb.sel ? Theme.glassBorder : "transparent"

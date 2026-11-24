@@ -73,7 +73,7 @@ Scope {
                     Rectangle {
                         width: parent.width
                         height: code.implicitHeight + 20
-                        radius: 12
+                        radius: Theme.corner(12)
                         color: Qt.rgba(0, 0, 0, 0.35)
                         Text {
                             id: code

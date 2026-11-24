@@ -35,6 +35,10 @@ PanelWindow {
 
     // Kacheln und Reihenfolge aus settings.json (desktop.resources.tiles: cpu, ram, gpu, disk)
     readonly property var tiles: Settings.get("desktop.resources.tiles", ["cpu", "ram", "gpu"])
+    readonly property bool hideEmpty: Settings.get("desktop.resources.hide_empty", true) === true
+    // ohne Wert für die GPU ("–", z. B. keine unterstützte Karte oder sie schläft) bleibt ihre
+    // Kachel weg (desktop.resources.hide_empty); CPU und RAM haben immer einen Wert
+    readonly property var shownTiles: tiles.filter(t => tileInfo[t] !== undefined && !(t === "gpu" && hideEmpty && gpuUtil < 0))
     readonly property var tileInfo: ({
         cpu: { label: "CPU", icon: "\uf2db", value: () => usage.cpu },
         ram: { label: "RAM", icon: "󰍛", value: () => usage.mem },
@@ -62,7 +66,7 @@ PanelWindow {
         spacing: Theme.pad(12) * w.k
         Probe { name: "desktop-resources"; visible: false }   // unsichtbar: kein Platz in der Spalte
         Repeater {
-            model: w.tiles.filter(t => w.tileInfo[t] !== undefined).map(t => w.tileInfo[t])
+            model: w.shownTiles.map(t => w.tileInfo[t])
             delegate: GlassPanel {
                 id: tile
                 required property var modelData
@@ -70,6 +74,7 @@ PanelWindow {
                 width: 160 * w.k
                 height: 118 * w.k
                 radius: Theme.panelRadius * w.k
+                Probe { name: "resources-" + tile.modelData.label.toLowerCase() }
                 Ring {
                     id: ring
                     width: 52 * w.k

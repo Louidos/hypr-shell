@@ -413,7 +413,10 @@ shell-set theme.border.glow true
 Eigene Bilder nach `~/Pictures/Wallpapers` legen und im Dashboard (SUPER + W) anklicken
 oder `shell-wallpaper <bild>` aufrufen. matugen erzeugt daraus die Farben für Hyprland,
 Waybar, kitty, rofi, hyprlock und Quickshell; bei einem grauen Bild bleibt alles
-grau/weiss. Mitgeliefert ist ein schlichtes graues Verlaufsbild.
+grau/weiss. Mitgeliefert sind ein dunkles Blütenfoto (Standard, damit das Glas wie in der Vorlage
+wirkt; CC0, siehe NOTICE) und ein schlichtes graues Verlaufsbild. Beide geben grau-weisse Farben.
+Ohne eigene Auswahl entscheidet `theme.wallpaper_default` (`bluete` oder `grau`); eine eigene
+Auswahl bleibt, `shell-wallpaper --standard` vergisst sie wieder.
 
 ![Farben aus einem bunten Bild](docs/screenshots/farben-aus-bild.png)
 

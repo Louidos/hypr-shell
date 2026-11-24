@@ -103,6 +103,7 @@
   "theme": {
     "colors": "auto",
     "accent": "#8ab4f8",
+    "wallpaper_default": "bluete",
     "glass": 0.46,
     "glass_color": "#1a1a1d",
     "border": {

@@ -3,7 +3,9 @@
 # für Hyprland, Waybar, kitty, rofi, hyprlock und Quickshell.
 #
 #   shell-wallpaper <bild>     Bild setzen und Farben erzeugen
-#   shell-wallpaper --restore  zuletzt gewähltes Bild (oder das Startbild) wieder setzen
+#   shell-wallpaper --restore  zuletzt gewähltes Bild (oder ohne Auswahl das Startbild) wieder setzen
+#   shell-wallpaper --standard eigene Auswahl vergessen und das Startbild zeigen
+#                              (theme.wallpaper_default: bluete = Blütenfoto, grau = graues Bild)
 #   shell-wallpaper --current  Pfad des aktuellen Bildes ausgeben
 #   shell-wallpaper --colors   Farben neu erzeugen (nach einer Änderung von theme.colors / theme.accent)
 #
@@ -14,7 +16,15 @@ set -euo pipefail
 DATA="$HOME/.local/share/hypr-shell"
 STATE="$DATA/wallpaper"
 FARBEN_FUER="$DATA/colors-for"
-STANDARD="$DATA/wallpapers/hypr-shell-grau.png"
+# Startbild ohne eigene Auswahl (theme.wallpaper_default): bluete = dunkles Blütenfoto wie in der
+# Vorlage (Standard), grau = schlichtes graues Verlaufsbild. Fehlt das Blütenbild, gilt das graue.
+standardbild() {
+    local w="" eff="$DATA/settings.effective.json"
+    if command -v jq >/dev/null 2>&1 && [ -f "$eff" ]; then w="$(jq -r '.theme.wallpaper_default // empty' "$eff" 2>/dev/null || true)"; fi
+    if [ "$w" != grau ] && [ -f "$DATA/wallpapers/hypr-shell-bluete.jpg" ]; then echo "$DATA/wallpapers/hypr-shell-bluete.jpg"
+    else echo "$DATA/wallpapers/hypr-shell-grau.png"; fi
+}
+STANDARD="$(standardbild)"
 
 meldung() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Wallpaper" "$@" || true; }
 
@@ -38,9 +48,11 @@ daemon() {
     return 1
 }
 
-# graues Bild (wenig Sättigung) -> graue Farben wie in der Vorlage
+# graues Bild (wenig Sättigung) -> graue Farben wie in der Vorlage; die mitgelieferten Bilder
+# (Blüten, grau) geben immer grau-weisse Farben, auch wenn ein Blatt oder eine Blüte Farbe hat
 schema() {
     local im s
+    case "$(basename "$1")" in hypr-shell-bluete.jpg|hypr-shell-grau.png) echo scheme-monochrome; return ;; esac
     im="$(command -v magick || command -v convert || true)"
     if [ -n "$im" ]; then
         s="$("$im" "$1[0]" -resize 64x64! -colorspace HSL -channel G -separate +channel -format '%[fx:mean]' info: 2>/dev/null || echo 1)"
@@ -109,7 +121,7 @@ neu_laden() {
 }
 
 setzen() {
-    local bild="$1" nur_wiederherstellen="${2:-0}"
+    local bild="$1" nur_wiederherstellen="${2:-0}" merken="${3:-1}"
     [ -f "$bild" ] || { echo "Bild nicht gefunden: $bild" >&2; exit 1; }
     bild="$(realpath "$bild")"
     mkdir -p "$DATA"
@@ -119,7 +131,8 @@ setzen() {
     else
         echo "awww-daemon antwortet nicht – Bild nicht gesetzt" >&2
     fi
-    printf '%s\n' "$bild" > "$STATE"
+    # das Startbild ohne eigene Auswahl wird nicht gemerkt: so folgt es theme.wallpaper_default
+    if [ "$merken" = 1 ]; then printf '%s\n' "$bild" > "$STATE"; fi
     # beim Anmelden nur dann neu rechnen, wenn die Farben nicht schon zu diesem Bild passen
     if [ "$nur_wiederherstellen" = 1 ] && [ -f "$FARBEN_FUER" ] && [ "$(cat "$FARBEN_FUER")" = "$(kennung "$bild")" ]; then
         return 0
@@ -130,7 +143,8 @@ setzen() {
 }
 
 case "${1:-}" in
-    --restore) setzen "$(aktuelles)" 1 ;;
+    --restore) if [ -s "$STATE" ] && [ -f "$(cat "$STATE")" ]; then setzen "$(aktuelles)" 1; else setzen "$STANDARD" 1 0; fi ;;
+    --standard) rm -f "$STATE"; setzen "$STANDARD" 0 0 ;;
     --current) aktuelles ;;
     --colors) b="$(aktuelles)"; [ -f "$b" ] || exit 0; mkdir -p "$DATA"; farben "$b"; neu_laden ;;
     -h|--help|"") sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;

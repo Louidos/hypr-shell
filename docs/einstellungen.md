@@ -81,6 +81,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `theme.colors` | `auto` | `auto`, `grey`, `custom` | auto = colors from the wallpaper, grey = grey and white, custom = your accent color | `shell-set theme.colors grey` |
 | `theme.accent` | `#8ab4f8` | Farbe `#rrggbb` | Accent color for the custom color mode | `shell-set theme.accent "#a6e3a1"` |
+| `theme.wallpaper_default` | `bluete` | `bluete`, `grau` | Wallpaper shown until you pick your own: bluete = dark blossom photo like the template, grau = plain gray gradient (shell-wallpaper --standard forgets your own pick) | `shell-set theme.wallpaper_default grau` |
 | `theme.glass` | `0.46` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of all glass surfaces: bar, dock, panels, menus, notifications, launcher and settings (darker automatically when text would be hard to read) | `shell-set theme.glass 0.47` |
 | `theme.glass_color` | `#1a1a1d` | Farbe `#rrggbb` | Tint of all glass surfaces (neutral gray) | `shell-set theme.glass_color "#a6e3a1"` |
 | `theme.border.color` | `#ffffff` | Farbe `#rrggbb` | Fine edge of glass surfaces and windows | `shell-set theme.border.color "#a6e3a1"` |

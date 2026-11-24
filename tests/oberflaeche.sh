@@ -1039,22 +1039,15 @@ else echo "  FEHLER: Leuchten: $(th)"; design_ok=0; fi
 ipc dashboard open dashboard; sleep 2; bild design-leuchten; ipc dashboard close; sleep 1
 setze set theme.border.glow false
 th_warte '.glow == false' || true
-ipc dashboard open dashboard; sleep 2; bild design-ohne-leuchten; ipc dashboard close; sleep 1
-# der Schein liegt ausserhalb der Fläche: direkt über dem Dashboard ist es heller als 40 px darüber;
-# gemessen in jedem Bild an der eigenen Lage des Dashboards (mit Leuchten bekommt es etwas Platz)
-if [ -n "$im" ]; then
-    rand_hell() { # bild → Helligkeit direkt über dem Rand minus Helligkeit 40 px darüber
-        local x y w nah fern
-        read -r x y w _ < <(grep -o "hypr-shell-probe overlay-dashboard .*" "$T/log-$1" | tail -n1 | awk '{print $3, $4, $5, $6}') || return 0
-        [ -n "${w:-}" ] || return 0
-        nah="$("$im" "$OUT/$1.png" -crop "$((w / 2))x4+$((x + w / 4))+$((y - 6))" +repage -colorspace gray -format '%[fx:mean]' info:)"
-        fern="$("$im" "$OUT/$1.png" -crop "$((w / 2))x4+$((x + w / 4))+$((y - 46))" +repage -colorspace gray -format '%[fx:mean]' info:)"
-        awk -v a="$nah" -v b="$fern" 'BEGIN { printf "%.3f", a - b }'
-    }
-    mit="$(rand_hell design-leuchten)"; ohne="$(rand_hell design-ohne-leuchten)"
-    if awk -v a="${mit:-0}" -v b="${ohne:-0}" 'BEGIN { exit !(a > b + 0.03) }'; then echo "  ok: der Rand des Dashboards leuchtet (über dem Rand +$mit statt +$ohne heller)"
-    else echo "  FEHLER: kein Leuchten über dem Dashboard (${mit:-?} / ${ohne:-?})"; design_ok=0; fi
-fi
+ipc dashboard open dashboard; sleep 1; n="$(wc -l < "$T/qs.log")"; sleep 1.5; bild design-ohne-leuchten; ipc dashboard close; sleep 1
+# der Schein liegt rund um das Dashboard (16 px) und ganz auf dem Bildschirm; ohne Leuchten gibt es ihn nicht
+read -r gx gy gw gh < <(grep -o "hypr-shell-probe glow-dashboard .*" "$T/log-design-leuchten" | tail -n1 | awk '{print $3, $4, $5, $6}') || true
+read -r dx dy dw dh < <(grep -o "hypr-shell-probe overlay-dashboard .*" "$T/log-design-leuchten" | tail -n1 | awk '{print $3, $4, $5, $6}') || true
+if [ -n "${gh:-}" ] && [ -n "${dh:-}" ] && [ "$gw" -ge $((dw + 30)) ] && [ "$gy" -le $((dy - 15)) ] && [ "$gy" -ge 0 ] && [ $((gy + gh)) -le 1080 ]; then
+    echo "  ok: der Rand des Dashboards leuchtet rundum (Schein ${gw}x${gh}+${gx}+${gy} um ${dw}x${dh}+${dx}+${dy}), ganz auf dem Bildschirm"
+else echo "  FEHLER: Leuchten um das Dashboard: Schein ${gw:-?}x${gh:-?}+${gx:-?}+${gy:-?}, Dashboard ${dw:-?}x${dh:-?}+${dx:-?}+${dy:-?}"; design_ok=0; fi
+if ! tail -n "+$n" "$T/log-design-ohne-leuchten" | grep -q "probe glow-dashboard "; then echo "  ok: theme.border.glow false: kein Schein"
+else echo "  FEHLER: Schein trotz theme.border.glow false"; design_ok=0; fi
 setze set theme.spacing.scale 1.5 theme.font.title_weight demibold theme.font.title_scale 1.25
 if th_warte '.pad10 == 15 and .panelPad == 27 and .gap == 15 and .titleWeight == 600 and .strongWeight == 500 and .titleScale == 1.25'; then
     echo "  ok: Abstände (Faktor 1.5) und Schrift (Titel halbfett, 1.25-fach) aus settings.json"

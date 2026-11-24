@@ -13,10 +13,16 @@ Loader {
     property real size: Theme.glowSize
     property real strength: Theme.glowOpacity
     property bool on: Theme.glow
+    // Name für den Oberflächentest (Probe.qml): meldet die Fläche des Scheins, solange er da ist
+    property string probe: ""
     active: on && size > 0 && strength > 0
     anchors.fill: parent
     z: -1
     sourceComponent: Item {
+        Item {
+            x: -g.size; y: -g.size; width: g.width + 2 * g.size; height: g.height + 2 * g.size
+            Probe { name: g.probe }
+        }
         Repeater {
             // je etwa 2.5 px ein Ring, höchstens 10
             model: Math.max(2, Math.min(10, Math.ceil(g.size / 2.5)))

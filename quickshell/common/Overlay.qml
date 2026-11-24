@@ -218,7 +218,7 @@ Scope {
             x: body.x; y: body.y; width: body.width; height: body.height
             opacity: body.opacity; scale: body.scale
             visible: ov.glass
-            Glow { radius: body.radius }
+            Glow { radius: body.radius; probe: ov.name !== "" ? "glow-" + ov.name : "" }
         }
         Rectangle {
             id: body

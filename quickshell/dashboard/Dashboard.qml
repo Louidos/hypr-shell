@@ -14,25 +14,28 @@ Scope {
     property string tab: "dashboard"
     property var about: ({})
     // Tabs, Reihenfolge und Start-Tab aus settings.json (dashboard.tabs, dashboard.start)
-    readonly property var allTabs: ["dashboard", "wallpaper", "performance", "games", "about"]
+    readonly property var allTabs: ["dashboard", "wallpaper", "performance", "games", "lab", "about"]
     // Spiele (shell-games list, beim Öffnen gelesen); ohne Spiele bleibt der Tab Games weg
     property var games: []
     readonly property var tabs: {
-        const l = Settings.get("dashboard.tabs", allTabs).filter(t => allTabs.indexOf(t) >= 0 && (t !== "games" || games.length > 0))
+        const l = Settings.get("dashboard.tabs", allTabs).filter(t => allTabs.indexOf(t) >= 0 && (t !== "games" || games.length > 0) && (t !== "lab" || Integrations.lab))
         return l.length > 0 ? l : ["dashboard"]
     }
     readonly property string startTab: {
         const t = Settings.get("dashboard.start", "dashboard")
         return tabs.indexOf(t) >= 0 ? t : tabs[0]
     }
-    readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", games: "Games", about: "About" })
-    readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", games: "󰊗", about: "󰋽" })
+    readonly property var tabNames: ({ dashboard: "Dashboard", wallpaper: "Wallpaper", performance: "Performance", games: "Games", lab: "Lab", about: "About" })
+    readonly property var tabIcons: ({ dashboard: "󰕮", wallpaper: "󰋩", performance: "󰓅", games: "󰊗", lab: "󰒋", about: "󰋽" })
     readonly property var screen: Settings.screenFor(Settings.get("desktop.screen", ""))
-    readonly property real panelW: Math.min(Settings.get("dashboard.width", 1000), (screen ? screen.width : 1920) - 40)
-    // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px, Rand 18 px
+    // Breite aus dashboard.width; Overlay begrenzt sie auf den Bildschirm (mit Grössenfaktor)
+    readonly property real panelW: Settings.get("dashboard.width", 1000)
+    // Hochformat oder schmal: Karten in 6 statt 12 Spalten, dafür höher (Overlay rollt, wenn nötig)
+    readonly property bool narrow: ov.portrait || ov.fitWidth < 760
+    // wie die Vorlage: Kopf 64 px (Tab-Leiste), Inhalt 330 px (schmal 5 Zeilen: 555 px), Rand 18 px
     readonly property real headH: 64
     readonly property real pad: 18
-    readonly property real pageH: 330
+    readonly property real pageH: narrow ? 555 : 330
     readonly property real panelH: headH + 4 + pageH + pad
 
     property string wantTab: ""
@@ -70,7 +73,8 @@ Scope {
     // Auslösestreifen an der Mitte der unteren Kante (unter Vollbild-Fenstern, stört also keine Spiele)
     PanelWindow {
         screen: dash.screen
-        visible: Settings.get("dashboard.edge", true) && !dash.open && dash.screen !== null
+        // liegt dort ein verstecktes Dock, blendet die Kante das Dock ein (siehe docs/dock.md)
+        visible: Settings.get("dashboard.edge", true) && !dash.open && dash.screen !== null && !Ui.dockOwnsEdge
         anchors { bottom: true }
         implicitWidth: 320
         implicitHeight: 2
@@ -155,6 +159,7 @@ Scope {
                                     }
                                     Txt {
                                         anchors.horizontalCenter: parent.horizontalCenter
+                                        visible: tabBar.tw >= 64
                                         text: dash.tabNames[tb.modelData]
                                         size: 12
                                         weight: tb.active ? Font.DemiBold : Font.Medium
@@ -179,15 +184,17 @@ Scope {
                     sourceComponent: dash.tab === "wallpaper" ? wallTab
                                    : dash.tab === "performance" ? perfTab
                                    : dash.tab === "games" ? gamesTab
+                                   : dash.tab === "lab" ? labTab
                                    : dash.tab === "about" ? aboutTab : homeTab
                 }
             }
         }
     }
 
-    Component { id: homeTab; HomeTab { about: dash.about } }
-    Component { id: perfTab; PerfTab { } }
+    Component { id: homeTab; HomeTab { about: dash.about; narrow: dash.narrow } }
+    Component { id: perfTab; PerfTab { narrow: dash.narrow } }
+    Component { id: labTab; LabTab { } }
     Component { id: gamesTab; GamesTab { games: dash.games; onCloseRequested: dash.hide() } }
     Component { id: wallTab; WallpaperTab { onCloseRequested: dash.hide() } }
-    Component { id: aboutTab; AboutTab { about: dash.about } }
+    Component { id: aboutTab; AboutTab { about: dash.about; narrow: dash.narrow } }
 }

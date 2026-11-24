@@ -71,7 +71,8 @@ def problem($s; $v):
   elif $s.type == "enum" then
     (if any($s.values[]; . == $v) then null else "expected one of: \(allowed($s))" end)
   elif $s.type == "color" then
-    (if ($v | type) == "string" and ($v | test("^#[0-9a-fA-F]{6}$")) then null else "expected a color like #8ab4f8" end)
+    (if ($v | type) == "string" and (($v | test("^#[0-9a-fA-F]{6}$")) or ($s.auto == true and $v == "auto")) then null
+     elif $s.auto == true then "expected auto or a color like #8ab4f8" else "expected a color like #8ab4f8" end)
   elif $s.type == "list" then
     if ($v | type) != "array" then "expected a list of: \(allowed($s))"
     elif any($v[]; . as $x | ($s.values | index([$x])) == null) then "unknown entry, allowed are: \(allowed($s))"
@@ -118,25 +119,34 @@ def combos_of($k; $v; $e):
   elif $k == "move_mod" then [range(0; 10) | "\($v) + \(.)"]
   elif $k == "mouse_mod" then ["\($v) + mouse:272", "\($v) + mouse:273"]
   else [$v] end;
+# Die festen Tasten aus hyprland.lua (fixed_binds im Schema) sind von Anfang an belegt.
 def keybind_conflicts($schema):
   if (.eff.keybinds | type) != "object" then . else
     . as $r
-    | ($schema.keys | map({key: .key, value: .title}) | from_entries) as $titles
-    | reduce ($r.eff.keybinds | to_entries[] | select(.key != "custom" and .value != "")) as $b
-        ({r: $r, seen: {}};
-         [combos_of($b.key; $b.value; $r.eff)[] | norm_combo] as $cs
-         | ([$cs[] as $c | .seen[$c] // empty] | first // null) as $other
-         | if $other != null then
-             .r.eff.keybinds[$b.key] = ""
-             | .r.err += [{key: "keybinds.\($b.key)", reason: "\($b.value) is already used by \($titles[$other] // $other) (\($other))"},
-                          {key: $other, reason: "\($b.value) is also used by \($titles["keybinds.\($b.key)"] // $b.key) (keybinds.\($b.key))"}]
+    | ($schema.fixed_binds // [] | map({key: "fixed:\(.keys | norm_combo)", value: .title})) as $fixed
+    | ($schema.keys | map({key: .key, value: .title}) + $fixed | from_entries) as $titles
+    | def who($o): if ($o | startswith("fixed:")) then "\($titles[$o]) (fixed key)" else "\($titles[$o] // $o) (\($o))" end;
+      reduce ($r.eff.keybinds | to_entries[] | select(.key != "custom" and .value != "")) as $b
+        ({r: $r, seen: ($fixed | map({key: (.key | ltrimstr("fixed:")), value: .key}) | from_entries)};
+         combos_of($b.key; $b.value; $r.eff) as $raw
+         | [$raw[] | norm_combo] as $cs
+         | . as $st
+         | ([range(0; $cs | length) | select($st.seen[$cs[.]] != null)] | first // null) as $i
+         | if $i != null then
+             .seen[$cs[$i]] as $other
+             # die kollidierende Kombination so, wie sie eingegeben wird (bei Gruppen z. B. SUPER + SHIFT + 1)
+             | $raw[$i] as $shown
+             | .r.eff.keybinds[$b.key] = ""
+             | .r.err += [{key: "keybinds.\($b.key)", reason: "\($shown) is already used by \(who($other))"}]
+             | if ($other | startswith("fixed:")) then . else
+                 .r.err += [{key: $other, reason: "\($shown) is also used by \($titles["keybinds.\($b.key)"] // $b.key) (keybinds.\($b.key))"}] end
            else reduce $cs[] as $c (.; .seen[$c] = "keybinds.\($b.key)") end)
     | .seen as $seen
     | reduce (.r.eff.keybinds.custom // [] | to_entries[]) as $c
         ({r: (.r | .eff.keybinds.custom = []), seen: $seen};
          ($c.value.keys | norm_combo) as $n
          | if .seen[$n] != null then
-             .r.err += [{key: "keybinds.custom", reason: "entry \($c.key + 1): \($c.value.keys) is already used by \($titles[.seen[$n]] // .seen[$n]) (\(.seen[$n]))"}]
+             .r.err += [{key: "keybinds.custom", reason: "entry \($c.key + 1): \($c.value.keys) is already used by \(who(.seen[$n]))"}]
            else .r.eff.keybinds.custom += [$c.value] | .seen[$n] = "keybinds.custom" end)
     | .r
   end;
@@ -150,6 +160,10 @@ def evaluate($schema):
         elif $v == "\u0000not-an-object" then .eff |= setpath($p; $s.default | num)
         else problem($s; $v) as $why
           | if $why == null then .eff |= setpath($p; norm($s; $v))
+            # Zahlen mit "clamp" (Dock): ausserhalb des Bereichs auf die Grenze setzen statt verwerfen
+            elif $s.clamp == true and ($v | type) == "number" and ($s.type == "number" or ($v | floor) == $v) then
+              .eff |= setpath($p; ([[$v, $s.min] | max, $s.max] | min) | num)
+              | .err += [{key: $s.key, reason: "\($why); using \([[$v, $s.min] | max, $s.max] | min) instead"}]
             else .eff |= setpath($p; $s.default | num) | .err += [{key: $s.key, reason: $why}] end
         end)
   | .err += [ $raw | paths(type != "object") | map(tostring) | join(".") as $k
@@ -248,7 +262,7 @@ erzeuge_waybar() { # eff
     jq --indent 2 '
     def mod: {distro: "custom/distro", workspaces: "hyprland/workspaces", window: "hyprland/window", media: "mpris",
               volume: "pulseaudio", battery: "battery", clock: "clock", bluetooth: "bluetooth", network: "network",
-              tray: "tray", recording: "custom/recording", notifications: "custom/notifications", power: "custom/power"}[.];
+              tray: "tray", recording: "custom/recording", notifications: "custom/notifications", missa: "custom/missa", power: "custom/power"}[.];
     . as $e
     | def mods($l): [$l[] | select(. != "battery" or $e.bar.battery) | mod];
     {
@@ -292,6 +306,9 @@ erzeuge_waybar() { # eff
                 "on-click": "$HOME/.local/bin/shell-quickshell ipc panel page wifi"},
       tray: {"icon-size": 16, spacing: 8},
       "custom/recording": {exec: "$HOME/.local/bin/shell-recording status", "return-type": "json", interval: 2, tooltip: true},
+      "custom/missa": {exec: "cat \"${XDG_RUNTIME_DIR:-/tmp}/hypr-shell-missa-bar.json\" 2>/dev/null || echo '"'"'{\"text\": \"\"}'"'"'",
+                       "return-type": "json", interval: 30, signal: 10, tooltip: true,
+                       "on-click": "$HOME/.local/bin/shell-quickshell ipc missa toggle"},
       "custom/notifications": {exec: "cat \"$HOME/.local/share/hypr-shell/notifications-bar.json\" 2>/dev/null || echo '"'"'{\"text\": \"󰂜\"}'"'"'",
                                "return-type": "json", interval: 30, signal: 9, tooltip: true,
                                "on-click": "$HOME/.local/bin/shell-quickshell ipc notifications toggle",
@@ -301,16 +318,22 @@ erzeuge_waybar() { # eff
 }
 
 px() { awk -v a="$1" -v k="$2" 'BEGIN { printf "%d", a * k + 0.5 }'; }
+# Text für eine CSS-Zeichenkette in "…": \ und " maskieren (das Schema lässt beides gar nicht erst durch)
+css() { local s="${1//\\/\\\\}"; printf '%s' "${s//\"/\\\"}"; }
 
 erzeuge_waybar_style() {
-    local fs="$S_theme_font_scale"
+    local fs ui mono
+    # Schriftfaktor theme.font.scale, aber nie grösser, als die Leiste hoch ist (bar.height 20 mit
+    # Faktor 1.5 liesse die Schrift sonst über die Leiste ragen); bei 30 px und mehr unverändert
+    fs="$(awk -v f="$S_theme_font_scale" -v h="$S_bar_height" 'BEGIN { m = (h - 4) / 20; printf "%.3f", (f < m ? f : m) }')"
+    ui="$(css "$S_theme_font_ui")"; mono="$(css "$S_theme_font_mono")"
     cat <<CSS
 /* $HEADER */
 /* hypr-shell: Leiste im Glas-Look. Farben aus dem Hintergrundbild (colors.css von matugen). */
 @import "colors.css";
 
 * {
-  font-family: "$S_theme_font_ui", "$S_theme_font_mono", sans-serif;
+  font-family: "$ui", "$mono", sans-serif;
   font-size: $(px 13 "$fs")px;
   font-weight: 600;
   min-height: 0;
@@ -342,6 +365,7 @@ tooltip label { color: @text; font-weight: 500; }
 #tray,
 #custom-recording,
 #custom-notifications,
+#custom-missa,
 #custom-power {
   padding: 0 8px;
   color: @text;
@@ -349,7 +373,7 @@ tooltip label { color: @text; font-weight: 500; }
 }
 
 #custom-distro {
-  font-family: "$S_theme_font_mono";
+  font-family: "$mono";
   font-size: $(px 15 "$fs")px;
   padding: 0 10px 0 12px;
 }
@@ -374,12 +398,17 @@ tooltip label { color: @text; font-weight: 500; }
 #network,
 #custom-notifications,
 #custom-power {
-  font-family: "$S_theme_font_mono";
+  font-family: "$mono";
   font-size: $(px 14 "$fs")px;
 }
 #bluetooth.off, #bluetooth.disabled, #network.disconnected { color: alpha(@text, 0.45); }
 
 #custom-notifications.empty, #custom-notifications.dnd { color: alpha(@text, 0.45); }
+
+/* Missa bedient den Rechner: Symbol pulsiert, solange eine Aktion läuft */
+#custom-missa { font-family: "$S_theme_font_mono"; color: @accent; }
+@keyframes missa-puls { from { opacity: 1; } to { opacity: 0.3; } }
+#custom-missa.busy { animation: missa-puls 0.8s ease-in-out infinite alternate; }
 
 #custom-recording { color: #ff4d4d; font-size: $(px 12 "$fs")px; }
 
@@ -740,7 +769,7 @@ fi
 # Fehler melden (nur wenn sie sich seit dem letzten Lauf geändert haben)
 {
     [ -n "$kaputt" ] && printf 'settings.json is not valid JSON (%s) – the last good settings stay active\n' "$kaputt"
-    jq -r '.err[] | "\(.key): \(.reason) – using the default"' "$T/result.json"
+    jq -r '.err[] | if (.reason | test("instead$")) then "\(.key): \(.reason)" else "\(.key): \(.reason) – using the default" end' "$T/result.json"
 } > "$T/errors" || true
 if [ -s "$T/errors" ]; then sed 's/^/shell-apply: /' "$T/errors" >&2; fi
 if schreibe "$ERRORS" < "$T/errors" && [ -s "$T/errors" ] && [ "$RELOAD" -eq 1 ]; then
@@ -772,7 +801,9 @@ erzeuge rofi      "$CONF/rofi/hypr-shell-settings.rasi"  erzeuge_rofi
 jq -c '{colors: [.theme.colors, .theme.accent], cursor: [.theme.cursor.name, .theme.cursor.size], icons: .theme.icons,
         clipboard: [.clipboard.enabled, .clipboard.max],
         laptop: [.laptop.charge_limit, .laptop.kbd_light, .laptop.kbd_follow_wallpaper],
-        ordner: [.nextcloud, .missa.enabled, .missa.folder]}' "$T/eff.json" > "$T/applied"
+        ordner: [.nextcloud, .missa.enabled, .missa.folder],
+        agent: [.missa.enabled, .missa.agent_enabled, .missa.access, .missa.url],
+        appfarben: .theme.apps}' "$T/eff.json" > "$T/applied"
 alt='{}'
 [ -f "$APPLIED" ] && alt="$(cat "$APPLIED")"
 anders() { [ "$(jq -c ".$1" <<<"$alt")" != "$(jq -c ".$1" "$T/applied")" ]; }
@@ -782,6 +813,8 @@ anders icons && geaendert+=(icons)
 anders clipboard && geaendert+=(clipboard)
 anders laptop && geaendert+=(laptop)
 anders ordner && geaendert+=(ordner)
+anders agent && geaendert+=(agent)
+anders appfarben && geaendert+=(appfarben)
 schreibe "$APPLIED" < "$T/applied" || true
 
 [ "${#geaendert[@]}" -gt 0 ] && [ "${SHELL_APPLY_VERBOSE:-0}" = 1 ] && echo "geändert: ${geaendert[*]}"
@@ -804,6 +837,14 @@ fi
 # Anbindungen mit Ordnern (Nextcloud, Missa): einhängen bzw. aufräumen
 if hat ordner && [ -x "$BIN/shell-mount" ]; then
     setsid -f "$BIN/shell-mount" sync >/dev/null 2>&1 || true
+fi
+# Missa-Agent: nur mit missa.enabled und missa.agent_enabled; ausgeschaltet sofort gestoppt
+if hat agent && [ -x "$BIN/shell-missa-agent" ]; then
+    setsid -f "$BIN/shell-missa-agent" sync >/dev/null 2>&1 || true
+fi
+# Programme mitfärben (GTK, Qt, Firefox, Vesktop, Spotify): einfärben oder Sicherung zurück
+if hat appfarben && [ -x "$BIN/shell-appcolors" ]; then
+    setsid -f "$BIN/shell-appcolors" sync >/dev/null 2>&1 || true
 fi
 # Laptop: Ladegrenze, Tastaturlicht (nur was eingestellt ist, über shell-laptop)
 if hat laptop && [ -x "$BIN/shell-laptop" ]; then

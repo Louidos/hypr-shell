@@ -15,6 +15,11 @@ schreiben in dieselbe Datei und wirken sofort:
 Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 `{ "look": { "gaps": { "inner": 10 } } }`. Die Erklärungen sind dieselben wie in der App (Englisch).
 
+**Bildschirm drehen:** `shell-set monitor eDP-1 rotate 90` (0, 90, 180, 270; die Spiegelung bleibt),
+`shell-set monitor eDP-1 mirror on|off`, oder direkt das Feld `transform` in `monitors.outputs`:
+`normal`, `90`, `180`, `270`, `flipped`, `flipped-90`, `flipped-180`, `flipped-270`. Einträge ohne
+`transform` gelten als `normal`. Ein Touchscreen oder Stift dreht mit (nur, wenn es einen gibt).
+
 ## bar – Leiste
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
@@ -22,9 +27,9 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `bar.position` | `top` | `top`, `bottom` | Edge of the screen the bar sits on | `shell-set bar.position bottom` |
 | `bar.height` | `30` | ganze Zahl 20 … 60 px | Height of the bar in pixels | `shell-set bar.height 31` |
 | `bar.opacity` | `0.25` | Zahl 0 … 1, Schritt 0.05 | Opacity of the bar background | `shell-set bar.opacity 0.3` |
-| `bar.modules.left` | `["distro","workspaces","media"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `power` | Modules on the left, in this order | `shell-set bar.modules.left distro,workspaces` |
-| `bar.modules.center` | `[]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `power` | Modules in the middle, in this order | `shell-set bar.modules.center distro,workspaces` |
-| `bar.modules.right` | `["volume","battery","clock","bluetooth","network","recording","notifications","power"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `power` | Modules on the right, in this order | `shell-set bar.modules.right distro,workspaces` |
+| `bar.modules.left` | `["distro","workspaces","media"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the left, in this order | `shell-set bar.modules.left distro,workspaces` |
+| `bar.modules.center` | `[]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules in the middle, in this order | `shell-set bar.modules.center distro,workspaces` |
+| `bar.modules.right` | `["volume","battery","clock","bluetooth","network","recording","notifications","missa","power"]` | Liste aus `distro`, `workspaces`, `window`, `media`, `volume`, `battery`, `clock`, `bluetooth`, `network`, `tray`, `recording`, `notifications`, `missa`, `power` | Modules on the right, in this order | `shell-set bar.modules.right distro,workspaces` |
 | `bar.workspaces` | `4` | ganze Zahl 0 … 10 | Workspaces that are always shown (0 = only used ones) | `shell-set bar.workspaces 5` |
 | `bar.clock` | `24h` | `24h`, `12h` | 24-hour or 12-hour clock in the bar | `shell-set bar.clock 12h` |
 | `bar.battery` | `true` | `true`, `false` | Show the battery (only on devices with a battery) | `shell-set bar.battery false` |
@@ -54,14 +59,19 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `theme.glass` | `0.44` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the desktop tiles and the settings window | `shell-set theme.glass 0.45` |
 | `theme.radius.panel` | `26` | ganze Zahl 0 … 40 px | Corner radius of glass panels | `shell-set theme.radius.panel 27` |
 | `theme.radius.card` | `18` | ganze Zahl 0 … 30 px | Corner radius of cards inside panels | `shell-set theme.radius.card 19` |
-| `theme.font.ui` | `Inter` | Text | Font for text in the bar, dashboard, panel and lock screen | `shell-set theme.font.ui "Noto Sans"` |
-| `theme.font.mono` | `JetBrainsMono Nerd Font` | Text | Font for symbols and numbers (needs Nerd Font symbols) | `shell-set theme.font.mono "Noto Sans"` |
-| `theme.font.clock` | `JetBrainsMono Nerd Font` | Text | Font of the big clock on the desktop | `shell-set theme.font.clock "Noto Sans"` |
-| `theme.font.display` | `Bebas Neue` | Text | Font of the clocks in the dashboard and on the lock screen | `shell-set theme.font.display "Noto Sans"` |
+| `theme.font.ui` | `Inter` | Text (Format geprüft) | Font for text in the bar, dashboard, panel and lock screen | `shell-set theme.font.ui "Noto Sans"` |
+| `theme.font.mono` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font for symbols and numbers (needs Nerd Font symbols) | `shell-set theme.font.mono "Noto Sans"` |
+| `theme.font.clock` | `JetBrainsMono Nerd Font` | Text (Format geprüft) | Font of the big clock on the desktop | `shell-set theme.font.clock "Noto Sans"` |
+| `theme.font.display` | `Bebas Neue` | Text (Format geprüft) | Font of the clocks in the dashboard and on the lock screen | `shell-set theme.font.display "Noto Sans"` |
 | `theme.font.scale` | `1.0` | Zahl 0.8 … 1.5, Schritt 0.05 | Factor for all font sizes | `shell-set theme.font.scale 1.05` |
-| `theme.cursor.name` | `Bibata-Modern-Ice` | Text | Name of the mouse cursor theme | `shell-set theme.cursor.name Adwaita` |
+| `theme.cursor.name` | `Bibata-Modern-Ice` | Text (Format geprüft) | Name of the mouse cursor theme | `shell-set theme.cursor.name Adwaita` |
 | `theme.cursor.size` | `24` | ganze Zahl 16 … 64 px | Size of the mouse cursor | `shell-set theme.cursor.size 26` |
-| `theme.icons` | `Papirus-Dark` | Text | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |
+| `theme.icons` | `Papirus-Dark` | Text (Format geprüft) | Icon theme for apps in the panel and the launcher | `shell-set theme.icons Adwaita` |
+| `theme.apps.gtk` | `true` | `true`, `false` | Files (Nautilus), dialogs and other GTK 3/4 apps take the wallpaper colors; off restores your own gtk.css. Open windows change after reopening | `shell-set theme.apps.gtk false` |
+| `theme.apps.qt` | `true` | `true`, `false` | Qt apps take the wallpaper colors through qt5ct/qt6ct; off restores your qt5ct/qt6ct settings | `shell-set theme.apps.qt false` |
+| `theme.apps.firefox` | `false` | `true`, `false` | Toolbar and tabs in the wallpaper colors (userChrome.css, backed up first); takes effect after restarting Firefox | `shell-set theme.apps.firefox true` |
+| `theme.apps.vesktop` | `false` | `true`, `false` | Vesktop theme in the wallpaper colors (settings backed up first) | `shell-set theme.apps.vesktop true` |
+| `theme.apps.spotify` | `false` | `true`, `false` | Spotify colors through spicetify (config backed up first, off restores it and runs spicetify apply) | `shell-set theme.apps.spotify true` |
 
 ## input – Eingabe
 
@@ -78,7 +88,7 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
 | --- | --- | --- | --- | --- |
 | `monitors.scale` | `auto` | Text (Format geprüft) | Scale for screens without their own entry: auto or a number like 1.25, 1.5, 2 | `shell-set monitors.scale 1.5` |
-| `monitors.outputs` | `[]` | Liste von Einträgen mit `name`, `resolution`, `refresh`, `scale`, `position` | Settings for single screens; empty values mean automatic | `shell-set monitors.outputs '[{"name":"eDP-1","scale":"1.5"}]'` |
+| `monitors.outputs` | `[]` | Liste von Einträgen mit `name`, `resolution`, `refresh`, `scale`, `position`, `transform` | Settings for single screens; empty values mean automatic, rotation normal | `shell-set monitors.outputs '[{"name":"eDP-1","scale":"1.5"}]'` |
 
 ## desktop – Desktop: Uhr und Kacheln
 
@@ -104,8 +114,8 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `dashboard.opacity` | `0.42` | Zahl 0.1 … 0.95, Schritt 0.01 | Opacity of the glass | `shell-set dashboard.opacity 0.43` |
 | `dashboard.edge` | `true` | `true`, `false` | Open when the mouse touches the middle of the bottom edge | `shell-set dashboard.edge false` |
 | `dashboard.close_on_leave` | `true` | `true`, `false` | Close when the mouse leaves the dashboard | `shell-set dashboard.close_on_leave false` |
-| `dashboard.tabs` | `["dashboard","wallpaper","performance","games","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `games`, `about` | Tabs and their order (Games only appears when Steam games or own entries exist) | `shell-set dashboard.tabs dashboard,wallpaper` |
-| `dashboard.start` | `dashboard` | `dashboard`, `wallpaper`, `performance`, `games`, `about` | Tab shown when the dashboard opens | `shell-set dashboard.start wallpaper` |
+| `dashboard.tabs` | `["dashboard","wallpaper","performance","games","lab","about"]` | Liste aus `dashboard`, `wallpaper`, `performance`, `games`, `lab`, `about` | Tabs in this order (Games only with Steam games or own entries, Lab only with lab.enabled) | `shell-set dashboard.tabs dashboard,wallpaper` |
+| `dashboard.start` | `dashboard` | `dashboard`, `wallpaper`, `performance`, `games`, `lab`, `about` | Tab shown when the dashboard opens | `shell-set dashboard.start wallpaper` |
 | `dashboard.cards` | `["weather","profile","media","clock","calendar","rings"]` | Liste aus `weather`, `profile`, `media`, `clock`, `calendar`, `rings` | Cards on the Dashboard tab | `shell-set dashboard.cards weather,profile` |
 
 ## weather – Wetter
@@ -139,6 +149,53 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `panel.sections` | `["awake","apps","media","shot","toggles"]` | Liste aus `awake`, `apps`, `media`, `shot`, `toggles` | Cards and their order | `shell-set panel.sections awake,apps` |
 | `panel.apps` | `["kitty","org.gnome.Nautilus","firefox","spotify","discord","steam"]` | Liste von Texten | Apps in the grid (name of the .desktop file); missing ones are skipped | `shell-set panel.apps kitty,org.gnome.Nautilus,firefox,spotify,discord,steam,code` |
 | `panel.toggles` | `["wifi","bluetooth","audio","dnd","gaming","profile","nightlight","settings"]` | Liste aus `wifi`, `bluetooth`, `audio`, `dnd`, `gaming`, `awake`, `profile`, `nightlight`, `settings` | Quick toggles in the panel, in this order (toggles the computer cannot use are hidden) | `shell-set panel.toggles wifi,bluetooth` |
+
+## dock – dock
+
+| Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
+| --- | --- | --- | --- | --- |
+| `dock.enabled` | `true` | `true`, `false` | Floating dock with pinned and running apps at the edge of the screen; off = no dock window at all | `shell-set dock.enabled false` |
+| `dock.preset` | `mac` | `mac`, `minimal`, `compact`, `island`, `full` | Last chosen preset (choose one with the buttons above; it changes only dock values, never the items) | `shell-set dock.preset minimal` |
+| `dock.position` | `bottom` | `bottom`, `left`, `right`, `top` | Screen edge of the dock | `shell-set dock.position left` |
+| `dock.monitor` | `all` | Text (Format geprüft) | all = every screen, primary = the first screen, or the name of a screen (e.g. eDP-1) | `shell-set dock.monitor all` |
+| `dock.running_per_monitor` | `false` | `true`, `false` | Each dock shows only the running apps with a window on its own screen | `shell-set dock.running_per_monitor true` |
+| `dock.mode` | `floating` | `floating`, `reserve` | floating = windows can go below the dock, reserve = windows keep clear of it | `shell-set dock.mode reserve` |
+| `dock.layer` | `top` | `top`, `bottom` | top = above windows, bottom = below windows | `shell-set dock.layer bottom` |
+| `dock.margin` | `10` | ganze Zahl 0 … 100 px | Gap between the dock and the screen edge | `shell-set dock.margin 11` |
+| `dock.icon_size` | `48` | ganze Zahl 16 … 128 px | Size of the app icons | `shell-set dock.icon_size 49` |
+| `dock.icon_min_size` | `24` | ganze Zahl 16 … 64 px | Icons shrink down to this size when the dock gets full; after that it scrolls | `shell-set dock.icon_min_size 25` |
+| `dock.padding` | `8` | ganze Zahl 0 … 40 px | Space between the glass edge and the icons | `shell-set dock.padding 9` |
+| `dock.spacing` | `6` | ganze Zahl 0 … 40 px | Space between two icons | `shell-set dock.spacing 7` |
+| `dock.radius` | `22` | ganze Zahl 0 … 100 px | Rounding of the glass; at most half the dock height (larger values give a pill) | `shell-set dock.radius 23` |
+| `dock.max_length` | `90` | ganze Zahl 20 … 100 % | Longest the dock may get, relative to the screen edge | `shell-set dock.max_length 91` |
+| `dock.glass_opacity` | `-1` | Zahl -1 … 1, Schritt 0.01 | Opacity of the glass; -1 = same as the panels (Theme → Glass opacity) | `shell-set dock.glass_opacity -0.99` |
+| `dock.blur` | `true` | `true`, `false` | Blur behind the dock glass | `shell-set dock.blur false` |
+| `dock.border_width` | `1` | ganze Zahl 0 … 6 px | Width of the glass border | `shell-set dock.border_width 2` |
+| `dock.border_color` | `auto` | Farbe `#rrggbb` | auto = like the panels, or a color like #8ab4f8 | `shell-set dock.border_color "#a6e3a1"` |
+| `dock.shadow` | `medium` | `none`, `soft`, `medium`, `strong` | Shadow below the dock | `shell-set dock.shadow none` |
+| `dock.color_mode` | `wallpaper` | `wallpaper`, `dark`, `light`, `custom` | wallpaper = tinted like the wallpaper colors, dark, light, or custom (your own color) | `shell-set dock.color_mode dark` |
+| `dock.custom_color` | `#1e1e2e` | Farbe `#rrggbb` | Glass color for the color mode custom | `shell-set dock.custom_color "#a6e3a1"` |
+| `dock.labels` | `hover` | `never`, `hover`, `always` | never, when the mouse is on an icon (hover), or always | `shell-set dock.labels never` |
+| `dock.indicator` | `dot` | `dot`, `line`, `none` | Dot or line below running apps (two for several windows), or none | `shell-set dock.indicator line` |
+| `dock.indicator_color` | `auto` | Farbe `#rrggbb` | auto = accent color of the wallpaper, or a color like #8ab4f8 | `shell-set dock.indicator_color "#a6e3a1"` |
+| `dock.icon_style` | `original` | `original`, `mono`, `theme` | original colors, mono (grey) or theme (tinted in the wallpaper color) | `shell-set dock.icon_style mono` |
+| `dock.show_running` | `true` | `true`, `false` | Also show running apps that are not pinned | `shell-set dock.show_running false` |
+| `dock.trash` | `true` | `true`, `false` | Show the trash entry from the item list | `shell-set dock.trash false` |
+| `dock.launcher_button` | `false` | `true`, `false` | Button at the start of the dock that opens the launcher | `shell-set dock.launcher_button true` |
+| `dock.badges` | `true` | `true`, `false` | Small number on an icon for notifications of that app (needs the notification service of hypr-shell) | `shell-set dock.badges false` |
+| `dock.previews` | `true` | `true`, `false` | Preview pictures in the window list when the mouse rests on an app with several windows | `shell-set dock.previews false` |
+| `dock.magnify` | `true` | `true`, `false` | Icons grow like a wave when the mouse moves over them | `shell-set dock.magnify false` |
+| `dock.magnify_factor` | `1.6` | Zahl 1.0 … 2.5, Schritt 0.05 | Size of the icon under the mouse relative to the normal size | `shell-set dock.magnify_factor 1.65` |
+| `dock.magnify_range` | `2` | ganze Zahl 1 … 5 | How many neighbouring icons grow with it | `shell-set dock.magnify_range 3` |
+| `dock.anim_ms` | `180` | ganze Zahl 0 … 1000 ms | Duration of the dock animations; 0 = no animations (also off in gaming mode or when animations are off) | `shell-set dock.anim_ms 190` |
+| `dock.bounce_on_launch` | `true` | `true`, `false` | The icon bounces until the first window of the app appears (at most 5 seconds) | `shell-set dock.bounce_on_launch false` |
+| `dock.autohide` | `smart` | `never`, `always`, `smart` | never, always (hide when the mouse leaves) or smart (hide only when a window covers the dock); touch the screen edge to show it again | `shell-set dock.autohide never` |
+| `dock.show_delay_ms` | `150` | ganze Zahl 0 … 2000 ms | Time the mouse must touch the edge before a hidden dock comes back | `shell-set dock.show_delay_ms 160` |
+| `dock.hide_delay_ms` | `400` | ganze Zahl 0 … 5000 ms | Time before the dock hides after the mouse left it | `shell-set dock.hide_delay_ms 450` |
+| `dock.keyboard_timeout_s` | `10` | ganze Zahl 0 … 120 s | SUPER + B: back to the app after this many seconds without a key (0 = never); any other key or a click outside also leaves | `shell-set dock.keyboard_timeout_s 11` |
+| `dock.hide_on_fullscreen` | `true` | `true`, `false` | No dock while a fullscreen window or the gaming mode is on; the edge does not show it either | `shell-set dock.hide_on_fullscreen false` |
+| `dock.avoid_bar` | `true` | `true`, `false` | When the bar is on the same edge, the dock keeps its distance from it (also with reserve) | `shell-set dock.avoid_bar false` |
+| `dock.items` | `[{"type":"app","desktop_id":"org.gnome.Nautilus","path":""},{"type":"app","desktop_id":"kitty","path":""},{"type":"app","desktop_id":"firefox","path":""},{"type":"separator","desktop_id":"","path":""},{"type":"folder","desktop_id":"","path":"~/Downloads"},{"type":"separator","desktop_id":"","path":""},{"type":"trash","desktop_id":"","path":""}]` | Liste von Einträgen mit `type`, `desktop_id`, `path` | Pinned apps, folders, separators, trash and launcher button in this order | `shell-set dock.items '[]'` |
 
 ## lock – Sperren und Standby
 
@@ -218,6 +275,9 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `missa.url` | `""` | Text (Format geprüft) | Base address of Missa-Core, like https://missa.example.org (the key is stored in secrets.env) | `shell-set missa.url ` |
 | `missa.folder` | `~/Missa` | Text (Format geprüft) | Local folder with Eingang (files for Missa) and Ausgabe (files from Missa) | `shell-set missa.folder ~/Missa` |
 | `missa.agent_enabled` | `false` | `true`, `false` | Missa can find and open files, control apps and windows and, after confirmation, run commands | `shell-set missa.agent_enabled true` |
+| `missa.access` | `ask` | `off`, `read`, `ask`, `full` | off: nothing · read: only reading · ask: writing is free, destructive actions need your click · full: no local question | `shell-set missa.access off` |
+| `missa.blocked_paths` | `["~/.ssh","~/.gnupg","~/.local/share/keyrings","~/.password-store","~/.mozilla","~/.config/google-chrome","~/.config/chromium","~/.config/BraveSoftware","~/.var/app","~/.config/hypr-shell/secrets.env"]` | Liste von Texten | Missa never reads, searches or changes these (in every access level) | `shell-set missa.blocked_paths ~/.ssh,~/.gnupg,~/.local/share/keyrings,~/.password-store,~/.mozilla,~/.config/google-chrome,~/.config/chromium,~/.config/BraveSoftware,~/.var/app,~/.config/hypr-shell/secrets.env,code` |
+| `missa.device` | `""` | Text (Format geprüft) | Name of this computer in Missa-Core (the token belongs to it); empty = host name | `shell-set missa.device ` |
 | `missa.voice_enabled` | `false` | `true`, `false` | Speak with Missa (SUPER+SHIFT+I) and hear her answers, locally with whisper.cpp and piper | `shell-set missa.voice_enabled true` |
 | `missa.voice_language` | `de` | Text (Format geprüft) | Language for recognition (whisper.cpp), e.g. de, en or auto | `shell-set missa.voice_language de` |
 | `missa.voice_model` | `~/.local/share/hypr-shell/whisper/ggml-base.bin` | Text (Format geprüft) | whisper.cpp model file (bigger = better, slower: tiny, base, small …) | `shell-set missa.voice_model ~/.local/share/hypr-shell/whisper/ggml-base.bin` |
@@ -244,6 +304,10 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | --- | --- | --- | --- | --- |
 | `sensor.enabled` | `false` | `true`, `false` | Dashboard tile with a value from a JSON address, e.g. air quality | `shell-set sensor.enabled true` |
 | `sensor.url` | `""` | Text (Format geprüft) | Address that returns JSON | `shell-set sensor.url ` |
+| `sensor.field` | `value` | Text (Format geprüft) | Which value of the JSON to show, as a path like luft.co2 | `shell-set sensor.field value` |
+| `sensor.title` | `Air quality` | Text (Format geprüft) | Title of the tile | `shell-set sensor.title Air quality` |
+| `sensor.unit` | `ppm` | Text (Format geprüft) | Unit shown after the value | `shell-set sensor.unit ppm` |
+| `sensor.warn` | `1000` | Zahl 0 … 100000, Schritt 1 | From this value on, the tile shows the warning color | `shell-set sensor.warn 1001` |
 
 ## integrations – integrations
 
@@ -255,14 +319,17 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 
 | Schlüssel | Standard | Erlaubt | Erklärung | Beispiel |
 | --- | --- | --- | --- | --- |
-| `keybinds.terminal` | `SUPER + Q` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the terminal (apps.terminal) | `shell-set keybinds.terminal "SUPER + B"` |
+| `keybinds.terminal` | `SUPER + Return` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the terminal (apps.terminal) | `shell-set keybinds.terminal "SUPER + B"` |
 | `keybinds.files` | `SUPER + E` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the file manager (apps.files) | `shell-set keybinds.files "SUPER + B"` |
 | `keybinds.browser` | `""` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the browser (apps.browser); empty = no key | `shell-set keybinds.browser "SUPER + B"` |
 | `keybinds.launcher` | `SUPER + R` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the app launcher (apps.launcher) | `shell-set keybinds.launcher "SUPER + B"` |
 | `keybinds.launcher_alt` | `ALT + Space` | Tasten wie `SUPER + Q`, leer = keine Taste | Another key for the app launcher | `shell-set keybinds.launcher_alt "SUPER + B"` |
 | `keybinds.launcher_space` | `SUPER + Space` | Tasten wie `SUPER + Q`, leer = keine Taste | Third shortcut for the launcher | `shell-set keybinds.launcher_space "SUPER + B"` |
-| `keybinds.close` | `SUPER + C` | Tasten wie `SUPER + Q`, leer = keine Taste | Close the focused window | `shell-set keybinds.close "SUPER + B"` |
+| `keybinds.launcher_search` | `CTRL + SUPER + Return` | Tasten wie `SUPER + Q`, leer = keine Taste | Open the app launcher to search apps | `shell-set keybinds.launcher_search "SUPER + B"` |
+| `keybinds.close` | `SUPER + Q` | Tasten wie `SUPER + Q`, leer = keine Taste | Close the focused window (like clicking its X) | `shell-set keybinds.close "SUPER + B"` |
+| `keybinds.close_alt` | `SUPER + C` | Tasten wie `SUPER + Q`, leer = keine Taste | Second key to close the focused window | `shell-set keybinds.close_alt "SUPER + B"` |
 | `keybinds.float` | `SUPER + V` | Tasten wie `SUPER + Q`, leer = keine Taste | Switch the focused window between floating and tiled | `shell-set keybinds.float "SUPER + B"` |
+| `keybinds.fullscreen` | `SUPER + F` | Tasten wie `SUPER + Q`, leer = keine Taste | Fullscreen on/off for the focused window | `shell-set keybinds.fullscreen "SUPER + B"` |
 | `keybinds.focus_left` | `SUPER + left` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the left | `shell-set keybinds.focus_left "SUPER + B"` |
 | `keybinds.focus_right` | `SUPER + right` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window on the right | `shell-set keybinds.focus_right "SUPER + B"` |
 | `keybinds.focus_up` | `SUPER + up` | Tasten wie `SUPER + Q`, leer = keine Taste | Move the focus to the window above | `shell-set keybinds.focus_up "SUPER + B"` |
@@ -281,8 +348,10 @@ Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 | `keybinds.clipboard` | `SUPER + SHIFT + V` | Tasten wie `SUPER + Q`, leer = keine Taste | Show the last copies to paste them again | `shell-set keybinds.clipboard "SUPER + B"` |
 | `keybinds.overview` | `SUPER + Tab` | Tasten wie `SUPER + Q`, leer = keine Taste | Show all workspaces with their windows | `shell-set keybinds.overview "SUPER + B"` |
 | `keybinds.cheatsheet` | `SUPER + F1` | Tasten wie `SUPER + Q`, leer = keine Taste | Show all keyboard shortcuts | `shell-set keybinds.cheatsheet "SUPER + B"` |
+| `keybinds.dock_focus` | `SUPER + B` | Tasten wie `SUPER + Q`, leer = keine Taste | Use the dock with the keyboard: arrows choose, Enter starts, Menu or SHIFT+F10 opens the menu, Esc leaves | `shell-set keybinds.dock_focus "SUPER + B"` |
 | `keybinds.missa_chat` | `SUPER + I` | Tasten wie `SUPER + Q`, leer = keine Taste | Chat with Missa (only when Missa is switched on) | `shell-set keybinds.missa_chat "SUPER + B"` |
 | `keybinds.missa_voice` | `SUPER + SHIFT + I` | Tasten wie `SUPER + Q`, leer = keine Taste | Speak with Missa; press again to stop (only when Missa and talking are switched on) | `shell-set keybinds.missa_voice "SUPER + B"` |
+| `keybinds.emergency` | `CTRL + SUPER + Escape` | Tasten wie `SUPER + Q` (nicht leer) | Emergency: closes all shell panels, leaves the dock keyboard mode and any submap, focuses the window under the mouse | `shell-set keybinds.emergency "SUPER + B"` |
 | `keybinds.lock` | `SUPER + L` | Tasten wie `SUPER + Q`, leer = keine Taste | Lock the screen | `shell-set keybinds.lock "SUPER + B"` |
 | `keybinds.exit` | `SUPER + M` | Tasten wie `SUPER + Q`, leer = keine Taste | Leave Hyprland | `shell-set keybinds.exit "SUPER + B"` |
 | `keybinds.screenshot_region` | `Print` | Tasten wie `SUPER + Q`, leer = keine Taste | Select a region; saved and copied | `shell-set keybinds.screenshot_region "SUPER + B"` |

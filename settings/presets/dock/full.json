@@ -1,0 +1,8 @@
+{
+  "_name": "full",
+  "_description": "Full width at the edge, windows keep clear",
+  "dock.max_length": 100,
+  "dock.margin": 0,
+  "dock.radius": 0,
+  "dock.mode": "reserve"
+}

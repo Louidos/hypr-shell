@@ -13,6 +13,8 @@
 # Befehle nach asusctl 6.3+ (profile get/set, battery limit, leds set, aura effect static) mit Rückfall
 # auf die alte Schreibweise bis 6.2 (profile -p/-P, -c, -k, aura static); supergfxctl -g/-s/-m/-p.
 set -uo pipefail
+# fehlendes Argument: klare Meldung und Ende (statt "Zeile N: 2: … fehlt" oder still weiter)
+fehlt() { echo "shell-laptop: $1" >&2; exit 2; }
 
 DATA="$HOME/.local/share/hypr-shell"
 EFF="$DATA/settings.effective.json"
@@ -145,18 +147,18 @@ case "${1:-} ${2:-}" in
     "profile get") profil_get ;;
     "profile list") profil_liste ;;
     "profile next") profil_next ;;
-    "profile set") profil_set "${3:?Profil fehlt}" ;;
+    "profile set") [ -n "${3:-}" ] || fehlt "Profil fehlt"; profil_set "${3}" ;;
     "gfx get") gfx_da && supergfxctl -g ;;
     "gfx list") if gfx_da; then gfx_liste; else echo '[]'; fi ;;
     "gfx pending") gfx_da && supergfxctl -p ;;
     "gfx set")
         gfx_da || { echo "supergfxctl fehlt" >&2; exit 1; }
-        jq -e --arg m "${3:?Modus fehlt}" 'index($m) != null' <<<"$(gfx_liste)" >/dev/null || { echo "shell-laptop: unbekannter Modus $3" >&2; exit 2; }
+        [ -n "${3:-}" ] || fehlt "Modus fehlt"; jq -e --arg m "${3}" 'index($m) != null' <<<"$(gfx_liste)" >/dev/null || { echo "shell-laptop: unbekannter Modus $3" >&2; exit 2; }
         supergfxctl -m "$3" ;;
     "charge get") charge_get ;;
-    "charge set") charge_set "${3:?Prozent fehlen}" ;;
-    "kbd set") kbd_set "${3:?Stufe fehlt}" ;;
-    "kbd color") kbd_color "${3:?Farbe fehlt}" ;;
+    "charge set") [ -n "${3:-}" ] || fehlt "Prozent fehlen"; charge_set "${3}" ;;
+    "kbd set") [ -n "${3:-}" ] || fehlt "Stufe fehlt"; kbd_set "${3}" ;;
+    "kbd color") [ -n "${3:-}" ] || fehlt "Farbe fehlt"; kbd_color "${3}" ;;
     "apply "*) apply ;;
     *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

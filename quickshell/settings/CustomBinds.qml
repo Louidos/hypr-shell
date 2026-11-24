@@ -46,7 +46,7 @@ Column {
                 cb.newKeys = combo
             }
         }
-        Field { id: cmd; width: 260; mono: true; placeholder: "Command, e.g. firefox"; commitOnBlur: false }
+        Field { id: cmd; width: Math.max(140, Math.min(260, cb.width - 320)); mono: true; placeholder: "Command, e.g. firefox"; commitOnBlur: false }
         Pill {
             icon: "󰐕"
             text: "Add"

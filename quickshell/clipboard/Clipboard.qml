@@ -66,6 +66,7 @@ Scope {
         margin: 0
         panelWidth: 620
         panelHeight: 560
+        scroll: false
         keyboardFocus: WlrKeyboardFocus.Exclusive
         onOpened: { cb.query = ""; cb.sel = 0; cb.reload() }
 

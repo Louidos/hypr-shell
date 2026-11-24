@@ -6,7 +6,69 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+## 1.9.2 – 2026-11-24
+
+### Behoben
+- Dock und Leiste reagieren nach dem Schliessen eines Programms wieder zuverlässig: Fensterliste, Vorschau und Menü eines geschlossenen Programms gehen sofort zu, ein hängengebliebenes Panel blockiert keine Klicks mehr im Dock, und stürzen Leiste oder Oberfläche ab, starten sie von selbst neu (#117)
+- Die Tastatur bleibt nicht mehr beim Dock oder einem Panel hängen: der Tastatur-Modus des Docks (SUPER+B) endet bei jeder anderen Taste, einem Klick daneben, wenn ein Panel aufgeht, das Dock verschwindet oder nach 10 Sekunden (`dock.keyboard_timeout_s`); Flächen halten die Tastatur nur, solange sie sichtbar offen sind; das neue Notfall-Kürzel CTRL+SUPER+Escape gibt sie jederzeit frei, `shell-diag tastatur` zeigt, wer sie hat (#118)
+
+## 1.9.1 – 2026-11-23
+
+### Behoben
+- Ist ein Konfigurationsordner ein Link auf einen schreibgeschützten Dotfiles-Ordner, ist die Kopie, die die Installation daraus macht, jetzt beschreibbar; vorher konnte die Installation nicht hineinschreiben (#132)
+
+## 1.9.0 – 2026-11-23
+
 ### Hinzugefügt
+- Bildschirme lassen sich in den Einstellungen (Seite Monitors) und mit `shell-set monitor <name> rotate 0|90|180|270` bzw. `mirror on|off` drehen und spiegeln, mit Bestätigung und automatischem Zurücksetzen nach 15 Sekunden; ein Touchscreen oder Stift dreht mit (#112)
+
+### Behoben
+- Bearbeiten-Modus der Desktop-Widgets (SUPER+ALT+W): keine Warnung „Binding loop“ mehr im Log beim Ein- und Ausblenden (#110)
+- Ohne eigenes Profilbild (~/.face) zeigen Dashboard, Panel und Einstellungen den Anfangsbuchstaben, ohne bei jedem Öffnen „Cannot open“ ins Log zu schreiben (#110)
+- Beim ersten Start (noch kein Verlauf, kein Chat, keine Farben aus dem Hintergrundbild) stehen keine Warnungen „File does not exist“ mehr im Log (#110)
+- Sensor-Kachel heisst ohne Anbindung wie in den Einstellungen „Air quality“ statt „Sensor“; das Dock zeigt die Standard-Einträge auch, bevor das Schema gelesen ist (#110)
+- Ist der unter Desktop → Screen eingestellte Bildschirm abgesteckt, erscheinen Widgets und Panels auf dem ersten Bildschirm und wechseln zurück, sobald er wieder da ist; ein Hinweis steht im Log (#110)
+- Dashboard, Einstellungen, Spickzettel, Übersicht, Dock und Widgets rechnen ohne bekannten Bildschirm mit dem echten ersten Bildschirm statt mit fest 1920×1080 (#110)
+- Einstellungen → Monitors zeigt die laufende und die eingestellte Auflösung immer zur Auswahl an, auch wenn sie nicht zu den sechs grössten gehört; ohne bekannte Bildrate steht kein „@ 0 Hz“ mehr da (#110)
+- Fehlt beim Aufruf von shell-clipboard, shell-games, shell-laptop, shell-missa, shell-net oder shell-overview ein Argument, kommt eine klare Meldung; `shell-clipboard delete` ohne ID lief vorher still weiter (#110)
+- Leiste, Dock, Widgets und alle Panels passen sich an Bildschirmgrösse, Skalierung und Hochformat an, nichts wird mehr abgeschnitten: Panels bleiben im freien Platz (ohne Leiste und reserviertes Dock) und rollen, wenn sie nicht passen; auf 4K mit Skalierung 1 ist alles grösser; im Hochformat ordnen sich Dashboard und Einstellungen um; jeder Bildschirm rechnet mit seiner eigenen Grösse, ohne Neustart (#111)
+- Die Schrift der Leiste wird bei niedriger Leiste (`bar.height`) und grossem Schriftfaktor kleiner, statt über die Leiste zu ragen (#111)
+- `shell-set help` zeigt am Ende nicht mehr die Zeile `set -euo pipefail` (#112)
+
+## 1.8.0 – 2026-11-23
+
+### Geändert
+- Neutrale Grund-Kürzel: SUPER+Enter Terminal, CTRL+SUPER+Enter App-Suche, SUPER+Q Fenster schliessen (SUPER+C bleibt), dazu SUPER+F Vollbild; selbst geänderte Kürzel bleiben (#82)
+
+## 1.7.0 – 2026-11-23
+
+### Hinzugefügt
+- Dock bis ins Detail einstellbar (Einstellungs-App → Dock) mit Live-Vorschau, fünf Voreinstellungen (mac, minimal, compact, island, full) sowie Export und Import (#80)
+- Dock mit Vergrösserung beim Darüberfahren, Hüpfen beim Start und automatischem Verstecken (smart: nur wenn ein Fenster es überdeckt) (#79)
+- Dock mit Menü per Rechtsklick, Sortieren per Ziehen, Ordnern, Papierkorb, Fensterliste mit Vorschau, Zählern für Benachrichtigungen und Tastaturbedienung (SUPER+B) (#78)
+- Schwebendes Dock in der Mitte unten mit angehefteten und laufenden Programmen; Klick startet oder holt das Fenster nach vorn, abschaltbar mit `dock.enabled` (#77)
+
+### Geändert
+- Das Dock weicht der Leiste aus, verschwindet bei Vollbild und Spielen und passt sich Bildschirmen und Hintergrundbild an (#81)
+
+### Behoben
+- Ein leerer Name oder einer mit Anführungszeichen für das Symbolthema wird wieder abgelehnt (die Prüfung war beim Zusammenführen verloren gegangen) (#100)
+
+## 1.6.0 – 2026-11-23
+
+### Hinzugefügt
+- Passender Login-Bildschirm (SDDM) im Stil des Sperrbildschirms, installierbar mit `./install.sh --login-theme`, zurück mit `--login-theme-remove`; ohne SDDM wird nichts geändert (#71)
+- Dateimanager und weitere Programme übernehmen die Farben des Hintergrundbilds: GTK und Qt standardmässig, Firefox, Discord (Vesktop) und Spotify (spicetify) einzeln einschaltbar, wenn installiert; Abschalten legt die gesicherten Dateien zurück (#70)
+
+### Behoben
+- Ein Anführungszeichen, Backslash, `;` oder eine Klammer im Namen einer Schrift, eines Mauszeigers oder Symbolthemas wird abgelehnt statt die Leiste verschwinden zu lassen; leere Namen und Programme aus lauter Leerzeichen ebenso
+- Missa-Agent: Ein Auftrag direkt nach einer Änderung der Einstellungen fragt nicht mehr fälschlich nach (#91)
+
+## 1.5.0 – 2026-11-23
+
+### Hinzugefügt
+- Homelab-Übersicht über Missa (Tab Lab), Kalendertermine (CalDAV) und Sensor-Kachel im Dashboard, einschaltbar in den Einstellungen (#64)
+- Missa kann am Rechner Dateien finden und öffnen, Programme und Fenster steuern und nach Bestätigung Befehle ausführen; sichtbar in der Leiste, sofort trennbar im Panel, jede Aktion im Verlauf, einschaltbar in den Einstellungen (#63)
 - Mit Missa sprechen und Antworten vorlesen lassen (SUPER+SHIFT+I), lokal mit whisper.cpp und piper, einschaltbar in den Einstellungen (#62)
 - Chat mit Missa direkt am Desktop (SUPER+I) und Missa-Karte im Dashboard, einschaltbar in den Einstellungen (#61)
 - Nextcloud und Missa als Ordner im Dateimanager, alle persönlichen Anbindungen sind standardmässig aus und in den Einstellungen (Seite Integrations) einschaltbar; Zugangsdaten nur in `secrets.env` (#59)

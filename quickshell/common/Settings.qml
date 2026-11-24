@@ -53,11 +53,48 @@ Singleton {
         return null
     }
 
-    // Bildschirm aus den Einstellungen (Name), sonst der erste
+    // Profilbild ~/.face: fehlt es, bleibt die Quelle leer und die Panels zeigen den Anfangsbuchstaben
+    // (statt bei jedem Öffnen „Cannot open“ ins Log zu schreiben). checkFace() beim Öffnen eines Panels.
+    property bool hasFace: false
+    readonly property string face: hasFace ? "file://" + home + "/.face" : ""
+    function checkFace() { faceFile.reload() }
+    FileView {
+        id: faceFile
+        path: s.home + "/.face"
+        printErrors: false
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: s.hasFace = true
+        onLoadFailed: s.hasFace = false
+    }
+
+    // Bildschirm aus den Einstellungen (Name). Fehlt er (abgesteckt, Name falsch geschrieben), gilt der
+    // erste Bildschirm – die Einstellung bleibt, kommt der Bildschirm zurück, wechseln die Panels
+    // von selbst wieder dorthin. Einmal je Name steht ein Hinweis im Log. Ohne Bildschirm: null.
+    property var missingScreens: ({})
     function screenFor(name) {
         const list = Quickshell.screens
-        for (let i = 0; i < list.length; i++) if (list[i].name === name) return list[i]
-        return list.length > 0 ? list[0] : null
+        if (!list || list.length === 0) return null
+        const n = String(name || "").trim()
+        if (n === "") return list[0]
+        for (let i = 0; i < list.length; i++) if (list[i] && list[i].name === n) return list[i]
+        if (!missingScreens[n]) {
+            missingScreens[n] = true
+            console.info("hypr-shell: Bildschirm \"" + n + "\" nicht gefunden, nehme " + list[0].name)
+        }
+        return list[0]
+    }
+    // Grösse eines Bildschirms (logische Pixel nach Skalierung); ohne Bildschirm der erste, den es
+    // gibt, sonst die kleinste unterstützte Grösse 1280×720
+    function screenWidth(sc) {
+        if (sc && sc.width > 0) return sc.width
+        const l = Quickshell.screens
+        return l && l.length > 0 && l[0].width > 0 ? l[0].width : 1280
+    }
+    function screenHeight(sc) {
+        if (sc && sc.height > 0) return sc.height
+        const l = Quickshell.screens
+        return l && l.length > 0 && l[0].height > 0 ? l[0].height : 720
     }
 
     // shell-apply anstossen (entprellt; läuft er schon, folgt genau ein weiterer Lauf)
@@ -109,6 +146,7 @@ Singleton {
     }
     FileView {
         path: s.dataDir + "/settings.effective.json"
+        printErrors: false
         watchChanges: true
         onFileChanged: reload()
         onLoaded: { try { s.effective = JSON.parse(text()) } catch (e) { } }

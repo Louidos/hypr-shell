@@ -29,6 +29,11 @@ schreiben in dieselbe Datei und wirken sofort:
 Ein Schlüssel wie `look.gaps.inner` steht in der Datei verschachtelt:
 `{ "look": { "gaps": { "inner": 10 } } }`. Die Erklärungen sind dieselben wie in der App (Englisch).
 
+**Bildschirm drehen:** `shell-set monitor eDP-1 rotate 90` (0, 90, 180, 270; die Spiegelung bleibt),
+`shell-set monitor eDP-1 mirror on|off`, oder direkt das Feld `transform` in `monitors.outputs`:
+`normal`, `90`, `180`, `270`, `flipped`, `flipped-90`, `flipped-180`, `flipped-270`. Einträge ohne
+`transform` gelten als `normal`. Ein Touchscreen oder Stift dreht mit (nur, wenn es einen gibt).
+
 MD
     jq -r '
     def show: if type == "string" then (if . == "" then "\"\"" else . end) else tojson end;

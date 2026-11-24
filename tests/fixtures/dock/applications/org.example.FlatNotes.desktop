@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Flat Notes
+Exec=/usr/bin/flatpak run --branch=stable --arch=x86_64 org.example.FlatNotes
+Icon=org.example.FlatNotes
+X-Flatpak=org.example.FlatNotes

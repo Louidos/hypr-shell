@@ -1,0 +1,13 @@
+[SddmGreeterTheme]
+Name=hypr-shell
+Description=Login screen in the style of the hypr-shell lock screen
+Author=hypr-shell
+License=MIT
+Type=sddm-theme
+Version=1.0
+Website=https://github.com/Louidos/hypr-shell
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=hypr-shell
+Theme-API=2.0
+QtVersion=6

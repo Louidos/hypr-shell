@@ -854,7 +854,8 @@ login_thema_bauen() { # zielordner
     mkdir -p "$d/fonts"
     cp "$REPO/quickshell/common/fonts/BebasNeue-Regular.ttf" "$REPO/quickshell/common/fonts/OFL.txt" "$d/fonts/"
     [ -f "$DATA/wallpaper" ] && bild="$(cat "$DATA/wallpaper")"
-    if [ -z "$bild" ] || [ ! -f "$bild" ]; then bild="$(find "$REPO/wallpapers" -maxdepth 1 -name '*.png' 2>/dev/null | sort | head -n1)"; fi
+    # ohne eigene Auswahl das Startbild (Blüten, sonst das graue)
+    if [ -z "$bild" ] || [ ! -f "$bild" ]; then bild="$REPO/wallpapers/hypr-shell-bluete.jpg"; [ -f "$bild" ] || bild="$REPO/wallpapers/hypr-shell-grau.png"; fi
     im="$(command -v magick || command -v convert || true)"
     if [ -n "$bild" ] && [ -n "$im" ]; then
         # wie der Sperrbildschirm: unscharf und halb so hell

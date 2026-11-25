@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Hinzugefügt
+- Neues mitgeliefertes Hintergrundbild (dunkle Blüten, CC0) als Standard, damit das Glas wie in der Vorlage wirkt; die Farben bleiben grau-weiss, das graue Bild bleibt wählbar (Theme → „Start wallpaper“ oder `shell-set theme.wallpaper_default grau`), eine eigene Auswahl bleibt (#143)
+
 ## 1.11.0 – 2026-11-24
 
 ### Hinzugefügt

@@ -216,6 +216,8 @@ Systemwerte werden nur abgefragt, solange das Dashboard offen ist.
 **Gaming-Modus automatisch:** Läuft ein Spiel im Vollbild (Steam-Spiele, gamescope; weitere über
 `games.auto_classes`), schaltet hypr-shell Blur, Animationen und Schatten aus und danach wieder an. Ein
 von Hand eingeschalteter Gaming-Modus bleibt, wie er ist; abschalten mit `shell-set games.auto_gaming false`.
+Wird das Spiel geschlossen, geht der automatische Modus aus, auch wenn Hyprland das Fenster beim
+Schliessen anders meldet – solange kein anderes Spiel im Vollbild läuft.
 
 ### Starter
 
@@ -643,7 +645,7 @@ automatische Lagen ordnet Hyprland selbst neu. Alte Einträge ohne Drehung gelte
 | `shell-switcher next\|prev\|commit\|cancel\|close` | ALT + Tab (von den Kürzeln aufgerufen) |
 | `shell-window minimize\|restore\|list` | Fenster minimieren, zurückholen, minimierte zeigen |
 | `shell-look presets\|preset <name>` | Voreinstellungen für das Aussehen: glass, minimal, gaming |
-| `shell-diag tastatur\|freigeben` | wer hat die Tastatur? bzw. Tastatur zurück (wie `CTRL + SUPER + Escape`) |
+| `shell-diag tastatur\|dock\|freigeben` | wer hat die Tastatur? · warum ist das Dock (auf welchem Bildschirm) weg – Vollbild, Gaming-Modus, veraltete Meldung von Hyprland? · Tastatur zurück (wie `CTRL + SUPER + Escape`) |
 | `shell-waechter <name> -- <befehl>` | hält Leiste und Oberfläche am Laufen: nach einem Absturz Neustart (höchstens 5-mal in 2 Minuten, dann Benachrichtigung); `shell-waechter stop <name>` beendet ohne Neustart |
 | `shell-powermenu [aktion]` | Power-Menü bzw. direkt `lock`, `suspend`, `logout`, `reboot`, `shutdown` |
 | `shell-clipboard list\|paste\|delete\|clear …` | Verlauf der Zwischenablage |

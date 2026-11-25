@@ -3,6 +3,9 @@
 #
 #   shell-diag tastatur     wer hat gerade die Tastatur? (Flächen der Shell, offenes Panel,
 #                           Submap von Hyprland, aktives Fenster) – mit Hinweisen
+#   shell-diag dock         Dock pro Bildschirm: sichtbar, Eingabe, versteckt, und ob es als
+#                           „Vollbild“ gilt und warum (hasFullscreen der Arbeitsfläche, Vollbild-
+#                           Fenster, Gaming-Modus) – Sicht der Oberfläche und Sicht von Hyprland
 #   shell-diag freigeben    Tastatur zurück (auch SUPER+CTRL+Escape): alle Panels zu, Dock-Tastatur-
 #                           Modus und Bearbeiten-Modus aus, Submap verlassen, Fokus auf das Fenster
 #                           unter der Maus
@@ -64,6 +67,42 @@ tastatur() {
     echo "  Tastatur zurück: CTRL + SUPER + Escape  (oder: shell-diag freigeben)"
 }
 
+dock() {
+    local st grund
+    echo "== Dock"
+    hat jq || { echo "  jq fehlt"; return 0; }
+    # HYPR_SHELL_DIAG_DOCK: Antwort der Oberfläche vorgeben (für Tests)
+    st="${HYPR_SHELL_DIAG_DOCK:-}"
+    [ -n "$st" ] || st="$("$HIER/shell-quickshell" ipc dock screens 2>/dev/null)" || st=""
+    if [ -n "$st" ]; then
+        jq -r '"  dock.autohide: \(.autohide)   Neuholen von Hyprland bisher: \(.refreshes)×",
+            (.docks[] | "  \(.screen): \(if .shown then "sichtbar" else "NICHT sichtbar" end), Eingabe \(if .input then "an" else "aus (Panel offen)" end), Fläche \(.region)\(if .hidden then ", versteckt (Kante)" else "" end)\(if .keyboard then ", Tastatur-Modus" else "" end)",
+                "      Vollbild: \(if .fullscreen then "ja" else "nein" end) – \(
+                    {"gaming": "Gaming-Modus ist an", "fullscreen-window": "Vollbild-Fenster auf der Arbeitsfläche",
+                     "stale-hasfullscreen-ignored": "Hyprland meldet hasFullscreen ohne Vollbild-Fenster (veraltet, wird ignoriert)",
+                     "hide_on_fullscreen-off": "dock.hide_on_fullscreen ist aus", "none": "kein Vollbild"}[.reason] // .reason)",
+                "      Arbeitsfläche \(.workspace // "?"): hasFullscreen \(.hasFullscreen), Vollbild-Fenster: \(if (.fullscreenWindows | length) == 0 then "keine" else (.fullscreenWindows | map("\(.class) \(.address)") | join(", ")) end), Gaming-Modus \(if .gaming then "an" else "aus" end)")' <<<"$st" 2>/dev/null \
+            || echo "  Antwort der Oberfläche unlesbar: $st"
+    else
+        echo "  Oberfläche (Quickshell) läuft nicht oder antwortet nicht"
+    fi
+    echo "  Gaming-Modus (Datei): $(if [ -e "$HOME/.local/share/hypr-shell/gaming" ]; then echo an; else echo aus; fi)$(if [ -e "$HOME/.local/share/hypr-shell/gaming-auto" ]; then echo " – automatisch, Spiel $(cat "$HOME/.local/share/hypr-shell/gaming-auto")"; fi)"
+    if hypr; then
+        echo "  Sicht von Hyprland:"
+        jq -rn --argjson m "$(hyprctl -j monitors 2>/dev/null || echo '[]')" --argjson w "$(hyprctl -j workspaces 2>/dev/null || echo '[]')" \
+            --argjson c "$(hyprctl -j clients 2>/dev/null || echo '[]')" '
+            $m[] | .name as $n | .activeWorkspace.id as $id
+            | ([$w[] | select(.id == $id)][0].hasfullscreen // false) as $hf
+            | [$c[] | select(.workspace.id == $id and .mapped != false and ((.fullscreen // 0) == true or (.fullscreen // 0) > 0))] as $f
+            | "    \($n): Arbeitsfläche \($id), hasfullscreen \($hf), Vollbild-Fenster \(if ($f | length) == 0 then "keine" else ($f | map("\(.class) \(.address) (Modus \(.fullscreen))") | join(", ")) end)\(if $hf == true and ($f | length) == 0 then "  ← veraltet: das Dock ignoriert das" else "" end)"' 2>/dev/null
+    else
+        echo "  Hyprland läuft nicht (Sicht von Hyprland übersprungen)"
+    fi
+    grund=""
+    [ -n "${st:-}" ] && grund="$(jq -r '[.docks[] | select(.shown == false and .reason != "gaming" and .reason != "fullscreen-window")] | length' <<<"$st" 2>/dev/null)"
+    if [ "${grund:-0}" != 0 ]; then echo "  Hinweis: ein Dock ist ohne Vollbild unsichtbar – mit \"shell-quickshell ipc dock show\" einblenden."; fi
+}
+
 freigeben() {
     local rest addr
     if rest="$(ui release)"; then
@@ -85,6 +124,7 @@ freigeben() {
 case "${1:-}" in
     tastatur|keyboard) tastatur ;;
     freigeben|release) freigeben ;;
-    ""|-h|--help|help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' ;;
-    *) fehlt "unbekannter Befehl: $1 (tastatur, freigeben)" ;;
+    dock) dock ;;
+    ""|-h|--help|help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) fehlt "unbekannter Befehl: $1 (tastatur, dock, freigeben)" ;;
 esac

@@ -90,4 +90,29 @@ echo '{"look": {"rounding": 3}}' > "$T/kaputt4.json"
 for i in 1 2 3 4; do
     pruefe '! "$HOME/.local/bin/shell-dock" import "$T/kaputt$i.json" >/dev/null 2>&1 && [ "$(cat "$HOME/.config/hypr-shell/settings.json")" = "$stand" ]' "kaputte Datei $i abgelehnt, nichts halb übernommen"
 done
+
+# Vollbild-Fenster geschlossen: Hyprland lässt hasFullscreen der Arbeitsfläche stehen (#156). Das Dock
+# zählt es nur, solange dort ein lebendes Fenster im Vollbild ist (quickshell/dock/verstecken.js).
+echo "== Vollbild: Dock nach dem Schliessen eines Vollbild-Fensters"
+pruefe 'grep -q "Hyprland.refreshWorkspaces()" quickshell/dock/Dock.qml && ! grep -q "autohide === \"smart\" ? Hyprland" quickshell/dock/Dock.qml' "Arbeitsflächen werden nach Fenster-Ereignissen neu geholt, bei jedem dock.autohide"
+pruefe 'grep -q "V.vollbild(hyprHasFullscreen" quickshell/dock/DockWindow.qml' "fullscreenHere gleicht hasFullscreen mit den lebenden Fenstern ab"
+qml="$(command -v qml6 || command -v qml || ls /usr/lib/qt6/bin/qml 2>/dev/null || true)"
+if [ -n "$qml" ]; then
+    if XDG_RUNTIME_DIR="$T" QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 QT_LOGGING_RULES="qml.debug=true;js.debug=true" \
+        timeout 60 "$qml" tests/daten/vollbild-test.qml > "$T/vollbild.log" 2>&1; then rc=0; else rc=$?; fi
+    { grep -E "  (ok|FEHLER): " "$T/vollbild.log" || true; } | sed 's/^qml: //'
+    pruefe '[ "$rc" = 0 ] && grep -q "ERGEBNIS ok" "$T/vollbild.log" && ! grep -qE "TypeError|ReferenceError|is not a function" "$T/vollbild.log"' "Vollbild-Logik (verstecken.js) mit dem qml-Werkzeug"
+    [ "$rc" = 0 ] || tail -n 20 "$T/vollbild.log"
+else
+    echo "  Hinweis: qml fehlt, Vollbild-Logik übersprungen."
+fi
+mkdir -p "$T/hbin"
+ln -s "$REPO/tests/daten/hyprctl" "$T/hbin/hyprctl"
+echo '[{"id": 1, "name": "1", "monitor": "HEADLESS-1", "hasfullscreen": true}]' > "$T/ws.json"
+diag="$(PATH="$T/hbin:$PATH" HYPRLAND_INSTANCE_SIGNATURE=test HYPRCTL_WORKSPACES="$T/ws.json" "$REPO/bin/shell-diag" dock)"
+pruefe 'grep -q "HEADLESS-1: Arbeitsfläche 1, hasfullscreen true, Vollbild-Fenster keine  ← veraltet" <<<"$diag"' "shell-diag dock: Hyprland meldet Vollbild ohne Vollbild-Fenster → als veraltet erkannt"
+zust='{"autohide":"never","refreshes":3,"hyprland":true,"docks":[{"screen":"eDP-1","fullscreen":false,"gaming":false,"workspace":1,"hasFullscreen":true,"fullscreenWindows":[],"reason":"stale-hasfullscreen-ignored","shown":true,"input":true,"hidden":false,"region":"body","keyboard":false},{"screen":"DP-1","fullscreen":true,"gaming":false,"workspace":5,"hasFullscreen":true,"fullscreenWindows":[{"address":"0xabc","class":"mpv"}],"reason":"fullscreen-window","shown":false,"input":true,"hidden":false,"region":"body","keyboard":false}]}'
+diag="$(HYPR_SHELL_DIAG_DOCK="$zust" "$REPO/bin/shell-diag" dock)"
+pruefe 'grep -q "eDP-1: sichtbar, Eingabe an" <<<"$diag" && grep -q "veraltet, wird ignoriert" <<<"$diag" && grep -q "DP-1: NICHT sichtbar" <<<"$diag" && grep -q "Vollbild-Fenster: mpv 0xabc" <<<"$diag"' "shell-diag dock: pro Bildschirm sichtbar, Eingabe, Vollbild und warum"
+pruefe '(unset HYPRLAND_INSTANCE_SIGNATURE; "$REPO/bin/shell-diag" dock | grep -q "Hyprland läuft nicht")' "shell-diag dock ohne Hyprland und ohne Oberfläche: Hinweise statt Fehler"
 exit "$fehler"

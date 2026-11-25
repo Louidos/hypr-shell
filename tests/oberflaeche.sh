@@ -1034,10 +1034,53 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
         swaymsg '[title="Dock test window"] fullscreen disable' >/dev/null 2>&1; sleep 1
         if [ "$(ds .shown)" = true ]; then echo "  ok: Vollbild beendet: Dock wieder da"; else echo "  FEHLER: nach dem Vollbild"; dock_ok=0; fi
         kill "$fpid" 2>/dev/null || true
+        # im Vollbild geschlossen (#156): Dock innerhalb von 1 s wieder sichtbar, mit Eingabe und Tastatur
+        # (SUPER+B), bei jedem dock.autohide; geschlossen über das Fenster (wie SUPER+Q) und durch Beenden
+        wieder_da() { # $1 = jq-Auswahl eines Docks aus "dk screens"; höchstens 1 s warten
+            local _i
+            for _i in $(seq 1 10); do
+                [ "$(dk screens | jq -r "$1 | [.shown, .input, .fullscreen, (.region != \"none\")] | map(tostring) | join(\",\")")" = "true,true,false,true" ] && return 0
+                sleep 0.1
+            done
+            return 1
+        }
+        sw_fenster() { "$qs" -p "$T/fenster.qml" >> "$T/fenster3.log" 2>&1 & fpid="$!"; pids+=("$fpid"); sleep 2; }
+        for ah in never always smart; do
+            "$HOME/.local/bin/shell-set" dock.autohide "$ah" >/dev/null 2>&1; sleep 1
+            for wie in fenster beenden; do
+                sw_fenster
+                swaymsg '[title="Dock test window"] fullscreen enable' >/dev/null 2>&1; sleep 1
+                weg="$(ds .shown || true)"
+                if [ "$wie" = fenster ]; then swaymsg '[title="Dock test window"] kill' >/dev/null 2>&1; else kill "$fpid" 2>/dev/null || true; fi
+                if [ "$weg" = false ] && wieder_da '.docks[0]'; then
+                    dk focus >/dev/null || true; sleep 0.3; kbd="$(dk key "" || true)"; dk key Escape >/dev/null || true
+                    if [[ "$kbd" == on:* ]]; then echo "  ok: dock.autohide $ah, im Vollbild geschlossen ($wie): Dock in 1 s wieder da, nimmt Eingaben und SUPER+B an"
+                    else echo "  FEHLER: dock.autohide $ah ($wie): Dock wieder da, aber Tastatur $kbd"; dock_ok=0; fi
+                else echo "  FEHLER: dock.autohide $ah, im Vollbild geschlossen ($wie): vorher sichtbar=$weg, danach $(dk screens)"; dock_ok=0; fi
+                kill "$fpid" 2>/dev/null || true; wait "$fpid" 2>/dev/null || true
+            done
+        done
+        "$HOME/.local/bin/shell-set" reset dock.autohide >/dev/null 2>&1; sleep 1
         # zweiter Bildschirm: an- und abstecken
         swaymsg create_output >/dev/null 2>&1; sleep 2
         n2="$(dk count)"
         if [ "$n2" = 2 ]; then echo "  ok: zweiter Bildschirm: genau ein zusätzliches Dock"; else echo "  FEHLER: zwei Bildschirme, $n2 Docks"; dock_ok=0; fi
+        # Vollbild auf dem zweiten Bildschirm: nur dort kein Dock, der erste bleibt unberührt; nach dem
+        # Schliessen ist das Dock dort in 1 s wieder da
+        zweiter="$(swaymsg -t get_outputs -r 2>/dev/null | jq -r '.[] | select(.name != "HEADLESS-1") | .name' | head -n1 || true)"
+        if [ -n "$zweiter" ] && [ "$n2" = 2 ]; then
+            sw_fenster
+            swaymsg "[title=\"Dock test window\"] move container to output $zweiter" >/dev/null 2>&1
+            swaymsg '[title="Dock test window"] focus' >/dev/null 2>&1
+            swaymsg '[title="Dock test window"] fullscreen enable' >/dev/null 2>&1; sleep 1
+            erst="$(dk screens | jq -r '.docks[] | select(.screen == "HEADLESS-1") | .shown' || true)"
+            zw="$(dk screens | jq -r --arg n "$zweiter" '.docks[] | select(.screen == $n) | .shown' || true)"
+            swaymsg '[title="Dock test window"] kill' >/dev/null 2>&1
+            if [ "$erst" = true ] && [ "$zw" = false ] && wieder_da ".docks[] | select(.screen == \"$zweiter\")" && wieder_da '.docks[] | select(.screen == "HEADLESS-1")'; then
+                echo "  ok: Vollbild auf $zweiter: nur dort kein Dock; geschlossen: dort in 1 s wieder da, HEADLESS-1 unberührt"
+            else echo "  FEHLER: zweiter Bildschirm: HEADLESS-1 $erst, $zweiter $zw, danach $(dk screens)"; dock_ok=0; fi
+            kill "$fpid" 2>/dev/null || true; wait "$fpid" 2>/dev/null || true
+        fi
         "$HOME/.local/bin/shell-set" dock.monitor primary >/dev/null 2>&1; sleep 2
         if [ "$(dk count)" = 1 ]; then echo "  ok: dock.monitor primary: ein Dock"; else echo "  FEHLER: primary: $(dk count)"; dock_ok=0; fi
         "$HOME/.local/bin/shell-set" reset dock.monitor >/dev/null 2>&1; sleep 2

@@ -62,4 +62,69 @@ echo '{"games": {"auto_gaming": false}}' > "$HOME/.local/share/hypr-shell/settin
 g auto fullscreen 2 steam_app_570 0xabc
 pruefe '[ ! -e "$HOME/.local/share/hypr-shell/gaming" ]' "abgeschaltet (games.auto_gaming): nichts passiert"
 pruefe 'grep -q "window.fullscreen" config/hypr/hyprland.lua && grep -q "shell-games auto" config/hypr/hyprland.lua' "hyprland.lua meldet Vollbild-Wechsel"
+
+# Spiel im Vollbild geschlossen: der automatische Modus geht zuverlässig aus (#156), auch wenn die
+# Adresse beim Schliessen in anderer Form kommt oder fehlt; ein von Hand eingeschalteter bleibt
+echo "== automatischer Gaming-Modus: Spiel geschlossen"
+echo '{}' > "$HOME/.local/share/hypr-shell/settings.effective.json"
+an() { [ -e "$HOME/.local/share/hypr-shell/gaming" ]; }
+export HYPR_SHELL_GAMES_WAIT=0
+mkdir -p "$T/hbin"
+ln -s "$REPO/tests/daten/hyprctl" "$T/hbin/hyprctl"
+# Hyprland: Spiel 0x55aa im Vollbild auf Arbeitsfläche 1, kitty daneben
+jq -n '[{address: "0x55aa", class: "steam_app_570", fullscreen: 2, mapped: true, workspace: {id: 1}},
+        {address: "0x55bb", class: "kitty", fullscreen: 0, mapped: true, workspace: {id: 1}}]' > "$T/mit-spiel.json"
+jq -n '[{address: "0x55bb", class: "kitty", fullscreen: 0, mapped: true, workspace: {id: 1}}]' > "$T/ohne-spiel.json"
+h() { PATH="$T/hbin:$T/bin:$PATH" HYPRLAND_INSTANCE_SIGNATURE=test HYPRCTL_CLIENTS="$1" "$REPO/bin/shell-games" "${@:2}"; }
+g auto fullscreen 2 steam_app_570 0x0055AA; g auto close 55aa
+pruefe '! an && [ ! -e "$HOME/.local/share/hypr-shell/gaming-auto" ]' "Adresse in anderer Form (0x0055AA ↔ 55aa): Modus aus, Marke weg"
+h "$T/mit-spiel.json" auto fullscreen 2 steam_app_570 0x55aa
+h "$T/mit-spiel.json" auto close 0x55bb
+pruefe 'an' "anderes Fenster geschlossen, Spiel noch im Vollbild: Modus bleibt an"
+h "$T/ohne-spiel.json" auto close _
+pruefe '! an && [ ! -e "$HOME/.local/share/hypr-shell/gaming-auto" ]' "Schliessen ohne passende Adresse, kein Spiel mehr im Vollbild: Modus aus"
+h "$T/mit-spiel.json" auto fullscreen 2 steam_app_570 0x55aa
+h "$T/mit-spiel.json" auto close 0x9999
+pruefe 'an' "unbekanntes Fenster geschlossen, Hyprland zeigt das Spiel noch: Modus bleibt an"
+h "$T/mit-spiel.json" auto close 0x55aa
+pruefe '! an' "das Spiel selbst geschlossen (noch in der Liste von Hyprland): Modus aus"
+g auto fullscreen 2 steam_app_570 0x55aa; g auto fullscreen 1 steam_app_570 0x55aa
+pruefe '! an' "Spiel wechselt von Vollbild auf maximiert: Modus aus"
+"$REPO/bin/shell-toggle" gaming on >/dev/null
+h "$T/ohne-spiel.json" auto close _; h "$T/ohne-spiel.json" auto close 0x55aa
+pruefe 'an' "von Hand eingeschaltet: Schliessen eines Fensters ändert nichts"
+"$REPO/bin/shell-toggle" gaming off >/dev/null
+g auto fullscreen 2 steam_app_570 0x55aa
+"$REPO/bin/shell-toggle" gaming off >/dev/null; "$REPO/bin/shell-toggle" gaming on >/dev/null
+h "$T/ohne-spiel.json" auto close 0x55aa
+pruefe 'an && [ ! -e "$HOME/.local/share/hypr-shell/gaming-auto" ]' "automatisch an, von Hand aus und wieder an: das alte Spiel schaltet den Modus nicht mehr aus"
+"$REPO/bin/shell-toggle" gaming off >/dev/null
+g auto close 0x55aa
+pruefe '! an' "Schliessen ohne Gaming-Modus: nichts passiert"
+
+lua=$(command -v lua5.4 || command -v lua || true)
+if [ -n "$lua" ]; then
+    befehle="$(HYPR_SHELL_INPUT_DEVICES=/nonexistent "$lua" - <<'LUA'
+package.path = "./tests/?.lua;" .. package.path
+local A = require("hl-attrappe")
+_G.hl = A.hl
+dofile("config/hypr/hyprland.lua")
+local n = #A.aufrufe
+for _, fn in ipairs(A.ereignisse["window.fullscreen"] or {}) do fn({ fullscreen = 2, class = "steam_app_570", address = "55AABB" }) end
+for _, fn in ipairs(A.ereignisse["window.close"] or {}) do fn({ address = "0x55aabb" }) end
+for _, fn in ipairs(A.ereignisse["window.close"] or {}) do fn({ address = 0x55aabb }) end
+for _, fn in ipairs(A.ereignisse["window.close"] or {}) do fn(nil) end
+for i = n + 1, #A.aufrufe do
+    local a = A.aufrufe[i]
+    if a[1] == "exec_cmd" then print((tostring(a[2]):gsub("^.*shell%-games ", ""))) end
+end
+LUA
+)" || befehle="Lua-Fehler: $befehle"
+    pruefe '[ "$befehle" = "auto fullscreen 2 steam_app_570 0x55aabb
+auto close 0x55aabb
+auto close 0x55aabb
+auto close _" ]' "hyprland.lua: Adresse bei Vollbild und Schliessen in derselben Form (0x…, klein), auch als Zahl; Schliessen ohne Fenster wird trotzdem gemeldet ($(tr '\n' ';' <<<"$befehle"))"
+else
+    echo "  Hinweis: lua fehlt, hyprland.lua-Ereignisse übersprungen."
+fi
 exit "$fehler"

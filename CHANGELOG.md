@@ -6,6 +6,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## Unveröffentlicht
 
+### Behoben
+- Das Dock bleibt nach dem Schliessen eines Programms im Vollbild nicht mehr auf diesem Monitor verschwunden oder unbedienbar, auch nach Spielen mit automatischem Gaming-Modus; `shell-diag dock` zeigt, warum das Dock gerade versteckt ist (#156)
+
 ## 1.12.0 – 2026-11-25
 
 ### Hinzugefügt

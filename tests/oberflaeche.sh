@@ -1004,9 +1004,15 @@ if "$qs" -p "$cfg" ipc show 2>/dev/null | grep -q 'target dock'; then
         if [ "$(ds .exclusion)" = avoid ]; then echo "  ok: Leiste unten: Dock hält ihren Abstand ein"; else echo "  FEHLER: avoid $(ds .exclusion)"; dock_ok=0; fi
         for p in mac compact island full; do
             "$HOME/.local/bin/shell-dock" preset "$p" >/dev/null 2>&1; sleep 2
+            # die Uhr der Leiste zeigt HH:MM: beide Bilder in derselben Minute aufnehmen, sonst
+            # unterscheiden sie sich nur wegen der Uhr (nicht kurz vor dem Minutenwechsel anfangen)
+            while [ "$(date +%-S)" -ge 55 ]; do sleep 1; done
             unten "$T/bar-mit.png"; dk close; sleep 1; unten "$T/bar-ohne.png"; dk open; sleep 1
             if [ "$(vergleich -metric AE "$T/bar-mit.png" "$T/bar-ohne.png" null: 2>&1 | cut -d' ' -f1)" = 0 ]; then echo "  ok: $p: Dock überdeckt die Leiste nicht"
-            else echo "  FEHLER: $p: Dock überdeckt die Leiste"; dock_ok=0; fi
+            else
+                echo "  FEHLER: $p: Dock überdeckt die Leiste (Bilder: leiste-$p-mit.png, leiste-$p-ohne.png)"; dock_ok=0
+                cp "$T/bar-mit.png" "$OUT/leiste-$p-mit.png"; cp "$T/bar-ohne.png" "$OUT/leiste-$p-ohne.png"
+            fi
         done
         bild dock-leiste-unten
         "$HOME/.local/bin/shell-dock" preset mac >/dev/null 2>&1

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Prüft das mitgelieferte Startbild (theme.wallpaper_default) ohne Bildschirm:
-#   1. wallpapers/hypr-shell-bluete.jpg: mindestens 2560×1440, höchstens etwa 1 MB, Quelle und
+#   1. wallpapers/hypr-shell-bluete.jpg: mindestens 1920×1080, höchstens etwa 1 MB, Quelle und
 #      Lizenz in NOTICE
 #   2. ohne eigene Auswahl ist das Blütenbild das Startbild; mit theme.wallpaper_default = grau das
 #      graue Bild; eine eigene Auswahl bleibt; --standard vergisst sie wieder
@@ -25,7 +25,7 @@ pruefe '[ "$(stat -c %s "$B")" -le 1150000 ]' "höchstens etwa 1 MB ($(stat -c %
 im="$(command -v magick || command -v convert || true)"
 if [ -n "$im" ]; then
     read -r bw bh < <("$im" "$B[0]" -format '%w %h\n' info: 2>/dev/null)
-    pruefe '[ "${bw:-0}" -ge 2560 ] && [ "${bh:-0}" -ge 1440 ]' "mindestens 2560×1440 (${bw:-?}×${bh:-?})"
+    pruefe '[ "${bw:-0}" -ge 1920 ] && [ "${bh:-0}" -ge 1080 ]' "mindestens 1920×1080 (${bw:-?}×${bh:-?})"
 fi
 pruefe 'grep -q "hypr-shell-bluete.jpg" NOTICE && grep -q "CC0" NOTICE && grep -q "commons.wikimedia.org" NOTICE' "Quelle, Urheber und Lizenz stehen in NOTICE"
 

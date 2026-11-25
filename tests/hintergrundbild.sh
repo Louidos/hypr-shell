@@ -24,7 +24,7 @@ pruefe '[ -f "$B" ]' "wallpapers/hypr-shell-bluete.jpg ist da"
 pruefe '[ "$(stat -c %s "$B")" -le 1150000 ]' "höchstens etwa 1 MB ($(stat -c %s "$B" 2>/dev/null) Bytes)"
 im="$(command -v magick || command -v convert || true)"
 if [ -n "$im" ]; then
-    read -r bw bh < <("$im" "$B[0]" -format '%w %h\n' info: 2>/dev/null)
+    read -r bw bh < <("$im" "${B}[0]" -format '%w %h\n' info: 2>/dev/null)
     pruefe '[ "${bw:-0}" -ge 1920 ] && [ "${bh:-0}" -ge 1080 ]' "mindestens 1920×1080 (${bw:-?}×${bh:-?})"
 fi
 pruefe 'grep -q "hypr-shell-bluete.jpg" NOTICE && grep -q "CC0" NOTICE && grep -q "commons.wikimedia.org" NOTICE' "Quelle, Urheber und Lizenz stehen in NOTICE"

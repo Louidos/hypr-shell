@@ -89,8 +89,11 @@ dnd() {
 }
 
 # Gaming-Modus: Blur, Animationen und Schatten aus. Die Datei sorgt dafür, dass hyprland.lua
-# den Modus auch nach "hyprctl reload" beibehält.
+# den Modus auch nach "hyprctl reload" beibehält. Jedes Schalten löscht die Marke des automatischen
+# Modus (shell-games schreibt sie erst danach): ein später von Hand eingeschalteter Modus geht so nie
+# durch das Schliessen eines alten Spiels aus.
 gaming() {
+    rm -f "$DATA/gaming-auto"
     if [ "$(ziel gaming_an "$1")" = on ]; then
         touch "$GAMING"
         hyprctl eval 'hl.config({ decoration = { blur = { enabled = false }, shadow = { enabled = false } }, animations = { enabled = false } })' >/dev/null 2>&1 || true

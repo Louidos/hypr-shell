@@ -1,6 +1,6 @@
 -- Attrappe der Hyprland-Lua-API (Stand Wiki 0.55): kennt nur dokumentierte Funktionen.
 -- Ein Tippfehler in hyprland.lua (z. B. hl.dsp.windw.close) führt hier zu einem Fehler.
-local M = { aufrufe = {}, binds = {}, flags = {}, layer = {}, start = {}, submaps = {}, neben = {} }
+local M = { aufrufe = {}, binds = {}, flags = {}, layer = {}, start = {}, submaps = {}, neben = {}, ereignisse = {} }
 
 local function streng(name, t)
     return setmetatable(t, {
@@ -49,6 +49,9 @@ local hl = {
     on = function(ev, fn)
         if type(fn) ~= "function" then error("hl.on braucht eine Funktion", 2) end
         if ev == "hyprland.start" then table.insert(M.start, fn) end
+        -- für Tests: alle Ereignisse mit ihren Funktionen (z. B. window.close)
+        M.ereignisse[ev] = M.ereignisse[ev] or {}
+        table.insert(M.ereignisse[ev], fn)
     end,
     bind = function(keys, action, flags)
         if type(keys) ~= "string" or keys == "" then error("hl.bind: Tasten fehlen", 2) end

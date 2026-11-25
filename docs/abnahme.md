@@ -15,6 +15,8 @@ App-Raster (Dateinamen mit `-grau`).
 
 | Punkt | Prüfung |
 | --- | --- |
+| 1.12.1: Programm im Vollbild geschlossen (SUPER+Q, Knopf, `kill`): Dock auf diesem Bildschirm in 1 s wieder da, Klick, Hover und SUPER+B gehen, bei jedem `dock.autohide`; andere Bildschirme unberührt | automatisch: Logik mit hängendem `hasfullscreen` (`tests/dock.sh`), echter Ablauf unter sway (`tests/oberflaeche.sh`); **unter Hyprland von Hand** (Laptop mit externem Monitor, auch maximiert und mit einem Steam-Spiel, danach `shell-diag dock`) |
+| 1.12.1: Vollbild-Spiel geschlossen: automatischer Gaming-Modus aus, von Hand eingeschalteter bleibt | automatisch (`tests/spiele.sh`); mit echtem Spiel von Hand |
 | 1.11: Mit offenem Dashboard verdeckt das Dock nichts, nach dem Schliessen ist es sofort da | automatisch (`tests/oberflaeche.sh`, Lage von Kalender und Dock) |
 | 1.11: Karten, Pille, Leuchten, Abstände und Schrift kommen aus settings.json, sofort | automatisch (`tests/oberflaeche.sh`, Abschnitt Design-Werte; `tests/shell-set.sh`) |
 | 1.11: Fenster leuchten in Randfarbe, nicht Spiele, Videos, Bildbearbeitung und Vollbild | automatisch (`tests/glas.sh`, `tests/hyprland-echt.sh`); Aussehen von Hand |

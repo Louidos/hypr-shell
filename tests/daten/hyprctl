@@ -5,7 +5,7 @@ d="$(dirname "$(readlink -f "$0")")"
 if [ "${1:-}" = -j ]; then
     case "$2" in
         clients) cat "${HYPRCTL_CLIENTS:-$d/hyprctl-clients.json}" ;;
-        workspaces) cat "$d/hyprctl-workspaces.json" ;;
+        workspaces) cat "${HYPRCTL_WORKSPACES:-$d/hyprctl-workspaces.json}" ;;
         monitors) cat "${HYPRCTL_MONITORS:-$d/hyprctl-monitors.json}" ;;
         activeworkspace) echo '{"id": 1, "name": "1"}' ;;
         cursorpos) echo "${HYPRCTL_CURSOR:-{\"x\": 100, \"y\": 100\}}" ;;

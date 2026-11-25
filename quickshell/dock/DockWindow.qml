@@ -105,19 +105,52 @@ PanelWindow {
     }
     implicitWidth: vertical ? d.margin + thickness + outward : Math.min(screenLen, bodyLen + 2 * sideRoom)
     implicitHeight: vertical ? Math.min(screenLen, bodyLen + 2 * sideRoom) : d.margin + thickness + outward
-    // Vollbild oder Gaming-Modus (dock.hide_on_fullscreen): kein Dock, auch die Kante zeigt es nicht
-    readonly property bool fullscreenHere: {
-        if (!d.hideOnFullscreen) return false
-        if (Ui.gaming) return true
-        if (monitor && monitor.activeWorkspace && monitor.activeWorkspace.hasFullscreen === true) return true
+    // Vollbild oder Gaming-Modus (dock.hide_on_fullscreen): kein Dock, auch die Kante zeigt es nicht.
+    // Unter Hyprland zählt hasFullscreen der aktiven Arbeitsfläche nur, wenn dort noch ein lebendes
+    // Fenster im Vollbild ist (verstecken.js): nach dem Schliessen eines Vollbild-Fensters bleibt
+    // hasFullscreen sonst stehen und das Dock käme auf diesem Bildschirm nie wieder.
+    readonly property var activeWs: monitor && monitor.activeWorkspace ? monitor.activeWorkspace : null
+    readonly property bool hyprHasFullscreen: activeWs !== null && activeWs.hasFullscreen === true
+    readonly property var hyprWindows: monitor !== null ? V.fensterAusHyprland(Hyprland.toplevels.values, d.toplevels) : []
+    readonly property bool screenFullscreen: {
+        if (monitor !== null) return V.vollbild(hyprHasFullscreen, activeWs ? activeWs.id : undefined, hyprWindows)
         const tl = d.toplevels
-        // ohne Hyprland (oder ohne hasFullscreen): ein Vollbild-Fenster auf diesem Bildschirm; unter
-        // Hyprland nur das aktive, weil ein Vollbild auf einer anderen Arbeitsfläche nicht stört
+        // ohne Hyprland: ein Vollbild-Fenster auf diesem Bildschirm; unter Hyprland ohne passenden
+        // Monitor nur das aktive, weil ein Vollbild auf einer anderen Arbeitsfläche nicht stört
         for (let i = 0; i < tl.length; i++)
             if (tl[i] && tl[i].fullscreen && (!Ui.hyprland || tl[i].activated) && d.onScreen(tl[i], screen)) return true
         return false
     }
+    readonly property bool fullscreenHere: d.hideOnFullscreen && (Ui.gaming || screenFullscreen)
+    // für shell-diag dock: warum das Dock hier als Vollbild gilt (oder nicht)
+    function fullscreenInfo() {
+        const ws = activeWs ? activeWs.id : null
+        const fenster = monitor !== null ? V.vollbildFenster(hyprWindows, ws) : []
+        return { screen: screen ? screen.name : "", fullscreen: fullscreenHere, hideOnFullscreen: d.hideOnFullscreen,
+                 gaming: Ui.gaming, workspace: ws, hasFullscreen: hyprHasFullscreen,
+                 fullscreenWindows: fenster.map(f => ({ address: f.adresse, class: f.klasse })),
+                 reason: !d.hideOnFullscreen ? "hide_on_fullscreen-off"
+                       : monitor !== null ? V.grund(hyprHasFullscreen, ws, hyprWindows, Ui.gaming)
+                       : Ui.gaming ? "gaming" : screenFullscreen ? "fullscreen-window" : "none",
+                 shown: visible, input: inputOn, hidden: hidden, region: maskName, keyboard: keyboard,
+                 zone: exclusiveZone, exclusion: exclusionText }
+    }
     visible: d.on && d.shown && !fullscreenHere
+    // Dock verschwindet (Vollbild, Gaming, ausgeblendet): nichts darf hängen bleiben – kein Tastatur-
+    // Modus, kein Menü, kein Ziehen, keine Maus "über" dem Dock, keine laufenden Zeitgeber. Kommt es
+    // wieder, beginnt es sichtbar und versteckt sich bei dock.autohide wie gewohnt nach der Wartezeit.
+    onVisibleChanged: {
+        hideTimer.stop(); showTimer.stop()
+        hovering = false; revealed = false; mouseAlong = -1
+        dragKey = ""; dragTo = -1; dragOut = false
+        if (!visible) {
+            if (keyboard) d.leaveFocus()
+            stopKeyboard()
+            return
+        }
+        hidden = false
+        if (shouldHide) hideTimer.restart()
+    }
     color: "transparent"
     // reserve: Fenster weichen aus. Leiste auf derselben Kante (dock.avoid_bar): das Dock beachtet
     // deren reservierten Platz (exclusive zone 0 = nichts reservieren, aber anderen ausweichen)
@@ -135,6 +168,7 @@ PanelWindow {
     // ist ein Panel offen (Dashboard, Starter, Power-Menü …), nimmt das Dock keine Eingaben an
     readonly property bool inputOn: Ui.panel === "" || Ui.panel === "settings"
     mask: !inputOn || givesWay ? noRegion : hidden ? edgeRegion : bodyRegion
+    readonly property string maskName: !inputOn || givesWay ? "none" : hidden ? "edge" : "body"
     Region { id: bodyRegion; item: body }
     Region { id: edgeRegion; item: edgeStrip }
     Region { id: noRegion }
@@ -369,6 +403,8 @@ PanelWindow {
     property string selectedKey: ""
     readonly property var selectable: keys.filter(k => byKey[k] && byKey[k].kind !== "separator")
     function startKeyboard() {
+        // unsichtbar (Vollbild, Gaming): kein Tastatur-Modus, der später unerwartet die Tastatur nimmt
+        if (!visible) return
         keyboard = true
         if (selectable.indexOf(selectedKey) < 0) selectedKey = selectable.length > 0 ? selectable[0] : ""
         keyTimeout.restart()

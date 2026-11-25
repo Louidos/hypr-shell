@@ -311,14 +311,14 @@ Scope {
     }
     function restore(t) { const a = addressOf(t); if (a !== "") Quickshell.execDetached([Settings.bin + "shell-window", "restore", a]) }
     // Programm mit eigener Titelleiste (CSD) bittet ums Minimieren: wie der Knopf der Titelleiste;
-    // Verschieben eines Fensters (auch ins Minimiert-Versteck) frischt die Liste auf
+    // Verschieben eines Fensters (auch ins Minimiert-Versteck) frischt die Liste auf (refreshEvents)
     Connections {
         target: Ui.hyprland && dock.on ? Hyprland : null
         function onRawEvent(event) {
             if (event.name === "minimized") {
                 const p = String(event.data || "").split(",")
                 if (p.length === 2 && p[1] === "1") Quickshell.execDetached([Settings.bin + "shell-window", "minimize", p[0].indexOf("0x") === 0 ? p[0] : "0x" + p[0]])
-            } else if (event.name === "movewindowv2" || event.name === "movewindow") refreshLater.restart()
+            }
         }
     }
 
@@ -463,14 +463,32 @@ Scope {
     function leaveFocus() { if (focusWin) focusWin.stopKeyboard(); focusWin = null }
     Connections { target: Ui; function onReleased() { dock.leaveFocus(); for (const w of dock.windows) w.stopKeyboard() } }
 
-    // ---- smart: Fensterflächen von Hyprland nur bei Fenster-Ereignissen neu holen, nie im Takt
+    // ---- Fenster und Arbeitsflächen von Hyprland nur bei Ereignissen neu holen, nie im Takt – für
+    // smart (Fensterflächen) und für das Vollbild pro Bildschirm, deshalb bei jedem dock.autohide.
+    // Nach dem Schliessen eines Vollbild-Fensters meldet Hyprland kein "fullscreen>>0": erst das
+    // Neuholen der Arbeitsflächen setzt hasFullscreen zurück. Entprellt (60 ms); nach Schliessen und
+    // Vollbild-Wechsel ein zweites Mal (400 ms), falls Hyprland beim ersten Mal noch den alten Stand hatte.
     readonly property var refreshEvents: ["openwindow", "closewindow", "movewindow", "movewindowv2", "changefloatingmode",
         "fullscreen", "workspace", "workspacev2", "focusedmon", "focusedmonv2", "activewindowv2", "moveworkspace", "moveworkspacev2"]
+    readonly property var refreshTwiceEvents: ["closewindow", "fullscreen", "moveworkspace", "moveworkspacev2", "movewindow", "movewindowv2"]
     Connections {
-        target: Ui.hyprland && dock.on && dock.autohide === "smart" ? Hyprland : null
-        function onRawEvent(event) { if (dock.refreshEvents.indexOf(event.name) >= 0) refreshLater.restart() }
+        target: Ui.hyprland && dock.on ? Hyprland : null
+        function onRawEvent(event) {
+            if (dock.refreshEvents.indexOf(event.name) < 0) return
+            refreshLater.restart()
+            if (dock.refreshTwiceEvents.indexOf(event.name) >= 0) refreshAgain.restart()
+        }
     }
-    Timer { id: refreshLater; interval: 60; onTriggered: Hyprland.refreshToplevels() }
+    function refreshHyprland() {
+        if (!Ui.hyprland) return
+        Hyprland.refreshMonitors()
+        Hyprland.refreshWorkspaces()
+        Hyprland.refreshToplevels()
+        refreshCount++
+    }
+    property int refreshCount: 0          // für Tests und shell-diag dock
+    Timer { id: refreshLater; interval: 60; onTriggered: dock.refreshHyprland() }
+    Timer { id: refreshAgain; interval: 400; onTriggered: dock.refreshHyprland() }
 
     // die untere Kante gehört dem Dock, solange es dort versteckt ist (siehe Dashboard)
     readonly property bool ownsEdge: windows.some(w => w.ownsEdge)
@@ -532,7 +550,14 @@ Scope {
             const w = dock.windows.length > 0 ? dock.windows[0] : null
             return w ? JSON.stringify({ exclusion: w.exclusionText, zone: w.exclusiveZone, fullscreen: w.fullscreenHere, input: w.inputOn, hidden: w.hidden,
                                         glass: String(dock.glassColor), shown: w.visible, givesWay: w.givesWay, behind: w.behindPanel,
-                                        top: w.WlrLayershell.layer === WlrLayer.Top }) : "{}"
+                                        top: w.WlrLayershell.layer === WlrLayer.Top, region: w.maskName,
+                                        reason: w.fullscreenInfo().reason }) : "{}"
+        }
+        // shell-diag dock und Tests: Zustand jedes Docks (ein Eintrag pro Bildschirm) – sichtbar, Eingabe,
+        // Vollbild und warum (hasFullscreen der Arbeitsfläche, Vollbild-Fenster, Gaming-Modus)
+        function screens(): string {
+            return JSON.stringify({ autohide: dock.autohide, refreshes: dock.refreshCount, hyprland: Ui.hyprland,
+                                    docks: dock.windows.map(w => w.fullscreenInfo()) })
         }
         // für Tests: Maus n-mal über das erste Dock führen (Vergrösserung), Dauer in ms
         function sweep(n: int): int { return dock.windows.length > 0 ? dock.windows[0].sweep(n) : -1 }

@@ -669,15 +669,25 @@ optional("hypr-shell-extra")
 -- Gaming-Modus an und danach wieder aus (games.auto_gaming; ob es ein Spiel ist, entscheidet
 -- games.auto_classes, Standard steam_app_… und gamescope)
 local function sicher(s) return (tostring(s or ""):gsub("[^%w%._%-]", "_")) end
+-- Adresse bei Vollbild und Schliessen in derselben Form (0x…, klein); als Zahl hexadezimal, damit
+-- shell-games beim Schliessen das Spiel wiedererkennt
+local function adresse(w)
+    local a = w.address
+    if type(a) == "number" then return string.format("0x%x", (math.tointeger and math.tointeger(a)) or math.floor(a)) end
+    a = tostring(a or ""):lower()
+    if a ~= "" and a:sub(1, 2) ~= "0x" then a = "0x" .. a end
+    return sicher(a)
+end
 if not (S.games and S.games.auto_gaming == false) then
     hl.on("window.fullscreen", function(w)
         if not w then return end
         hl.exec_cmd(bin .. "shell-games auto fullscreen " .. sicher(w.fullscreen) .. " "
-            .. sicher(w.class) .. " " .. sicher(w.address))
+            .. sicher(w.class) .. " " .. adresse(w))
     end)
+    -- beim Schliessen ohne Fensterangabe trotzdem melden: shell-games prüft dann, ob noch ein Spiel
+    -- im Vollbild ist, und schaltet sonst den automatisch eingeschalteten Gaming-Modus aus
     hl.on("window.close", function(w)
-        if not w then return end
-        hl.exec_cmd(bin .. "shell-games auto close " .. sicher(w.address))
+        hl.exec_cmd(bin .. "shell-games auto close " .. (w and adresse(w) or "_"))
     end)
 end
 

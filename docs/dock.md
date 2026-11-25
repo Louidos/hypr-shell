@@ -124,7 +124,13 @@ Starter und Fenster-Übersicht bieten kein Ziehen an; Programme kommen dort desh
   Solange eines offen ist, nimmt das Dock keine Eingaben an; Esc und Klick daneben verhalten sich
   wie vorher.
 - **Vollbild und Gaming-Modus** (`dock.hide_on_fullscreen`): Das Dock ist weg, auch die Kante
-  blendet es nicht ein; danach ist es wieder da.
+  blendet es nicht ein; danach ist es wieder da – auch wenn das Programm im Vollbild geschlossen
+  wird (SUPER+Q, Knopf, Programm beendet sich), innerhalb von etwa einer halben Sekunde und bei
+  jedem Wert von `dock.autohide`. Unter Hyprland zählt ein Bildschirm nur als „Vollbild“, solange
+  auf seiner aktiven Arbeitsfläche noch ein Fenster im Vollbild (oder maximiert) offen ist; eine
+  hängen gebliebene Meldung von Hyprland (`hasfullscreen` ohne Fenster) wird ignoriert. Andere
+  Bildschirme sind nie betroffen. Warum das Dock gerade weg ist: `shell-diag dock` (pro Bildschirm
+  sichtbar, Eingabe, Vollbild und Grund: Vollbild-Fenster, Gaming-Modus, veraltete Meldung).
 - **Mehrere Bildschirme**: `dock.monitor` (all, primary oder ein Name) und
   `dock.running_per_monitor`. An- und Abstecken im laufenden Betrieb gibt genau ein Dock pro
   Bildschirm. Die Symbole werden in doppelter Auflösung geladen und bleiben bei Skalierung 1.25
